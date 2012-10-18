@@ -1,0 +1,8 @@
+include COPYING.txt
+graft test_files
+
+To reiterate: you only need to create a manifest file if you want to include 
+files that Distutils doesn’t include by default. 
+If you do need a manifest file, it should only include the files and 
+directories that Distutils wouldn’t otherwise find on its own.
+

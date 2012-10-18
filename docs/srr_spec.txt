@@ -1,0 +1,714 @@
+ ____  ____  ____                                          ____  ____  ____
+/ ___||  _ \|  _ \      Scene Release Reconstruction      / ___||  _ \/ ___|
+\___ \| |_) | |_) |       File Format Specification       \___ \| |_) \___ \
+ ___) |  _ <|  _ <          Version 0.1 - Draft            ___) |  _ < ___) |
+|____/|_| \_\_| \_\       Last revision: 2010-08-08       |____/|_| \_\____/
+
+
+I. Introduction
+---------------
+
+  ReScene is a mechanism for backing up and restoring the metadata from 
+  "scene" [1] released RAR files. It was created to support the x264 community,
+  but it works for many of the other "scenes" out there too. RAR archive [2] 
+  volumes are rebuild using the stored metadata in the SRR file and the
+  extracted files from the RAR archive. This process only works on RAR files 
+  created with "Store" mode (otherwise known as -m0 or No Compression). 
+  This isn't a restriction for video based scene releases because they use
+  this mode anyway. [3]
+  
+  ReSample is a companion to ReScene. It does for samples what ReScene does 
+  for RARs. You can use ReSample to build a blueprint of a MKV or AVI sample,
+  and then use that blueprint with the full video file to recreate that sample.
+
+  The .srr file is the format used by ReScene .NET and pyReScene. It contains 
+  backups of all parts of the RAR files that are not the actual archived data.
+  It can store any other miscellaneous release files (e.g. SFV, NFO, etc).
+  It is an extensible format that will allow for other uses in the future.
+
+  The .srs file is the format used by ReSample. It contains backups of all 
+  parts of the MKV or AVI file that are not the actual track data as well as
+  a signature that helps ReSample locate the missing track data from 
+  the full MKV or AVI.
+  
+  [1] http://en.wikipedia.org/wiki/Warez_scene
+  [2] http://en.wikipedia.org/wiki/Rar
+  [3] http://en.wikipedia.org/wiki/Standard_(warez)
+  
+II. What does SRR and SRS stand for?
+------------------------------------
+
+  SRR   Scene Release Reconstruction.
+        That was its name before a better name was suggested (thx alchemy!)
+  SRS   (Something) Re-Sample? Nah, it doesn't stand for anything. 
+        It's a companion to ReScene, so it has a similar file extension...
+
+III. How it works
+------------------
+
+  Most of the various scene groups out there distribute their releases 
+  packed in RAR files. These RAR files, while useful for distribution, 
+  must be unpacked before the goodies inside can be used. Traditionally, 
+  this left us with a quandry. 
+      - Do we unpack the files so we can use the goodies? 
+      - Or do we keep the RAR files intact so we can trade them on one of those 
+        popular file sharing sites/services the kids are using nowadays?
+      - Or do we do both?
+
+  Well, with ReScene, you don't have to choose!
+
+  What's that you say? If you unpack and delete the RARs, there's no way 
+  to get back to the originals? Not true, my friends! You see, a RAR file is 
+  made up of two things: the data that we want to get out of them, 
+  and metadata that describes that data (file names, dates, and attributes) 
+  or that supports some of RAR's many other features (comments, 
+  authenticity verification, recovery records, etc.)
+  While it is true that if you were to unpack a RAR archive and then try 
+  to re-create it exactly by just re-RARing it, you'd have VERY little chance 
+  of succeeding, if you back up all that metadata, you CAN re-create those rars
+  EXACTLY as they were.
+
+  A typical RAR file looks something like this: 
+    hvfDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDrt
+  In this representation, the D's represent the data that is stored 
+  in the RAR file. The other characters represent blocks of metadata. 
+  If we were to unpack that RAR, this is what we'd have: 
+    DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+  That's nice, because it's the data we're most interested in, but what about 
+  all that other stuff? We have no way of getting it back if we delete 
+  that RAR file. Even if we duplicate the settings originally used to create 
+  the RAR *exactly*, there's still a good chance the new RAR will be different 
+  than the old one. Did you know, for example, that RAR files include a byte 
+  that indicates what platform they were created on? So, if a RAR set was 
+  originally created on Linux, there would be no way to create that same RAR 
+  in Windows (without some hacking, anyway...). But what if we made a backup of
+  the metadata before we delete those RARs? Something like this: 
+    hvfXrt
+  The X here represents the data that we extracted, and the rest of the blocks
+  are copied exactly as they were in the original file. Now if we want to 
+  re-create that RAR, all we have to do is replace the X with 
+  the file data (D's), and we have the exact same file we started with.
+
+IV. How to use it
+-----------------
+
+  In its current version ReScene is pretty simple to use. The first thing 
+  you'll need is one of the scene releases I've been talking about. They will 
+  typically come with one or more RAR files and an SFV file that contains CRC 
+  values for those RAR files.
+
+  If you run the ReScene command-line utility (srr.exe) and pass the SFV file 
+  in as a parameter, it will read the SFV and locate all the RAR files 
+  from the release. The utility then creates a .srr file. The SRR file contains
+  a copy of the SFV you specified as well as a backup of all those metadata 
+  blocks mentioned earlier. It's typically a very small file 
+  (maybe 10-20KB depending on the number of RARs), and it is created 
+  very quickly (typically <1 second). Once you have that .srr file, you can 
+  extract the archive and delete the RAR and SFV files.
+
+  To re-create the original release files, all you need is the .srr 
+  and the files you extracted from the archive. Pass the .srr file in to 
+  the utility to start the reconstruction. The SFV file will be restored from 
+  the SRR file, and then each original RAR will be painstakingly (but quickly)
+  reconstructed from the data files and the backed-up blocks in the SRR file. 
+  As a final step, you can validate the files against the SFV to make sure 
+  they came through the process unscathed.
+  
+V. The catch
+------------
+
+  You knew there had to be a catch, right? Ok, there is one, but it's small. 
+  This process only works on RAR files created with "Store" mode 
+  (otherwise known as -m0 or No Compression). 
+  That's not too much of a restriction, though, as most scene releases use 
+  this mode anyway. Also, I think it goes without saying that ReScene doesn't 
+
+VI. How big is a typical SRR/SRS file?
+--------------------------------------
+
+  It depends on a number of factors, including whether or not it contains 
+  stored files (like NFO) and how big those files are. But most are less than 
+  50KiB. In fact, with no stored files other than the SFV, 
+  they can be as small as about 10KiB.
+
+  The size of a SRS file depends on the size and content of the sample.
+  For a 50MiB sample with 1 video and 1 audio track, it may be anywhere
+  between 20KiB and 50KiB. It can be larger for longer samples or
+  samples with more audio or subtitle tracks.
+  
+  It also depends on the container format (AVI vs. MKV). You can think of the
+  SRS file as a backup of the container 'overhead'. Since MKV is more efficient
+  than AVI, an AVI SRS file will be several times larger than
+  the MKV equivalent.
+  
+  A 2CD Xvid release with a SRS file stored is generally between
+  100 and 120 KiB in size.
+
+
+VII. History - Applications
+---------------------------
+
+  The first implementation, 'ReScene .NET', is written by an American with the
+  nickname "umlaut". The first public release was in December 22, 2008. A
+  platform-independent C port exists, but that version was left behind by 
+  improvements in the .NET version. It has not been updated and was
+  functionally equivalent to ReScene .NET Beta 2. It was written by "fedex".
+  A GUI version was created based on ReScene .NET 1.0 by "sobmorok".
+  
+  With the early versions of ReScene, there was only one archive for each
+  SRR file. The archive could have one or multiple volumes. This changed in 
+  ReScene .NET Beta 7. One SRR file could be used for multiple archives by
+  specifying multiple input files. i.e. .sfv or .rar files
+  SRR files were used for 2CD Xvid releases and thus resulted in two or more 
+  .srr files while for x264 releases this wasn't much of an issue. The multiple
+  files necessary for a Xvid release were merged together with a script:
+  "ReScene Database Cleanup Script 1.0". Additional stored files weren't at
+  the beginning of the SRR file anymore but they could be somewhere in
+  the middle too because of the merge. This caused some problems for the
+  second SRR database site and were fixed by an utility called 
+  "FireScene Cleanup".
+  
+  A PHP library script called 'rescene.php' was written for the FireScene
+  database (development version of srrdb.com) in august 2011. It was able
+  to show the file sizes of RAR files, list the files stored inside the RARs
+  and show some recovery record information like the rescene.com databases did.
+  It was written by "Gfy" and released to the public under the LAGPL
+  (LGPLv3 with Affero clause) on XXXX.
+  
+  A second major ReScene implementation was pyReScene. It is written in
+  Python and was made public after the second, PHP based, web site became
+  established. (Mercurial repository: 2012-10-18)
+
+
+VIII. History - Databases and community
+---------------------------------------
+  
+  The first two public sites where scene SRR files could be downloaded were
+  x264.rescene.info and xvid.rescene.info. [1] Mid 2011 an other site popped up
+  because of issues with the update speed of the first site. 2010-08-30 was
+  the last time the site was updated before the new site. The upload
+  procedure wasn't automated and only one very busy person could do
+  a new batch update. A couple of times a year a database dump was
+  posted to Usenet. [2]
+  FireScene was the name while the second database site was in development. [3]
+  It was eventually called srrDB and was made by Tony "Skalman^" Soderberg. [4]
+  200.000 SRR files were available before New Year 2012. 
+  On 2012-04-17 the amount of 300.000 SRR files was reached.
+  On 2012-09-14 the amount of 400.000 SRR files was reached.
+  
+  #x264.rescene.info@EFnet was the place where all discussions took place. [5]
+  #srrdb@EFnet is the place where all discussions take place. [6]
+
+  [1] http://x264.rescene.info/
+      http://xvid.rescene.info/
+  [2] x264.rescene.info_complete_db_16.02.2009.rar
+      x264.rescene.info complete database 2009.05.11
+      x264.rescene.info complete database 2009.09.28
+      rescene.com complete database 2010.01.17
+      rescene.com complete database 2010.05.23
+  [3] http://fire.no-ip.info/FireScene/
+  [4] http://www.srrdb.com/
+  [5] irc://efnet.xs4all.nl/x264.rescene.info
+  [6] irc://efnet.xs4all.nl/srrdb
+  
+  
+  ReScene .NET (first implementation)
+  ===================================
+  
+  ReScene is a command-line utility written in C# and requires 
+  the Microsoft .NET Framework 2.0 or greater to run. It has also been tested
+  (thx Antioch) on the multi-platform mono framework version 1.9.1 under linux.
+  
+   - http://www.rescene.info/
+   - http://www.rescene.com/
+   
+  The site was offline in April 2012.
+  
+  * ReScene .NET Beta 1 - December 22, 2008
+     - Initial public release
+
+  * ReScene .NET Beta 2 - January 3, 2009 
+     - Added support for rebuilding RAR Recovery Records, resulting in smaller
+       file sizes for SRR files.
+     
+  * ReScene .NET Beta 3 - January 12, 2009 
+     - Fixed a bug in the SFV parser that didn't handle empty or undersized
+       lines correctly.
+     - Added a check for unknown flags in SRR file blocks. The application will
+       now warn if it encounters a flag it doesn't understand.
+     - Added a generating application name field to the SRR header block. 
+       Now that there is more than one application, this will tell you
+       which one created a given SRR.
+     - Added -s switch to allow for storing arbitrary (e.g. .nfo) files
+       in the SRR.
+     - Added -d switch to force the name of the SRR file to come from 
+       its parent directory name rather than the SFV name.
+ 
+  * ReScene .NET Beta 4 - January 14, 2009
+     - Fixed a bug that saved incorrect file name length in stored files 
+       in certain situations. Specifically, if the SFV file name was a 
+       different length than the other stored file name(s), the lengths 
+       of the other stored file name(s) would be wrong in the header.
+       (thanks to BudSmoker for alerting me to the problem)
+     
+  * ReScene .NET Beta 5 - January 17, 2009
+     - Fixed a bug that would cause the RAR block parser to enter an infinite
+       loop if a block header is corrupted. Rare case, but I fixed it anyway.
+     - Updated the Usage info (-? switch) with better syntax guide, examples,
+       and a version message.
+
+  * ReScene .NET Beta 6 - January 31, 2009
+     - Added support for RAR files with .001, .002, etc naming scheme.
+     - Added ability to add stored files to an existing SRR file.
+         ex: srr release.srr -s afile.txt
+     - Added -o switch to specify output file or directory path.
+       Can be combined with -d.
+         ex: srr release.sfv -d -o c:\srrfiles
+     - Added -i switch to specify input path for extracted files.
+         ex: srr release.srr -i c:\extractedfiles -o d:\reconstructedrelease
+
+  * ReScene .NET Beta 7 - May 10, 2009
+     - Added support for RAR sets with no SFV. Pass the first RAR from the set
+       to ReScene and it will find all remaining RARs from the set.
+         ex: srr release.rar
+     - Added support for multiple input files (RAR or SFV) to be processed 
+       into a single SRR file.
+         ex: srr releasepart1.sfv releasepart2.sfv -s *.nfo
+     - Added -l switch to list info about the files contained in an SRR file.
+         ex: srr release.srr -l
+     - Added -x switch to extract all stored files contained in an SRR file
+       without reconstructing the RARs.
+         ex: srr release.srr -x
+     - Changed all file handles to use shared read-only locks when possible.
+       This will allow ReScene to be run against read-only media or file 
+       systems. It may also allow you to open files in use by other programs.
+       (provided those programs open the files with shared locks as well)
+     - Changed the way relative paths are handled. In previous ReScene
+       versions, all paths were considered relative to the one and only
+       input file (first argument). For example, in the command line 
+       'c:\srr.exe d:\stuff\release.sfv -s *.nfo', when looking for .nfo files
+       to store, ReScene would look for them in the same folder as release.sfv.
+       It was rather counterintuitive, and is incompatible with the new ability
+       to use multiple input files. In the new version, all relative paths are
+       considered relative to the working directory, or if the -i switch
+       is used, relative to the input folder. To get the equivalent behaviour
+       of the example command in the new version, you would need to use: 
+       'c:\srr.exe d:\stuff\release.sfv -s *.nfo -i d:\stuff' or 
+       'c:\srr.exe d:\stuff\release.sfv -s d:\stuff\*.nfo'. In most cases, 
+       use of the -i or -o swicthes should clear up any differences in the 
+       behaviour between the old and new versions.
+     - Removed handling for switches beginning with / to improve Linux
+       compatibility. All switches must be prefixed with - rather than / 
+       (as the documentation has always indicated).
+
+  * ReScene .NET Beta 8 - May 12, 2009
+     - Added support for old-style RAR Recovery Records. Previous ReScene
+       versions only recognized the new (NewSub) type.
+
+  * ReScene .NET Beta 9 - Jun 1, 2009
+     - Fixed a bug that might caused an error when creating an SRR file on a 
+       RAR set with no SFV. Specifically, if the RAR set used the new-style 
+       naming and there was only a single RAR file in the set, ReScene would
+       return an 'index out of bounds' error.
+     - Added logic to correct the case of the working directory when a cd 
+       command had been used with the wrong case. This would have resulted in
+       the SRR file name having the incorrect case when using the -d switch.
+     - Added several performance optimizations to code that is shared with 
+       ReSample (e.g. CRC32 calculations).
+
+  * ReScene .NET Beta 10 - June 11, 2009
+     - Fixed a bug that caused an error when running ReScene
+       from the root of a drive.
+
+  * ReScene .NET Beta 11 - July 18, 2009
+     - Fixed a bug that caused an out of memory (or other unexpected) error 
+       when processing RAR files without the LARGE_BLOCK flag set
+       on the RAR File blocks.
+
+  * ReScene .NET 1.0 - October 14, 2009
+     - Added -p switch to enable support for saving/restoring path information
+       to/from SRR files.
+       During SRR creation, the -p switch will enable saving 
+       relative path information with the file names stored in the SRR.
+       During reconstruction the -p switch will allow ReScene to re-create 
+       a sub-folder structure for the release (e.g. CD1, CD2) 
+       provided the SRR file has the paths stored.
+     - Added -h switch to allow you to specify rename hints during 
+       reconstruction. If you renamed one or more of the original files after
+       extracting them, this feature will allow you to tell ReScene
+       the new name of the file so it can locate it and use it. Hints are given
+       as a pair, separated by a colon (e.g. original.mkv:newname.mkv).
+     - Added -y switch to assume Yes to all prompts to overwrite files.
+     - Added automatic CRC checking during reconstruction. RAR files now have
+       their stored data checked against the CRC value from the RAR header when
+       they are rebuilt. This allows ReScene to detect and warn you if a file
+       from which you are reconstructing is corrupt. Since this check only
+       validates the data inside the RAR, it is still recommended you sfv check
+       the release after reconstruction. If you do intend to sfv check, you can
+       disable the automatic CRC check with the -u switch to make the process
+       run a little faster.
+     - Added -u switch to disable automatic CRC checking.
+       See previous change entry for details.
+     - Improved error handling for invalid command line parameters.
+     - Improved handling of invalid records in SFV files.
+     - ReScene is now 'officially' released! Woo!
+       This doesn't mean anything other that I consider it to be reliable and
+       stable at this point (as it has been for a long time). The files you
+       created with the Beta versions will work just fine. We'll just have real
+       version numbers from now on...
+
+  * ReScene .NET 1.1 - March 19, 2010
+     - Added -r switch to enable support for auto-locating renamed files. 
+       When this switch is used, if a file needed for reconstruction cannot be
+       located in the input directory, the program will look for another file
+       with the same extension and file size and attempt to use it instead.
+     - Added archived file list to the output when using the -l switch.
+     - Fixed a bug that caused an error when reconstructing a release that had
+       directory structure preserved in the RAR archive. Now no attempt is made
+       to open directories or 0-byte files during reconstruction
+       since no data would be needed from them anyway. 
+
+  * ReScene .NET 1.2 - June 9, 2010
+     - Added support for archives with Unicode (actually UTF-8)
+       encoded file names.
+     - Fixed a bug that caused errors when reconstructing archives with extra
+       data (or padding) in their File Blocks. Specifically, if an archive
+       contains a file that has a packed size larger than its original size
+       (something that shouldn't ever happen with m0 compression),
+       older versions of ReScene would repeat the last valid buffer of data to 
+       fill the difference, resulting in CRC (and SFV) errors on the last 
+       reconstructed volume. This build fills the difference with null bytes
+       instead and does not include the extra data in the CRC calculation.
+       Note that although this change seems to have fixed all known issues
+       with such archives, since there's no reason for the situation to occur
+       in the first place, there's no guarantee this fix will handle all such
+       archives in future.
+
+
+  ReScene GUI (thanks to sobmorok)
+  ===========
+  
+   - http://vuvuz.eu/?action=apps&app=rescene_gui
+   - [old] http://www.pcdemon.net/downloads/ReSceneGUI.exe
+  
+  * Programming started on 2009-10-30
+  
+  * ReScene GUI 1.0 beta 2 - 2009-11-04
+       - Source code of this version is available
+         http://www.mediafire.com/?4rirxs87wmk2nq9
+
+  * ReScene GUI 1.3 beta - 2010-09-28
+     - Added: Mass Reconstuction
+
+  * ReScene GUI 1.3.1 beta - 2010-10-14
+     - Based on ReScene .NET 1.2.
+     - Includes batch mode and ReSample functionality.
+     - Bug fixes
+
+  * ReScene GUI 1.3.2 beta - 2010-11-19
+     - .srs tab: checkbox to put sample on release folder without asking
+     - added support with working dir
+     - batch .srr tab: respects the .srs tab
+     - fixes in store dialog
+     - various bugfixes
+
+  * ReScene GUI 1.3.3 beta - 2011-09-13
+     - Fixed -c switch
+     - srr tab: 
+           - storing additional files improved
+           - check for proof dir
+           - create .srr for extras
+           - .srs is stored in Sample/ relative path
+     - batch srr:
+           - fixed bug with appending jobs
+           - fixed bug with log, when Form wasn't active
+           - search for .001 extensions, too
+           - added checkbox for search on hidden folders
+           - store .sfv files from subdirs (subs/extras)
+           - added final log with failed releases
+           - added ETA (estimated time available)
+     - various fixes
+
+
+
+IX. General overview of a .srr file
+-----------------------------------
+
+  A SRR file is based on the RAR file format. A RAR file is build of a
+  sequential list of blocks that can be iterated over when reading the file.
+  Each block has a header. A body is optional and is used for the (parts)
+  of files that are stored or archived. This is also the case for RAR
+  recovery records, comments, ... 
+    [Block header
+        - value(s) stored in the header
+        - ...
+        [body]
+    ]
+
+  Overview SRR file format:
+
+    [SRR Header Block
+        - SRR application name
+    ]
+    
+    [SRR Stored File Block    \
+        - Stored file name    |    For each stored file
+        [Stored File Data]    |
+    ]                         /
+    [SRR Stored File Block]
+    [...]
+
+    [SRR RAR Block]               \
+        - RAR file name           |
+    ]                             |
+        [RAR Marker Block]        |    For each RAR volume
+        [RAR Volume Header Block] |
+        [RAR Packed File Block]   |
+        [...]                     /
+    [SRR RAR Block]
+        [RAR Block]
+        [RAR Block]
+        [RAR Block]
+        [...]
+    [...]
+    
+    - The SRR file must start with the header block.
+    - Stored file blocks are optional, but they are almost always used because
+      a SRR file is very often created from a .sfv file.
+    - Stored file blocks must be after the SRR marker block and should be
+      before the first SRR RAR Block.
+    - The SRR RAR Block has no body. All blocks until the next SRR RAR block
+      or until the end of the file are RAR blocks. These are the RAR files
+      with their content (bodies) removed.
+      
+    The minimum size of a SRR file is 7 bytes: the SRR Header Block without
+    an application name set.
+    
+  High level overview RAR file format:
+
+    [RAR Marker Block]
+    [RAR Volume Header Block]
+    [RAR Packed File Block]
+    [[RAR New Format SubBlock]]                   -> these blocks are optional
+    [[RAR Old Style Recovery Record Block]]
+    [[RAR Old Style Comment Block]]
+    [[RAR Old Style Extra Info (Authenticity Information) Block]]
+    [[RAR Old Style Archive Authenticity Block]]
+    [[RAR End Archive Block]]
+
+
+IX. SRR archive processing
+--------------------------
+    
+  A SRR Archive can be processed in the following manner:
+
+  1. If end of file encountered then terminate archive processing,
+     else read 7 bytes into fields HEAD_CRC, HEAD_TYPE, HEAD_FLAGS,
+     HEAD_SIZE.
+  2. Check HEAD_TYPE.
+     if HEAD_TYPE == 0x74 or 0x77 or 0x78
+       read file header ( first 7 bytes already read )
+       no archived data to be read (unless no flag is set in a previous SRR
+       RAR block to indicate the recovery records are removed)
+     else
+       read HEAD_SIZE - 7 bytes
+       if (HEAD_FLAGS & 0x8000)
+         read ADD_SIZE bytes
+         read or skip sizeof(BLOCK) - HEAD_SIZE bytes
+  3. go to 1.
+
+X. SRR file blocks
+------------------
+
+  The SRR file format is based on the RAR file format. This makes it easier 
+  to program and understand. Files stored are in arbitrary order. 
+  All values are stored in little-endian byte order unless otherwise specified. 
+
+Minimal RAR/SRR Header (from RAR TechNote)
+======================
+
+   Each block begins with the following fields:
+
+HEAD_CRC       2 bytes     CRC of total block or block part
+HEAD_TYPE      1 byte      Block type
+HEAD_FLAGS     2 bytes     Block flags
+HEAD_SIZE      2 bytes     Block size
+ADD_SIZE       4 bytes     Optional field - added block size
+
+   Field ADD_SIZE present only if (HEAD_FLAGS & 0x8000) != 0
+
+   Total block size is HEAD_SIZE if (HEAD_FLAGS & 0x8000) == 0
+and HEAD_SIZE+ADD_SIZE if the field ADD_SIZE is present - when
+(HEAD_FLAGS & 0x8000) != 0.
+
+    [SRR Stored File Block        -> HEAD_SIZE
+        [Stored File Data]        -> ADD_SIZE
+    ]                             -> HEAD_SIZE + ADD_SIZE
+        
+SRR Header Block
+================
+
+  Contains the name of the program used to create the SRR file and indicates
+  the beginning of a SRR file.
+  
+    [SRR Header Block
+        - HEAD_CRC: 0x6969 (ii)                             2 bytes
+        - HEAD_TYPE: 0x69                                   1 byte
+        - HEAD_FLAGS:                                       2 bytes
+            0x0001: the application name is present
+        - HEAD_SIZE: limited to 65535 (0xFFFF) bytes        2 bytes
+        - APP_NAME_SIZE: length of APP_NAME string          2 bytes
+        - APP_NAME: SRR application that created the file.  APP_NAME_SIZE bytes
+    ]
+    
+  The SRR marker block. HEAD_CRC is always ii and thus the first 3 bytes of a
+  SRR file will always be iii or 0x696969. (magic number)
+  
+  APP_NAME_SIZE:
+      Maximum value: 0xFFF6. Can be 0x0000 if 0x1 flag is set.
+  APP_NAME:
+    Name of the application, if present. Max 65526 bytes long.
+            
+  The SRR header block can be a minimal header only: no flag set for the name.
+    69 69 69 00 00 07 00
+  (used in the old beta 2 equivalent C implementation)
+  Minimal block that ReScene .NET produces when an empty string is given:
+    69 69 69 00 00 07 00 00 00   
+  
+SRR Stored File Block
+=====================
+
+  SRR block used to store additional files such as .nfo and .sfv.
+  
+    [SRR Stored File Block
+        - HEAD_CRC: 0x6A6A                                  2 bytes
+        - HEAD_TYPE: 0x6A                                   1 byte
+        - HEAD_FLAGS:                                       2 bytes
+            0x8000: must always be set to indicate the file size
+        - HEAD_SIZE: limited to 65535 (0xFFFF) bytes        2 bytes
+        - ADD_SIZE: the size of the stored file             4 bytes
+        - NAME_SIZE: length of NAME string                  2 bytes
+        - NAME: path and name of the stored file            NAME_SIZE bytes
+        [Stored File Data]
+    ]
+  
+  ADD_SIZE:    
+    The maximum file size is 4294967296 bytes (0xFFFFFFFF) or 4096 MiB.
+  NAME_SIZE:
+    The maximum length of the path + the name is 65522 (0xFFF2).
+        0xFFFF - 7 - 4 - 2 = 65522 (0xFFF2)
+  NAME:
+    The path structure in RAR files is always Windows style: "\" BUT
+    ReScene .NET uses the "/" file name separator to store paths.
+    "/" must always be used.
+    UTF-8 must be used as encoding.
+  
+SRR RAR File Block
+==================
+
+  Stores all the metadata from a RAR archive.
+  
+    [SRR RAR File Block
+        - HEAD_CRC: 0x7171                                  2 bytes
+        - HEAD_TYPE: 0x71                                   1 byte
+        - HEAD_FLAGS:                                       2 bytes
+            0x0001: recovery data removed
+        - HEAD_SIZE                                         2 bytes
+        - NAME_SIZE: length of NAME string                  2 bytes
+        - NAME: path and name of the RAR volume             NAME_SIZE bytes
+    ]    
+    
+  NAME_SIZE:
+    The maximum length of the path + the name is 65526 (0xFFF6).
+        0xFFFF - 7 - 2 = 65526 (0xFFF6)
+  NAME:
+    "/" must always be used as path separator.
+    UTF-8 must be used as encoding.
+    
+RAR Marker Block
+================
+    
+RAR Volume Header block
+=======================
+    
+RAR File Block
+==============
+    
+RAR New Style Block
+===================
+    
+RAR Archive End Block
+=====================
+    
+ - can have extra 0-bytes added
+ 
+same, but AV, CMT, old RR, ...
+    
+    
+IX. In the news / links
+-----------------------
+
+  http://scenelingo.wordpress.com/2009/02/10/dont-repack-it-rescene-it/
+  
+  http://filesharefreak.com/2010/02/24/rescene-rebuild-extracted-scene-releases-into-rars/
+  
+  http://kthoom.googlecode.com/hg/docs/unrar.html
+  
+  http://www.wotsit.org/list.asp?search=rar&button=GO%21
+
+ 
+X. Terminology/Glossary
+-----------------------
+
+    Archive      Special file containing one or more files optionally
+                 compressed and/or encrypted.
+
+    Compression  A method of encoding data to reduce it's size.
+
+    CRC          Cyclic Redundancy Check. Mathematical method calculating
+                 special checking information for data validity.
+
+    SFX          Archive module used to extract files from when executed.
+                 (SelF-eXtracting module), usually in the form of a .EXE
+                 file.
+
+    Solid        An archive packed using a special compression method which
+                 sees all files as one continuous data stream. Particularly
+                 advantageous when packing a large number of small files.
+
+    Volume       Part of a split archive. Splitting an archive to volumes
+                 allows storing them on several removable disks.
+                 Solid volumes must be extracted starting from first 
+                 volume in sequence.
+
+XI. Copyrights
+--------------
+
+  The text of this document comes from various sources and can be adapted or
+  corrected compared to the original text.
+
+    (c) 1993-2011 Alexander Roshal
+        - Glossary
+        - RAR Technote contents
+    (c) 2008-2010 ReScene.com
+        - Introduction
+        - How it works
+        - How to use it
+        - Changelogs
+    (c) 2011-2012 pyReScene
+        - History
+        - SRR file format specification
+
+
+
+TODO: srr file verification build-in for pyReScene
+(additional script)
+ - starts with srr marker
+ - all stored files before first srr rar
+ - new future blocks added at the end?
+
+
+Change log
+------------
+
+
