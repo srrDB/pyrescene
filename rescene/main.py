@@ -402,8 +402,8 @@ def merge_srrs(srr_files, output_file, application_name=None):
 			new.write(block.block_bytes())
 			#TODO: this is skipping data in some less common casess?
 
-def create_srr(srr_name, infiles, 
-			   in_folder="", store_files=None, save_paths=False):
+def create_srr(srr_name, infiles, in_folder="",
+               store_files=None, save_paths=False, compressed=False):
 	"""
 	infiles:	 RAR or SFV file(s) to create SRR from
 	store_files: a list of files to store in the SRR
@@ -471,10 +471,11 @@ def create_srr(srr_name, infiles,
 					  file_name=block.file_name)
 				if block.compression_method != COMPR_STORING:
 					_fire(MsgCode.COMPRESSION, message="Don't delete 'em yet!")
-#					srr.close()
-#					os.unlink(srr_name)
-#					raise ValueError("Archive uses unsupported compression "
-#									 "method: %s", rarfile)
+					if not compressed:
+						srr.close()
+						os.unlink(srr_name)
+						raise ValueError("Archive uses unsupported "
+						                 "compression method: %s", rarfile)
 			elif _is_recovery(block):
 				_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 					  packed_size=block.packed_size,

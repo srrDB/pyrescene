@@ -199,7 +199,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		try:
 			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths, 
 			                    hints, options.no_auto_crc, 
-			                    options.auto_locate, options.empty)
+			                    options.auto_locate, options.fake)
 		except FileNotFound:
 			mthread.done = True
 			mthread.join()
@@ -235,7 +235,7 @@ def create_srr(options, infolder, infiles, working_dir):
 #	print("store files: %s" % store_files)
 	try:
 		rescene.create_srr(srr_name, infiles, infolder, 
-	                       store_files, save_paths)
+	                       store_files, save_paths, options.allow_compressed)
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.")
@@ -293,8 +293,8 @@ if __name__ == "__main__":
 	"All files referenced by the .sfv"
 	" must be in the same folder as the .sfv file.\n"
 	"	ex:"
-	"\tsrr simpleFileVerification.sfv -s *.nfo \n"
-	"\tsrr CD1/cd1.sfv CD2/cd2.sfv -s file.nfo -d -p\n"
+	"\tsrr simpleFileVerification.sfv -s file.nfo \n"
+	"\t\tsrr CD1/cd1.sfv CD2/cd2.sfv -s *.nfo -s other.file -d -p\n"
 	"To reconstruct a release, use the SRR file created from the release.\n"
 	"	ex:"
 	"\tsrr file.srr"), 
@@ -347,15 +347,12 @@ if __name__ == "__main__":
 					 "(must have the same extension)", default=False)
 	recon.add_option("-f", "--fake-file", 
 					 action="store_true", dest="fake", default=False,
-					 help="fake data will be used to reconstruct the SRR\n"
+					 help="fills RAR with fake data when the archived file"
+					 "isn't found (e.g. no extras) "
 					 "this option implies --no-autocrc")
 	recon.add_option("-u", "--no-autocrc", 
 					 action="store_false", dest="no_auto_crc", default=True,
 					 help="disable automatic CRC checking during reconstruction")
-	recon.add_option("-m", "--empty", 
-					 action="store_true", dest="empty", default=False,
-					 help="fills RAR with fake data when the archived file"
-					 "isn't found (e.g. no extras)")
 	recon.add_option("-H", help="<oldname:newname list>: Specify alternate "
 					"names for extracted files.  ex: srr example.srr -h "
 					"orginal.mkv:renamed.mkv;original.nfo:renamed.nfo",
@@ -409,6 +406,8 @@ if __name__ == "__main__":
 		print(parser.format_help())
 	else:	   
 		(options, args) = parser.parse_args()
+		print options
+		print args
 		status = main(options, args)
 		sys.exit(status)
 	

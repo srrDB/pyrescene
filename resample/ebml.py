@@ -401,8 +401,7 @@ class EbmlReader(object):
 
 			data_length = element_length - len(blockHeader)
 			frameSizes, bytesConsumed = GetBlockFrameLengths(lace_type, 
-															data_length, 
-															self._ebml_stream)
+			                              data_length, self._ebml_stream)
 			if bytesConsumed > 0:
 				self._ebml_stream.seek(-bytesConsumed, SeekOrigin.SEEK_CUR)
 				newBlockHeader = self._ebml_stream.read(len(blockHeader))
@@ -423,7 +422,7 @@ class EbmlReader(object):
 		# the following line will write mkvinfo-like output from the parser 
 		# (extremely useful for debugging)
 		print("{0}: {3} + {1} bytes @ {2}".format(
-									EbmlElementTypeName[self.element_type],
+		                            EbmlElementTypeName[self.element_type],
 									element_length, # without header
 									element_start_position,
 									len(self.elementHeader)))
