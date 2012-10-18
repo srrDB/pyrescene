@@ -73,7 +73,7 @@ try:
 	odict = collections.OrderedDict #@UndefinedVariable
 except AttributeError:
 	# Python 2.6 OrderedDict
-	import ordereddict #@UnresolvedImport
+	from rescene import ordereddict
 	odict = ordereddict.OrderedDict
 
 class Event(object):
@@ -423,7 +423,7 @@ def create_srr(srr_name, infiles, in_folder="",
 		infiles = [infiles]      # otherwise iterating over characters
 	
 	srr = open(srr_name, "wb")
-	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
+	srr.write(SrrHeaderBlock(appname=rescene.APPNAMEVERSION).block_bytes())
 	
 	# STORE FILES
 	# We store copies of any files included in the store_files list 
@@ -562,7 +562,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		os.makedirs(spath)
 	
 	srr = open(srr_name, "wb")
-	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
+	srr.write(SrrHeaderBlock(appname=rescene.APPNAMEVERSION).block_bytes())
 	
 	class StatFailure(Exception):
 		"""The file isn't posted completely."""

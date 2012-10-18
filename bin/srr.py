@@ -129,13 +129,13 @@ def display_info(srr_file):
 	
 	if len(info["stored_files"]):
 		print("Stored files:")
-		for sfile in info["stored_files"].itervalues():
+		for sfile in info["stored_files"].values():
 			print("\t%s %d" % (sfile.file_name, sfile.file_size))
 		print("")
 		
 	if len(info["rar_files"]):
 		print("RAR files:")
-		for sfile in info["rar_files"].itervalues():
+		for sfile in info["rar_files"].values():
 			try:
 				print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
 								sfile.file_size))
@@ -145,7 +145,7 @@ def display_info(srr_file):
 		
 	if len(info["archived_files"]):
 		print("Archived files:")
-		for sfile in info["archived_files"].itervalues():
+		for sfile in info["archived_files"].values():
 			print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
 								sfile.file_size))
 		print("")
@@ -406,8 +406,6 @@ if __name__ == "__main__":
 		print(parser.format_help())
 	else:	   
 		(options, args) = parser.parse_args()
-		print options
-		print args
 		status = main(options, args)
 		sys.exit(status)
 	

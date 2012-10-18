@@ -1,5 +1,7 @@
 -o *.nfo *.jpg fails if there is no jpg in the dir
 not -o, -s
+	=> -s something.nfo -s *.jpg
+- It would be nice if it was possible to use *sfv on the first paramete
 
 DONE! - list file size in verbose output	=> possible!
 DONE! - repair with missing files

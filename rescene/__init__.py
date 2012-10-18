@@ -35,7 +35,7 @@ from rescene.utility import *
 # 0.1 (2011-11-11) Initial release
 
 APPNAME = "pyReScene"
-APPNAMEVERSION = "pyReScene" + __version__
+APPNAMEVERSION = "pyReScene " + __version__
 
 #
 #import os, sys, optparse
