@@ -27,20 +27,55 @@
 
 import os
 import sys
-import time
 import glob
 import re
-import struct
 import fileinput
-import shutil
 import subprocess
-import optparse
 from optparse import OptionParser
-from subprocess import Popen
 
+"""
+Installation guide for Linux
+----------------------------
+
+Install the following software:
+ - Mono (mono-runtime)
+ - Python3
+ 
+Create a folder /home/user/bin
+to create your own bin dir for executable files: (this step is not needed for all distros)
+* Create the dir:
+    mkdir ~/bin
+* To add a directory to your PATH, add
+    #my own executable files
+    PATH=$PATH:$HOME/bin
+  to your .bashrc file
+ 
+Put the files awescript.py, srr.exe and srs.exe in ~/bin
+http://pastebin.com/JMWKZqTt (version that always stores paths in the srr)
+
+Create a file "awescript" with the following content:
+
+#!/bin/sh
+/usr/bin/python3.2 ~/bin/awescript.py "$1"
+
+Do "whereis python" in the terminal to find out the path of you python installation if needed.
+Do "chmod u+x awescript" to change the permissions.
+
+In awescript.py change this:
+    path_to_srs = "mono /usr/local/bin/srs.exe"
+    path_to_srr = "mono /usr/local/bin/srr.exe"
+to this: 
+    path_to_srs = "mono /home/user/bin/srs.exe"
+    path_to_srr = "mono /home/user/bin/srr.exe"
+	
+Type "awescript --help" in any path in your terminal.
+
+awescript -R . --srr-dir=~/srrs
+"""
 
 #TODO: ask for updated version/what features are requested
 
+# This version always creates a .srr file with the -p option: paths will be stored.
 
 #better handling of srs-dir and srr-dir - i.e. remove meta=DIREECTORY and just os.path.normalize it
 
@@ -792,7 +827,10 @@ def srr(files, options, cwdsolo, ignore_extras):
         cmd += " -o \"%s%s%s\"" % (dest.rstrip(slash),slash,srr_file)
     else:
         cmd += " -o \"%s\"" % srr_file
-    
+
+    # we will always do paths when creating the srr file
+    cmd += " -p"
+
     try:
         print(cmd)
         if options.debug:
