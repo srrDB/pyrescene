@@ -57,9 +57,6 @@ def sample_class_factory(file_type):
 		return resample.Mp4ReSample()
 		
 def main(options, args):
-	print args
-	print options
-	
 	ftype_arg0 = ""
 		
 	# check the arguments for existence
@@ -70,7 +67,8 @@ def main(options, args):
 			# check if we already have the type of the first argument or not
 			ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
 			if ftype == resample.FileType.Unknown:
-				msg = "Could not locate MKV, AVI or MP4 data in file: %s\n" % ifile
+				msg = ("Could not locate MKV, AVI or MP4 data "
+				       "in file: %s\n" % ifile)
 		else:
 			msg = "Input file not found: %s\n" % ifile
 			
@@ -86,7 +84,6 @@ def main(options, args):
 	if len(args) == 1 and args[0][-4:].lower() != ".srs":
 		# create SRS file
 		sample_file = os.path.abspath(args[0])
-		sample_type = ftype_arg0
 
 		if os.path.getsize(sample_file) >= 0x80000000 and not options.big_file:
 			parser.exit(1, "Samples over 2GB are not supported without the "
@@ -114,8 +111,8 @@ def main(options, args):
 			elif options.parent_directory: # --dd
 				dd = os.path.dirname(sample_file).rsplit(os.sep, 2)[1]
 				srs_name = os.path.join(out_folder, dd + ".srs")
-			else: # different behavior than ReSample .NET
-				samp = os.path.basename(sample_file) # [:-4]
+			else:
+				samp = os.path.basename(sample_file)[:-4]
 				srs_name = os.path.join(out_folder, samp + ".srs")
 		srsdir = os.path.dirname(srs_name)
 		if not os.path.exists(srsdir):
@@ -123,7 +120,6 @@ def main(options, args):
 				
 		# 1) Profile the sample
 		sample_file_data = resample.FileData(file_name=sample_file)
-#		tracks, attachments = sample.profile_sample(sample_file_data)
 		try:
 			tracks, attachments = sample.profile_sample(sample_file_data)
 		except resample.IncompleteSample:
@@ -144,7 +140,7 @@ def main(options, args):
 				parser.exit(1, "Sample and -c file not the same format.")
 			tracks = sample.find_sample_streams(tracks, options.check)
 			
-			for track in tracks.itervalues():
+			for track in tracks.values():
 				if track.signature_bytes and track.match_offset == 0:
 					msg = ("\nUnable to locate track signature for track %s. "
 							"Aborting." % track.track_number)
@@ -198,10 +194,11 @@ def main(options, args):
 		
 		t1 = time.clock()
 		total = t1-t0
-		print("SRS Load Complete...          Elapsed Time: {0:.2f}s".format(total))
+		print("SRS Load Complete...          "
+		      "Elapsed Time: {0:.2f}s".format(total))
 		
 		skip_location = True
-		for track in tracks.itervalues():
+		for track in tracks.values():
 			if track.match_offset == 0:
 				skip_location = False
 				break
@@ -212,30 +209,26 @@ def main(options, args):
 			
 			t1 = time.clock()
 			total = t1-t0
-			print("Track Location Complete...    Elapsed Time: {0:.2f}s".format(total))
+			print("Track Location Complete...    "
+			      "Elapsed Time: {0:.2f}s".format(total))
 			
-			for track in tracks.itervalues():
+			for track in tracks.values():
 				if track.signature_bytes != "" and track.match_offset == 0:
 					msg = ("\nUnable to locate track signature for track %s. "
 							"Aborting." % track.track_number)
 					parser.exit(3, msg)
 					
-		for track in tracks.itervalues():
-			print(track)
-					
 		# 3) Extract those sample streams to memory
 		tracks, attachments = movi.extract_sample_streams(tracks, movie)
 		t1 = time.clock()
 		total = t1-t0
-		print("Track Extraction Complete...  Elapsed Time: {0:.2f}s".format(total))
+		print("Track Extraction Complete...  "
+		      "Elapsed Time: {0:.2f}s".format(total))
 		
 		# 4) Check for failure
-		for track in tracks.itervalues():
-#			track.track_file.position = 0
+		for track in tracks.values():
 			if track.signature_bytes != "" and (track.track_file == None or 
 					track.track_file.tell() < track.data_length):
-				print(len(track.signature_bytes))
-				print(track.track_file)
 				msg = ("\nUnable to extract correct amount of data for track "
 					"%s. Aborting." % track.track_number)
 				parser.exit(4, msg)
@@ -249,20 +242,21 @@ def main(options, args):
 									  srs, out_folder)
 		t1 = time.clock()
 		total = t1-t0
-		print("Rebuild Complete...           Elapsed Time: {0:.2f}s".format(total))
+		print("Rebuild Complete...           "
+		      "Elapsed Time: {0:.2f}s".format(total))
 		
 		# 7) Close and delete the temporary files
-		for track in tracks.itervalues():
+		for track in tracks.values():
 			track.track_file.close()
-		for attachment in attachments.itervalues():
+		for attachment in attachments.values():
 			attachment.attachment_file.close()
 			
 		print("\nFile Details:   Size           CRC")
 		print("                -------------  --------")
 		print("Expected    :   {0:13n}  {1:08X}".format(srs_data.size,
-														srs_data.crc32))
+		                                                srs_data.crc32))
 		print("Actual      :   {0:13n}  {1:08X}\n".format(sfile.size, 
-														  sfile.crc32))
+		                                                  sfile.crc32))
 		
 		if sfile.crc32 == srs_data.crc32:
 			print("\nSuccessfully rebuilt sample: {0}".format(srs_data.name))
@@ -276,7 +270,6 @@ def main(options, args):
 	
 	parser.exit(0)
 	
-
 
 if __name__ == "__main__":
 	parser = optparse.OptionParser(
@@ -300,7 +293,7 @@ if __name__ == "__main__":
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
-
+	
 	creation.add_option("-b", "--big-file", 
 				action="store_true", dest="big_file", default=False,
 				help="Big file. Enables support for 'samples' over 2GB.")
@@ -332,7 +325,6 @@ if __name__ == "__main__":
 				help="Specify output file or directory path for .srs file. "
 				"If path is a directory, "
 				"the --d and --dd flags will work as normal.")
-	# TODO: Skalman	why dont srs have any -y switch, assume yes on all conflicts or something :/
 
 	# no arguments given
 	if len(sys.argv) < 2:
@@ -346,10 +338,8 @@ if __name__ == "__main__":
 			(options.parent_directory and options.srs_parent_directory)):
 			parser.exit(1, "Make up your mind with the d's...")
 			
-		main(options, args)
 		try:
-#			main(options, args)
-			pass
+			main(options, args)
 		except ValueError:
 			parser.exit(2, "Corruption detected: %s. Aborting." % 
 					sys.exc_info()[1])

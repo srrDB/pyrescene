@@ -111,7 +111,7 @@ def _parse_ext_time(block, pos):
 		pos += 2
 
 	block.mtime, pos = _parse_xtime(flags >> 3*4, data, pos, 
-									block.file_datetime)
+	                                block.file_datetime)
 	block.ctime, pos = _parse_xtime(flags >> 2*4, data, pos)
 	block.atime, pos = _parse_xtime(flags >> 1*4, data, pos)
 	block.arctime, pos = _parse_xtime(flags >> 0*4, data, pos)
@@ -516,7 +516,7 @@ class SrrHeaderBlock(RarBlock):
 	def explain(self):
 		out = super(SrrHeaderBlock, self).explain()
 		out += "+Application name length: " + self.explain_size(
-												len(self.appname)) + "\n"
+		                                      len(self.appname)) + "\n"
 		out += "+Application name: " + self.appname + "\n"
 		return out
 
@@ -551,7 +551,7 @@ class SrrStoredFileBlock(RarBlock):
 	SUPPORTED_FLAG_MASK = RarBlock.LONG_BLOCK # | PATHS_SAVED
 
 	def __init__(self, bbytes=None, filepos=None, fname=None,
-				 file_name=None, file_size=None):
+	             file_name=None, file_size=None):
 		try:
 			file_size = int(file_size)
 		except (ValueError, TypeError): # not a number
@@ -563,7 +563,7 @@ class SrrStoredFileBlock(RarBlock):
 			# 4 bytes for file length (unsigned int) (add_size field)
 			# 2 bytes for name length, then the name (unsigned short)
 			(self.file_size, length) = struct.unpack(str("<IH"), 
-											self._rawdata[self._p:self._p+6])
+			                           self._rawdata[self._p:self._p+6])
 			self.file_name = self._rawdata[self._p+6:self._p+6+length]
 			self._p += 6 + length
 			
@@ -588,7 +588,7 @@ class SrrStoredFileBlock(RarBlock):
 			
 		if not utility.is_good_srr(file_name): 
 			raise AttributeError("Illegal Windows character used " +
-								 "somewhere in the filename/path.")
+			                     "somewhere in the filename/path.")
 		elif file_size < 0:
 			raise AttributeError("Negative file sizes do not exist.")
 		elif not 0 < len(file_name) < 0xFFF3:
@@ -630,7 +630,7 @@ class SrrStoredFileBlock(RarBlock):
 		
 		# create a temporarily file
 		tmpfd, tmpname = tempfile.mkstemp(prefix="file_rename-", suffix=".srr", 
-								 dir=os.path.dirname(self.fname))
+		                                  dir=os.path.dirname(self.fname))
 		tmpfile = os.fdopen(tmpfd, "wb")
 		
 		with open(self.fname, "rb") as f:
@@ -649,7 +649,7 @@ class SrrStoredFileBlock(RarBlock):
 			out += "+ADD_SIZE: " + self.explain_size(self.file_size) +  \
 				"(the size of the stored file)" + "\n"
 		out += "+Stored file name length (2 bytes): " + self.explain_size(
-												len(self.file_name)) + "\n"
+		                                                len(self.file_name)) + "\n"
 		out += "+Stored file name: " + self.file_name + "\n"
 		return out
 	
@@ -689,7 +689,7 @@ class SrrRarFileBlock(RarBlock):
 			
 			# 2 bytes for name length, then the name (unsigned short)
 			name_length = struct.unpack(str("<H"), 
-										self._rawdata[self._p:self._p+2])[0]
+			                            self._rawdata[self._p:self._p+2])[0]
 			self.file_name = self._rawdata[self._p+2:self._p+2+name_length]
 			self._p += 2 + name_length
 		else:
@@ -718,7 +718,7 @@ class SrrRarFileBlock(RarBlock):
 	def explain(self):
 		out = super(SrrRarFileBlock, self).explain()
 		out += "+Rar name length (2 bytes): " + self.explain_size(
-												len(self.file_name)) + "\n"
+		                                        len(self.file_name)) + "\n"
 		out += "+Rar name: " + self.file_name + "\n"
 		return out
 	
@@ -765,8 +765,8 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 	ENCRYPTVER      = 0x0200
 	
 	SUPPORTED_FLAG_MASK = (RarBlock.SUPPORTED_FLAG_MASK | VOLUME | COMMENT |
-						   LOCK | SOLID | NEW_NUMBERING | AUTHENTICITY | 
-						   PROTECTED | ENCRYPTED | FIRST_VOLUME | ENCRYPTVER)
+	                       LOCK | SOLID | NEW_NUMBERING | AUTHENTICITY | 
+	                       PROTECTED | ENCRYPTED | FIRST_VOLUME | ENCRYPTVER)
 	def explain_flags(self):
 		out = super(RarVolumeHeaderBlock, self).explain_flags()
 		if self.flags & self.VOLUME:
@@ -881,10 +881,10 @@ class RarPackedFileBlock(RarBlock): # 0x74
 	EXTFLAGS       = 0x2000 # never used
 	
 	SUPPORTED_FLAG_MASK = (SPLIT_BEFORE | SPLIT_AFTER | PASSWORD | COMMENT |
-						   SOLID | DICT64 | DICT128 | DICT256 | DICT512 |
-						   DICT1024 | DICT2048 | DICT4096 | DIRECTORY |
-						   LARGE_FILE | UTF8_FILE_NAME | SALT | VERSION |
-						   EXT_TIME | EXTFLAGS | RarBlock.SUPPORTED_FLAG_MASK)
+	                       SOLID | DICT64 | DICT128 | DICT256 | DICT512 |
+	                       DICT1024 | DICT2048 | DICT4096 | DIRECTORY |
+	                       LARGE_FILE | UTF8_FILE_NAME | SALT | VERSION |
+	                       EXT_TIME | EXTFLAGS | RarBlock.SUPPORTED_FLAG_MASK)
 
 	def __init__(self, blockbytes, filepos, fname):
 		super(RarPackedFileBlock, 
@@ -931,7 +931,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		else:
 			self.orig_filename = self.file_name
 			self.unicode_filename = self.file_name.decode(DEFAULT_CHARSET, 
-														  "replace")
+			                                              "replace")
 		self.file_name = self.unicode_filename
 		
 		if self.flags & self.SALT:
@@ -1081,7 +1081,7 @@ class RarOldRecoveryBlock(RarBlock): # 0x78
 		# 4 bytes for data sector count
 		(self.packed_size, self.rar_version, self.recovery_sectors,
 		 self.data_sectors) = struct.unpack("<HBHI", 
-											self._rawdata[self._p:self._p+9])
+		                                    self._rawdata[self._p:self._p+9])
 		# next 8 bytes for 'Protect!'
 		self._p += 9 + 8
 		# Protect! is part of the header (last field before the recovery data)
@@ -1120,7 +1120,7 @@ class RarEndArchiveBlock(RarBlock):
 	VOLNUMBER   = 0x0008 # 2 bytes
 	
 	SUPPORTED_FLAG_MASK = (RarBlock.SUPPORTED_FLAG_MASK | NEXT_VOLUME |
-						   DATACRC | REVSPACE | VOLNUMBER)
+	                       DATACRC | REVSPACE | VOLNUMBER)
 
 	def __init__(self, blockbytes, filepos, fname):
 		super(RarEndArchiveBlock, self).__init__(blockbytes, filepos, fname)
@@ -1128,12 +1128,12 @@ class RarEndArchiveBlock(RarBlock):
 		if self.flags & RarEndArchiveBlock.DATACRC:
 			# // store CRC32 of RAR archive (now used only in volumes)
 			self.rarcrc = struct.unpack(str("<I"), 
-										self._rawdata[self._p:self._p+4])
+			                         self._rawdata[self._p:self._p+4])
 			self._p += 4
 		if self.flags & RarEndArchiveBlock.VOLNUMBER:
 			# // store a number of current volume
 			self.volume_number = struct.unpack(str("<H"), 
-										self._rawdata[self._p:self._p+2])
+			                         self._rawdata[self._p:self._p+2])
 			self._p += 2
 #		if self.flags & RarEndArchiveBlock.REVSPACE:
 #			# // reserve space for end of REV file 7 byte record
@@ -1334,7 +1334,7 @@ class RarReader(object):
 		
 		# read the rest of the block (we already have the basic header)
 		block_buffer = header_buffer + self._rarstream.read(hsize - 
-															HEADER_LENGTH)
+		                                                    HEADER_LENGTH)
 		
 		# If RAR LONG_BLOCK flag is set -> extra block length
 		# Or if this is a File or NewSub block. -> e.g. BiA Outcasts releases
@@ -1349,8 +1349,8 @@ class RarReader(object):
 		# * Old-style recovery records are stored in block type 0x78.
 		# * New-style recovery records are stored in 
 		#   the RAR NEWSUB block type (0x7A) and 
-		#   have file name length of 2 (bytes 27 and 28)	NAME_SIZE
-		#   and a file name of RR (bytes 33 and 34)		 HIGH_PACK_SIZE
+		#   have file name length of 2 (bytes 27 and 28)   NAME_SIZE
+		#   and a file name of RR (bytes 33 and 34)        HIGH_PACK_SIZE
 		is_recovery = btype == BlockType.RarOldRecovery or  \
 				( btype == BlockType.RarNewSub and
 				  hsize > 34 and
@@ -1362,7 +1362,7 @@ class RarReader(object):
 		if self._readmode == self.SRR:
 			if btype == BlockType.SrrRarFile:
 				self.recovery_blocks_removed = (flags & 
-									SrrRarFileBlock.RECOVERY_BLOCKS_REMOVED)
+				              SrrRarFileBlock.RECOVERY_BLOCKS_REMOVED)
 			elif is_recovery and not self.recovery_blocks_removed:
 				self._rarstream.seek(add_size, 1)
 			
@@ -1421,10 +1421,10 @@ class RarReader(object):
 		
 		if self._readmode in (self.RAR, self.SFX):
 			files = [b.file_name for b in self._found_blocks
-									if isinstance(b, RarPackedFileBlock)]
+			                     if isinstance(b, RarPackedFileBlock)]
 		else:
 			files = [b.file_name for b in self._found_blocks
-									if isinstance(b, SrrStoredFileBlock)]
+			                     if isinstance(b, SrrStoredFileBlock)]
 		return files
 
 	def file_type(self):

@@ -312,7 +312,7 @@ class FakeFile(io.IOBase):
 		Values for whence are:
 	
 			* SEEK_SET or 0 - start of the stream (the default); 
-							  offset should be zero or positive
+			                  offset should be zero or positive
 			* SEEK_CUR or 1 - current stream position; offset may be negative
 			* SEEK_END or 2 - end of the stream; offset is negative
 	
@@ -368,8 +368,8 @@ class TestRarStream(unittest.TestCase):
 	def test_folder_multiple(self):	
 		# with path and multiple files in folder / split volumes
 		rs = RarStream(os.path.join(self.path, self.folder, 
-									"store_split_folder.rar"), 
-					   "txt/users_manual4.00.txt")
+		                            "store_split_folder.rar"), 
+		                            "txt/users_manual4.00.txt")
 		with open(os.path.join(self.path, "txt", "users_manual4.00.txt"),
 				  "rb") as txt_file:
 			# + other tests to increase code coverage

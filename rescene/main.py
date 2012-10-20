@@ -46,17 +46,14 @@ import pprint
 import hashlib
 import nntplib
 import collections
-#import rescene.rarstream as rarstream
-#import rescene.utility as utility
-#import rescene.rar as rar
+
 import rescene
-#from rescene import rarstream, utility, rar
 from rescene.rar import (BlockType, ArchiveNotFoundError, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
 	RarPackedFileBlock, _DEBUG)
 from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, 
-							first_rars, next_archive)
+                             first_rars, next_archive)
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -133,7 +130,7 @@ def can_overwrite(file_path):
 		Returns False when file exists.
 		Returns True when file does not exist."""
 	if _DEBUG: print("check overwrite: %s (%s)" %
-					 (file_path, not os.path.isfile(file_path)))
+	                 (file_path, not os.path.isfile(file_path)))
 	return not os.path.isfile(file_path)
 
 def change_rescene_name_version(new_name):
@@ -141,7 +138,7 @@ def change_rescene_name_version(new_name):
 		raise AttributeError("ReScene name must be a string.")
 	if len(new_name) > 0xFFF6:
 		raise AttributeError("Application name too long.")
-	rescene.APPNAMEVERSION = new_name
+	rescene.APPNAME = new_name
 
 def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
 	"""
@@ -297,7 +294,7 @@ def remove_stored_files(srr_file, store_files):
 	"""Remove files stored inside a SRR file.
 	srr_file:    the SRR file to remove stored files from
 	store_files: list of files to be removed
-				 must contain the relative path when necessary
+	             must contain the relative path when necessary
 	
 	raises ArchiveNotFoundError, NotSrrFile, TypeError"""
 	rr = RarReader(srr_file) # ArchiveNotFoundError
@@ -330,9 +327,9 @@ def remove_stored_files(srr_file, store_files):
 
 def rename_stored_file(srr_file, stored_name, new_name):
 	"""Changes the stored file name and the path. 
-	srr_file:	the SRR file that contains the file to rename
+	srr_file:    the SRR file that contains the file to rename
 	stored_name: the old file
-	new_name:	the new name for the file
+	new_name:    the new name for the file
 		
 	raises ArchiveNotFoundError, 
 	NotSrrFile, 
@@ -364,7 +361,7 @@ def validate_srr(srr_file):
 # TODO: test joining SRRs, although it works (exceptions)
 def merge_srrs(srr_files, output_file, application_name=None):
 	"""Merge the given list of srr_files together.
-	srr_files:		  list of SRR files to merge (including the path)
+	srr_files:        list of SRR files to merge (including the path)
 	output_file:	  the merged SRR file; the result
 	application_name: if an other name is wanted for the merged file
 	                  otherwise the first non empty name is used
@@ -405,15 +402,15 @@ def merge_srrs(srr_files, output_file, application_name=None):
 def create_srr(srr_name, infiles, in_folder="",
                store_files=None, save_paths=False, compressed=False):
 	"""
-	infiles:	 RAR or SFV file(s) to create SRR from
+	infiles:     RAR or SFV file(s) to create SRR from
 	store_files: a list of files to store in the SRR
 	             SFVs from infiles do not need to be in this list.
 	in_folder:   root folder for relative paths to store
-				 necessary when save_paths is True or
-				 paths are relative to in_folder in store_file
+	             necessary when save_paths is True or
+	             paths are relative to in_folder in store_file
 	srr_name:    path and name of the SRR file to create
 	save_paths:  if the path relative to in_folder 
-				 must be stored with the file name e.g. Sample/ or Proof/
+	             must be stored with the file name e.g. Sample/ or Proof/
 				 
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
@@ -423,7 +420,7 @@ def create_srr(srr_name, infiles, in_folder="",
 		infiles = [infiles]      # otherwise iterating over characters
 	
 	srr = open(srr_name, "wb")
-	srr.write(SrrHeaderBlock(appname=rescene.APPNAMEVERSION).block_bytes())
+	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
 	
 	# STORE FILES
 	# We store copies of any files included in the store_files list 
@@ -529,16 +526,16 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 	all parameters. Can be used for creating SRRs directly from a
 	virtual source. e.g. Usenet"""
 	"""
-	infiles:	 RAR or SFV file(s) to create SRR from
+	infiles:     RAR or SFV file(s) to create SRR from
 	store_files: a list of files to store in the SRR
 	in_folder:   root folder for relative paths to store
-				 necessary when save_paths is True or
-				 paths are relative to in_folder in store_file
+	             necessary when save_paths is True or
+	             paths are relative to in_folder in store_file
 	srr_name:    path and name of the SRR file to create
 	save_paths:  if the path relative to in_folder 
-				 must be stored with the file name
+	             must be stored with the file name
 				 
-	allfiles:	open file handles that must be used instead of hd files
+	allfiles:    open file handles that must be used instead of hd files
 	
 	Returns False if infiles or the SFVs are empty
 	Raises ValueError if RARs in infiles are not the first of the archives.
@@ -546,7 +543,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 	if store_files is None:		 # no default initialization with []
 		store_files = []
 	if not isinstance(infiles, (list, tuple)): # we need a list
-		infiles = [infiles]		 # otherwise iterating over characters
+		infiles = [infiles] # otherwise iterating over characters
 	
 	if not len(infiles):
 		raise ValueError("No SFV or RAR file supplied.")
@@ -562,7 +559,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		os.makedirs(spath)
 	
 	srr = open(srr_name, "wb")
-	srr.write(SrrHeaderBlock(appname=rescene.APPNAMEVERSION).block_bytes())
+	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
 	
 	class StatFailure(Exception):
 		"""The file isn't posted completely."""
@@ -780,11 +777,11 @@ def _handle_rar(rfile, filelist=None, read_retries=7):
 		
 def info(srr_file):
 	"""Returns a dictionary with the following keys:
-	- appname:	      the application name stored in the srr file
+	- appname:        the application name stored in the srr file
 	- stored_files:   a list of the files that are added to the srr file
 	- rar_files:	  a list of all the rar files
 	- archived_files: a list of files packed inside the rar files
-	- recovery:	      information about the recovery records
+	- recovery:       information about the recovery records
 	- sfv_entries:    files that are not in rar_files
 	- sfv_comments:   the comments that are available in the sfv files
 	- compression:    there are files inside the archive that use compression
@@ -835,7 +832,7 @@ def info(srr_file):
 			current_rar.file_size = 0
 			current_rar.key = key
 			current_rar.offset_start_rar = (block.block_position + 
-											block.header_size)
+			                                block.header_size)
 			rar_files[key] = current_rar
 		elif block.rawtype == BlockType.RarPackedFile:
 			if not block.unicode_filename in archived_files:
@@ -861,8 +858,8 @@ def info(srr_file):
 					recovery = FileInfo()
 					recovery.file_name = "Protect+"
 					recovery.file_size = 0
-				recovery.file_size += 512 * block.recovery_sectors +  \
-										2 * block.data_sectors
+				recovery.file_size += (512 * block.recovery_sectors +
+				                      2 * block.data_sectors)
 				assert block.add_size ==  \
 					(512 * block.recovery_sectors + 2 * block.data_sectors)
 			elif block.file_name == "CMT":
@@ -970,13 +967,13 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	in_folder: root folder in which we start looking for the files
 	out_folder: location to place the constructed archives
 	extract_paths: if paths are stored in the SRR, they will be recreated
-				   starting from out_folder
+	               starting from out_folder
 	hints: a dictionary used for handling renamed files
-		   key: name in original RAR, value: renamed file name on disk
+	key: name in original RAR, value: renamed file name on disk
 	skip_rar_crc: Disables checking the crc32 values of files and rars while
-				  reconstructing. It speeds up the process.
+	              reconstructing. It speeds up the process.
 	auto_locate_renamed: if set, start looking in sub folders and guess based
-			   on file size and extension of the file to pack
+	                     on file size and extension of the file to pack
 	"""
 	rar_name = ""
 	ofile = ""
@@ -1099,7 +1096,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 def _write_recovery_record(block, rarfs):
 	"""block: original rar recovery block from SRR
 	rarfs: partially reconstructed RAR file used for constructing and adding RR
-		   an open file handle that will be added to
+	       an open file handle that will be added to
 	
 	Either the recovery block or the newsub block is used for recovery
 	record data. It consists of two parts: crc's and recovery sectors.
@@ -1159,7 +1156,7 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 	block:	 RarPackedFile that contains info of the file to look for
 	in_folder: root folder in which we start looking for the file
 	hints:	 dictionary, key -> name of the file in the RAR
-						 value -> name of the file on the hard disk
+	                     value -> name of the file on the hard disk
 			   used for handling renamed files
 	auto_locate_renamed: if set, start looking in sub folders and guess based
 			   on file size and extension
@@ -1354,9 +1351,9 @@ class TestInit(unittest.TestCase):
 		
 		self.little = os.path.join(self.files_dir, "store_little")
 		self.newrr = os.path.join(self.files_dir, 
-								  "store_rr_solid_auth_unicode_new") 
+		                          "store_rr_solid_auth_unicode_new") 
 		self.oldfolder = os.path.join(self.files_dir, 
-									  "store_split_folder_old_srrsfv_windows") 
+		                              "store_split_folder_old_srrsfv_windows") 
 		self.utfunix = os.path.join(self.files_dir, "store_utf8_comment")
 		self.compression = os.path.join(self.files_dir, "best_little")
 		self.txt = os.path.join(self.files_dir, "txt")
@@ -1413,7 +1410,7 @@ class TestExtract(TmpDirSetup):
 		path = os.path.join(os.pardir, "test_files", "store_little")
 		efile = os.path.join(self.tdir, "store_little", "store_little.srr")
 		srr_file = os.path.join(path, 
-								"store_little_srrfile_with_path_backslash.srr")
+		                        "store_little_srrfile_with_path_backslash.srr")
 		
 		extract_files(srr_file, self.tdir)
 		self.assertEqual(self.o.last_event().message[:10], "Recreating")
@@ -1453,9 +1450,9 @@ class TestAddRemoveRenameError(TestInit):
 	def test_error_unknown_srr_file(self):
 		self.assertRaises(ArchiveNotFoundError, add_stored_files, None, None)
 		self.assertRaises(ArchiveNotFoundError,
-						  remove_stored_files, None, None)
+		                  remove_stored_files, None, None)
 		self.assertRaises(ArchiveNotFoundError,
-						  rename_stored_file, None, None, None)
+		                  rename_stored_file, None, None, None)
 	
 	def test_error_rar_for_srr(self):
 		rar = os.path.join(self.little, "store_little.rar")
@@ -1466,12 +1463,12 @@ class TestAddRemoveRenameError(TestInit):
 	def test_error_dupe(self):
 		srrp = os.path.join(self.little, "store_little_srrfile_with_path.srr")
 		self.assertRaises(DupeFileName, add_stored_files,
-						  srrp, ["store_little/store_little.srr"])
+		                  srrp, ["store_little/store_little.srr"])
 		
 	def test_file_not_found(self):
 		srr = os.path.join(self.little, "store_little.srr")
 		self.assertRaises(FileNotFound, rename_stored_file, srr,
-						  "old name", "new name")
+		                  "old name", "new name")
 
 class TestAddRemoveFiles(TmpDirSetup):		
 	def test_add_remove(self):
@@ -1542,10 +1539,10 @@ class TestRename(TmpDirSetup):
 #		print fname
 		
 		rename_stored_file(srr, "store_little/store_little.srr", 
-						   "store_little/store_little_renamed.srr")
+		                   "store_little/store_little_renamed.srr")
 		RarReader(srr).read_all()
 		rename_stored_file(srr, "store_little/store_little_renamed.srr",
-						   "store_little/store_little.srr")
+		                   "store_little/store_little.srr")
 		RarReader(srr).read_all()
 		self.assertTrue(cmp(srr, orig), "Files not equivalent.")
 #		rename_stored_file(srr, "store_little.srr",
@@ -1565,29 +1562,16 @@ class TestHash(TestInit):
 	
 class TestDisplayInfo(TestInit):
 	def test_mlkj(self):
-		asap = os.path.join(os.pardir, "test_files", 
-							"Game.of.Thrones.S01E07.HDTV.XviD-ASAP.srr")
-		good = os.path.join(os.pardir, "test_files",
-				"Antz.1998.iNTERNAL.DVDRip.XviD-SLeTDiVX.srr")
-		fov = os.path.join(os.pardir, "test_files", 
-				"Enterprise.4x02.Storm_Front_Part2.DVDRip_XviD-FoV.srr")
-		srr = os.path.join(os.pardir, "test_files", 
-							"californication.s04e01.proper.hdtv.xvid-asap.srr")
-		srr = os.path.join(os.pardir, "test_files", 
-				"House.S06E12.720p.HDTV.x264-IMMERSE_rarfs_problem.srr")
-		fqm = os.path.join(os.pardir, "test_files", 
-				"Game.of.Thrones.S01E02.The.Kingsroad.HDTV.XviD-FQM_vlc.srr")
-		srr = os.path.join(os.pardir, "test_files", 
-				"Jochem.Myjer.De.Rust.Zelve.2010.DUTCH.DVDRip.XviD-INViTED_sfv_case.srr")
-		php = "D:\\Dropbox\\workspace-python\\phpSrr\\haven.s02e05.hdtv.xvid-p0w4.srr"
-		php = "D:\\Dropbox\\workspace-python\\phpSrr\\Outcasts.S01E06.720p.HDTV.x264-BiA.srr"
-		php = "D:\\Dropbox\\workspace-python\\phpSrr\\3.On.Stage.Lowlands.2011.E02.DUTCH.WS.PDTV.XviD-iFH_avi_size.srr"
+		asap = os.path.join(os.pardir, "test_files", "other",
+		                    "Game.of.Thrones.S01E07.HDTV.XviD-ASAP.srr")
+		good = os.path.join(os.pardir, "test_files", "other",
+		                    "Antz.1998.iNTERNAL.DVDRip.XviD-SLeTDiVX.srr")
 		
 		# Dexter.S05E02.iNTERNAL.720p.HDTV.x264-ORENJI
 		# http://trac.videolan.org/vlc/ticket/4463
 		# http://trac.videolan.org/vlc/search?q=.rar+
 		#print_details(php)
-		pprint.pprint(info(php))
+#		pprint.pprint(info(php))
 		
 #		pprint.pprint(info(srr))
 
@@ -1723,7 +1707,7 @@ class TestCreate(TmpDirSetup):
 		dest = os.path.join(self.test_dir, "compression.srr")
 #		self.assertRaises(ValueError, create_srr, dest, rar)
 #		self.assertEqual(MsgCode.FBLOCK, self.o.last_event().code)
-		create_srr(dest, rar)
+		create_srr(dest, rar, compressed=True)
 		#self._print_events()
 		self.assertEqual(MsgCode.BLOCK, self.o.last_event().code)
 
@@ -1832,8 +1816,8 @@ class TestHelper(TestInit):
 		
 	def test_handle_rar_failure(self):
 		tfile = os.path.join(self.files_dir, 
-								"store_split_folder_old_srrsfv_windows", 
-								"store_split_folder.r00")
+		                     "store_split_folder_old_srrsfv_windows", 
+		                     "store_split_folder.r00")
 		self.assertRaises(ValueError, list, _handle_rar(tfile))
 	
 	def test_handle_rar(self):
