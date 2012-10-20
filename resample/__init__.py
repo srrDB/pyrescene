@@ -27,14 +27,10 @@
 __version_info__ = ('0', '1')
 __version__ = '.'.join(__version_info__)
 
-PACKAGE = "resample"
 APPNAME = "pyReSample " + __version__
 LICENSE = "MIT"
-WEBSITE = ""
-
-# https://code.google.com/p/mutagen/
-# defines how your package looks from outside
-
-#import rescene.utility
 
 from resample.main import *
+
+# https://code.google.com/p/mutagen/
+# This file defines how your package looks from outside

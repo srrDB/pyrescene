@@ -27,6 +27,7 @@
 
 import struct
 import re
+import os
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
@@ -36,12 +37,6 @@ S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 
 class InvalidDataException(ValueError):
 	pass
-
-class SeekOrigin(object): # built into io, but not available in Python 2.6
-	""" 'whence' parameter seek functions
-	From where to start seeking in a file. 
-	Internal class only used in RarStream. """
-	SEEK_SET, SEEK_CUR, SEEK_END = list(range(3)) 
 
 # RiffReader.cs ---------------------------------------------------------------
 class RiffReadMode(object):
@@ -82,8 +77,6 @@ class RiffReader(object):
 		self._riff_stream.seek(0)
 		self.mode = read_mode
 		
-		
-		self._chunk_header = "" # 12 bytes
 		self.read_done = True
 	
 		self.current_chunk = None
@@ -95,7 +88,7 @@ class RiffReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again");
 		assert self.read_done or (self.mode == RiffReadMode.SRS and
-								self.chunk_type == RiffChunkType.Movi)
+		                          self.chunk_type == RiffChunkType.Movi)
 		
 		
 		chunk_start_position = self._riff_stream.tell()
@@ -105,17 +98,16 @@ class RiffReader(object):
 		if chunk_start_position + 8 > self._file_length:
 			return False
 		
-		# TODO: keep var local
-		self._chunk_header = self._riff_stream.read(8)
+		chunk_header = self._riff_stream.read(8)
 		# 4 bytes for fourcc, 4 for chunk length
-		fourcc = self._chunk_header[:4]
-		(chunk_length,) = S_LONG.unpack(self._chunk_header[4:])
+		fourcc = chunk_header[:4]
+		(chunk_length,) = S_LONG.unpack(chunk_header[4:])
 		
 		# might not keep this check
 		# the length check should catch corruption on its own...
 		if not fourCCValidator.match(fourcc):
 			raise InvalidDataException("Invalid FourCC value (%s) at 0x%08X" % 
-									(fourcc, self.chunkStartPos))
+			                           (fourcc, self.chunkStartPos))
 		
 		# sanity check on chunk length
 		# Skip check on RIFF list so we can still report expected size.
@@ -125,15 +117,15 @@ class RiffReader(object):
 		if (self.mode == RiffReadMode.Sample and fourcc != "RIFF" and 
 			endOffset > self._file_length):
 			raise InvalidDataException("Invalid chunk length at 0x%08X" % 
-									(chunk_start_position + 4))
+			                           (chunk_start_position + 4))
 		
 		# Lists
 		if fourcc == "RIFF" or fourcc == "LIST":
 			# if the fourcc indicates a list type (RIFF or LIST), 
 			# there is another fourcc code in the next 4 bytes
 			listType = fourcc
-			self._chunk_header += self._riff_stream.read(4)
-			fourcc = self._chunk_header[8:12]
+			chunk_header += self._riff_stream.read(4)
+			fourcc = chunk_header[8:12]
 			chunk_length -= 4 # extra dwFourCC 
 			
 			self.chunk_type = RiffChunkType.List
@@ -141,12 +133,12 @@ class RiffReader(object):
 			self.current_chunk.list_type = listType # RIFF list specific
 			self.current_chunk.fourcc = fourcc
 			self.current_chunk.length = chunk_length
-			self.current_chunk.raw_header = self._chunk_header
+			self.current_chunk.raw_header = chunk_header
 			self.current_chunk.chunk_start_pos = chunk_start_position
 		else: # Chunks
 			# Chunk containing video, audio or subtitle data
-			if (self._chunk_header[0].isdigit() and 
-				self._chunk_header[1].isdigit()):
+			if (chunk_header[0].isdigit() and 
+				chunk_header[1].isdigit()):
 				self.current_chunk = MoviChunk()
 				self.current_chunk.stream_number =  int(fourcc[:2])
 				self.chunk_type = RiffChunkType.Movi
@@ -155,7 +147,7 @@ class RiffReader(object):
 				self.chunk_type = RiffChunkType.Unknown
 			self.current_chunk.fourcc = fourcc
 			self.current_chunk.length = chunk_length
-			self.current_chunk.raw_header = self._chunk_header
+			self.current_chunk.raw_header = chunk_header
 			self.current_chunk.chunk_start_pos = chunk_start_position
 		self.has_padding = chunk_length % 2 == 1
 
@@ -166,8 +158,7 @@ class RiffReader(object):
 		# back up and read again?
 		if self.read_done:
 			self._riff_stream.seek(-self.current_element.length - 
-								(1 if self.has_padding else 0),
-								SeekOrigin.SEEK_CUR)
+			                       (1 if self.has_padding else 0), os.SEEK_CUR)
 
 		self.read_done = True
 		buff = None
@@ -186,8 +177,7 @@ class RiffReader(object):
 			self.read_done = True
 			if (self.mode != RiffReadMode.SRS 
 				or self.chunk_type != RiffChunkType.Movi):
-				self._riff_stream.seek(self.current_chunk.length, 
-									SeekOrigin.SEEK_CUR)
+				self._riff_stream.seek(self.current_chunk.length, os.SEEK_CUR)
 
 			if self.has_padding:
 				(self.padding_byte,) = S_BYTE.unpack(self._riff_stream.read(1))

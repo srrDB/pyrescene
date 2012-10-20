@@ -33,15 +33,11 @@ import sys
 import unittest
 import tempfile
 
-from os.path import join, basename, dirname, realpath
+from os.path import join, basename
 from struct import Struct
 from zlib import crc32
 import collections
 
-# for running the script directly from command line
-#sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
-
-#import rescene
 import resample
 
 from rescene import rarstream
@@ -303,10 +299,10 @@ class TrackData(object):
 			"length_check_bytes={lcb} "
 			">"
 			"".format(flags=self.flags, number=self.track_number,
-					length=self.data_length, mlength=self.match_length,
-					moffset=self.match_offset,
-					lsb=len(self.signature_bytes),
-					lcb=len(self.check_bytes)))
+		                  length=self.data_length, mlength=self.match_length,
+		                  moffset=self.match_offset, 
+		                  lsb=len(self.signature_bytes), 
+		                  lcb=len(self.check_bytes)))
 			
 	def serialize(self):
 		big_file = self.flags & self.BIG_FILE
@@ -410,11 +406,10 @@ class Mp4ReSample(ReSample):
 	def find_sample_streams(self, *args, **kwargs):
 		return mp4_find_sample_streams(*args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		pass
+		return mp4_extract_sample_streams(*args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		pass
+		return mp4_rebuild_sample(*args, **kwargs)
 	
-# all static, so separate functions here
 def avi_load_srs(infile):
 	tracks = {}
 	rr = RiffReader(RiffReadMode.SRS, infile)
@@ -499,9 +494,9 @@ def avi_profile_sample(avi_data): # FileData object
 			fsize = c.chunk_start_pos + len(c.raw_header) + c.length
 			if c.list_type == "RIFF" and fsize > avi_data.size:
 				print("\nWarning: File size does not appear to be correct!",
-					"\t Expected at least: %d" % fsize,
-					"\t Found            : %d\n" % avi_data.size, 
-					sep='\n', file=sys.stderr)
+				      "\t Expected at least: %d" % fsize,
+				      "\t Found            : %d\n" % avi_data.size, 
+				      sep='\n', file=sys.stderr)
 			rr.move_to_child()
 		else: # normal chunk
 			if rr.chunk_type == RiffChunkType.Movi:
@@ -542,28 +537,28 @@ def avi_profile_sample(avi_data): # FileData object
 				avi_data.crc32 = crc32(S_BYTE.pack(rr.padding_byte), 
 				                       avi_data.crc32)
 			
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 	total_size = other_length
 	
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
 	print("                {0:13n}  {1:08X}\n".format(avi_data.size, 
-												avi_data.crc32 & 0xFFFFFFFF))
+	                                           avi_data.crc32 & 0xFFFFFFFF))
 	
 	print()
 	print("Stream Details: Stream  Length")
 	print("                ------  -------------")
 	for _, track in tracks.items():
 		print("                {0:6n}  {1:13n}".format(track.track_number, 
-													track.data_length))
+		                                               track.data_length))
 		total_size += track.data_length
 		
 	print()
 	print("Parse Details:   Metadata     Stream Data    Total")
 	print("                 -----------  -------------  -------------")
 	print("                 {0:11n}  {1:13n}  {2:13n}\n".format(
-						other_length, 
-						total_size - other_length, total_size))
+	                                   other_length, 
+	                                   total_size - other_length, total_size))
 	
 	if avi_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n",
@@ -606,9 +601,9 @@ def mkv_profile_sample(mkv_data): # FileData object
 			fsize = e.element_start_pos + len(e.raw_header) + e.length
 			if (fsize != mkv_data.size):
 				print("\nWarning: File size does not appear to be correct!",
-					"\t Expected: %d" % fsize,
-					"\t Found   : %d\n" % mkv_data.size, 
-					sep='\n', file=sys.stderr)
+				      "\t Expected: %d" % fsize,
+				      "\t Found   : %d\n" % mkv_data.size, 
+				      sep='\n', file=sys.stderr)
 			er.move_to_child()
 		elif etype == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while 
@@ -670,7 +665,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 		
 		assert er.read_done
 
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 	
 	total_size = other_length
 	attachmentSize = 0
@@ -682,7 +677,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
 	print("                {0:13n}  {1:08X}\n".format(mkv_data.size, 
-											mkv_data.crc32 & 0xFFFFFFFF))
+	                                           mkv_data.crc32 & 0xFFFFFFFF))
 	# http://docs.python.org/library/string.html#formatstrings
 	
 	if len(attachments):
@@ -690,7 +685,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 		print("                -------------------------  ------------")
 		for _key, attachment in attachments.items():
 			print("                {0:25}  {1:12n}".format(
-									attachment.name[0:25], attachment.size))
+			      attachment.name[0:25], attachment.size))
 			total_size += attachment.size
 			attachmentSize += attachment.size
 			
@@ -699,15 +694,15 @@ def mkv_profile_sample(mkv_data): # FileData object
 	print("                -----  -------------")
 	for _, track in tracks.items():
 		print("                {0:5n}  {1:13n}".format(track.track_number, 
-													track.data_length))
+		                                               track.data_length))
 		total_size += track.data_length
 		
 	print()
 	print("Parse Details:  Metadata     Attachments   Track Data     Total")
 	print("                -----------  ------------  -------------  -------------")
 	print("                {0:11n}  {1:12n}  {2:13n}  {3:13n}\n".format(
-					other_length, attachmentSize, 
-					total_size - attachmentSize - other_length, total_size))
+	                    other_length, attachmentSize, 
+		            total_size - attachmentSize - other_length, total_size))
 	
 	if mkv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n",
@@ -716,7 +711,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 	
 	return tracks, attachments
 
-def profile_mp4(mp4_data):
+def profile_mp4(mp4_data): # FileData object
 	"""Reads the necessary track header data 
 	and constructs track signatures"""
 	tracks = odict()
@@ -852,7 +847,7 @@ class TestStsc(unittest.TestCase):
 		inlist = [(1, 4, 0), (2, 4, 7), (5, 8, 0), (7, 4, 0), ]
 		outlist = stsc(inlist)
 		expected = [(1, 4, 0), (2, 4, 7), (3, 4, 7), (4, 4, 7), (5, 8, 0), 
-				(6, 8, 0), (7, 4, 0), ]
+		            (6, 8, 0), (7, 4, 0), ]
 		self.assertEquals(expected, outlist)
 		
 def mp4_profile_sample(mp4_data):
@@ -864,16 +859,16 @@ def mp4_profile_sample(mp4_data):
 		
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",
-			"\t Expected: %d" % total_size,
-			"\t Found   : %d\n" % mp4_data.size, 
-			sep='\n', file=sys.stderr)
+		      "\t Expected: %d" % total_size,
+		      "\t Found   : %d\n" % mp4_data.size, 
+		      sep='\n', file=sys.stderr)
 	
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
 	print("                {0:13n}  {1:08X}\n".format(mp4_data.size, 
-											mp4_data.crc32 & 0xFFFFFFFF))
+	                                           mp4_data.crc32 & 0xFFFFFFFF))
 	# http://docs.python.org/library/string.html#formatstrings
 
 	print("Track Details:  Track  Length")
@@ -881,7 +876,7 @@ def mp4_profile_sample(mp4_data):
 	stream_length = 0
 	for _, track in tracks.items():
 		print("                {0:5n}  {1:13n}".format(track.track_number, 
-													track.data_length))
+		                                               track.data_length))
 		stream_length += track.data_length
 
 	print()
@@ -958,7 +953,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 					if len(file_chunk) % 2 == 1:
 						srsf.write("\0")
 						
-					for track in tracks.itervalues():
+					for track in tracks.values():
 						if big_file:
 							track.flags |= TrackData.BIG_FILE
 						track_chunk = track.serialize_as_riff()
@@ -993,7 +988,7 @@ def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 				element_size = len(file_element)
 
 				track_elements = []
-				for track in tracks.itervalues():
+				for track in tracks.values():
 					if big_file:
 						track.flags |= TrackData.BIG_FILE
 					track_ebml = track.serialize_as_ebml()
@@ -1038,7 +1033,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 				file_atom = sample_data.serialize_as_mov()
 				movf.write(file_atom)
 				
-				for track in tracks.itervalues():
+				for track in tracks.values():
 					if big_file:
 						track.flags |= TrackData.BIG_FILE
 					track_atom = track.serialize_as_mov()
@@ -1054,8 +1049,10 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 				movf.write(mr.read_contents())
 
 def show_spinner(amount):
-	#sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
-	pass
+	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
+
+def remove_spinner():
+	sys.stdout.write("\b"), # removes spinner
 	
 def avi_find_sample_streams(tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file)
@@ -1068,7 +1065,7 @@ def avi_find_sample_streams(tracks, main_avi_file):
 		else: # normal chunk
 			tracks, block_count, done = _avi_normal_chunk_find(tracks, rr, 
 			                                      block_count, done)
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 	
 	return tracks
 	
@@ -1130,24 +1127,24 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 					if track.signature_bytes[:len(check_bytes)] == check_bytes:
 						track.check_bytes = check_bytes
 						track.match_offset = (rr.current_chunk.chunk_start_pos
-											+ len(rr.current_chunk.raw_header) 
-											+ found_pos)
+						                      + len(rr.current_chunk.raw_header) 
+						                      + found_pos)
 						track.match_length = min(track.data_length, 
 												len(chunk_bytes) - found_pos)
 						break
 					found_pos = chunk_bytes.find(search_byte, found_pos + 1)
 			else:
 				track.match_length = min(track.data_length 
-										- track.match_length, 
-										rr.current_chunk.length)
+				                         - track.match_length, 
+				                         rr.current_chunk.length)
 						
 										
 		elif track.match_length < track.data_length:
 			track.match_length += min(track.data_length - track.match_length, 
-									rr.current_chunk.length)
+			                          rr.current_chunk.length)
 			
 			track_done = True
-			for track in tracks.itervalues():
+			for track in tracks.values():
 				if track.match_length < track.data_length:
 					track_done = False
 					break
@@ -1178,7 +1175,7 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 		else:
 			er.skip_contents()
 	
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 	
 	return tracks	
 
@@ -1230,11 +1227,11 @@ def _mkv_block_find(tracks, er, done):
 				if track.signature_bytes[:len(check_bytes)] == check_bytes:
 					track.check_bytes = check_bytes
 					track.match_offset = (er.current_element.element_start_pos
-									+ len(er.current_element.raw_header) 
-									+ len(er.current_element.raw_block_header) 
-									+ offset)
+					                      + len(er.current_element.raw_header) 
+					                      + len(er.current_element.raw_block_header) 
+					                      + offset)
 					track.match_length = min(track.data_length, 
-										er.current_element.frame_lengths[i])
+					                         er.current_element.frame_lengths[i])
 			else:
 				track.match_length += min(track.data_length - 
 				                          track.match_length,
@@ -1243,11 +1240,11 @@ def _mkv_block_find(tracks, er, done):
 			offset += er.current_element.frame_lengths[i]
 	elif track.match_length < track.data_length:
 		track.match_length += min(track.data_length - track.match_length,
-								er.current_element.length)
+		                          er.current_element.length)
 		er.skip_contents()
 		
 		tracks_done = True
-		for track in tracks.itervalues():
+		for track in tracks.values():
 			if track.match_length < track.data_length:
 				tracks_done = False
 				break
@@ -1263,17 +1260,13 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	done based on the track signature alone, not the whole data stream."""
 	mtrack = mp4_add_track_stream(mtrack)
 	# open stream here so we open and close the mp4 file just once
-	if utility.is_rar(main_mp4_file):
-		mtrack.trackstream.stream = rarstream.RarStream(main_mp4_file)
-	else:
-		mtrack.trackstream.stream = open(main_mp4_file, "rb")
+	mtrack.trackstream.stream = open_main(main_mp4_file)
 	
 	data = mtrack.trackstream.read(len(track.signature_bytes))
 #	print(data[:].encode('hex'))
 #	print(mtrack.trackstream.current_offset())
 #	print(track.signature_bytes[:].encode('hex'))
 	if data == track.signature_bytes:
-		print("Match found!")
 		track.match_offset = mtrack.trackstream.current_offset()
 	next_chunk = True
 	
@@ -1282,7 +1275,6 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 		next_chunk = mtrack.trackstream.next()
 		data = mtrack.trackstream.read(len(track.signature_bytes))
 		if data == track.signature_bytes:
-			print("Match found!")
 			# this indicates that we have the track found
 			track.match_offset = mtrack.trackstream.current_offset()
 	
@@ -1304,8 +1296,6 @@ def mp4_add_track_stream(track):
 		chunk.samples = track.sample_lengths[samples_amount:
 		                                     samples_amount+samples_in_chunk]
 		samples_amount += samples_in_chunk
-#		print(samples_in_chunk)
-#		print(len(chunk.samples))
 		chunk.samples_in_chunk = len(chunk.samples)
 		assert chunk.samples_in_chunk == len(chunk.samples)
 		
@@ -1329,20 +1319,29 @@ class TrackStream(object):
 		
 	def current_offset(self):
 		return self._current_offset
+	
+	def seek(self, offset):
+		"""The offset must be the beginning of a sample."""
+		self._current_offset = offset
+		largest = 0
+		for chunk in self.chunks:
+			if chunk.chunk_offset > largest and chunk.chunk_offset <= offset:
+				largest = chunk.chunk_offset
+				self._current_chunk = chunk
+		assert self._current_chunk
+		self._current_sample = self._current_chunk.get_sample_nb(offset)
 		
 	def read(self, amount):
 		"""amount: max amount to read"""
 		if self._current_chunk == None: # bootstrap
 			self._current_chunk = self.chunks[0]
 			self._current_offset = self._current_chunk.chunk_offset
-#			print(self._current_chunk.chunk_offset)
 			
 		# what we can read from the current chunk
 		lb = self._current_chunk.bytes_left_in_chunk(self._current_sample)
 		if lb > amount:
 			# if we can read all from the same chunk
 			self.stream.seek(self._current_offset, os.SEEK_SET)
-#			print(self.stream.tell())
 			data = self.stream.read(amount)
 			return data
 		else:
@@ -1356,9 +1355,7 @@ class TrackStream(object):
 				if not next_chunk:
 					# at the end of the stream, so return what we have
 					return firstb
-				
-#				if next_chunk.bytes_left_in_chunk(0) + lb < amount:
-#					assert False
+
 				bl = next_chunk.bytes_left_in_chunk(0)	
 				self.stream.seek(next_chunk.chunk_offset)
 				bytes_read = self.stream.read(min(amount-len(firstb), bl))
@@ -1372,8 +1369,6 @@ class TrackStream(object):
 			# this is the global offset
 			self._current_offset = (self._current_chunk.chunk_offset +
 			    self._current_chunk.bytes_consumed(self._current_sample))
-#			for i in range(self._current_sample):
-#				self._current_offset += self._current_chunk.samples[i]
 		else:
 			self._current_chunk = self._current_chunk.next_chunk
 			self._current_sample = 0
@@ -1396,27 +1391,37 @@ class TrackChunk(object):
 		self.samples = []
 		
 	def bytes_left_in_chunk(self, sample_number):
-		amount = 0
-		for i in range(sample_number, self.samples_in_chunk):
-			amount += self.samples[i]
-		return amount
+		return sum(self.samples[sample_number:self.samples_in_chunk])
 	
 	def bytes_consumed(self, sample_number):
 		amount = 0
 		for i in range(sample_number):
 			amount += self.samples[i]
 		return amount
+	
+	def get_sample_nb(self, offset):
+		sample_sum = 0
+		count = 0
+		for sample in self.samples:
+			if (self.chunk_offset + sample_sum >= offset and 
+			self.chunk_offset <= offset):
+				assert self.chunk_offset + sample_sum == offset
+				return count
+			count += 1
+			sample_sum += sample
+		return count
 
 def mp4_find_sample_streams(tracks, main_mp4_file):
 	mtracks = profile_mp4(FileData(file_name=main_mp4_file))
 	
 	# check for each movie track if it contains the sample data
-	for mtrack in mtracks.itervalues():
+	for mtrack in mtracks.values():
 		try:
 			track = tracks[mtrack.track_number]
 			track = mp4_find_sample_stream(track, mtrack, main_mp4_file)
 #			print(track)
 #			print(mtrack)
+			track.main_track = mtrack
 			tracks[mtrack.track_number] = track
 		except KeyError:
 			# track in main file that is not in the sample file
@@ -1429,7 +1434,7 @@ def avi_extract_sample_streams(tracks, movie):
 	
 	# search for first match offset
 	start_offset = 2 ** 63 # long.MaxValue + 1
-	for track in tracks.itervalues():
+	for track in tracks.values():
 		if track.match_offset > 0:
 			start_offset = min(track.match_offset, start_offset)
 	
@@ -1442,7 +1447,7 @@ def avi_extract_sample_streams(tracks, movie):
 		else: # normal chunk
 			tracks, block_count, done = _avi_normal_chunk_extract(tracks, rr, 
 			                                      block_count, done)
-	sys.stdout.write("\b"), # removes spinner
+	remove_spinner()
 	
 	return tracks, {} #attachments
 
@@ -1465,14 +1470,19 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 				track.track_file = tempfile.TemporaryFile()
 				
 			if track.track_file.tell() < track.data_length:
-				if rr.current_chunk.chunk_start_pos + len(rr.current_chunk.raw_header) >= track.match_offset:
-					track.track_file.write(rr.read_contents()[:rr.current_chunk.length])
+				if (rr.current_chunk.chunk_start_pos + 
+				len(rr.current_chunk.raw_header) >= track.match_offset):
+					track.track_file.write(
+					    rr.read_contents()[:rr.current_chunk.length])
 				else:
-					chunk_offset = track.match_offset - (rr.current_chunk.chunk_start_pos + len(rr.current_chunk.raw_header))
-					track.track_file.write(rr.read_contents()[chunk_offset:rr.current_chunk.length])
-	#XXX
+					chunk_offset = (track.match_offset - 
+					                (rr.current_chunk.chunk_start_pos + 
+					                len(rr.current_chunk.raw_header)))
+					track.track_file.write(rr.read_contents()[chunk_offset:
+					                       rr.current_chunk.length])
+	
 			tracks_done = True
-			for track_data in tracks.itervalues():
+			for track_data in tracks.values():
 				if (track_data.track_file == None or 
 				track_data.track_file.tell() < track_data.data_length):
 					tracks_done = False
@@ -1485,20 +1495,11 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 	return tracks, block_count, done	
 
 def mkv_extract_sample_streams(tracks, movie):
-#	from rescene import utility
-#	from rescene import rarstream
-#	
-#	if utility.is_rar(movie):
-#		fs = rarstream.RarStream(movie)
-#	else:
-#		fs = open(movie, "rb")
-#		
-#	er = EbmlReader(EbmlReadMode.MKV, stream=fs)
 	er = EbmlReader(EbmlReadMode.MKV, movie)
 	
 	# search for first offset so we can skip unnecessary clusters later on
 	start_offset = 2 ** 63 # long.MaxValue + 1
-	for track in tracks.itervalues():
+	for track in tracks.values():
 		if track.match_offset > 0:
 			start_offset = min(track.match_offset, start_offset)
 			
@@ -1509,8 +1510,8 @@ def mkv_extract_sample_streams(tracks, movie):
 	while er.read() and not done:
 		if er.element_type in (EbmlElementType.Segment, 
 		                       EbmlElementType.AttachmentList,
-			                   EbmlElementType.Attachment,
-			                   EbmlElementType.BlockGroup):
+		                       EbmlElementType.Attachment,
+		                       EbmlElementType.BlockGroup):
 			er.move_to_child()
 		elif er.element_type == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while 
@@ -1545,9 +1546,8 @@ def mkv_extract_sample_streams(tracks, movie):
 			tracks, done = _mkv_block_extract(tracks, er, done)
 		else:
 			er.skip_contents()
-	
-#	fs.close()
-	sys.stdout.write("\b"), # removes spinner
+
+	remove_spinner()
 	
 	return tracks, attachements
 
@@ -1568,12 +1568,12 @@ def _mkv_block_extract(tracks, er, done):
 			offset >= track.match_offset and 
 			track.track_file.tell() < track.data_length):
 				track.track_file.write(buff[offset:offset+
-										er.current_element.frame_lengths[i]])
+				                       er.current_element.frame_lengths[i]])
 				
 			offset += er.current_element.frame_lengths[i]
 				
 		tracks_done = True
-		for track_data in tracks.itervalues():
+		for track_data in tracks.values():
 			if (track_data.track_file == None or 
 			track_data.track_file.tell() < track_data.data_length):
 				tracks_done = False
@@ -1583,13 +1583,40 @@ def _mkv_block_extract(tracks, er, done):
 		er.skip_contents()
 		
 	return tracks, done
+
+def mp4_extract_sample_streams(tracks, main_mp4_file):
+	mtracks = profile_mp4(FileData(file_name=main_mp4_file))
+	
+	for track_nb, track in tracks.items():
+		mtrack = mtracks[track_nb]
+		track = mp4_extract_sample_stream(track, mtrack, main_mp4_file)
+		tracks[track_nb] = track
+		
+	return tracks, {} # attachments
+
+def open_main(big_file):
+	if utility.is_rar(big_file):
+		return rarstream.RarStream(big_file)
+	else:
+		return open(big_file, "rb")
+		
+def mp4_extract_sample_stream(track, mtrack, main_mp4_file):
+	track.track_file = tempfile.TemporaryFile()
+	mtrack = mp4_add_track_stream(mtrack)
+	mtrack.trackstream.stream = open_main(main_mp4_file)
+		
+	mtrack.trackstream.seek(track.match_offset)
+	track.track_file.write(mtrack.trackstream.read(track.data_length))
+	
+	mtrack.trackstream.stream.close()
+	return track
 	
 def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	crc = 0 # Crc32.StartValue
 	rr = RiffReader(RiffReadMode.SRS, path=srs)
 	
 	# set cursor for temp files back at the beginning
-	for track in tracks.itervalues():
+	for track in tracks.values():
 		track.track_file.seek(0)
 	
 	sample_file = os.path.join(out_folder, srs_data.name)
@@ -1629,7 +1656,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 					sample.write(pb)
 					crc = crc32(pb, crc) & 0xFFFFFFFF
 				
-	sys.stdout.write("\b"), # removes spinner	
+	remove_spinner()	
 	
 	ofile = FileData(file_name=sample_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
@@ -1639,7 +1666,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	crc = 0 # Crc32.StartValue
 	er = EbmlReader(RiffReadMode.SRS, path=srs)
 	
-	for track in tracks.itervalues():
+	for track in tracks.values():
 		track.track_file.seek(0)
 	
 	sample_file = os.path.join(out_folder, srs_data.name)
@@ -1658,8 +1685,8 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			
 			if er.element_type in (EbmlElementType.Segment, 
 			                       EbmlElementType.AttachmentList,
-				                   EbmlElementType.Attachment,
-				                   EbmlElementType.BlockGroup):
+			                       EbmlElementType.Attachment,
+			                       EbmlElementType.BlockGroup):
 				# these elements have no useful info of their own, 
 				# but we want to step into them to examine their children
 				er.move_to_child()
@@ -1700,11 +1727,134 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				sample.write(buff)
 				crc = crc32(buff, crc) & 0xFFFFFFFF
 				
-	sys.stdout.write("\b"), # removes spinner	
+	remove_spinner()	
 	
 	ofile = FileData(file_name=sample_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
+
+def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+	crc = 0 # Crc32.StartValue
+	
+	tracks = profile_mp4_srs(srs, tracks)
+	for track in tracks.values():
+		track.track_file.seek(0)
+		track = mp4_add_track_stream(track) # for the sorting later on
+	
+	mr = MovReader(MovReadMode.SRS, path=srs)
+	
+	sample_file = os.path.join(out_folder, srs_data.name)
+	with open(sample_file, "wb") as sample:
+		while mr.read():
+			# we don't want the SRS elements copied into the new sample.
+			if mr.atom_type in ("SRSF", "SRST"):
+				mr.skip_contents()
+				continue
+			
+			sample.write(mr.current_atom.raw_header)
+			crc = crc32(mr.current_atom.raw_header, crc) & 0xFFFFFFFF
+			
+			if mr.atom_type == "mdat":
+				mr.move_to_child()
+				
+				# order the interleaved chunks
+				for (chunk, track_nb) in order_chunks(tracks):
+					track = tracks[track_nb]
+					buff = track.track_file.read(sum(chunk.samples))
+					# write all the stream data
+					sample.write(buff)
+					crc = crc32(buff, crc) & 0xFFFFFFFF
+			else:
+				# anything not caught above is considered meta data, 
+				# so we copy it as is
+				buff = mr.read_contents()
+				sample.write(buff)
+				crc = crc32(buff, crc) & 0xFFFFFFFF
+	
+	ofile = FileData(file_name=sample_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
+
+def order_chunks(tracks):
+	all_chunks = []
+	for track in tracks.values():
+		for chunk in track.trackstream.chunks:
+			all_chunks.append((chunk, track.track_number))
+		
+	all_chunks = sorted(all_chunks, key=lambda c: c[0].chunk_offset)
+	return all_chunks
+	
+def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
+	"""Reads the necessary track header data 
+	and adds this info to the tracks"""
+	current_track = None
+	track_processed = False
+	mr = MovReader(MovReadMode.SRS, srs)
+	while mr.read():
+		atype = mr.atom_type
+		
+		# doing body
+		if atype in ("moov", "trak", "mdia", "minf", "stbl"):
+			mr.move_to_child()
+		elif atype == "mdat":
+			mr.move_to_child()
+		else:
+			data = mr.read_contents()
+		
+		if atype in ("tkhd",):
+			# grab track id 
+			(track_id,) = BE_LONG.unpack(data[12:16])
+			current_track = tracks[track_id]
+			
+			# initialization
+			current_track.chunk_offsets = []
+			current_track.chunk_lengths = []
+			current_track.sample_lengths = []
+			track_processed = False
+		elif atype in ("stco", "co64"):
+			# exactly one variant must be present
+			assert current_track != None
+			(entry_count,) = BE_LONG.unpack(data[4:8])
+			if atype == "stco":
+				size = 4
+				structunp = BE_LONG
+			else: # "co64"
+				size = 8
+				structunp = BE_LONGLONG
+			for i in range(entry_count):
+				j = 8 + i * size
+				(offset,) = structunp.unpack(data[j:j+size])
+				current_track.chunk_offsets.append(offset)	
+		elif atype == "stsc": # Sample To Chunk Box
+			(entry_count,) = BE_LONG.unpack(data[4:8])
+			for i in range(entry_count):
+				j = 8 + i * 12
+				# first_chunk
+				# samples_per_chunk
+				# sample_description_index
+				result_tuple = struct.unpack(">LLL", data[j:j+12])
+				current_track.chunk_lengths.append(result_tuple)
+				
+			# enlarge compactly coded tables
+			current_track.chunk_lengths = stsc(current_track.chunk_lengths)
+		elif atype in ("stsz", "stz2"): # Sample Size Boxes
+			(sample_size,) = BE_LONG.unpack(data[4:8])
+			(sample_count,) = BE_LONG.unpack(data[8:12])
+			if sample_size == 0:
+				for i in range(sample_count):
+					j = 12 + i * 4
+					(out,) = BE_LONG.unpack(data[j:j+4])
+					current_track.sample_lengths.append(out)
+			else:
+				current_track.sample_lengths.append(sample_size)
+	
+		if (current_track and (not track_processed) and 
+		    len(current_track.chunk_offsets) and
+		    len(current_track.chunk_lengths) and
+		    len(current_track.sample_lengths)):
+			track_processed = True
+			
+	return tracks
 
 if __name__ == "__main__":
 	unittest.main()

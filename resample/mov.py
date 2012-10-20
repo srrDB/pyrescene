@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2008-2010 ReScene.com
 # Copyright (c) 2012 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
@@ -29,24 +28,14 @@
 # http://wiki.multimedia.cx/index.php?title=QuickTime_container
 # http://code.google.com/p/mp4parser/
 
+import os
 import struct
 
-import sys
-from os.path import join, dirname, realpath
-# for running the script directly from command line
-sys.path.append(join(dirname(realpath(sys.argv[0])), '..', 'rescene'))
-import rescene
+from rescene.utility import is_rar
+from rescene.rarstream import RarStream
 
-#S_BYTE = struct.Struct('>B') # unsigned char: 1 byte
-#S_SHORT = struct.Struct('>H') # unsigned short: 2 bytes
 S_LONG = struct.Struct('>L') # unsigned long: 4 bytes
 S_LONGLONG = struct.Struct('>Q') # unsigned long long: 8 bytes
-
-class SeekOrigin(object): # build into io, but not available in Python 2.6
-	""" 'whence' parameter seek functions
-	From where to start seeking in a file. 
-	Internal class only used in RarStream. """
-	SEEK_SET, SEEK_CUR, SEEK_END = list(range(3)) 
 
 class MovReadMode(object):
 	MP4, Sample, SRS = list(range(3))
@@ -54,9 +43,6 @@ class MovReadMode(object):
 	
 class InvalidDataException(ValueError):
 	pass
-
-#class MovAtomType(object):
-#	FTYPE = "ftyp"
 	
 class Atom(object):
 	def __init__(self, size, atom_type):
@@ -67,17 +53,8 @@ class Atom(object):
 		
 	def __repr__(self, *args, **kwargs):
 		return "<Atom type=%s size=%d start_pos=%d>" % (self.type, 
-													self.size, self.start_pos)
+		                                self.size, self.start_pos)
 		
-class Box(Atom):
-	pass
-
-class FullBox(Atom):
-	pass
-		
-class SomethingAtom(Atom):
-	pass
-	
 class MovReader(object):
 	"""Implements a simple Reader class that reads through MP4 
 	or MP4-SRS files one atom/box at a time.
@@ -86,8 +63,8 @@ class MovReader(object):
 	def __init__(self, read_mode, path=None, stream=None):
 		assert path or stream
 		if path:
-			if rescene.utility.is_rar(path):
-				self._mov_stream = rescene.rarstream.RarStream(path)
+			if is_rar(path):
+				self._mov_stream = RarStream(path)
 			else:
 				self._mov_stream = open(path, 'rb')
 		elif stream:
@@ -105,7 +82,7 @@ class MovReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again")
 		assert self.read_done or (self.mode == MovReadMode.SRS and
-								self.atom_type == "mdat")
+		                          self.atom_type == "mdat")
 		
 		
 		atom_start_position = self._mov_stream.tell()
@@ -120,9 +97,6 @@ class MovReader(object):
 		# 4 bytes for atom length, 4 bytes for atom type
 		(atom_length,) = S_LONG.unpack(self._atom_header[:4])
 		self.atom_type = self._atom_header[4:]
-		
-#		print atom_length
-#		print self._atom_header[:4].encode('hex')
 		
 		# special sizes
 		hsize = 8
@@ -144,57 +118,17 @@ class MovReader(object):
 		endOffset = atom_start_position+ atom_length # + hsize 
 		if (self.mode == MovReadMode.Sample and self.atom_type != "mdat" and 
 			endOffset > self._file_length):
-#			print(atom_start_position, hsize, atom_length)
-#			print(endOffset)
-#			print(self._file_length)
 			raise InvalidDataException("Invalid box length at 0x%08X" % 
-									atom_start_position)
+			                           atom_start_position)
 		
 		self.current_atom = Atom(atom_length, self.atom_type)
 		self.current_atom.raw_header = self._atom_header
 		self.current_atom.start_pos = atom_start_position
-#		print(self.current_atom)
 		
-		self._mov_stream.seek(atom_start_position, SeekOrigin.SEEK_SET)
-		"moov"
-		"ftyp"
-		"mdat"
+		self._mov_stream.seek(atom_start_position, os.SEEK_SET)
+
 		# Apple Computer reserves
 		# all four-character codes consisting entirely of lowercase letters.
-
-#		if atom_type == "RIFF" or atom_type == "LIST":
-#			# if the atom_type indicates a list type (RIFF or LIST), 
-#			# there is another atom_type code in the next 4 bytes
-#			listType = atom_type
-#			self._atom_header += self._mov_stream.read(4)
-#			atom_type = self._atom_header[8:4]
-#			atom_length -= 4
-#			
-#			self.chunk_type = RiffChunkType.List
-#			self.current_chunk = RiffList()
-#			self.current_chunk.list_type = listType
-#			self.current_chunk.fourcc = atom_type
-#			self.current_chunk.length = atom_length
-#			self.current_chunk.raw_header = self._atom_header
-#			self.current_chunk.chunk_start_pos = atom_start_position
-#		else:
-#			if (self._atom_header[0].isdigit() and 
-#				self._atom_header[1].isdigit()):
-#				self.current_chunk = MoviChunk()
-#				self.current_chunk.fourcc = atom_type
-#				self.current_chunk.length = atom_length
-#				self.current_chunk.raw_header = self._atom_header
-#				self.current_chunk.chunk_start_pos = chunk_start_position
-#				self.current_chunk.stream_number =  int(atom_type[:2])
-#				self.chunk_type = RiffChunkType.Movi
-#			else:
-#				self.current_chunk = RiffChunk()
-#				self.current_chunk.fourcc = atom_type
-#				self.current_chunk.length = atom_length
-#				self.current_chunk.raw_header = self._atom_header
-#				self.current_chunk.chunk_start_pos = chunk_start_position
-#				self.chunk_type = RiffChunkType.Unknown
-
 
 		return True
 	
@@ -202,9 +136,8 @@ class MovReader(object):
 		# if read_done is set, we've already read or skipped it.
 		# back up and read again?
 		if self.read_done:
-#			self._mov_stream.seek(-self.current_atom.size, SeekOrigin.SEEK_CUR)
 			self._mov_stream.seek(self.current_atom.start_pos, 
-			                      SeekOrigin.SEEK_SET)
+			                      os.SEEK_SET)
 
 		self.read_done = True
 		buff = ""
@@ -215,7 +148,7 @@ class MovReader(object):
 			self.atom_type != "mdat"):
 			# skip header bytes
 			hl = len(self.current_atom.raw_header)
-			self._mov_stream.seek(hl, SeekOrigin.SEEK_CUR)
+			self._mov_stream.seek(hl, os.SEEK_CUR)
 			buff = self._mov_stream.read(self.current_atom.size - hl)
 		return buff
 		
@@ -228,13 +161,13 @@ class MovReader(object):
 				or self.atom_type != "mdat"):
 				self._mov_stream.seek(self.current_atom.start_pos + 
 				                      self.current_atom.size, 
-				                      SeekOrigin.SEEK_SET)
+				                      os.SEEK_SET)
 
 	def move_to_child(self):
 		self.read_done = True
 		# skip the header bytes
 		hl = len(self.current_atom.raw_header)
-		self._mov_stream.seek(hl, SeekOrigin.SEEK_CUR)
+		self._mov_stream.seek(hl, os.SEEK_CUR)
 	
 	def __del__(self):
 		try: # close the file/stream

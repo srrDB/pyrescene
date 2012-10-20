@@ -28,18 +28,13 @@
 import struct
 import unittest
 import io
+import os
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
 
 S_BYTE = struct.Struct('<B') # 1 byte
 S_SHORT = struct.Struct('<H') # 2 bytes
-
-class SeekOrigin(object): # build into io, but not available in Python 2.6
-	""" 'whence' parameter seek functions
-	From where to start seeking in a file. 
-	Internal class only used in RarStream. """
-	SEEK_SET, SEEK_CUR, SEEK_END = list(range(3)) 
 
 class InvalidDataException(ValueError):
 	pass
@@ -63,14 +58,14 @@ class TestHelpFunctions(unittest.TestCase):
 		stream = io.BytesIO()
 		stream.write("\x20")
 		stream.write("\xBA\xBE\x00\x00")
-		stream.seek(0, SeekOrigin.SEEK_SET)
+		stream.seek(0, os.SEEK_SET)
 		self.assertEqual("\x20\xBA\xBE", GetEbmlElementID(stream))
 		stream.write("\xAA")
-		stream.seek(0, SeekOrigin.SEEK_SET)
+		stream.seek(0, os.SEEK_SET)
 		self.assertEqual("\x20\xBA\xBE", GetEbmlElementID(stream))
-		stream.seek(0, SeekOrigin.SEEK_SET)
+		stream.seek(0, os.SEEK_SET)
 		stream.write("\x1F\xBA\xBE\xAA\x00\x11\x11\x11\x11")
-		stream.seek(0, SeekOrigin.SEEK_SET)
+		stream.seek(0, os.SEEK_SET)
 		self.assertEqual("\x1F\xBA\xBE\xAA", GetEbmlElementID(stream))
 	
 	def test_get_ebml_uint(self):	
@@ -81,7 +76,7 @@ class TestHelpFunctions(unittest.TestCase):
 		stream = io.BytesIO()
 		stream.write("\x32") # 3 bytes
 		stream.write("\xC6\x54")
-		stream.seek(0, SeekOrigin.SEEK_SET)
+		stream.seek(0, os.SEEK_SET)
 		self.assertEqual((1230420,3), GetEbmlUIntStream(stream))
 		
 		
@@ -290,7 +285,7 @@ class EbmlReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again");
 		assert self.read_done or (self.mode == EbmlReadMode.SRS and
-								self.element_type == EbmlElementType.Block)
+		       self.element_type == EbmlElementType.Block)
 		
 		element_start_position = self._ebml_stream.tell()
 		
@@ -355,8 +350,8 @@ class EbmlReader(object):
 			self.element_type = EbmlElementType.Unknown
 			
 		element_length = GetEbmlUInt(self.elementHeader, 
-								id_length_descriptor, 
-								data_length_descriptor)
+		                             id_length_descriptor, 
+		                             data_length_descriptor)
 		
 		# sanity check on element length.  skip check on Segment element so we
 		# can still report expected size.  this is only applied on samples 
@@ -367,7 +362,7 @@ class EbmlReader(object):
 			self.element_type != EbmlElementType.Segment and 
 			endOffset > self._file_length):
 			raise InvalidDataException("Invalid element length at 0x{0:x8}"
-									.format(element_start_position))
+			                           .format(element_start_position))
 			
 		if self.element_type != EbmlElementType.Block:
 			self.current_element = EbmlElement()
@@ -403,7 +398,7 @@ class EbmlReader(object):
 			frameSizes, bytesConsumed = GetBlockFrameLengths(lace_type, 
 			                              data_length, self._ebml_stream)
 			if bytesConsumed > 0:
-				self._ebml_stream.seek(-bytesConsumed, SeekOrigin.SEEK_CUR)
+				self._ebml_stream.seek(-bytesConsumed, os.SEEK_CUR)
 				newBlockHeader = self._ebml_stream.read(len(blockHeader))
 				blockHeader = newBlockHeader;
 
@@ -423,12 +418,9 @@ class EbmlReader(object):
 		# (extremely useful for debugging)
 		print("{0}: {3} + {1} bytes @ {2}".format(
 		                            EbmlElementTypeName[self.element_type],
-									element_length, # without header
-									element_start_position,
-									len(self.elementHeader)))
-#		
-#		if element_start_position == 6560:
-#			pass
+		                            element_length, # without header
+		                            element_start_position,
+		                            len(self.elementHeader)))
 
 		return True
 	
@@ -437,7 +429,7 @@ class EbmlReader(object):
 		# back up and read again?
 		if self.read_done:
 			self._ebml_stream.seek(-self.current_element.length, 
-			                       SeekOrigin.SEEK_CUR)
+			                       os.SEEK_CUR)
 
 		self.read_done = True
 		buff = None
@@ -453,7 +445,7 @@ class EbmlReader(object):
 			if (self.mode != EbmlReadMode.SRS or 
 				self.element_type != EbmlElementType.Block):
 				self._ebml_stream.seek(self.current_element.length, 
-				                       SeekOrigin.SEEK_CUR)
+				                       os.SEEK_CUR)
 	
 	def move_to_child(self):
 		self.read_done = True
