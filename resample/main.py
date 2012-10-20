@@ -140,21 +140,6 @@ def get_file_type(ifile):
 		return FileType.Unknown
 	else:
 		return FileType.Unknown
-	
-class TestGetFileType(unittest.TestCase):
-	"""http://samples.mplayerhq.hu/"""
-	def test_mkv(self):
-		path = join(os.pardir, "test_files", "media")
-		sample = join(path, "Mushishi24-head.mkv")
-		self.assertEqual(FileType.MKV, get_file_type(sample))
-	def test_avi(self):
-		path = join(os.pardir, "test_files", "media")
-		sample = join(path, "verona60avi56k.avi")
-		self.assertEqual(FileType.AVI, get_file_type(sample))
-	def test_mp4(self):
-		path = join(os.pardir, "test_files", "media")
-		sample = join(path, "xtrem-sport.mp4")
-		self.assertEqual(FileType.MP4, get_file_type(sample))
 
 # SampleAttachmentInfo.cs -----------------------------------------------------
 class AttachmentData(object):
@@ -836,19 +821,6 @@ def stsc(samples_chunk):
 		prev_sample_description_index = sample_description_index
 		index += 1
 	return new
-
-class TestStsc(unittest.TestCase):
-	def test_normal(self):
-		inlist = [(1, 4, 0), (2, 4, 0), (3, 4, 0), (4, 4, 0), ]
-		outlist = stsc(inlist)
-		self.assertEquals(inlist, outlist)
-		
-	def test_compact(self):
-		inlist = [(1, 4, 0), (2, 4, 7), (5, 8, 0), (7, 4, 0), ]
-		outlist = stsc(inlist)
-		expected = [(1, 4, 0), (2, 4, 7), (3, 4, 7), (4, 4, 7), (5, 8, 0), 
-		            (6, 8, 0), (7, 4, 0), ]
-		self.assertEquals(expected, outlist)
 		
 def mp4_profile_sample(mp4_data):
 	tracks = profile_mp4(mp4_data)
