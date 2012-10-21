@@ -24,9 +24,6 @@
 # THE SOFTWARE.
 
 import struct
-import unittest
-import io
-from os.path import join
 from rarstream import RarStream
 
 def compute_hash(mfile):
@@ -98,34 +95,3 @@ def _osorg_hash(stream):
 		srr_hash = srr_hash & 0xFFFFFFFFFFFFFFFF
 
 	return ("%016x" % srr_hash, filesize)
-
-class TestHash(unittest.TestCase):
-	"""
-	Test these 2 files please to ensure your algorithm is completely OK: 
-		AVI file (12 909 756 bytes) 
-			srr_hash: 8e245d9679d31e12 
-		DUMMY RAR file (2 565 922 bytes, 4 295 033 890 after RAR unpacking) 
-			srr_hash: 61f7751fc2a72bfb
-	"""
-	def test_files(self):
-		breakdance = join("..", "test_files", "media", "breakdance.avi")
-		(osohash, file_size) = compute_hash(breakdance)
-		self.assertEqual("8e245d9679d31e12", osohash)
-		self.assertEqual(12909756, file_size)
-		#self.assertEqual("61f7751fc2a72bfb", compute_hash("D:\dummy.bin")[0])
-
-	def test_exceptions(self):
-		self.assertRaises(TypeError, compute_hash, None)
-		self.assertRaises(IOError, compute_hash, "")
-		stream = io.BytesIO()
-		stream.close()
-		self.assertRaises(ValueError, compute_hash, stream)
-		
-	def test_rars(self):
-		rar_file = join("..", "test_files", 
-						"store_split_folder_old_srrsfv_windows", 
-						"winrar2.80.rar")
-		self.assertRaises(ValueError, osohash_from, rar_file)
-
-if __name__ == '__main__':
-	unittest.main()
