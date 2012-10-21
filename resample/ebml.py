@@ -26,8 +26,6 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import struct
-import unittest
-import io
 import os
 
 from rescene.utility import is_rar
@@ -65,7 +63,7 @@ def GetEbmlUInt(buff, offset, count):
 	"""buff: header bytes
 	offset: offset start integer in buffer
 	count: Lenght Descriptor byte"""
-	# lenght descriptor bytes not wanted: remove those from the first byte
+	# length descriptor bytes not wanted: remove those from the first byte
 	size = S_BYTE.unpack(buff[offset])[0] & (0xFF >> count) # 255, 127, ...
 	for i in range(1, count):
 		size = (size << 8) + S_BYTE.unpack(buff[offset+i])[0]
@@ -76,7 +74,7 @@ def GetEbmlUIntStream(stream):
 	(first_byte,) = S_BYTE.unpack(stream.read(1))
 	bytes_consumed = GetUIntLength(first_byte)
 
-	# lenght descriptor bytes not wanted: remove those from the first byte
+	# length descriptor bytes not wanted: remove those from the first byte
 	size = first_byte & (0xFF >> bytes_consumed)
 	
 	# construct the data size by adding a new byte each time
@@ -375,11 +373,11 @@ class EbmlReader(object):
 			
 		# the following line will write mkvinfo-like output from the parser 
 		# (extremely useful for debugging)
-		print("{0}: {3} + {1} bytes @ {2}".format(
-		                            EbmlElementTypeName[self.element_type],
-		                            element_length, # without header
-		                            element_start_position,
-		                            len(self.elementHeader)))
+#		print("{0}: {3} + {1} bytes @ {2}".format(
+#		                            EbmlElementTypeName[self.element_type],
+#		                            element_length, # without header
+#		                            element_start_position,
+#		                            len(self.elementHeader)))
 
 		return True
 	

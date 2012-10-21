@@ -41,7 +41,7 @@ else:
 	unicode = str #@ReservedAssignment
 
 from rescene.utility import (SfvEntry, parse_sfv_file, same_sfv, is_rar, 
-							next_archive, is_good_srr, first_rars)
+							next_archive, is_good_srr, first_rars, sep)
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -223,3 +223,8 @@ class TestUtility(unittest.TestCase):
 #			r = diff_lists(contents.[i].splitlines(), 
 #						   contents[i+1].splitlines())
 #			print r, contents[i]
+
+	def test_sep(self):
+		self.assertEquals(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
+		self.assertEquals(sep(1000000, 'English'), "1,000,000")
+		

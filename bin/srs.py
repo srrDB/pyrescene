@@ -37,6 +37,8 @@ sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
 import resample
 
+from rescene.utility import sep 
+
 def can_overwrite(file_path):
 	if not options.always_yes and os.path.isfile(file_path):
 		print("Warning: File %s already exists." % file_path)
@@ -164,7 +166,7 @@ def main(options, args):
 		print("SRS Type   : {0}".format(ftype_arg0))
 		print("SRS App    : {0}".format(srs_data.appname))
 		print("Sample Name: {0}".format(srs_data.name))
-		print("Sample Size: {0:n}".format(srs_data.size))
+		print("Sample Size: {0}".format(sep(srs_data.size)))
 		print("Sample CRC : {0:08X}".format(srs_data.crc32))
 	
 	# reconstructing sample
@@ -253,9 +255,9 @@ def main(options, args):
 			
 		print("\nFile Details:   Size           CRC")
 		print("                -------------  --------")
-		print("Expected    :   {0:13n}  {1:08X}".format(srs_data.size,
+		print("Expected    :   {0:>13}  {1:08X}".format(sep(srs_data.size),
 		                                                srs_data.crc32))
-		print("Actual      :   {0:13n}  {1:08X}\n".format(sfile.size, 
+		print("Actual      :   {0:>13}  {1:08X}\n".format(sep(sfile.size), 
 		                                                  sfile.crc32))
 		
 		if sfile.crc32 == srs_data.crc32:

@@ -46,7 +46,7 @@ from rescene.main import MsgCode, FileNotFound
 
 o = rescene.Observer()
 rescene.subscribe(o)
-rescene.change_rescene_name_version(rescene.APPNAMEVERSION)
+rescene.change_rescene_name_version(rescene.APPNAME)
 
 class MessageThread(Thread):
 	done = False
@@ -366,39 +366,6 @@ if __name__ == "__main__":
 	edit.add_option("-s", help="<file list>: Store additional files in the"
 						" SRR (wildcards supported)", action="append",
 						metavar="FILES", dest="store_files")
-	
-
-
-
-
-
-
- 
-
-#	edit.add_option("-q", "--quiet", 
-#					  action="store_const", const=0, dest="verbose",
-#					  help="don't print status messages to stdout")
-
-
-#	creation.add_option("-v", "--verbose", 
-#					  action="store_const", const=1, dest="verbose", default=1,
-#					  help="print feedback (default)")
-#	creation.add_option("-y", "--noisy", 
-#					  action="store_const", const=2, dest="verbose",
-#					  help="print internal workings too")
-	
-#	parser.add_option("-n", "--dry-run", 
-#					  action="store_true", dest="dry_run", default=False, 
-#					  help="do no harm")
-#	parser.add_option("-s", "--sample-subs",
-#					  action="store_true", dest="samples_subs", default=False,  
-#					  help="moves the detected " + bold + "sample" + reset + 
-#					  " and " + bold + "subs" + reset + 
-#					  " files respectively to ./Sample and ./Subs subdirs")
-#	
-#	parser.add_option("-r", help="")
-
-#	output.add_option("-?", help="Assume Y(es) for all prompts.")
 	
 	# no arguments given
 	if len(sys.argv) < 2:

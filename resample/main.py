@@ -32,16 +32,17 @@ import os
 import sys
 import unittest
 import tempfile
+import collections
 
 from os.path import join, basename
 from struct import Struct
 from zlib import crc32
-import collections
 
 import resample
 
 from rescene import rarstream
 from rescene import utility
+from rescene.utility import sep
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            MakeEbmlUInt, EbmlID)
@@ -479,8 +480,8 @@ def avi_profile_sample(avi_data): # FileData object
 			fsize = c.chunk_start_pos + len(c.raw_header) + c.length
 			if c.list_type == "RIFF" and fsize > avi_data.size:
 				print("\nWarning: File size does not appear to be correct!",
-				      "\t Expected at least: %d" % fsize,
-				      "\t Found            : %d\n" % avi_data.size, 
+				      "\t Expected at least: %s" % sep(fsize),
+				      "\t Found            : %s\n" % sep(avi_data.size), 
 				      sep='\n', file=sys.stderr)
 			rr.move_to_child()
 		else: # normal chunk
@@ -527,23 +528,23 @@ def avi_profile_sample(avi_data): # FileData object
 	
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
-	print("                {0:13n}  {1:08X}\n".format(avi_data.size, 
+	print("                {0:>13}  {1:08X}\n".format(sep(avi_data.size), 
 	                                           avi_data.crc32 & 0xFFFFFFFF))
 	
 	print()
 	print("Stream Details: Stream  Length")
 	print("                ------  -------------")
 	for _, track in tracks.items():
-		print("                {0:6n}  {1:13n}".format(track.track_number, 
-		                                               track.data_length))
+		print("                {0:6n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
 		total_size += track.data_length
 		
 	print()
 	print("Parse Details:   Metadata     Stream Data    Total")
 	print("                 -----------  -------------  -------------")
-	print("                 {0:11n}  {1:13n}  {2:13n}\n".format(
-	                                   other_length, 
-	                                   total_size - other_length, total_size))
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+	                        sep(other_length), 
+	                        sep(total_size - other_length), sep(total_size)))
 	
 	if avi_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n",
@@ -586,8 +587,8 @@ def mkv_profile_sample(mkv_data): # FileData object
 			fsize = e.element_start_pos + len(e.raw_header) + e.length
 			if (fsize != mkv_data.size):
 				print("\nWarning: File size does not appear to be correct!",
-				      "\t Expected: %d" % fsize,
-				      "\t Found   : %d\n" % mkv_data.size, 
+				      "\t Expected: %d" % sep(fsize),
+				      "\t Found   : %d\n" % sep(mkv_data.size), 
 				      sep='\n', file=sys.stderr)
 			er.move_to_child()
 		elif etype == EbmlElementType.Cluster:
@@ -661,7 +662,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 #	locale.setlocale(locale.LC_ALL, lc)
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
-	print("                {0:13n}  {1:08X}\n".format(mkv_data.size, 
+	print("                {0:>13}  {1:08X}\n".format(sep(mkv_data.size), 
 	                                           mkv_data.crc32 & 0xFFFFFFFF))
 	# http://docs.python.org/library/string.html#formatstrings
 	
@@ -669,8 +670,8 @@ def mkv_profile_sample(mkv_data): # FileData object
 		print("Attachments:    File Name                  Size")
 		print("                -------------------------  ------------")
 		for _key, attachment in attachments.items():
-			print("                {0:25}  {1:12n}".format(
-			      attachment.name[0:25], attachment.size))
+			print("                {0:25}  {1:>12}".format(
+			      attachment.name[0:25], sep(attachment.size)))
 			total_size += attachment.size
 			attachmentSize += attachment.size
 			
@@ -678,16 +679,16 @@ def mkv_profile_sample(mkv_data): # FileData object
 	print("Track Details:  Track  Length")
 	print("                -----  -------------")
 	for _, track in tracks.items():
-		print("                {0:5n}  {1:13n}".format(track.track_number, 
-		                                               track.data_length))
+		print("                {0:5n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
 		total_size += track.data_length
 		
 	print()
 	print("Parse Details:  Metadata     Attachments   Track Data     Total")
 	print("                -----------  ------------  -------------  -------------")
-	print("                {0:11n}  {1:12n}  {2:13n}  {3:13n}\n".format(
-	                    other_length, attachmentSize, 
-		            total_size - attachmentSize - other_length, total_size))
+	print("                {0:>11}  {1:>12}  {2:>13}  {3:>13}\n".format(
+	      sep(other_length), sep(attachmentSize), 
+		  sep(total_size - attachmentSize - other_length), sep(total_size)))
 	
 	if mkv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n",
@@ -831,15 +832,15 @@ def mp4_profile_sample(mp4_data):
 		
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",
-		      "\t Expected: %d" % total_size,
-		      "\t Found   : %d\n" % mp4_data.size, 
+		      "\t Expected: %d" % sep(total_size),
+		      "\t Found   : %d\n" % sep(mp4_data.size), 
 		      sep='\n', file=sys.stderr)
 	
 	remove_spinner()
 
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
-	print("                {0:13n}  {1:08X}\n".format(mp4_data.size, 
+	print("                {0:>13}  {1:08X}\n".format(sep(mp4_data.size), 
 	                                           mp4_data.crc32 & 0xFFFFFFFF))
 	# http://docs.python.org/library/string.html#formatstrings
 
@@ -847,8 +848,8 @@ def mp4_profile_sample(mp4_data):
 	print("                -----  -------------")
 	stream_length = 0
 	for _, track in tracks.items():
-		print("                {0:5n}  {1:13n}".format(track.track_number, 
-		                                               track.data_length))
+		print("                {0:5n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
 		stream_length += track.data_length
 
 	print()
@@ -858,10 +859,10 @@ def mp4_profile_sample(mp4_data):
 #						other_length - stream_length, 
 #						stream_length, 
 #						other_length))	
-	print("                 {0:11n}  {1:13n}  {2:13n}\n".format(
-						mp4_data.other_length, 
-						stream_length, 
-						total_size))	
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+						sep(mp4_data.other_length), 
+						sep(stream_length), 
+						sep(total_size)))	
 	
 	if mp4_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"

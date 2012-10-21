@@ -38,6 +38,7 @@ import sys
 import difflib
 import mmap
 import warnings
+import locale
 
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
@@ -219,6 +220,13 @@ def is_good_srr(filepath):
 			return False
 	return True
 
+def sep(number, loc=''):
+	"""Adds a thousands separator to the number.
+	The function is locale aware."""
+	locale.setlocale(locale.LC_ALL, loc)
+	return locale.format('%d', number, True)
+	
+	
 ###############################################################################
 
 def diff_lists(one, two):
