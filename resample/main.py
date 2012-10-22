@@ -506,7 +506,7 @@ def avi_profile_sample(avi_data): # FileData object
 				b = track.signature_bytes
 				if not b or len(b) < SIG_SIZE:
 					if b:
-						lsig = min(SIG_SIZE, len(b) + rr.length)
+						lsig = min(SIG_SIZE, len(b) + c.length)
 						sig = b
 						sig += movi_data[0:lsig-len(sig)]
 						track.signature_bytes = sig
