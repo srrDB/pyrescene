@@ -35,7 +35,7 @@ import unittest
 
 # for running the script directly from command line
 sys.path.append(os.path.join(os.path.dirname(
-                os.path.realpath(sys.argv[0])), '..', 'rescene'))
+                os.path.realpath(sys.argv[0])), '..'))
 
 try:
     from rescene import merge_srrs
