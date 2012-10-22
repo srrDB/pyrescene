@@ -1,0 +1,1034 @@
+-o *.nfo *.jpg fails if there is no jpg in the dir
+not -o, -s
+	=> -s something.nfo -s *.jpg
+- It would be nice if it was possible to use *sfv on the first paramete
+
+DONE! - list file size in verbose output	=> possible!
+DONE! - repair with missing files
+DONE! - create paths when extracting files (.NET never does this) -> it does with -p parameter?
+DONE! - add, remove, rename stored files
+DONE! - Re-creating RAR file: linuxpath.part1.rar
+	Could not locate data file: /home/me/test/subdir/dir_in_rar\filelist.txt
+	.net bug?
+- .NET can not recreate http://www.srrdb.com/details.php?release=Psych.S06E02.HDTV.XviD-P0W4
+	-> doesn't write the corrupt end block; the fix:
+	
+					else if (block.RawType >= (byte)RarBlockType.RarMin && block.RawType <= (byte)RarBlockType.RarMax || block.RawType == 0x00)
+					{
+						// -> P0W4 cleared RAR archive end block: almost all zeros except for the header length field
+						// copy any other rar blocks to the destination unmodified
+						rarfs.Write(block.RawData, 0, block.RawData.Length);
+					}
+	
+- new block for empty standalone directory
+- new block for oso hashes of archived files (at the end of an srr file?)
+- skip new .rar, r00,... archives when the contents aren't found
+DONE! but creates bad rars for other files - recreate rars of only a single cd/extras
+
+- dot not create srr based on empty sfv files
+- instead of renaming the temporary files, put their data inside the original srr file	? -> but is more IO!
+DONE! separate script - fix merged srr files/detect
+- show srr differences
+- indicate when something smells in an srr file
+- calculate filecount (# of rars for the main movie)
+- calculate total size of the release based on an srr file
+- list rars in cli that should not be tried to repair
+	
+- same exit codes as .net version
+- resample: try to extract sample from one big avi (sample across cds)
+	"Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept getting ... "Unable to extract correct amount of data for track 0. Aborting.
+
+- http://fire.no-ip.info/FireSCene/details.php?release=Brave.Story.2006.DVD5.720p.BluRay.x264-FaNSuB
+  sample does not work with getid3()
+- Python 2.6+ support
+- .exe support Windows
+http://guide.python-distribute.org/
+
+- hachoir find out values of missing stuff
+- CRC support: in srr file; make it possible to check rars for correctness
+while creating srr?
+	- function to pass through all streams and calculates CRC in between
+- possibility to check .sfv/.rars (build-in crcs -> done while constructing!) afterwards
+
+
+- much smaller (even then rar) for srr files:
+http://tukaani.org/xz/format.html
+http://blog.endpoint.com/2009/11/xz-compression.html
+Best RAR compression compressed better than 7z, bzip2 and gzip, but XZ
+resulted in the smallest file sizes although not much different than RAR.
+XZ uses the LZMA2 compression algorithm and is supported by 7-zip.
+  -> do a larger test
+- http://pypi.python.org/pypi/pyliblzma/0.5.3
+
+
+#        Similar projects
+#        ================
+#        
+#         * Kaa - http://freevo.sourceforge.net/cgi-bin/freevo-2.0/Kaa (written in Python)
+#         * libextractor: http://gnunet.org/libextractor/ (written in C)
+
+# .CRR: Compressed RAR Reconstruction
+	=> better yet, flag in srr header that indicates compression
+		=> already in rar headers
+		=> extra rar block?
+# .SRR: Scene Release Reconstruction
+
+# http://code.google.com/p/py-unrar2/
+# http://rarfile.berlios.de/ - http://pypi.python.org/pypi/rarfile/2.2
+
+# http://pypi.python.org/pypi/pyUnRAR2/0.95 - windows/linux
+# http://pypi.python.org/pypi/pyUnRAR/1.0 - windows
+
+# http://www.catacombae.org/jlrarx.html
+
+#nope:
+# http://pypi.python.org/pypi/dirstore/0.1.0
+# http://pypi.python.org/pypi/easy-extract/0.1.1
+
+Californication.S04E01.PROPER.HDTV.XviD-ASAP can't be extracted by unrar.
+
+
+
+Up to 2.5, Python was still compatible with Windows 95, 98 and ME (but already 
+raised a deprecation warning on installation). For Python 2.6 (and all 
+following releases), this support was dropped and new releases are just 
+expected to work on the Windows NT family.
+
+
+
+-------------------------------------------------------------------------------
+
+<superwad> always!
+<superwad> no, the db isn't updated
+<StasuMygd> no that wasnt the question
+<StasuMygd> :D
+<superwad> what's up?
+<StasuMygd> is there any way to edit an existing .srr?
+<superwad> in what way?
+<StasuMygd> removing archived files
+<StasuMygd> let me show you what i mean with an example
+<StasuMygd> rocky.2.dvdrip.german.ac3-cultxvid.ac3
+<StasuMygd> rocky.2.dvdrip.french.ac3-cultxvid.ac3
+<StasuMygd> rocky.2.dvdrip.italian.ac3-cultxvid.ac3
+<StasuMygd> rocky.2.dvdrip.spanish.ac3-cultxvid.ac3
+<StasuMygd> http://xvid.rescene.info/details.aspx?Section=Movies&Release=Rocky.II.1979.iNTERNAL.DVDRip.XviD-CULTXviD
+<StasuMygd> those 4 archived files in that srr i dont have and i dont want them anyway
+<StasuMygd> but the rebuild wont happen exactly because i dont have those files which are actually movie extras
+<superwad> quite right
+<superwad> unfortunately, i don't think it's possible to remove stored files that way
+<superwad> you can only extract stored files, but not change the rar signatures stored
+<superwad> the rar signatures of course determine what avi files are "stored" in the srr
+<superwad> the only option would be to get those files and reconstruct, then remake the srr
+<superwad> i don't think it's entirely in the spirit of srr to put extras in with the main movie
+<superwad> unless they were packed in the same dir, like multi-cd releases
+<StasuMygd> getting the files is an issue
+<StasuMygd> cant seem to find them
+<StasuMygd> silly point of interest: i have actually found the rls rared and all somewhere else :P
+<StasuMygd> w/o the files in question
+<StasuMygd> but since i had it unrared
+<StasuMygd> thought it would be an interesting challenge
+<StasuMygd> to see if it could be rebuild
+<StasuMygd> w/o the missing files :D
+<superwad> i wonder
+<superwad> do srr without any parameters
+<superwad> to see what options you have
+<superwad> check if there are any options to rebuild with missing files
+<superwad> if not, umlaut might have a new feature request :)
+<StasuMygd> nay.. dont see any way to rebuild with missing files
+<superwad> darn
+<StasuMygd> which means smth like an option to choose which of the archived files to rebuild would be cool to add
+* Axims heeft verlaten (ZNC - http://znc.sourceforge.net)
+* Axims (~noo@what.r.u.1ooking-at.us) is binnengekomen bij #x264.rescene.info
+<HellRezor> hmmm i wonder, there was a feature request to be able to rebuilt indevidual cds from a multi-cd release srr , can't recall if it was implemented but worth looking into
+* HellRezor pokes umlaut
+* Axims heeft verlaten (ZNC - http://znc.sourceforge.net)
+* dryes heeft verlaten (Quit: leaving)
+* dryes (hoffman@devio.us) is binnengekomen bij #x264.rescene.info
+* Axims (axims@what.r.u.1ooking-at.us) is binnengekomen bij #x264.rescene.info
+<Gfy> Isn't it possible by creating files with the exact bytesize and name? The main movie files will succed and you can delete the extra rars afterwards.
+<Gfy> and you probably have to use this parameter:
+<Gfy>  -u: Disable automatic CRC checking during reconstruction.
+<YopoM> hmmmmmm
+<YopoM> that's a thought
+<YopoM> can always try it; I know my script DOES add rars in an /extra folder to the srr, if it exists
+<YopoM> since it's a part of the release
+<YopoM> I also add the "Sfv only" in and subs dir (but not the rar itself, as per discussions here)
+<YopoM> *in any
+<YopoM> eww, that Rocky.II.1979.iNTERNAL.DVDRip.XviD-CULTXviD .. was messy, as released, should have put those avi's into a sep folder
+<YopoM> (i.e., /extras)
+* defier is nu bekend als defier`
+<YopoM> ah, I see, the additional avi's are in rars named rocky.2.dvdrip.ac3-cultxvid.rxx (13F)
+* Axims heeft verlaten (ZNC - http://znc.sourceforge.net)
+<YopoM> trying to dup this siutation with another test set, the web lists the file sizes of the archived files, but seems srr won't, even with the -l -v switches
+<YopoM> in fact, on list (-l), the -v does nothing at all
+<YopoM> since the web does show the file size needed to 'fake', we have that param, but if it was an srr NOT from the web db, then no way to know what the size is needed to be 'to fake'
+* |CF| (10384blub@hate-me.or.love-me.la) heeft #x264.rescene.info verlaten
+<YopoM> ironically, if those avi's were listed last in the srr, it would work with nothing more needed
+<YopoM> ah, on size, let it err out, and then size expected is displayed, then correct to right size
+<YopoM> Gfy .. you were abs corrrect, and -u isn't even needed
+<YopoM> set up a same test, using diff avi's, then created as junk avi to use as input for re-create, and here's the results
+<YopoM> Re-creating stored file: zzz.sfv
+<YopoM> Re-creating stored file: timmy.steals.the.show.2011.dvdrip.xvid-sprinter.sfv
+<YopoM> Re-creating RAR file: zzz.rar
+<YopoM> CRC mismatch in file: zzz.rar
+<YopoM> Re-creating RAR file: zzz.r00
+<YopoM> CRC mismatch in file: freiheit-fico.avi
+<YopoM> Re-creating RAR file: timmy.steals.the.show.2011.dvdrip.xvid-sprinter.rar
+<YopoM> Re-creating RAR file: timmy.steals.the.show.2011.dvdrip.xvid-sprinter.r00
+<YopoM> Re-creating RAR file: timmy.steals.the.show.2011.dvdrip.xvid-sprinter.r01
+<YopoM> and on, but it continues with rest of srr, which is what he needed
+<Gfy> nice to know :)
+
+kiczek	HellRezor sometimes a sample doesnt recreate with an SRS in those cases I just include the whole sample in the SRR
+14:20	kiczek	which is what you have to do when encoders include 2 samples for a PROPER for instance
+14:21	kiczek	obviously you cannot recreate a sample from a different source
+14:22		kiczek is kiczek@static.110.199.47.78.clients.your-server.de (shroudBNC User)
+		kiczek is in the following rooms: x264.rescene.info, @roms-isos
+		kiczek is using the server irc.efnet.nl (We worship Optimus Prime)
+		kiczek signed on at 1/03/2011 21:15:25, and has been idle 1 minute and 27 seconds
+14:23	kiczek	also I understand you cannot include subs on the public SRR databae but I really wish there was a "login" system and verified contributers could post alternate SRR files that include Subs and other nice things like /PROOF/
+	kiczek	which would be available to other contributers 
+14:37		<- f0rcEr has disconnected (Read error: Operation timed out)
+14:40		-> f0rcEr has joined x264.rescene.info
+14:45		-> Lazur has joined x264.rescene.info
+14:50		<- f0rcEr has disconnected (Read error: Operation timed out)
+14:52		-> f0rcEr has joined x264.rescene.info
+15:50		<- cachopo has disconnected
+16:29		<- f0rcEr has disconnected (Read error: Operation timed out)
+16:31		-> f0rcEr has joined x264.rescene.info
+16:52	HellRezor	well i do support the storing of subs so i just put them on http://www.mediafire.com/srrd
+16:54	HellRezor	also the sample is corrupt somehow or not legit but not of a different source and the error message is what raises the question
+
+20:32	BarryShit	Anyone got build instructions for rescene?
+20:42	rocket_	build as in compile?
+20:44	BarryShit	yeah, I want to make an ubuntu package, so I need to compile from source
+20:45	rocket_	ic, that's beyond me eheh, poke umlaut
+20:46	BarryShit	I just need the command line command to compile it
+	BarryShit	umlaut: can you help?
+	rocket_	it's not that straightforward afaik
+20:47	rocket_	umlaut is not around most of the time, just hang in here and someone more linux savvy than me will get to you eventualy
+20:48	BarryShit	the csc command in windows would help
+20:49	rocket_	can you run it from within wine or something?
+	rocket_	*can't
+	BarryShit	I can run the distributed binary using mono
+20:50	BarryShit	but you can't submit a package to ubuntu or debian without having it automatically build form the source package on their machines
+	rocket_	ah, right
+20:54	AWingsFan	it should (in theory) be the same steps as compiling it from source as .NET things on Windows just with mono.
+20:55	BarryShit	AWingsFan: I'm not a C# dev so instructions would be nice
+	AWingsFan	I don't really know why you'd need to submit it to ubuntu or debian anyways since you install mono, put the exes in the right place and go.
+	AWingsFan	BarryShit: I'm not either 
+	BarryShit	it's so it is available for others using debian and ubuntu
+20:56	BarryShit	they can go apt-get rescene and it will install on their machines
+	AWingsFan	well, I guess that's all fine and good but I'd hope that by the time you have it submitted, umlaut will have REFRESHED THE GODDAMN DATABASE
+	AWingsFan	because he's pretty far behind on that (August/September was the last refresh, right?)
+	Gfy	It's done for Arch Linux, but they just to use the .exe: http://aur.archlinux.org/packages.php?ID=44749
+20:57	AWingsFan	oh hey, I know that dryes name...
+20:58	BarryShit		Gfy: on debian they wouldn't accept the package if the source wasn't readily available in the repo
+
+20:59	Gfy	Have you tried opening the sources in Mono Develop and then pressing the compile button?
+21:00	BarryShit	Wouldn't I need the sln file it's not supplied with the source
+21:01	Gfy	just create a new project en copy the files into it
+	Gfy	and maybe move if you get errors
+21:06	BarryShit	I get "Unsafe code requires the `unsafe' command line option to be specified"
+21:08	Gfy	no idea, but I would check the project properties or something
+	Gfy	maybe you can check unsafe somewhere
+	BarryShit	I think I need to set up specific options in MD to build it, if anyone has a vstudio sln file that would help
+21:09	BarryShit	There is a field in md for addition arguments I'll do some googling
+21:11	Gfy	-unsafe or /unsafe probably
+	BarryShit	Yeah already got there
+	BarryShit	that worked new problem
+21:13	BarryShit	The type or namespace name 'RegularExpressions' does not exist in `System.Text'. Are you missing an assembly reference?
+21:15	Gfy	Google quote: "You have referenced System.Text.RegularExpressions in your code, but you
+	Gfy	apparently never added Regular Expressions to your list of project
+	Gfy	references.
+	Gfy	Go into the project explorer and add a reference to the library."
+21:17	Gfy	I'm installing monodevelop in a virtual machine; see if I can help you
+		<- Trix- has disconnected (Read error: Connection reset by peer)
+	BarryShit	cool thanks
+21:19		defier` changes nick to defier
+	BarryShit	I think I've done it
+		-> Trix- has joined x264.rescene.info
+21:20	BarryShit	Yup I got a functioning exe
+21:22	BarryShit	I just needed to go into project> edit references and tick System
+21:23	BarryShit	plus adding /unsafe to the compile additional options
+21:26	Gfy	gmcs -out:srr.exe -unsafe -r:System *.cs
+	Gfy	If you want to do it through command line
+	BarryShit	Thanks Gfy
+	BarryShit	I'm looking into MD's make file creation ability
+21:27	Gfy	I've never packaged anything, so I have no idea for that 
+21:30	BarryShit	I've done a few little packages myself I made one for a little php webmail program I was messing about with, but this is the first package I'm going to try to submit to the repos
+21:42		BarryShit is ~MickStep@cpc3-stkn5-0-0-cust960.11-2.cable.virginmedia.com (Michael Stephenson)
+		BarryShit is in the following rooms: x264.rescene.info
+		BarryShit is using the server irc.eversible.com (Eversible.com Internet Services)
+		BarryShit signed on at 21/03/2011 20:29:21, and has been idle 11 minutes and 41 seconds
+
+
+
+17:57 < furtim> does anyone know if theres some kind of flag to do a
+                test/verify of the srr without actually rebuilding the rars?
+17:59 -!- defier` [~x@217.18.70.193] has quit [ZNC -
+          http://znc.sourceforge.net]
+18:15 -!- defier` [~x@217.18.70.193] has joined #x264.rescene.info
+18:52 < HellRezor> the srr has the checksum for the extracted content, you
+                   could compare that to the file you have
+18:53 < HellRezor> but i don't belive you can normally view that info
+                   although it is available on the db page
+18:57 < lrkj> open the srr file in winrar to see the crc32 value of the files
+18:57 < lrkj> create an sfv file for your extracted content and verify
+              manually
+
+
+03:39 < gomtuu> Oh, from when I asked it last night?
+03:39 < AWingsFan> [15:35:35] <lrkj> mv filelist.txt dir_in_rar\\fileliest.txt
+03:39 < AWingsFan> apparently (I joined after you left)
+03:40 < gomtuu> IC
+03:40 < gomtuu> Thanks for letting me know. :)
+03:42 < gomtuu> Well, I'll have to go to bed in a few hours, but for anyone who might read this:
+03:44 < gomtuu> I've since been able to get srr.exe to reconstruct my RARs, but they're damaged (most of them are missing between 1 and 5 par2 blocks)
+03:45 < gomtuu> The way I got it sort-of working was be recompiling srr.cs with the SearchOption.AllDirectories flag added to the GetFiles call in the
+                autoLocateRenamed routine, but for some reason, srr.exe complains about CRC errors while it's rebuilding, and, like I said, the RARs are
+                damaged.
+03:48 < gomtuu> (Also, that's not an ideal solution if it recursively searches the whole inputdir tree. That could be really slow.)
+03:51 < gomtuu> Before I tried the SearchOption approach, I tried setting srcName = srcName.Replace('\\', Path.DirectorySeparatorChar) around line 490. That
+                seemed to perform the correct substitution, but srr.exe still couldn't find the first file in my archive, probably because it contains an
+                umlaut o. The error message did change from:
+03:53 -!- diskdocx [~diskdoc1@d24-141-141-139.home.cgocable.net] has quit [Read error: Connection reset by peer]
+03:53 < gomtuu> Could not locate data file: /home/me/test/subdir/dir_in_rar\filelist.txt to /home/me/test/subdir/dir_in_rar/filelist.txt, but in my case the
+                "filelist.txt" file has an umlaut o in it.
+03:59 < gomtuu> I looked at the RAR file and the SRR file, and the umlaut o is encoded as a single byte (0x94) in both files, so I guess that's CP437. I don't
+                know how to tell what it's encoded as in the filesystem, but my locale is set to UTF-8, so that's probably it.
+03:59 < gomtuu> Also, if I use xxd (a hex viewer) to inspect srr.exe's "Could not locate data file" output, there's "EF BF BD" where the umlaut o should be. I
+                have no idea why it would be that. If it were UTF-8, it'd be "C3 B6"...
+03:59 < gomtuu> So, hopefully that helps.
+04:02 < gomtuu> I'll stay in the channel this time in case someone wants to reply.
+
+
+YopoM	awescript isn't that difficult,many have run it on their collections
+	YopoM	I remember ryback was here
+	YopoM	he contributed quite a few
+
+13:34 < HellRezor> if only it was as simple as comparing file names
+13:40 < HellRezor> but before you can declare an srr a dupe you need to make sure its actually for the same rars (one could be a repack) that it doesn't
+                   contain missing parts (srs/nfo/sfv/jpg) that it doesn't contain a different version of included files (srs/nfo/sfv/jpg) that might be more
+                   correct while taking into account that nfo/sfv files could be the same but with different endline character
+13:40 < HellRezor> (unix/mac/dos) style, that the srs might be better (i.e. created with the -c switch opposed to without) that the srr might be created with
+                   the -p switch as opposed to without .... and possibly more i can think about right now
+13:41 < HellRezor> *can't
+13:43 < HellRezor> oh and sfv files that had junk added to them by bad sfv checkers or that had been created on a date different then the release (could
+                   indicate a repack)
+                  
+                  
+HellRezor	first thing is to ignore the newline type for the nfo/sfv since it makes no difference
+	HellRezor	as far as you should be concenred when thats the only diff the files are identical
+20:04	HellRezor	now for the sfv, you should compare a normalized version no comments sorted by filename and and in lowercase , just to make sure you're dealing with the same files after that a visual inspection might be required to see if one was recreated later on
+	HellRezor	yeah those shows don't use the normal season/ep format
+                  
+HellRezor	the first thing to check before comparing sfv/nfo to see if one srr contain new data for the same release is check that the srr itself is for the same rar files (name/crc32) and content (name/crc32)
+20:09	HellRezor	after that you check if the new one contain an srs , and if the old one contains one too you check if they are for the same sample (name/crc32) and if the new one is better (i.e. created with the -c switch while the old one wasn't)
+20:10	Skalman^	Ok, but crc32 will most likely noty match since most is made with older software and not the lastest 1.2
+	HellRezor	its crc32 the algorithem and its results are ancient
+20:11	Gfy	Jay.Leno.2009.09.14.Jerry.Seinfeld.720p.HDTV.x264-MOMENTUM ever other date formats used than this one?
+	HellRezor	it would match for the same content
+20:12	Skalman^	oh the srs fileformat stores the crc for the sample file, i think you meant the crc32 for the actual srs file
+	HellRezor	no for the actuall sample, to see if they were bother for the same one
+20:13	HellRezor	the srs crc32 value would ofcourse change with version/switches etc
+	HellRezor	but the one inside for the sample should be the same
+20:14	HellRezor	all other things being equal an srr with sorted content (created with the -p switch , cd1 rars in CD1 srs in Sample etc..) should be considered better
+20:17	Skalman^	Hmm, I think its gonna be too much to code :/
+	Skalman^	checking if the -c switch was used and all :/
+20:18	HellRezor	the last thing you check is the sfv where you can ignore those you know for sure are the same (only difference is newline char or uppercase/lowercase crc32 values or both) and visual inspection to determine other cases if the normalized version is the same (striped of comments sorted and lowercased) because if its not something is wrong
+	HellRezor	shouldn't be too hard the indication is right there in the srs file
+20:19	HellRezor	anyhow all these checks and conditions are the kind that you get right once, and make life easier from then on
+20:21		-> WormDr1nk is x264.rescene.info binnengekomen
+20:23	Skalman^	Ok. I'll think about it for sure
+20:24	HellRezor	heh  you'll probably think about it everytime you need to decide if its a dupe or not
+20:25	HellRezor	just think of all the cases you'll get 'yes its a dupe, safe to delete' or 'its the same release but new one is better' leaving you to only deal with those that require a human eye
+20:26	HellRezor	anyhow i'll more than happy to assist with ideas and logic for such checks
+20:27	HellRezor	*i'll be              
+                  
+                  
+                  
+
+Game.of.Thrones.S01E07.HDTV.XviD-ASAP
+r00 no files found in the archive
+rarfilesource
+Version to extract is 2.9 while it should be 2.0!
+
+03:43 <Skalman^> you could add so it detects if two srrs have been merged
+03:44 <Skalman^> Its a valid srr and works with srr.exe, but its an ugly method
+03:45 <lrkj> what do you mean with merged?
+03:45 <Skalman^> copy srr1.srr + srr2.srr srr3.srr
+03:45 <Skalman^> like that
+03:45 <Skalman^> two files into one
+03:45 <Skalman^> srr1 and srr2 would become a new file srr3
+03:45 <lrkj> ah, didn't think of that one yet
+	ReScene Database Cleanup Script 1.0
+03:51 <Skalman^> http://fire.no-ip.info/FireScene/details.php?release=007.Quantum.Of.Solace.DVDRip.XViD-PUKKA
+03:51 <Skalman^> http://fire.no-ip.info/FireScene/details.php?release=10.Promises.To.My.Dog.RETAiL.DVDRip.XviD-CoWRY
+03:51 <Skalman^> http://fire.no-ip.info/FireScene/details.php?release=12.2007.LiMiTED.DVDSCR.XViD-HLS
+03:53 <Skalman^> http://fire.no-ip.info/FireScene/details.php?release=12.Monkeys.1995.iNTERNAL.DVDRip.XviD-BELiAL
+
+stored file block (sfv) in the middle of srr rar blocks
+
+10:16 < schnappy> Interesting issue - a sample can't be read by WMP (coreavc), but can be read my VLC. srs can't read it... hmmm
+10:17 < schnappy> "File size does not appear to be correct!" "Expected: 52" "Found : 41,943,040" "COrruption detected: Invalid element length at 0x0270e21d.
+                  Aborting"
+10:19 < schnappy> Penn.And.Teller.Fool.Us.S01E06.720p.HDTV.x264-BARGE
+10:20 < schnappy> Skalman^, any chance you could add an option to upload just SRS files? I know it's wierd but i have samples but not oRAR's of some things...
+10:21 < schnappy> and nfo's
+10:33 < YopoM> VLC can read broken files; but they still are broken, and srs catches all errors
+10:36 < schnappy> but it's still the sample of the release ;)
+10:37 < YopoM> a broken sample
+10:37 < schnappy> which some players can duct tape together
+10:37 < schnappy> im just throwing it out there that srs doesnt work all the time ;)
+
+11:13 < YopoM> ah, I'll have to grab the samples and make srs myself; I was actually rebuilding them from the srs you supplied; Fails (not your fault)
+11:13 < YopoM> They are made with ... [ISFT]IMEncoder 1.0rc2-4.2.1 ... and that's one of the issue with srs, won't work with that vs of mencoder
+11:14 < YopoM> Does work with mencoder-Sherpya-SVN-r32198-4.2.5
+11:29 < YopoM> Anyone expecting to use the current vers of srs to create samples for this writing app, can't. It will take a new version of srs to do so.
+11:31 < YopoM> I'll paste what happens here ... some lines pasting now
+11:31 < YopoM> L:\srs tour.de.france.2011.stage18.highlights.ws.pdtv.xvid-w4f-sample.srs tour.de.france.2011.stage18.highlights.ws.pdtv.xvid-w4f.part01.rar
+11:31 < YopoM> SRS Load Complete... Elapsed Time: 0.05s
+11:31 < YopoM> Track Location Complete... Elapsed Time: 0.55s
+11:31 < YopoM> Track Extraction Complete... Elapsed Time: 0.81s
+11:31 < YopoM> Rebuild Complete... Elapsed Time: 1.13s
+11:32 < YopoM> File Details: Size CRC
+11:32 < YopoM> ----------------------------- --------------------
+11:32 < YopoM> Expected : 10,964,954 2EBA00F0
+11:32 < YopoM> Actual : 10,964,954 650F4672
+11:32 < YopoM> Rebuild failed for sample: tour.de.france.2011.stage18.highlights.ws.pdtv.xvid-w4f-sample.avi
+11:32 < YopoM> but, this is a long known issue; nothing else can be done as it is
+11:34 < YopoM> (That MEmcoder interleaves the avi records .. all other other writing apps make the avi records sequential, and he expects that to happen, or
+               something along those lines)
+11:36 < YopoM> so, actual sample is 1,3,2,4,6,5
+11:36 < YopoM> and srs rewrites it 1,2,3,4,5,6
+11:36 < schnappy> i see
+11:37 < schnappy> but didnt you say you were going to redo it? so... wont you have the same issue?
+11:37 < YopoM> and when you play the rebuilt sample, it's .. lmao .. fugly!!!!!!!!!
+11:38 < YopoM> I said, I was going to use your supplied srs to make the sample from the rars; and I could not, so I had to dl the samples and rebuild all
+11:38 < schnappy> right ok then
+11:38 < YopoM> anyway, they're in the db
+11:39 < schnappy> when you make the srs
+11:39 < schnappy> wont it be the same srs?
+11:39 < YopoM> yup
+11:50 < YopoM> all right, all finished, going to leave one unconfirmed, although it is done and rdy to be (a place marker)
+
+12:22 < XDot> anyone uses everything program?
+12:31 < HellRezor> what program ?
+12:34 < XDot> everything
+12:35 < XDot> http://forum.voidtools.com/viewtopic.php?f=9&t=592
+12:35 < XDot> http://www.voidtools.com/Everything-1.2.1.451a.zip
+12:35 < XDot> its a search program
+12:35 < XDot> for your files
+12:35 < XDot> instant search
+12:36 < XDot> its great
+12:36 < XDot> only that i want to list all folders which dont have /Sample
+12:36 < XDot> but i dont know how
+12:49 < HellRezor> for /d %d in (*-*) do IF NOT EXIST %d\Sample ( echo %d >> sampleless.txt )
+12:49 < HellRezor> try this ^
+14:30 < Skalman^> this site has really good documentation on that: http://ss64.com/nt/for.html
+
+15:16 < HellRezor> srs can't be created for a vob
+15:17 < HellRezor> theoretically it might be with some alterations but even so you'd need the dvd or a dvdr release so its not practical
+15:27 < HellRezor> mmm well comparing srs files isn't usefull, you need to see whats on the inside if its the same size/name/crc32 then its the same srs
+15:28 < HellRezor> then the only thing that should matter is if one was created with the -c switch than its the better one
+
+15:51 < Skalman^> If I have an srr with CD1 and CD2, and only the avi for CD1, can I still recreate it=
+15:51 < Skalman^> and skip CD2?
+15:51 < HellRezor> not sure, umlaut said he'll something about it at some point but i can't recall if it happened
+15:52 < Skalman^> Ok
+15:52 < Skalman^> becuase I really hate that a couple of releases has two srrs and I would like to put them in one:
+                  http://fire.no-ip.info/FireScene/browse.php?q=-extras
+15:53 < HellRezor> give it the good ol' trial and error ?
+15:53 < Skalman^> but I can't do that if its not possible to recreate CD1 and CD2 without the extras, that would be stupid
+15:53 < Skalman^> hmm yea I'm gonna try that
+15:53 < HellRezor> what extras do you mean ?
+15:54 < Skalman^> http://fire.no-ip.info/FireScene/browse.php?q=Animalympics
+15:54 < Skalman^> Is that 2 pre?
+15:54 < HellRezor> and you're sure that those were released together ?
+15:55 < HellRezor> the whole -extras thing makes it suspicious
+15:55 < HellRezor> better see if anything is mentioned in nfo
+15:55 < HellRezor> + Extra Size··[ 175MB / 13x15MB
+15:56 < Skalman^> I think so yes, because if you look, none of them have nfo or srs: http://fire.no-ip.info/FireScene/browse.php?q=-extras thats a bit
+                  suspisios :P
+15:57 < HellRezor> this one is Star.Trek.DS9.S01-EXTRAs.DVDRip.Divx.FFM very suspicious
+
+Skalman^	error?
+17:07	Skalman^	what error lol
+	HellRezor	and how do you get nuked from an error
+	XDot	 <XDot> unable to extract correct amount of data for track 0.aborting
+17:08	Skalman^	and you tried on cd2 too?
+17:09	XDot	yes
+	XDot	hm
+	XDot	http://fire.no-ip.info/FireSCene/details.php?release=Dont.Look.Now.1973.iNTERNAL.Dual.Audio.DVDRip.XviD-RiTALiX
+	Skalman^	ok, then the samples is probably encoded seperatley or something, I dont know exactly how this works
+	XDot	same for this
+	XDot	it says track 1 though
+	XDot	unable to locate track signature for track 1
+	
+00:07 < Skalman^> a dirfix/nfofix etc are always pred with just an nfo?
+00:08 < YopoM> dirfix needs nothing
+
+Skalman^	Yea, comes with an nfo (if not it would be nuked as missing nfo? :D)
+	HellRezor	not neccesarily sometimes its just a folder
+17:37	HellRezor	storing the fix inside the release its relevant to, solves the problem of not being able to create an srr for just an nfo and keeping relevant information where its needed
+
+19:53 < YopoM> Here is a 9 line batch file that you run at the root of your TVseries folder
+19:53 < YopoM> @echo off
+19:53 < YopoM> if %1~==NEXT2~ goto PASS2
+19:53 < YopoM> FOR /D %%T in (*.*) do call %0 NEXT2 %%T
+19:53 < YopoM> goto alldone
+19:53 < YopoM> :PASS2
+19:53 < YopoM> pushd %2
+19:53 < YopoM> for /d %%d in (*-*) do IF NOT EXIST %%d\Sample ( echo %%d >> ..\sampleless.txt )
+19:53 < YopoM> popd
+19:53 < YopoM> :alldone
+19:54 < YopoM> it's works only for a 3 level structure
+20:11 < YopoM> an improvement might be to also list the part series path, so tat one line would change to this ....
+20:11 < YopoM> for /d %%d in (*-*) do IF NOT EXIST %%d\Sample ( echo %2\%%d >> ..\sampleless.txt )
+
+
+YopoM	the one drawback to slapping multi cd into one srr; which as you and umlaut know .. I did not .. for thousands ... then I was convinced with sound arguments .. and conact all my multi cd srr into 1 (copy /b cd1+cd2 cdALL)
+
+                   
+08:00	HellRezor	well i'll need to rework things so the .sfv is still included in the copy without subs, right now i have one with subs and one without
+08:13	HellRezor	http://pastebin.com/bWMyXgSM srr_srs_folder.bat
+HellRezor	this one stores the subs sfv in both copies
+08:14	HellRezor	just make the line with 'pause' on it a blank one for the "_np" version
+
+
+
+YopoM	XDot .. here is a batch file you can run, and no matter how far down the files are it will work
+	YopoM	http://pastebin.com/6Yj4FpqC
+19:41	XDot	huge thx
+	XDot	it would be nicer though the logfile to just list the rls names
+	XDot	and not tell the paths
+19:42	XDot	so i can copy paste in that list search of Skalman^ site
+		<- marfff is niet meer verbonden (Ping timeout: 318 seconds)
+19:45		-> marff is x264.rescene.info binnengekomen
+	YopoM	Ok, easy, near the bottom change .. "CD>>%@LogFile%" ... to ... "ECHO %2>>%@LogFile%"
+	YopoM	without the quotes
+	
+YopoM	edited version now there @ http://pastebin.com/diff.php?i=20w9s9tm
+
+XDot	Expected : 4.139.008 51FC9E9A
+	XDot	Actual : 4.139.008 35FFAFC0
+	XDot	http://fire.no-ip.info/FireSCene/details.php?release=Father.Of.The.Bride.1.1991.INTERNAL.DVDRip.XviD-PtSL
+22:55	XDot	that doesnt work
+23:24	YopoM	There's only 5 bytes diff .. (compare bad.sample TO good.sample) .....
+	YopoM	00072335: 96 92
+	YopoM	002A4335: 74 70
+	YopoM	002C8335: 8E 8A
+	YopoM	002EB335: D7 D3
+	YopoM	00355335: 3D 39
+23:25	YopoM	wow, that the same bit in each byte, isn't it
+	YopoM	bit3
+23:27	YopoM	it's some metadata issue; the rebuilt sample is perfect, just not perfectly identical to the source
+
+03:11	YopoM	I'll be damned, this is a new one on me
+03:12	YopoM	Just now was able to get this ... "Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept getting ... "Unable to extract correct amount of data for track 0. Aborting.
+03:14	YopoM	I figured what the problem was, and sure enough. They made the avi, destined to be split in 2, then made the sample, but the sample splits across the 2 avi's (perfectly legit, just have never seen it); Had to extract, then mux the 2 avi's into one, then run srs, and then it worked
+
+YopoM	back to one earlier, I have a perfectly good avi sample here, according to ALL my tools I use, except srs.exe says it has a bad 4cc value
+18:10	YopoM	which is why there was no srs for Wizards.of.Waverly.Place.The.Movie.2009.DVDRip.XviD-GFW
+	YopoM	tried srs 1.2 and 0.9 beta, they all think it is bad
+18:11	YopoM	-Corruption detected: Invalid FourCC value ( ) at 0x005aa066. Aborting.
+gfw-wowptm.sample.avi
+
+
+HellRezor	depends on the order of the files in the rar when the rar contains more then one file
+18:13	HellRezor	often with extras release you need to extract and try different files when creating the srs if you wish to use the -c switch, and either way you'll need to do it when recreating the sample
+
+YopoM	Hmm, I think I'll use that NO sample bat file myself, found a TV eps w/ no samp and had it marked as with
+	YopoM	I would like to mod it to show no sample folder / and sample folder and no sample
+	YopoM	*I would like to mod it to show no sample folder / and sample folder with no sample
+01:32	YopoM	oh, there a lot simpsons w/o, lol
+	YopoM	ah, all PDTV etc, don't care there
+01:33	Joda	who the f needs a sample, if its bad its nuked
+01:35	YopoM	samples are a part of the release
+	YopoM	same as the subs
+02:20	Skalman^	hmm
+	Skalman^	http://fire.no-ip.info/FireScene/details.php?release=Unstoppable.2004.STV.DVDRip.XviD-LiNE
+	Skalman^	Expected : 7 933 952 ACF2D373
+	Skalman^	Actual : 7 933 952 2BA4C919
+	Skalman^	Rebuild failed for sample: line-unstop-sample.avi
+02:21	Skalman^	Not that mencoder too
+02:23	Skalman^	oh the srs is actually wrong, because it worked when i dl the sample and create one with -c
+	Skalman^	but its 2BA then... and this one says it should be ACF...
+02:28	YopoM	or is it?
+02:31	Skalman^	maybe I took the iniativie too quick there lol
+02:34	YopoM	it seems it is
+02:35	Skalman^	What do you mean?
+	YopoM	the one I have here .... Sample CRC : ACF2D373 .. the one from the db ... 2BA4C919
+02:36	YopoM	that's just srs -l
+	YopoM	but they are diff
+	YopoM	let me replace with mine, and you can dl it and try again, hang
+02:37	Skalman^	hehe actually I just switched it to 2BA (thats what i meant i might be too quick there)
+	YopoM	ok, try the one from the DB .. now
+	Skalman^	ok
+02:38	Skalman^	Expected : 7 933 952 ACF2D373
+	Skalman^	Actual : 7 933 952 2BA4C919
+	Skalman^	Rebuild failed for sample: line-unstop-sample.avi
+	YopoM	on another note, I think I have detected a real potential problem with srs.exe (for me) .. does anyone here run a cmd line batch file running srs.exe using the -c switch?
+02:39	Skalman^	I was gonna ask the same, I think I should fix my batchfile to use the -c switch.
+	YopoM	ok, the srs is the same thing, seems it is saying .. you have a bad rar set, does it pass sfv?
+02:40	Skalman^	hmm
+	YopoM	if a bit is different @ sample point, it would display it like that
+	Skalman^	yea its fine
+	Skalman^	sfv fine
+	YopoM	ok, let me pull my own copy from dvd
+	YopoM	and try
+02:42		<- dryes is niet meer verbonden (Lost terminal)
+02:43	Skalman^	yea ok thanks
+02:57	YopoM	getting lost in details, so let me type a few lines for reference
+	YopoM	The srs I have says ... "Sample CRC : ACF2D373"
+	YopoM	the sfv line 1 .. is "line-unstop.r00 94d8dd62"
+02:59	YopoM	The srs that was in the DB says ... "Sample CRC : 2BA4C919"
+	Skalman^	It used to be ACF2D373 in the DB but i changed it because I was very quickly to determine it was wrong... http://fire.no-ip.info/FireScene/viewlog.php
+03:00	Skalman^	The srs I have says "2BA4C919" and the first line on SFV is "line-unstop.r00 94d8dd62"
+	Skalman^	Just something... are you using srs 1.2?
+03:01	YopoM	yes
+		<- wiese1 is niet meer verbonden (Ping timeout: 258 seconds)
+03:02	Skalman^	hmm
+	Skalman^	did you create it using -c?
+	YopoM	I don't use -c at all, so no
+	Skalman^	Can you try that?
+03:03	YopoM	does my .r00 file's sfv match yours?
+	Skalman^	hehe yea ^ I typed my crc too 
+	Skalman^	its the same
+03:06	YopoM	I am smelling some kinda bug
+03:07	Skalman^	Does it work for you too?`
+	YopoM	I rebuilt a new srs on the sample, using -c
+	YopoM	Sample CRC : ACF2D373
+03:08	YopoM	when you try and remake from the rar, it fails
+	YopoM	the one I just made fails to remake
+03:09	YopoM	ok, yup
+	YopoM	Expected : 7,933,952 ACF2D373
+	YopoM	Actual : 7,933,952 2BA4C919
+03:10	YopoM	made srs on sample with -c, ok, copy srs to parent, cd from sample to parent, srs file.srs, gives the above
+03:11	Skalman^	Expected : 7 933 952 2BA4C919
+	Skalman^	Actual : 7 933 952 2BA4C919
+	YopoM	i.e., the one I just made that passes the -c test (data found) when rebuilt is crc error
+03:12	Skalman^	made srs on sample with -c OK, copy to parent, recreate with srs srsfile.srs rarfile.rar
+	YopoM	in fact, that's exactly like the one I talked about yesterday that I sent to Gfy
+03:13	YopoM	except this has a whole lof of differences, not just 4
+03:15	YopoM	same thing with srs 1.1
+03:16	Skalman^	Okay lool. Can we say which one is the right CRC?
+	YopoM	passes Gspot as well, even tho there are these binary differences
+	YopoM	(it's not a corrupt avi sample)
+03:17	YopoM	somehow, it cannot rebuild the metadata
+03:18	Skalman^	hmm ok
+03:19	YopoM	so did you also try making a new srs with -c, then try rebuilding it from that same srs?
+03:21	YopoM	all of the Simpsons S01 xvid samples are also kicking out when -c used
+	YopoM	they look flaky, tho
+	Skalman^	yea thats when i get:
+	Skalman^	Expected : 7 933 952 2BA4C919
+	Skalman^	Actual : 7 933 952 2BA4C919
+	YopoM	so it works for you, but not for me
+03:22	YopoM	hmmmm
+	YopoM	DCC me your whole sfv
+	YopoM	something is really really odd
+	Skalman^	Haha
+	YopoM	and send me you srs as well
+03:23	YopoM	simons sample name ... "The.Simpsons.S01E01.internal.dvdrip.xvid.sample-tns.avi"
+	YopoM	that lookd odd
+	YopoM	looks even
+03:26	Skalman^	hmm but the Simpsons TNS releases arent in the db
+	Skalman^	Only HOSTILE
+	YopoM	yeah, I know, I was trying mine, which is TNS
+03:29	YopoM	aight, i think I see what's happening
+03:30	YopoM	we are relying a lot on the -c to be perfect; it may not be
+03:31	YopoM	I have a sample, make srs, that cannot rebuild, but it does make a avi .. use yours to create a sample, it does, noproblem, compare that sample to the failed one, and it is the same
+03:34	YopoM	even tho when I created, I used -c, and it saud that all data can be found
+	YopoM	*it said
+	YopoM	dir
+	YopoM	oops
+	YopoM	now I know I am tired, lol
+03:37	Skalman^	okay but
+	Skalman^	Which one is the right then?
+03:39	YopoM	the one that is in the Db now (yours)
+	Skalman^	Ok 
+03:40	YopoM	I just put it there
+	YopoM	and redl, just to make sure
+	Skalman^	hehe okay thanks
+	Skalman^	that was wierd
+03:41	YopoM	Ok, back to -c in a batch file
+03:43	YopoM	I see the date on this sample file I have is .... line-unstop-sample.avi 2004/07/10
+03:44	YopoM	PRED is 2004/09/27
+	YopoM	long after the date on the sample, lol
+03:46	Skalman^	before?
+03:47	Skalman^	your date is before it was pred?
+03:58	Skalman^	hehe this one is a funny documentary about people and video games from 80s The.King.of.Kong.PROPER.RERiP.LIMITED.DOCU.DVDRip.XviD-eXtaCY
+	Skalman^	http://www.imdb.com/title/tt0923752/
+04:08	YopoM	I have a sample, whereby it fails the -c check; If that is in a batch file, it stops the batch file dead, no other lines are processed
+04:09	YopoM	i.e., for any one that fails the -c check, it does this, for instance, here's a 2 line batch file, it will never even exceute the 2nd line
+	YopoM	srs The.Simpsons.S01E01.internal.dvdrip.xvid.sample-tns.avi -c ..\simpsons-s01e01-xvid-schizo.rar
+	YopoM	ECHO Am I here ??????
+	Skalman^	cant you send that batchfile to me? sound really usable
+	Skalman^	lol
+	Skalman^	TNS sample SCHIZO release lol
+04:10	YopoM	yeah, but, anything it does that
+	Skalman^	oh okay
+	YopoM	-c stop a batch file exceution, how in the hell can that be, lol
+	YopoM	*a -c FAILURE stops ....
+	YopoM	if it doesn't fail, np
+04:11	YopoM	yeah, so I had been thinking of a recursive batch file that would just do the test (no actual srs creation), and report all fails into a log file
+04:12	YopoM	1st fail, it's stopped dead, as I have found out
+	YopoM	gotta be some weird .NET side effect is my olny guess
+04:13	YopoM	on another note, yeah, do I have the wronf samples in there, lol
+	YopoM	*why
+04:19	YopoM	ah, because it was posted like that in usenet, and once again I just grabbed it all and dl, didn't check so well, lol
+04:20	Skalman^	the one uploaded "The Daily Show" you're using a very old software beta 11 lol
+04:44		<- messi10 is niet meer verbonden (�I-n-v-i-s-i-o-n� 3.2 (July '10))
+05:50	HellRezor	try using 'call' YopoM
+05:51	HellRezor	i remember having to tweak things for my batch file
+05:52	HellRezor	anyhow yeah, -c isn't perfect, which is why umlaut said he'll add another that checks the whole tracks rather then the signiture. but -c is better than not checking at all
+06:33	YopoM	yeah, after I had typed that I realized, duhhhhh, that I made srs a pathed batch file, so I could change the location at whim
+	YopoM	lol
+	YopoM	srs The.Simpsons.S01E01.internal.dvdrip.xvid.sample-tns.avi -c ..\simpsons-s01e01-xvid-schizo.rar
+06:34	YopoM	so, no call, branches to that, and ends there
+	YopoM	sometimes looking at the big picture too much, lol
+06:35	YopoM	working on a batch file now to test -c all media in the path, based on that one yesterday that walks the path looking for a Sample folder
+	YopoM	but dinner now, so watch flick and munch 1st
+07:03		<- ViperTG is niet meer verbonden
+07:07		-> wiese1 is x264.rescene.info binnengekomen
+07:33		-> furtim is x264.rescene.info binnengekomen
+07:39		<- furt1m is niet meer verbonden (Ping timeout: 504 seconds)
+08:39		<- futur1sm is niet meer verbonden (Read error: Connection reset by peer)
+08:46		-> futur1sm is x264.rescene.info binnengekomen
+08:50		<- djgarf is niet meer verbonden (Ping timeout: 600 seconds)
+08:51		-> djgarf is x264.rescene.info binnengekomen
+08:52		<- futur1sm is niet meer verbonden (Ping timeout: 244 seconds)
+08:57		-> futur1sm is x264.rescene.info binnengekomen
+09:09	Skalman^	Another one YopoM
+	Skalman^	Expected : 6 494 208 6A656586
+	Skalman^	Actual : 6 494 208 63D5841B
+	Skalman^	Rebuild failed for sample: bdz-linew.dvdrip.xvid.sample.avi
+	Skalman^	http://fire.no-ip.info/FireScene/details.php?release=Linewatch.STV.DVDRip.XviD-BULLDOZER
+09:11	Skalman^	Also same thing here, finding another sample somewhere that matches 6A656586
+09:13	YopoM	on this one, I did not get an error
+	YopoM	Check Complete. All tracks located.
+	YopoM	6,494,208 6A656586
+09:14	Skalman^	hmm, I try rebuild i
+09:15	YopoM	What I did was srs avi -c rar
+09:16	Skalman^	hmm
+	Skalman^	when im using the srs from the site i get that error
+09:17	YopoM	however, when I try to rebuild the one I just made that checked with -c
+	YopoM	I get
+	YopoM	Expected : 6,494,208 6A656586
+	YopoM	Actual : 6,494,208 63D5841B
+	YopoM	which is also what you got
+09:19	Skalman^	oh its just something wrong with rebuilding the sample?
+09:21	Skalman^	or what should it be? lol
+09:22	YopoM	you know, umlaut is going to have to look at this, because an srs creates fine with -c specified, but to try and rebuild it fails
+	YopoM	so I don't know why
+		-> futurj1sm is x264.rescene.info binnengekomen
+09:23	Skalman^	
+		<- futur1sm is niet meer verbonden (Ping timeout: 244 seconds)
+09:26	YopoM	I dl another one, and it also 6A65.... crc32
+09:28		<- futurj1sm is niet meer verbonden (Ping timeout: 244 seconds)
+09:29	YopoM	so maybe another test in this batch file (for a later time) is to also try and rebuild the whole sample to see if that is pass/fail
+09:30	YopoM	I've already got it working for a non-multi CD with one sample only, has to put in logic for multi cd (XVID) and/or multi-sample
+09:32	YopoM	when you are doing it by hand, it's easy to pair which sample should be tested via -c against the release; in automation, they all have to be, because it cannot be known
+	YopoM	then again, multi-sample is prob 1 in 50 or less, so for now, just kicks out (multi sample, ignoring)
+09:33		-> futur1sm is x264.rescene.info binnengekomen
+	YopoM	need to see if srs fails when input is, say .part02.rar
+09:34	YopoM	it fails if input is .r00
+	YopoM	prob same with part02.rar
+09:36	YopoM	yup
+09:39	YopoM	easy enough, I've done this in other scripts (par2 creation) ... if exist *.part01.rar" .... set input to *.part01.rar .. esle set to *.rar
+	YopoM	along those lines
+09:44	YopoM	I see how it's going to play out ... For all Samples .. For ALL cd's (one loop if none) ... build srs, trap if error, then build srs -c and check against rar ... set flag if no error .. end ... end ... see if ANY matched, if not, error nothing matched
+09:45	YopoM	this will also find bad samples (truncated, bad fourcc value, or anything)
+	YopoM	I've got several, that are mb in size, yet all zeroes
+	YopoM	
+09:46	Skalman^	but wait... cant you just use *.rar? that will get the first rar in part01.rar and the .rar using rxx system?
+	YopoM	and those simpsons s01 are abi, yet are ogg (and lately, I've seen a few vob samples named with a .avi extension)
+	YopoM	*avi
+09:51	YopoM	would there ever be a scenario, whereby an x264 would be in the .part001 format (versus .part01) ?
+10:03		<- apokalyps is niet meer verbonden (Read error: Connection reset by peer)
+10:13		-> apokalyps is x264.rescene.info binnengekomen
+10:20	Skalman^	oh lol
+	Skalman^	and when r99 is reached it goes over to s01 i think 
+10:21	YopoM	oh, I know
+	Skalman^	but I doubt that would happen lol
+10:22	YopoM	bu would they ever be a 3 digit partx type, or would it always be scaled to multiples of 50m .. what about these non scene releases?
+	Skalman^	well there is a lot of result when searching for part001 so i guess 
+	YopoM	I am running this bat file on my whole TV now, this should be interesting
+	Skalman^	http://fire.no-ip.info/FireScene/details.php?release=Pirates.Of.The.Caribbean.Dead.Mans.Chest.2006.1080p.BluRay.DTS.x264-hV
+	YopoM	no multi cd in tv, so that's easy
+	Skalman^	thats a 001
+10:23	YopoM	ah
+	YopoM	ok, I can add in one more level, s/b easy
+	YopoM	if 001, do it, else if part01 do it, else if part001 do it, else rar and do it
+10:24	Skalman^	you make it in .net?
+	YopoM	inded srs with -c pver a lot of folders, is a lot more time consuming that w/o -c
+	YopoM	heh
+	Skalman^	oh yea movies with .001 extensions lol
+10:25	YopoM	yup, they do exist
+	Skalman^	yea I know, I think i have a couple myself
+	Skalman^	Old releases only?
+	YopoM	nope
+	YopoM	there was one very recent
+	YopoM	one of the 'A' groups does it exclusively
+10:26	HellRezor	-c has an extra benefit of making recreating the sample faster later
+	YopoM	true, but this is only checking to see if any in your collection CANNOT pass the -c test
+10:27	HellRezor	it checks that it can locate the track signitures in the original and stores the location for later use
+	YopoM	srs is thrown away
+	YopoM	but still, do do this manaully on an existing collection, ughhhhhh
+	HellRezor	regarding the error you've got earlier, it is possible that the creation would succeed with -c but the sample wouldn't be recreated ok because it only checks the track signitures and not the tracks
+10:28	HellRezor	so if the actuall track is damaged either in the sample or the file you're recreating from you'll get a checksum mismatch
+10:34	YopoM	Skalman^ .. it's AFO that uses .001
+	YopoM	and kinobox
+10:35	YopoM	hah, I've only made it into CSI, lol
+10:36	HellRezor	heh, see you in a couple of days
+	Skalman^	yea and ALLiANCE has some releases with that 001 too
+	HellRezor	game releases used the .001
+10:37	YopoM	yeah, I know games a lot
+	YopoM	FLT
+	HellRezor	for rars, what application creates those ?
+	Skalman^	what software is that btw?
+	YopoM	and many many more, but movies, more rare
+	Skalman^	
+	YopoM	winrar
+	HellRezor	with 001 ? how
+	HellRezor	also part1.rar (notice the single digit)
+	YopoM	back when I ran a warez site, I experimented a lot with winrar to hide names
+10:38	YopoM	in winar, if you change rar to 001, it just makes 'em numerically in order
+	YopoM	for the base name
+10:39	HellRezor	this i need to try
+	YopoM	let me look 2 list of obfus names I used to use
+10:40	HellRezor	didn't work :/
+	YopoM	HubbleStarMaps.001
+	YopoM	ue old style rar names, of course
+	YopoM	else it wants to make partxx types
+	HellRezor	i'll give it another shot
+10:41	Skalman^	can you make anything? like .skalman001 and it will make it in order too?
+	YopoM	ObscureLawReview2a.001
+	YopoM	lol
+	HellRezor	nice 
+	HellRezor	worked
+	Skalman^	or just only 001?
+	HellRezor	always wondered how that worked
+	YopoM	that was probably Call.Of.Duty (orig rars packed into smaller rars to fit host)
+10:42	HellRezor	well if you try anything else, the first would be it and the next would be 001 002 etc Skalman^
+	HellRezor	000
+	YopoM	now if I had a series named ....
+	YopoM	IntlFisheriesTerrStud 0001.Study-1070.Study
+10:43	YopoM	as the first file .. and
+	YopoM	IntlFisheriesTerrStud 0002.Study-1070.Study
+	YopoM	as the 2nd
+	YopoM	and so on
+	YopoM	winrar could read 'em fine
+	YopoM	how about that 
+	HellRezor	how would you do that ?
+10:44	YopoM	that takes a renamer batch file (make 0001 files and rename)
+	YopoM	do you know, all those files, are still there after 12 years on that host
+	YopoM	most amazing
+	HellRezor	you mean make 001 files, then move the extention to the middle of the file name ?
+	HellRezor	or you start out with 0001
+10:45	YopoM	10's of thousands of 5mb files, still there
+	YopoM	start out with 0001
+	YopoM	or zaz0001
+10:46	YopoM	or vbnnnn9001
+	HellRezor	and then you append the rest ?
+	HellRezor	how would you create those single digit .part?.rar ?
+	YopoM	you mean for those names like ... IntlFisheriesTerrStud 0002.Study-1070.Study ?
+10:47	HellRezor	yeah
+	YopoM	ah
+10:48	HellRezor	lol star.trek.voyager.s02e05001 star.trek.voyager.s03e05001 star.trek.voyager.s04e05001
+	YopoM	for %%T in (0001 0002 0003 0004) do ren basename.%%T IntlFisheriesTerrStud.%%T.Study-1070.Study
+	YopoM	for all the # tho
+	YopoM	I wrote a renamer
+	YopoM	as you can see, it's a pretty trivial thing
+	HellRezor	yeah you just need to start with it being the extension and later winrar handles it
+10:49	HellRezor	i liked how it latched on to the series number because it was right next to the dot
+	HellRezor	still i wonder how would you create those single digit .part?.rar ?
+	YopoM	part.1.rar types are auto made by winrar (or for any of ther above discussion, also rar itself) when file count is < 10
+10:50	YopoM	when < 100 it's partxx
+	YopoM	when less than 1000 .......
+10:51	YopoM	ah, those fishery names, is Call.Of.Duty.2
+	YopoM	hehehe
+	HellRezor	ah eggzelent
+10:53	YopoM	http://groups.yahoo.com/group/ENC_CHDAT_AWOF_390T812H01/
+10:54	YopoM	Founded: Nov 28, 2005
+	HellRezor	seems empty
+10:56	Skalman^	uhm is this one pred
+	Skalman^	Due.Date.BDRip.XviD-ARROW.PROOF
+	Skalman^	or is it just some torrentsite that has put that up after they missed it?
+10:57	HellRezor	.proof ? naway
+10:58	Skalman^	no way?
+	HellRezor	yup, no way it pred that way
+10:59		XDot is using a secure connection
+		XDot is ~giaourtis@195.74.251.181.dsl.dyn.forthnet.gr (me)
+		XDot bezoekt de volgende chatruimtes: x264.rescene.info
+		XDot gebruikt de server efnet.xs4all.nl (He's dead, Jim)
+		XDot kwam erbij op 26/07/2011 16:55:00, en is 11 uur, 44 minuten en 49 seconden inactief
+11:01	HellRezor	bah, yahoo mail, you register, you puting your gmail address as a recovery option, and their self asteem is so low they send you their spammish messages to gmail
+11:03	YopoM	There is a Proof jpg for that release, they must have not included it in the 1st torrent, so they added another torrent withit
+11:11	Skalman^	ok thanks
+11:37	YopoM	hmm, this batch file is not a bad start, points out all kinds of goofs, lol
+	YopoM	American.Dad.S06E19.HDTV.XviD-LOL
+	YopoM	!!ERR!!: [srs not made for american.dad.618.hdtv-lol-sample.avi]
+	YopoM	dud
+	
+16:59 < Skalman^> First time I see this...
+16:59 < Skalman^>          Expected: 46 129 843
+16:59 < Skalman^>          Found   : 59 051 193
+16:59 < Skalman^> Expected is smaller than found! :)
+17:41 <Skalman^> hehe hold on
+17:42 <Skalman^> old one... dexter.s01e06.720p.bluray.x264-orpheus.sample.mkv
+
+
+10:07 < YopoM> I noticed a whole lot of TV that was using memcoder, they will always fail
+10:07 < YopoM> (unless Memcoder SHERPA vs is used, all else fail)
+10:07 < HellRezor> well its a specific error to those memcoder versions, there is a good chance umlaut would be able to fix the whole issue
+10:10 < YopoM> VDubMod ... Trying to get "Aligned on interleaves" with Direct Stream Copy, instead of "Split across Interleaves" with Direct Stream Copy
+10:10 < YopoM> there, now at least it's not lost in oddles of txt lines, lol
+10:11 < YopoM> All DOCUMENT sample are made this way, very different, and cannot see how
+	
+	
+11:44 < YopoM> This is interesting
+11:44 < YopoM> all the DOCUMENTS are failing
+11:44 < YopoM> this actually answer my own question about this broken one
+11:44 < YopoM> *answers
+11:45 < YopoM> their samples are doctored, not a 1:1 of the released avi
+11:45 < YopoM> let me look more
+
+13:36 < XDot> Expected    :       6.901.760  89ACC104
+13:36 < XDot> Actual      :       6.901.760  2F24B53E
+13:36 < XDot> http://fire.no-ip.info/FireSCene/details.php?release=Kill.Switch.2008.DVDRip.XviD-VoMiT
+
+http://pastebin.com/eTSai7jb
+<shEiD> Unable to locate track signature for track 2.  Aborting.
+[06-Dec-2010/03:29:28] <shEiD> but just now I went to the site and saw that gui version is out :)
+[06-Dec-2010/03:29:31] <@umlaut> oh yeah.  you probably want that new secret build that i've been keeping to myself
+[06-Dec-2010/03:29:37] <@umlaut> just a sec
+[06-Dec-2010/03:29:47] <shEiD> tried that same release with gui version and it created an srs without a hitch :)
+[06-Dec-2010/03:30:12] <@umlaut> oh, i don't think the gui does the -c option?
+[06-Dec-2010/03:30:30] <@umlaut> it's probably to do with mkv header compression/stripping
+[06-Dec-2010/03:30:40] <shEiD> lemme check, i dont even remember now whats taht -c option
+[06-Dec-2010/03:31:01] <@umlaut> it checks to make sure the tracks can be matched before creating the srs
+[06-Dec-2010/03:31:20] <shEiD> yes, it has a checkbox option for -c
+[06-Dec-2010/03:31:38] <@umlaut> probably won't work if you check the box ;)
+[06-Dec-2010/03:31:48] <shEiD> I did check it :)
+[06-Dec-2010/03:31:50] <@umlaut> if a full mkv doesn't have header stripping but the sample does, they won't match without some compensation.  i made a new version that handles it
+[06-Dec-2010/03:33:54] <shEiD> ok, 1 sec, I'll throw both out puts to pastebin
+[06-Dec-2010/03:33:55] <@umlaut> http://rescene.com/resample/srs.1.3.preview.zip  <-- try that one
+[06-Dec-2010/03:34:22] <shEiD> oh, new version... :)
+
+14:03 <lrkj> Expected    :       6,819,840  5AE10D3B
+14:03 <lrkj> Actual      :       6,819,840  9EB2CA1C
+14:03 <lrkj> Rebuild failed for sample: arw-kfp.dvdrip.xvid.sample.avi
+14:06 <Skalman> its possible the sample stored is wrong
+14:10 <lrkj> I downloaded the sample and created the srs myself:
+14:10 <lrkj> Checking that sample exists in the specified full file...
+             Check Complete.  All tracks located.
+14:11 <lrkj> ah, I'm chatting with you... thought I was in the chan :)
+14:13 <lrkj> srs with check says it's ok, now waiting to see if it can actually rebuild...
+14:13 <lrkj> nope, same result
+14:13 <lrkj> that's a bug in srs
+
+
+23:19 < xaios> Ok another question, the tool doesn't seem to like quoted paths (using double quotes ") is this by design? Techincally I shouldn't have spaces
+               in my paths to begin with and I guess that'd be my work around
+23:22 < lrkj> can you show us how it goes wrong with an example?
+23:26 < Skalman^> oh nice!! According To Jim season 5 out already, that was quick :)
+23:26 < Skalman^> good show for those who dont know
+23:28 < YopoM> lol
+23:28 < Skalman^> :D
+23:28 < YopoM> why in hell would we EVEr be having an srr with a filename with spaces
+23:29 < YopoM> immed should flag .. "oooops, something very wrong"
+23:29 < Skalman^> I think he mean the path
+23:29 < YopoM> same thing
+23:30 < YopoM> i.e., no name should have a space, red flag right there
+23:31 < Skalman^> If you have in "My Documents/Downloads"
+23:31 < Skalman^> There is a space
+23:33 < YopoM> ah, I thought he was refering to storing the name, but maybe it's an issue with the -i and -o .. then what he said makes sense
+23:33 < YopoM> (and what you said)
+23:34 < YopoM> I was driving at .. "no name stored in the srr should ever have a space"
+23:34 < xaios> yeah sorry I ment the folder where it resides
+23:34 < xaios> srs.exe "C:\Folder With Spaces\sample.srs" "C:\Folder With Spaces\release.rar" -o "C:\Folder With Spaces\" yields an error
+23:35 < xaios> System.ArgumentException: Illegal characters in path.
+23:35 < YopoM> gotcha
+23:35 < xaios> However that error is coming from System.IO.Path so its almost like something windows doesn't like
+
+23:48 < xaios> I'm looking at the source now, might I suggest using the open source NDesk.Options library? it saves some headaches when dealing with those
+               switches on the command line.
+
+Skalman^	Groups often keep a "proof" sample of a nuked release, thats what happend here, and the real one was left out
+	Pascal	yh
+	Pascal	Skalman^: go to bed now!
+	YopoM	ah, yes, that is called a comp sample, for comparitive
+	
+	
+----------------------------------------------------------------
+NewsLeecher History Log
+----------------------------------------------------------------
+ # = comment
+ + = new feature
+ * = improved feature
+ ! = fixed bug
+ - = removed feature
+ 
+ 
+csi.miami.s05e06.720p.bluray.x264-sinners.part48.rar d81e0162
+.720p.bluray.x264-sinners.part48.rar d81e0162
+in sfv seems to result in a bad srr
+Referenced file not found: I get as error
+It' because ReScene .NET Beta 6 was used to create the release (csi.miami.s05e06.720p.bluray.x264-sinners.)
+fixed in the latest version
+
+
+srs fairly.legal.s01e09.repack.720p.hdtv.x264-ctu-sample.mkv
+
+Warning: File size does not appear to be correct!
+         Expected: 36
+         Found   : 36.153.270
+
+File Details:   Size           CRC
+                -------------  --------
+                   36.153.270  D75D0E6E
+
+
+Track Details:  Track  Length
+                -----  -------------
+                    1      2.930.688
+                    2     33.203.338
+
+Parse Details:  Metadata     Attachments   Track Data     Total
+                -----------  ------------  -------------  -------------
+                     19.244             0     36.134.026     36.153.270
+
+Successfully created SRS file: fairly.legal.s01e09.repack.720p.h264-ctu-sample.srs
+
+http://www.srrdb.com/details.php?release=Fairly.Legal.S01E09.REPACK.720p.HDTV.x264-CTU
+
+
+
+funny stuff hidden in samples:
+Skalman^	idiots... Encoding App: mkvmerge v1.3.3.7 (Nukers are gay!!) built on Mar 4 2008 12:58:26
+http://www.srrdb.com/details.php?release=Ghost.in.the.Shell.2.0.2008.720p.BluRay.x264-FaNSuB
+http://www.srrdb.com/details.php?release=Gin-iro.no.Kami.no.Agito.2006.720p.BluRay.x264-FaNSuB
+
+7:36	Skalman^	yea this one
+	Skalman^	The.Human.Centipede.2009.LIMITED.720p.BluRay.x264-DEPRAViTY
+	Skalman^	that one uses FLAX
+	Skalman^	FLAC* even
+	Skalman^	A good movie that didnt get a proper =(
+
+	
+The.Mentalist.S01.EXTRAS.DVDRip.XviD-iNGOT\Sample>srs the.mentalist.s01.extras.dvdrip.xvid-ingot.sample.srs ..\the.mentalist.s01.extras.dvdrip.xvid-ingot.rar
+SRS Load Complete...          Elapsed Time: 1,71s
+Track Location Complete...    Elapsed Time: 5,00s
+Track Extraction Complete...  Elapsed Time: 7,02s
+Rebuild Complete...           Elapsed Time: 8,52s
+
+File Details:   Size           CRC
+                -------------  --------
+Expected    :       7.370.752  817EB14A
+Actual      :       7.370.752  237689AE
+
+
+Rebuild failed for sample: the.mentalist.s01.extras.dvdrip.xvid-ingot.sample.avi
+

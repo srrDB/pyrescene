@@ -1,0 +1,1655 @@
+ RRRRRR    AAAAA  RRRRRR                User's Manual
+ RR   RR  AA   AA RR   RR               ~~~~~~~~~~~~~
+ RR   RR  AA   AA RR   RR               RAR 2.00 DOS and OS/2 versions
+ RRRRRR   AAAAAAA RRRRRR                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ RR   RR  AA   AA RR   RR               Multifunctional Integrated Archive Manager
+ RR    RR AA   AA RR    RR              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+                       =-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                       Welcome to the RAR Archiver!
+                       -=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+
+ --------------------------------------------------------------------------
+ |...........................  Introduction  .............................|
+ --------------------------------------------------------------------------
+
+
+  RAR is an extremely powerful tool which allows you to manage and
+  control archive files.
+
+  RAR features include:-
+
+    *  Full-screen interactive interface (Optional)
+    *  Mouse support and menus
+    *  Non-RAR archive support
+    *  Common 'standard' command-line interface
+    *  Highly sophisticated, original compression algorithm
+    *  Special compression algorithm optimized for multimedia data
+    *  Better compression than other PC tools using 'solid' archiving
+    *  Authenticity verification (registered version only)
+    *  Self-extracting archives and volumes (SFX)
+    *  Ability to recover physically damaged archives
+    *  Programmable installation SFX archives
+    *  locking, password, file order list, disk volume labels &amp; more ...
+
+
+ --------------------------------------------------------------------------
+ |............ Chapter 1.    Installation and Configuration ..............|
+ --------------------------------------------------------------------------
+
+   This chapter describes how to install and configure RAR, as well as 
+   giving information on technical requirements.
+
+   1.1. Installation procedure
+
+   RAR is distributed as a self-extracting (SFX) archive named 
+   RAR???.EXE for DOS version or RAR???P.EXE for OS/2 version where 
+   '???' is the version number. 
+
+   Local language versions may also be available in the format 
+   RARnnnxx.exe where &quot;nnn&quot; is the version number and &quot;xx&quot; is the 
+   country code.
+
+   1.1.1. RAR for DOS installation
+
+   RAR for DOS installation consists of three basic steps:-
+
+   ..  Start the RAR Self-Extracting archive
+
+   ..  Choose a directory for the RAR files
+
+   ..  Initiate the RAR installation
+
+   For example, on floppy disk A: you have the file RAR200.EXE, this 
+   will be RAR version 2.00.  You may install it to your C: disk by 
+   typing, at the DOS prompt, the following command (executing the RAR 
+   self-extracting archive): 
+
+   C:\&gt; A:RAR200
+
+   You will be prompted with the RAR archive comment.  Press any key to 
+   continue, or press ESC to cancel the extraction. 
+
+   Then you will enter the RAR installation menu.
+
+   Choose &quot;Read license&quot; to view the RAR license for usage and
+   distribution.  Pressing &lt;Esc&gt; to return to the installation menu. 
+
+   Choose &quot;Destination directory&quot; to enter the path for installation. 
+
+   Choose &quot;Install&quot; to extract the RAR files to the destination 
+   directory.
+
+   When the extraction is successfully completed, a number of files
+   will be placed in the destination directory and RAR will be ready 
+   for use. 
+
+   1.1.2. RAR for OS/2 installation
+
+   RAR for OS/2 installation consists of three basic steps:-
+
+   ..  Create a directory for the RAR files
+
+   ..  Make this directory the current working directory
+
+   ..  Execute the RAR Self-Extracting archive
+
+
+   For example, on floppy disk A: you have the file RAR200P.EXE, this 
+   will be RAR version 2.00 for OS/2.  You may install it to your C: 
+   disk by typing, at the OS prompt, the following commands: 
+
+   [C:\] mkdir RAR
+   [C:\] cd RAR
+   [C:\RAR]
+
+   You have now created a new directory, C:\RAR, and it is the current 
+   working directory. 
+
+   Then execute the RAR self-extracting archive:
+
+   [C:\RAR] A:RAR200P
+
+   You will be prompted with the RAR archive comment.  Press any key to 
+   continue, or press ESC to cancel the extraction. 
+
+   When the extraction is successfully completed, a number of files 
+   will be placed in the current directory and RAR will be ready for 
+   use. 
+
+   1.1.3. Installation hints
+
+   The archiver program itself is named RAR.EXE. This module contains 
+   all of the archiver's functionality, packing, unpacking, repairing, 
+   SFX creation etc. 
+
+   It is recommended that the name of the directory, containing the RAR 
+   files, be added to the PATH environment variable. This will enable 
+   RAR to be used from any directory. Alternatively the critical 
+   modules of RAR may be copied to your &quot;Utilities&quot; directory.  These 
+   modules are RAR.EXE and RAR.CFG (RAR.EXE, RAR2.CFG and RARARC2.CFG 
+   for OS/2 version), although it is not essential, you may copy 
+   UNRAR.EXE as well. 
+
+
+   1.2. Option menu
+
+   A number of RAR options may be configured and saved to be used as 
+   default options.  To access this menu, start RAR without any 
+   parameters and then press Function key 9 (F9) to bring up the 
+   Options menu: 
+
+
+   C:\RAR&gt; RAR
+
+   When RAR has been started, press F9 - the following menu will 
+   appear:
+
+          -----------------------------------
+          | Configuration...                |
+          | Set password              ALT-P |
+          | Work directory            ALT-W |
+          | Default comment file            |
+          | External viewer                 |
+          | Change disk               ALT-D |
+          | Registration                    |
+          | Save options              ALT-S |
+          -----------------------------------
+
+   Press &lt;Enter&gt; for the sub-menu &quot;Configuration&quot;.  The configuration 
+   menu offers a number of basic options which may be changed. 
+
+   In the configuration menu, use the arrow keys to move from item to 
+   item.  An item value may be changed by hitting the &lt;space&gt; key.  
+   When all items are set as desired, move to the &quot;Ok&quot; field and hit 
+   &lt;Enter&gt; to save the chosen values. To discard any changes, move to 
+   the &quot;Cancel&quot; field and hit &lt;Enter&gt;. 
+
+   If you have a mouse attached, this process is even easier.  Simply 
+   move the mouse cursor to the desired item and click the left mouse 
+   key. When you have completed the configuration, move the mouse 
+   cursor to the field &quot; Ok &quot; and click on the left mouse key. To
+   discard changes click the left mouse key on the &quot; Cancel &quot; field. 
+
+
+   &quot;Configuration/Interface options&quot;
+
+     Color                  Selects/Deselects color in
+                            full-screen mode
+
+     Sound                  Enables RAR's sound effects
+
+     Stdout mode            Forces RAR to run in console
+                            (stdout) mode while processing
+                            commands from the command line
+
+     Mouse                  Enables the use of mouse-support
+                            in full-screen mode
+
+
+   &quot;Configuration/Archiving options&quot;
+
+     Always solid           Forces RAR to create solid archives which
+     archiving              are often very much smaller than &quot;normal&quot;
+                            archives.  See RAR_FAQ.TXT for more details.
+                            Default is ON and all created archives will
+                            be made in 'solid' mode.  If you are making
+                            archives which will be frequently updated,
+                            the speed of update will be increased by
+                            changing this option, at the expense of
+                            compression ratio.
+
+     Multimedia             Enables special compression .a
+     compression            designed for digital audio and some
+                            types of graphic. See '-mm' description
+                            for details.
+
+     Put recovery record    If this option is selected RAR will
+                            add recovery record to any new or modified
+                            archive. See 'rr' command description
+                            for details.
+
+ {+} Put Authenticity       Forces RAR to place -AV (Authenticity
+     verification           Verification) into archives when they are
+                            created. (This feature is only available in
+                            the registered version)
+
+
+   &quot;Configuration/Compression&quot;
+
+   Choose the default compression level from one of the following: 
+
+      Store ...... Do not compress file when adding to archive
+      Fastest .... Use fastest method (least compressive)
+      Fast ....... Use fast compression method
+      Normal ..... Use normal (default) compression method
+      Good ....... Use good compression method (more compressive)
+      Best ....... Use best compression method (most compressive)
+
+   Default is 'Normal' and is chosen as the best compromise between 
+   time taken and compression ratio achieved.  Marginally higher (0.1%
+   - 1.5%) compression may be achieved with 'Good' or 'Best', at the
+   expense of 10% - 100% longer processing time. 
+
+
+   &quot;Configuration/Include file mask&quot;
+
+   Choose the categories of files to be included when adding to an 
+   archive from the following: 
+
+       Read only files ..... Add files with 'Read-only' attribute
+       System files ........ Add files with 'System' attribute
+       Archive files ....... Add files with 'Archive' attribute
+       Hidden files ........ Add files with 'Hidden' attribute
+
+   Default is 'Read-Only, System, Archive or Hidden' and is used such 
+   that ALL files in a directory will be archived if the general 
+   wildcard (*.*) is used. 
+
+   For more information on file attributes, please refer to your DOS
+   manual.
+
+
+   &quot;Configuration/Sort order&quot;
+
+   Choose the sort mode for viewing the archive contents in full-screen
+   mode from one of the following:
+
+        Unsorted ......... Do not sort files
+        By name .......... Sort files by name
+        By extension ..... Sort files by extension
+        By size .......... Sort files by size
+
+   Default is 'Sort files by names'.
+
+
+   &quot;Configuration/Other options&quot;
+
+     Use 386 instructions   Forces RAR to detect the CPU type and use 
+                            386 CPU 32-bit instructions if an
+                            appropriate processor (386 or higher) is
+                            available. This option is present only in 
+                            the DOS version as RAR for OS/2 always uses 
+                            32-bit instructions. 
+
+     Use expanded memory    Allows the use of expanded memory (EMS 4.0).
+                            Present only in the DOS version.
+
+
+     Save extended          Enables the saving of OS/2 extended
+     attributes             attributes. Present only in OS/2 version.
+
+ {+} Log errors to file     Enables the logging of critical errors
+                            to a file RAR.LOG. (This feature is only
+                            available in the registered version)
+
+
+   &quot;Set password&quot;
+
+   Assign a password which will used when you add/extract files to/from 
+   an archive.  You may define the password using &lt;Alt-P&gt;. Note, the 
+   password will not be saved to the configuration file.
+
+
+   &quot;Work directory&quot;
+
+   The path where RAR will place temporary files.  This may be changed 
+   at any time by pressing &lt;Alt-W&gt;. 
+
+
+   &quot;Default comment file&quot;
+
+   If you would like a common comment added to every archive you are 
+   creating, enter the full path and name here. 
+
+
+   &quot;External viewer&quot;
+
+   You may assign an external viewer program to run for viewing file in 
+   archives (by pressing &lt;F3&gt;). 
+
+   While viewing a file of the archive in full-screen mode RAR uses the 
+   internal viewer if an external viewer has not been configured.
+   
+   The internal viewer provides for dynamic extraction of the file. 
+   This means the viewer extracts only those parts which are currently 
+   needed for viewing.  As more is needed, more is read, etc. 
+
+   While using the external viewer the entire file is extracted before 
+   actual view. 
+
+   &quot;Change disk&quot;
+
+   You may change the current disk displayed in the work window.
+
+
+   &quot;Registration&quot;
+
+   To register RAR you must have a registration code.  This code may be 
+   obtained by sending the completed registration form to your local 
+   registration site or the world-wide distribution center. 
+
+   You will receive the latest version of RAR along with your 
+   registration key and will then be able to create archives containing
+   Authenticity verification. 
+
+
+   &quot;Save setup&quot;
+
+   Pressing &lt;Enter&gt; or clicking the left mouse key on this item will 
+   pop up a small confirmation window in which the user is invited to &quot; 
+   Save &quot; or &quot; Cancel &quot; the saving of the new configuration for future 
+   default usage in RAR. 
+
+   RAR stores the default configuration in the file RAR.CFG, which is 
+   held in the same directory as RAR.EXE. 
+
+   The configuration may also be saved by pressing ALT-S keys, 
+   (pressing the &quot;S&quot; key while simultaneously holding down the &quot;ALT&quot; 
+   key). 
+
+   These options may also be set by using the left mouse key in the
+   window &quot;Settings&quot;: 
+
+
+   DOS version:    --------------- Settings --------------
+                   |   Password                 Absent   |
+                   |   Compression level        Normal   |
+                   |   Multimedia compression   Disabled |
+                   |   Add recovery record      Disabled |
+                   |   Add AV to archives       Disabled |
+                   |   Make solid archives      Optional |
+                   |   Log errors to file       Enabled  |
+                   |   Default comment file     Absent   |
+                   ---------------------------------------
+
+   OS/2 version:   --------------- Settings --------------
+                   |   Priority and sleep time 0  : 0    |
+                   |   Save extended attrib.   Enabled   |
+                   |   Password                Absent    |
+                   |   Compression level       Normal    |
+                   |   Dictionary size         256 Kb    |
+                   |   Multimedia compression  Disabled  |
+                   |   Add recovery record     Disabled  |
+                   |   Add AV to archives      Disabled  |
+                   |   Make solid archives     Always    |
+                   |   Log errors to file      Disabled  |
+                   |   Default comment file    Absent    |
+                   ---------------------------------------
+
+   For example, click the left mouse key on the word 'Absent' in the 
+   setting 'Password', you will be prompted to enter a new password.
+   Clicking the left mouse key on the word 'Optional' in the setting 
+   'Make solid archives' would cause toggle to 'Always' - that will 
+   force RAR to create solid archives. 
+
+
+   1.3. RAR environment variable
+
+   Default parameters may be added to the RAR command line by
+   establishing an environment variable, using the DOS &quot;SET&quot; command.
+
+   Examples:
+
+   C:\&gt; SET RAR=-std -s
+
+   RAR will use this string as default parameters in the command
+   line.
+
+   RAR handles options with the following priority:
+
+       command line switches              highest priority
+       switches in the RAR variable       lower priority
+       options saved in RAR.CFG           lowest priority
+
+   The switches -sfx, -v, -s and -std from the RAR variable have no
+   effect in full-screen mode. 
+
+
+   1.4. Technical requirements (DOS version only)
+
+   Minimum DOS version to run RAR: 3.0
+
+   Minimum memory requirements to perform commands and corresponding 
+   operations (in Kbytes) are:-
+
+    Commands:   ---------------------------------------
+    A,F,M,U     |Command line mode | Full-screen mode |
+                |------------------|------------------|
+                |Not solid| Update |Not solid| Update |
+                |or adding| solid  |or adding| solid  |
+                |to solid | archive|to solid | archive|
+   ----------------------------------------------------
+   |EMS enabled |   337   |  409   |  409    |  481   |
+   |EMS disabled|   401   |  473   |  473    |  545   |
+   ----------------------------------------------------
+
+    Commands: CW,E,P,T,X       Command: C
+   ------------------------   ------------------------
+   |EMS enabled ­   217   |   |EMS enabled ­   409   |
+   |EMS disabled­   281   |   |EMS disabled­   473   |
+   ------------------------   ------------------------
+
+    Command: D  ---------------------------------------
+                | Not solid|       Solid archive      |
+                | archive  |--------------------------|
+                |          |Command line| Full-screen |
+   ---------------------------------------------------|
+   |EMS enabled |    217   |     409    |     481     |
+   |EMS disabled|    217   |     473    |     545     |
+   ----------------------------------------------------
+   Update AV to non-solid archive will require some extra memory.
+
+    Commands:
+    CF,EN,K,L,  --------------------
+    R,RR,S,V    |  No AV  | Add AV |
+   -------------|---------|--------|
+   |EMS enabled |   217   |  409   |
+   |EMS disabled|   217   |  473   |
+   ---------------------------------
+
+   If available memory is increased, by 32 Kb or more, over the minimum 
+   requirements, compression speed will increase. Compression ratio may 
+   also slightly increase. 
+
+   Generally the use of wildcards ('*' and '?') in an archive name or 
+   argument list from an external file (also with '-x' feature) will 
+   require extra memory. 
+
+   For extracting from and updating non-RAR archives add the memory 
+   requirements of the external archiver. 
+
+
+   1.5. The external archiver configuration file - RARARC2.CFG 
+        (OS/2 version only)
+
+   The configuration file RARARC2.CFG is intended to define external 
+   programs which RAR should call to process ZIP, ARJ and LZH archives. 
+   Actually it contains three sections for these archivers. This file 
+   is fully explained with comment line. 
+
+
+   1.6. Errorlevels
+
+   When RAR.EXE quits to DOS it sets the environment variable 
+   ERRORLEVEL to a value representing the termination status (last 
+   operation status and reason for exit). 
+
+     255   USER BREAK       Ctrl/Break pressed by user
+
+       8   MEMORY ERROR     Not enough memory for operation
+
+       7   USER ERROR       Command line option error
+
+       6   OPEN ERROR       Open file error
+
+       5   WRITE ERROR      Write to disk error
+
+       4   LOCKED ARCHIVE   Attempt to modify an archive previously
+                            locked by the 'k' command
+
+       3   CRC ERROR        A CRC error occurred when unpacking
+
+       2   FATAL ERROR      A fatal error occurred
+
+       1   WARNING          Non fatal error(s) occurred
+
+       0   SUCCESS          Successful operation (User exit)
+
+
+    The self-extracting (SFX) module quits with following codes:
+
+       1   PROBLEMS         Error(s) occurred during extraction
+
+       0   SUCCESS          Successful operation
+
+
+ --------------------------------------------------------------------------
+ |................ Chapter 2.     Using RAR Interactively ................|
+ --------------------------------------------------------------------------
+
+
+   When you execute the command &quot;RAR&quot; at the Dos prompt, you are 
+   presented with the full-screen interface - this is known as RAR's 
+   interactive full-screen mode. 
+
+   For example, you enter:
+
+   C:\&gt; RAR
+
+   On the right hand side of the opening screen, you will be presented 
+   with a dialogue box containing the memory status and settings 
+   window.  This information includes: current compression method, 
+   password status (present or absent), multimedia compression 
+   (enabled/disabled), add recovery record (enabled/disabled), 
+   authenticity verification status (enabled/disabled), default comment 
+   file .. present or not. OS/2 version settings also include priority 
+   and sleep time, save extended attributes (enabled/disabled) and 
+   dictionary size. 
+
+   On the left-hand side of the screen you are presented with a list of 
+   files in the current directory. You can move the cursor through the
+   files on the screen by using cursor keys or clicking the left mouse 
+   button. 
+
+   Pressing &lt;Enter&gt; when the cursor is positioned on a directory, up-
+   directory (&quot;..&quot;) or archive file name, will cause entry to be made 
+   to that item. 
+
+   The following archive types are recognized by RAR: .RAR, .ARJ, .ZIP 
+   and .LZH. 
+
+   Entering an archive, causes the files within the archive to be 
+   displayed in a similar manner to a directory listing. 
+
+   It is therefore possible to &quot;walk through&quot; directories and archive 
+   files, managing files both in archives and normal directories. 
+
+   In &quot;directory&quot; mode, the bottom like of the screen contains
+   a menu of functions provided by the function keys.
+
+1-Help 2-Add 3-View 4-Fresh 5-Volume 6-Move 7-Update 8-Delete 9-Option 0-Quit
+
+   The line indicates that you may obtain help by pressing &lt;F1&gt;, add 
+   files to an archive by pressing &lt;F2&gt;, view files by pressing &lt;F3&gt; 
+   etc. Press &lt;F10&gt; to quit. These functions are the main command set 
+   when you are in a directory (not in archive). 
+
+   Alternatively, pressing and holding down the &lt;ALT&gt; key will cause 
+   the display of additional functions: 
+
+1-  2-Solid 3-View.. 4-SFX 5-SFXVol 6-SolVol 7-SolSVl 8-Repair 9-SolSFX 0-
+                                            
+   This indicates that Pressing &lt;ALT-F2&gt; may be used to create a SOLID 
+   archive, &lt;ALT-F3&gt; to view an archive using the internal viewer, etc. 
+
+   Also shown, by holding down the &lt;ALT&gt; key, will be the options list: 
+
+   Alt-C ... Toggle between color and monochrome mode
+   Alt-D ... Select drive
+   Alt-J ... DOS shell
+   Alt-M ... Select compression method
+   Alt-P ... Set password
+   Alt-S ... Save setup
+   Alt-W ... Set work directory to store temporary files
+
+   The OS/2 version contains two additional options:
+
+   Alt-A ... Select dictionary size
+             (see -md&lt;size&gt; description for details)
+   Alt-R ... Set task priority and sleep time
+             (see ri&lt;P&gt;[:&lt;STRIKE&gt;] description for details)
+
+   Pressing keys, other than those which indicate options and 
+   functions, will put RAR into speed search mode for file names. This 
+   feature can save a lot of keystrokes when looking for specific file 
+   names. 
+
+   Changing from a directory to an archive will automatically change 
+   the set of available functions to those which are more suitable to 
+   those circumstances. 
+
+   In &quot;archive&quot; mode the available functions line looks like:
+
+1-Help 2-Test 3-View 4-Extr 5-Comment 6-ExCurD 7-SFX 8-Delete 9-Option 0-Quit
+
+   This line indicates you may obtain help by pressing &lt;F1&gt;, test files 
+   in archive by pressing &lt;F2&gt;, view file by &lt;F3&gt; etc. Press &lt;F10&gt; to 
+   quit. These functions are the main set when you are inside (Entered-
+   to) an archive. 
+
+   Alternatively, when holding down the &lt;Alt&gt; key, the following would 
+   be displayed: 
+
+1-    2-    3-View.. 4-ExtrTo 5-FilCmt 6-AddRec 7-Lock  8      9      0
+
+   Files may be marked/unmarked by using the [Space], [Ins], or right 
+   mouse key. You may also mark/unmark file groups by wildcards (file 
+   mask) using the [Gray +] and [Gray -] keys on the numeric keypad.  
+   Marking a directory, automatically marks all the sub-directories and 
+   files within it. 
+
+   The marked/unmarked status of a group of files may be reversed by 
+   using the [Gray *] key.  Marking or unmarking a file, or group of 
+   files, updates a highlighted status display line at the bottom of 
+   the screen.  This status line indicates the number of files marked 
+   and the total size in bytes (the file size of marked directories is 
+   not included in the summary file size). 
+
+   In full-screen mode, the use of the mouse is fully supported.  Use 
+   the left mouse key to move through a directory.  Click the left key 
+   twice to &lt;Enter&gt;.  Use the right key to mark files.  When entering
+   text (archive name, password etc.) the left mouse key cancels the 
+   data entry operation and right mouse key confirms entered text.  Use 
+   the left mouse key to choose function commands (F1-F10) of menu 
+   items and options. 
+
+
+   2.1. In a directory
+
+     F1       Help information
+
+     F2       Add file(s) to an archive, if the archive does
+              not exist, it will be created
+
+     F3       View a file (if no external viewer is set, the
+              internal viewer will be used)
+
+     F4       Freshen files in an archive - only recently changed files
+              will be added instead of their old copies in archive
+
+     F5       Create archive volumes (Span diskettes)
+
+     F6       Add files not already in the archive and update those
+              files changed since they were packed to the archive
+
+     F7       Move file(s) to archive
+
+     F8       Repair a damaged archive
+
+     F9       Set up / Save options
+
+     F10      Quit RAR.  Pressing the ESC key has the same
+              effect.
+
+     Alt-F2   Create a solid archive.
+
+     Alt-F3   View a file (with internal viewer).
+
+     Alt-F4   Create a SFX archive.
+
+     Alt-F5   Create Self-Extracting (SFX) volumes.
+
+     Alt-F6   Create solid archive volumes.
+
+     Alt-F7   Create solid SFX-volumes.
+
+     Alt-F8   Repair a broken archive.
+
+     Alt-F9   Create a solid SFX archive
+
+
+   2.2. In an archive
+
+   Press [Enter] with the cursor on the archive name to expand the 
+   archive contents.  The same effect may be achieved with the command-
+   line option &quot;en&quot;.   (See Chapter 3, 'en' command) 
+
+   Once inside an archive, the list of files is displayed on the left 
+   side of the screen.  These files may be marked, just as files in a 
+   directory. 
+
+   An asterisk (*) to the left of a file name, indicates that the file 
+   is password encrypted. 
+
+   Below the list of files the status line is displayed. Status line 
+   contains information about size and number of selected files and 
+   directories or if no files are selected about the current marked 
+   file: name, and at the end of status line - compression method, 
+   dictionary size and ratio. 
+
+   The right-hand portion of the screen is given over to a dialogue 
+   box, which includes information on:  archive name and status, 
+   presence of comments, encrypted files, recovery record, authenticity 
+   verification, dictionary size, total number of files in the archive, 
+   file sizes, compression ratio, the minimum RAR version required to 
+   extract files and the host Operating System used to create the 
+   archive. 
+
+   For example:
+
+   Dialogue Box:                    Meaning:
+
+   Archive          EXAMPLE.RAR     archive name
+   Archive type     Normal          not a 'solid' archive
+   Main comment     Present         archive comment present
+   File comments    Absent          no individual file comments
+   Passwords        Absent          no password encrypted files
+   Recovery data    Present         recovery record present
+   Lock             Absent          archive is not locked
+   Auth. verif.     Present         authenticity verification is present
+   Dictionary       64Kb            dictionary size
+   Files            1               number of files (1)
+   Total length     14917           total length in bytes
+   Packed length    3938            length in archive
+   Ratio            26%             compression ratio.  Now 26% of
+                                    original size.
+   Version to extr. 2.00            minimum RAR version required to extract
+   Host OS          DOS             OS used to create this archive
+
+
+   Function keys actions:
+
+     F1       Help information
+
+     F2       Test archive (validate integrity)
+
+     F3       View a file (if an external viewer is not set,
+              the internal viewer will be used)
+
+     F4       Extract files from an archive with directory
+              structure
+
+     F5       Add a comment to the archive
+
+     F6       Extract file(s) to the current directory
+
+     F7       Make a Self-Extracting (SFX) archive
+
+     F8       Delete file(s) from an archive
+
+     F9       Set up / Save options
+
+     F10      Quit RAR
+
+     ESC      Return from the archive
+
+     Alt-F3   View a file (using the internal viewer)
+
+     Alt-F4   Extract file(s) to an alternate path
+
+     Alt-F5   Add individual file comment(s)
+
+     Alt-F6   Add archive recovery record
+
+     Alt-F7   Lock the archive preventing modifications
+
+
+   When working with archive volumes in full-screen mode you must begin 
+   the process with the first volume, you will be prompted with a menu: 
+
+   &quot;Proceed with all volumes from current&quot;
+   &quot;Proceed with selected files only&quot;
+
+   Choose the method you wish to use to work with the volumes.
+
+   When files are displayed which were split between archive volumes, 
+   the compressed size displayed refers to the compressed size on the 
+   current volume.  The symbol '&lt;-' indicates that part of the file 
+   exists on a previous volume. The symbol '-&gt;' indicates that part of 
+   the file exist on the next volume. You can change to the previous or 
+   next volume by pressing corresponding arrow keys (left or right).
+
+   2.3. In a non-RAR archive
+
+   In full-screen mode RAR offers the management of non-RAR archives. 
+   Supported non-RAR archive types are ZIP, ARJ and LZH. 
+
+   RAR provides the following operations for non-RAR archives:
+
+    - extract files, creating the directory structure;
+    - extract to the current directory;
+    - extract to a specified directory;
+    - test files in the archive;
+    - delete files from the archive;
+    - view contents of the archive in full-screen mode;
+    - make SFX-archives;
+    - add archive comment (ZIP and ARJ only);
+    - add file comment (ZIP and ARJ only).
+
+   Also the user may set a password for the archive (pressing Alt-P) 
+   and the path for temporary files (Alt-W). 
+
+   For viewing the archive contents the user will need only RAR. 
+   However for operations with non-RAR archives the user should have 
+   the corresponding programs (PKUNZIP, PKZIP, ZIP2EXE, ARJ, LHA, or as 
+   specified in RARARC2.CFG for OS/2 version), also the path to these 
+   programs must be included in the PATH environment variable. 
+
+   You can use RAR as the archive manager for archives of all the 
+   above-mentioned types in shell programs such as Norton Commander. 
+
+   Note, RAR does not provide facilities for the management of non-RAR 
+   SFX archives. 
+
+   Only the standard LZH archive header is supported.  Archives created 
+   by LHA using the switch '/h2' are not supported. 
+
+ --------------------------------------------------------------------------
+ |................. Chapter 3.    RAR Command Line Options ...............|
+ --------------------------------------------------------------------------
+                                     
+   Command line mode is an alternative to the full-screen interactive mode. 
+   This mode is best used in batch files and requires no interaction. 
+
+
+   Usage:
+
+
+    RAR &lt;command&gt; -&lt;switch1&gt; -&lt;switchN&gt; &lt;archive&gt; &lt;files...&gt;
+        &lt;@listfiles...&gt; &lt;path_to_extract\&gt;
+
+   All parameters must exist on the same, single command line.
+
+   command      ..  The function to be performed by RAR, add,
+                    extract, move etc.
+
+   switch       ..  Switches used to define a specific type of
+                    operation, compression strength, type of
+                    archive etc.
+
+   archive      ..  The name of the archive to be operated upon.
+
+   files        ..  The files to be processed.
+
+   listfiles    ..  The name of a file containing the names of
+                    the files to be operated upon.
+
+   path_to_extract  Used only with commands 'e' and 'x',
+                    indicating the directory in which to
+                    place extracted files.  If this directory
+                    does not exist, it will be created. 
+   
+                    NOTE:  The use of the terminating backslash
+                           character, on this parameter, is
+                           MANDATORY.
+
+
+   3.1. Commands (Alphabetic sequence)
+
+   ..  a: add files to archive
+
+   ..  c: add archive comment
+
+       Pressing [F10] will save the entered comment and exit.
+       Pressing [Esc] will cancel the comment.  Pressing [F10]
+       without entering a comment will remove any existing
+       comment.
+
+       Comments are displayed while the archive is being
+       processed.  The maximum comment length is 16384 bytes.
+
+       Support for ANSI esc-sequences is provided in RAR which
+       allows the use of color and cursor movements.  No ANSI
+       driver is required to display such comments.
+
+       Redefinition of the keyboard using ANSI esc-sequences is
+       NOT supported and thus the so-called ANSI-bombs cannot be
+       delivered using RAR.
+
+    Example:
+
+       RAR c distrib.rar
+
+       Comments may be entered from a file by using the '-z &lt;file&gt;'
+       switch before the name of the file containing the comment.
+
+       RAR c -zinfo.txt dummy
+
+   ..  cf: add file comments (not to entire archive)
+
+       Pressing [F10] will save the entered comment and exit.
+       Pressing [Esc] will cancel the comment.  Pressing [F10]
+       without entering a comment will remove any existing
+       comment.
+
+       Comments are displayed when the 'v' command is given.
+       Comment length is limited to 16384 bytes.
+
+    Example:
+
+       RAR cf bigarch *.txt
+
+   ..  cw: write the archive comment to a file
+
+    Example:
+
+       RAR cw oldarch comment.txt
+
+       The comment from the archive oldarch.rar will be
+       written to the file comment.txt
+
+   ..  d: delete files from archive
+
+    Note: If the processing of this command resulted in
+       removing all the files from the archive, the empty
+       archive would itself be removed.
+
+   ..  e: extract files from archive to current directory
+
+   ..  en: start RAR in full-screen mode and enter an archive
+
+       Usually this command is included in the extension file
+       of a shell processor such as Norton Commander:
+
+       RAR: RAR en !.!
+
+    Examples:
+
+       RAR en disk1.rar
+
+       RAR en puppy.zip
+
+       The 'en' may also be omitted, simply start RAR with
+       the archive name.
+
+    Example:
+
+       RAR baby.arj
+
+   ..  f: freshen files in archive
+
+       Updates those files changed since they were packed to
+       the archive.  This command will not add new files to the
+       archive.
+
+   ..  k: lock archive
+
+       Any commands that could change the archive will be
+       ignored.
+
+    Example:
+
+       RAR k final.rar
+
+   ..  l: list archive contents (brief listing)
+
+       Files are listed as with the 'v' command with the
+       exception of the file path.  i.e. only the file name
+       is displayed.
+
+   ..  m: move files and directories to archive
+
+       Moving files and directories results in the files and
+       directories being erased upon successful completion of
+       the packing operation.  Directories will not be removed
+       if '-ed' switch is used.
+
+   ..  mf: move files to archive
+
+        Moving files results in the files being erased upon
+        successful completion of the packing operation.
+
+   ..  p: print file(s) to screen (STDOUT)
+
+   ..  r: repair a damaged archive
+
+       Archive repairing consists of two stages. Firstly, the damaged 
+       archive is scanned for a recovery record (see the 'rr' command). 
+       If the archive contains a previously added recovery record and 
+       if the portion of the damaged data is continuous and less than 
+       N*512 bytes, where N is number of recovery sectors placed into 
+       the archive, the chance of a successful archive reconstruction 
+       is very high. When this stage has been completed, a new archive 
+       will be created, called _RECOVER.RAR 
+
+       If a damaged archive does not contain a recovery record or if 
+       the archive cannot be completely recovered due to too severe 
+       damage, a second stage is begun. During this stage only the 
+       archive structure is reconstructed and it is impossible to 
+       recover files which fail CRC validation, but it is still 
+       possible to recover undamaged files which were inaccessible due
+       to a broken archive structure. Generally this is useful for non-
+       solid archives.
+
+       When this stage has been completed, a new archive will be 
+       created, called _RECONST.RAR 
+
+       While the recovery process is in operation, RAR may
+       prompt the user for assistance when suspicious files are
+       located.
+
+                      Suspicious entry
+
+              Name:  &lt;possibly filename&gt;
+              Size:  &lt;size&gt;    Packed: &lt;compressed size&gt;
+
+                      Add it: Yes/No/All
+
+    Answer 'Y' to add this entry to the file $RECOVER.RAR.
+
+    Example:
+
+       RAR r buggy.rar
+
+   ..  rr[N]: add data recovery record
+
+       Optionally, redundant information (recovery record) may be added 
+       to an archive, incurring a small penalty in archive size, which 
+       will help to recover archived files in the case of floppy disk 
+       failure or other data losses. A recovery record may contain up 
+       to 8 recovery sectors. The number of sectors may be specified
+       directly in the 'rr' command (N = 1 .. 8) or selected 
+       automatically according to the archive size: 
+
+                   Archive size       Number of sectors
+                     &lt; 50Kb                   2
+                     50Kb-500Kb               4
+                     &gt; 500Kb                  8
+
+       If damaged data is continuous then each sector is able to 
+       recover 512 bytes of damaged information, although this value 
+       may decrease for multiple areas of damage. 
+
+       The size of the recovery record may be calculated 
+       (approximately) as &lt;archive size&gt;/256 + &lt;number of recovery
+       sectors&gt;*512 bytes. 
+
+
+   ..  s: convert archive to a Self-Extracting (SFX) type.
+
+       In the Dos environment, this will create a *.EXE file
+       which, when executed, will extract the files contained
+       within it.
+
+       It is also possible to make an SFX archive as the first
+       of a multi-volume sequence, but it should be noted that
+       the size will be larger by the amount of the SFX-module.
+       Please ensure that the first volume in the sequence is
+       created with the correct size.
+
+       Should SFX volumes be created using the command 'a' with
+       the switches: '-v[&lt;size&gt;] -sfx', then you do not need to
+       ensure the volume size - first volume will be automatically
+       created with the proper size.
+
+    Example:
+
+        RAR s diamant
+
+   ..  s&lt;file.sfx&gt;: convert archive to a Self-Extracting (SFX) type
+       using alternate SFX module
+
+       You may indicate an alternate SFX module (pathname) to build
+       the SFX archive.
+
+       For instance the Installation SFX:
+
+       RAR sidos.sfx myinst
+       RAR c -zscript.s myinst
+
+       See the Installation SFX documentation, SFX.DOC, for details
+       of the command language of the installation SFX.
+
+   ..  t: test archive files
+
+       This command performs a dummy file extraction, writing
+       nothing to the output stream, in order to validate the
+       specified file(s).
+
+   ..  u: update files in archive
+
+       Adds files not already in the archive and updates those
+       files changed since they were packed to the archive.
+
+   ..  v: verbosely list archive content (full listing)
+
+       Files are listed using the format: full pathname, file
+       comment, original and compressed size, compression ratio,
+       last update date and time, attributes, CRC, compression
+       method with the code of sliding dictionary size and minimum
+       RAR version required to extract. The dictionary size is coded
+       as following: 'a' means 64 Kb, 'b' - 128 Kb, 'c' - 256 Kb,
+       'd' - 512 Kb, 'e' - 1024 Kb.
+
+       To list the contents of all archive volumes, use and
+       asterisk (*) in place of the archive file extension.
+
+    Example:
+
+        RAR v multivol.*
+
+   ..  x: extract files from archive to original (relative) 
+          directory if pathnames exist in the archive
+
+    Command limitations:
+
+       The commands 'd', 'u' and 'f' will not operate with archive 
+       volumes. 
+
+       The command 'a' cannot be used to update an archive volume, only 
+       to create one.
+
+       The commands 'c' and 'cf' will not operate with archive volumes, 
+       but will work with solid archives. 
+
+
+   3.2. Switches  (Alphabetic sequence)
+
+   ..  -?  display help on commands and switches
+
+   ..  -$[drive]  provide volume label support
+
+       When adding to an archive the switch causes the adding of the 
+       volume label of the current or specified disk drive to the 
+       archive. When extracting from the archive the switch instructs 
+       RAR to set the volume label from the archive to the specified 
+       disk drive or, if not specified, to the drive on which 
+       extraction has been processed. 
+
+       Volume labels are ignored in SFX and the UNRAR utility.
+
+   ..  -av  apply authenticity verification (registered versions only)
+
+       RAR will put, in every new and updated archive, information 
+       concerning the creator, last update time and archive name. 
+
+       If an archive, containing authenticity verification, is being 
+       modified and this switch is not specified, the authenticity 
+       verification information will be removed. 
+
+       When extracting, testing, listing or updating and archive with
+       the '-av' switch, RAR will perform integrity validation and 
+       display the message:
+
+            Verifying authenticity information ...
+
+       In the case of successful authenticity verification, the message 
+       'Ok', creator name and last update information will be 
+       displayed.  In the case of authenticity verification failure, 
+       the message 'FAILED' will be displayed. 
+
+       When creating archive volumes with the '-av' switch, Cyclic 
+       Redundancy Check (CRC) information will be added to each volume. 
+
+       The Authenticity Verification feature, '-av,' is recommended for 
+       use with archives in a software distribution environment. 
+
+       In order to enable the Authenticity verification feature, the 
+       program MUST be registered.  Please contact your local 
+       distribution site or the world-wide distribution center. 
+
+   ..  -av-  disable checking or adding authenticity verification
+
+   ..  -b   enable backup archives
+
+       This switch will create a backup before an archive is modified.  
+       The backup file will have the same name as the original archive 
+       but with the .BAK extension.  Should this file already exist, 
+       the backup file will be named with a .$BK extension. 
+
+   ..  -bw  black &amp; white (monochrome) mode
+
+   ..  -c-   disable comment display
+
+   ..  -cfg- disable read configuration and environment
+
+   ..  -col  color mode
+
+   ..  -dh   disable sharing files
+
+       This helps when accessing files open by other applications on 
+       networks or multi-tasking environment. 
+
+   ..  -ds   do not sort files while adding to a solid archive
+
+       Note: see the RARFILES.LST description - solid archiving file
+       order list.
+
+   ..  -e&lt;s,h,a,r&gt; set file exclusion attributes
+
+       The switches 's', 'h', 'a' or 'r' signify that files having the 
+       System, Hidden, Archive or Read only attributes should be 
+       excluded.  The order in which the attributes are given is not 
+       significant. 
+
+    Example:
+
+       RAR a -ehs purity *.exe
+
+       Do NOT add files with Hidden or System attributes.
+
+   ..  -ed  do not add empty directories
+
+       This switch indicates that empty directories are not to be 
+       stored in the created archive. 
+
+   ..  -ems-  disable EMS usage (DOS version only)
+
+   ..  -ee  disable extended attributes saving (OS/2 version only)
+
+   ..  -ep  exclude paths from names
+
+       This switch enables files to be added to an archive without 
+       including the path information.  This could, of course, result 
+       in multiple files existing in the archive with the same name. 
+
+   ..  -ep1 exclude base dir from names
+
+       Do not store the path from the command line.
+
+       Example:
+
+          RAR a -ep1 -r pasta tmp\*.*
+
+       All files and directories from the directory TMP will be added 
+       to the archive 'pasta', but the path will not include 'TMP\'.  
+       This is equivalent to the commands: 
+
+         cd tmp
+         RAR a -ep1 -r pasta
+         cd ..
+
+   ..  -f   freshen files
+
+       May be used with archive extraction or creation.
+
+       The command string &quot;a -f&quot; is equivalent to the command 'f', you 
+       could also use the switch '-f' with the commands 'm' or 'mf'.  
+       If the switch '-f' is used with the commands 'x' or 'e', then 
+       only old files would be replaced with new versions extracted 
+       from the archive. 
+
+   ..  -ialt  Disables the changing, by pressing the left Alt key, the 
+       context function key information in the bottom line of the 
+       screen (in full-screen mode).  This helps some users who wished
+       to use certain TSRs while in RAR.  The action of the left and 
+       right function keys are in other respects, unchanged.  This may 
+       be permanently configured by adding the switch to the RAR 
+       environment variable (SET in autoexec.bat) with SET RAR=-ialt 
+
+   ..  -m&lt;0..5&gt; set compression method
+
+       -m0   store     do not compress file when adding to
+                       archive
+       -m1   fastest   use fastest method (less compressive)
+       -m2   fast      use fast compression method
+       -m3   normal    use normal (default) compression method
+       -m4   good      use good compression method (more
+                       compressive, but slower)
+       -m5   best      use best compression method (sightly more
+                       compressive, but slowest)
+
+       By default RAR uses -m3 method (Normal compression).
+
+   ..  -md&lt;size&gt;: select dictionary size in Kb (OS/2 version only)
+           size must be equal to 64, 128, 256, 512 or 1024
+           or a letter 'a', 'b', 'c', 'd' or 'e' accordingly.
+
+       The sliding dictionary is a special memory area used by the 
+       compression algorithm. If the size of the file being compressed 
+       (or the total files size in the case of a solid archive) is 
+       greater than the dictionary size, then increasing the dictionary 
+       size will generally increase compression ratio, decrease packing 
+       speed and increase memory requirements.  RAR for DOS has a fixed 
+       dictionary size of 64 Kb.  RAR for OS/2 (and other 32-bit 
+       platforms) has a default dictionary size of 256Kb, but this may 
+       be changed by the user to be 64 Kb, 128 Kb, 256 Kb, 512 Kb or 
+       1024 Kb.  Unlike compression, extraction speed is unaffected by 
+       dictionary size.
+
+       The amount of memory required to create large dictionary 
+       archives may be calculated as 5*&lt;dictionary size&gt;+150Kb. About 1 
+       Mb is required for extraction and 5*&lt;dictionary size&gt;+1150Kb to 
+       update solid archives. 
+
+       RAR for DOS can extract from large dictionary archives using 
+       conventional, EMS and disk memory. If no EMS or disk 
+       cache is available, the operation may slow down significantly. RAR
+       for DOS cannot convert large dictionary archives to SFX with the 
+       default SFX module and cannot update such solid archives. 
+
+    Example:
+
+       RAR a -s -mdd sources *.asm
+           or
+       RAR a -s -md512 sources *.asm
+
+       Will create a solid archive using a 512 Kb dictionary.
+
+   ..  -mm multimedia compression
+
+       Enables a special multimedia compression algorithm. This is 
+       intended to be used primarily when compressing raw digital audio 
+       data such as WAV's up to four 8-bit or two 16-bit channels but 
+       also show good results with true color (24-bit) bitmaps. An 
+       improvement in the compression ratio, of up to 30%, may be 
+       expected over normal compression. 
+
+       During archiving of a file, in multimedia mode, RAR performs 
+       intelligent data analysis and may use the general or multimedia 
+       compression algorithm for different parts of the file depending
+       upon which algorithm is the more suitable. Such analysis allows 
+       optimum performance when different data types exist in the same 
+       file (This is typical for STM and MOD files). 
+
+       The switches -m&lt;N&gt; &quot;Set compression method&quot; and -s &quot;Create solid 
+       archive&quot; also may be used with multimedia compression but they 
+       influence only those parts compressed with the general 
+       algorithm. 
+
+       If -mm is used with data which is not multimedia, the
+       compression ratio, generally, will not be changed but, due to 
+       the multimedia analysis overhead, speed is always decreased. So 
+       it is not recommended to use -mm with data other than multimedia 
+       data. 
+
+       Note: multimedia compression is designed only for a certain
+       file types. E.g. it works well with WAV, STM, MOD and true color 
+       bitmaps, but will gain nothing for MID, GIF, JPG or 8-bit bitmaps. 
+
+    Example:
+
+       RAR a -m5 -s -mm songs *.wav
+
+   ..  -mmf force multimedia compression
+
+       This switch works as the -mm with one exception: it always 
+       compress files as multimedia independent of the multimedia 
+       analysis results. Usually this leads to a worse compression 
+       ratio but may be useful in the hypothetical case when RAR cannot 
+       correctly detect a multimedia file. 
+
+   ..  -o+ overwrite existing files
+
+   ..  -o- do not overwrite existing files (default)
+
+   ..  -p&lt;password&gt; set password
+
+   ..  -p  set password
+
+       The password is case-sensitive. If you omit the password on the
+       command line, you will be prompted with: 
+
+       Enter password:
+
+    Example:
+
+       RAR a -pmyhoney secret *.txt
+
+       Newly added files will be encrypted with the password 'myhoney'. 
+
+   ..  -r recurse subdirectories
+
+       May be used with commands: 'a', 'u', 'f', 'm', 'x', 'e', 't', 
+       'p', 'v', 'l', 'c', 'cf' and 's'. 
+
+       When used with the commands, 'a', 'u', 'f' or 'm', will
+       process files in all sub-directories as well as the
+       current working directory.
+
+       When used with the commands, 'x', 'e', 't', 'p', 'v', 'l', 'c', 
+       'cf' or 's', will process all archives in sub-directories as well 
+       as the current working directory. 
+
+   ..  -ri&lt;P&gt;[:&lt;S&gt;] set priority and sleep time (OS/2 version only)
+
+       This option is used to regulate system load by RAR in a 
+       multitasking environment. 
+
+       The task priority &lt;P&gt; (possible values, 0 to 128) is the OS/2 
+       task priority.  Values of &lt;P&gt; are grouped as follows:
+
+                 &lt;P&gt; value      OS/2 &lt;priority class&gt;:&lt;priority level&gt;
+                    0                OS/2 default (i.e. 2:0, or &lt;P&gt;=33)
+                   1-32              1:0-1:31
+                  33-64              2:0-2:31
+                  65-96              3:0-3:31
+                  97-128             4:0-4:31
+
+       When &lt;P&gt; is equal to 0, the default OS/2 task priority is used.
+
+       The sleep time &lt;S&gt; is a value from 0 to 1000 (milliseconds). 
+       This is the period of time that RAR will give back to OS/2 after 
+       every read or write during the packing or unpacking operation.  
+       The sleep time setting is useful when several tasks with the
+       same priority are running in the system. 
+
+    Example:
+
+       RAR a -r -sfx -ri0:100 backup *.*
+
+       Execute RAR with default priority and 100 ms of sleep after each 
+       read or write. 
+
+   ..  -rr[N]: add data recovery record
+
+       If this switch is used when creating or modifying an archive, a 
+       data recovery record will be added to the resulting archive. See 
+       command 'rr[N]' description for details. 
+
+   ..  -s   create a solid archive
+
+       Solid is a special archive type.  Please refer to the appendix 
+       &quot;Glossary&quot; for further information. 
+
+    Example:
+
+       RAR a -s -v1440 -sfx maddy *.*
+
+       Will create solid Self-Extracting (SFX) volumes of size 1440000 
+       bytes. 
+
+       Note: see the RARFILES.LST description - solid archiving file
+       order list.
+
+   ..  -sfx create Self-Extracting (SFX) archive
+
+       If this switch is used when creating a new archive, a Self-
+       Extracting archive would be created. 
+
+    Example:
+
+       RAR a -sfx sources *.asm
+
+       This command would create a Self-Extracting archive named 
+       SOURCES.EXE.  To extract files from such an archive, you would 
+       simply execute it.  Self-Extracting archives may be processed 
+       normally using RAR. 
+
+   ..  -sfx&lt;file.sfx&gt; create Self-Extracting (SFX) archive using an 
+       alternate SFX module.
+
+   Example:
+
+       RAR a -sfxidos.sfx -zscript.s myinst
+
+       See the Installation SFX documentation, SFX.DOC for details.
+
+   ..  -std  stdout mode
+
+       All output text is sent to the stdout stream.  This allows 
+       redirection of RAR output to a file, for example: 
+
+       RAR v -std bambam &gt;bambam.lst
+
+         or in 'silent' mode without any output:
+
+       RAR x -std dime 10cents.txt &gt;nul
+
+       Note:  In stdout mode, if an archive comment exists, no delay 
+              will be implemented when the comment is displayed.
+
+   ..  -tk  do not modify archive date
+
+       Prevents RAR from modifying the archive date when changing an 
+       archive. 
+
+   ..  -tl  set archive date as the date of newest file
+
+       Forces RAR to set the date of a changed archive to the date of 
+       the newest file in the archive.
+
+   ..  -u   update files
+
+       May be used with archive extraction or creation.
+
+       The command string &quot;a -u&quot; is equivalent to the command 'u', you 
+       could also use the switch '-u' with the commands 'm' or 'mf'.  
+       If the switch '-u' is used with the commands 'x' or 'e', then 
+       files not present on the disk and files newer than their copies 
+       on the disk would extracted from the archive. 
+
+   ..  -v create volumes with autodetected size
+
+       Note: when the switch is used with 'v' or 'l' command RAR
+       lists all volumes starting from specified.
+
+   ..  -v&lt;size&gt; create archive volumes
+
+       By default this switch uses &lt;size&gt; as thousands (1000) of bytes 
+       (not 1024 x bytes). You may also enter the size in kilobytes 
+       using the symbol 'k' or in bytes using the symbol 'b' following 
+       the numerical value. If the size is omitted, autodetection will 
+       be used. 
+
+       If volumes are created on the same drive as the temporary files 
+       (current drive by default, but may be changed with the switch '-
+       w'), the autodetected size becomes meaningless.  In this case 
+       the volume size must be explicitly defined. 
+
+       If volumes are created on a drive OTHER than the drive
+       containing the temporary files, then after the first volume has 
+       been created, the user will be prompted with: 
+
+           Create next volume: Yes/No/All/Quit
+
+       At this moment in time, you should change the disks. Answering 
+       'A' will cause all volumes to be created without a pause. 
+
+       The first volume file in a multi-volume set has the extension 
+       .RAR, following volumes are numbered from .R00 to .R99. 
+
+       When extracting or testing a multi-volume archive you must use 
+       only the first volume name (*.RAR).  If there is no next volume 
+       on the drive (and volumes are not placed in the same directory 
+       as the temporary files), the user will be prompted with: 
+
+           Insert disk with &lt;next volume name&gt;
+
+       Insert the disk with the correct volume and press any key. 
+
+       If while extracting, the next volume is not found and volumes 
+       are placed in the same directory as the temporary files, RAR 
+       will abort with the error message: 
+
+           Cannot find &lt;volume name&gt;
+           Cannot change disk with temporary files
+
+       Archive volumes may not be modified.  The commands 'd', 'f', 
+       'u', 's' can not be used with Multi-volume sets. The command 'a' 
+       may be used only for the creation of a new multi-volume
+       sequence. 
+
+       It is possible, although unlikely, that the file size, of a file 
+       in a multi-volume set, could be greater than it's uncompressed 
+       size.  This is due to the fact that 'storing' (no compression if 
+       size increases) cannot be enabled for multi-volume sets. 
+
+       Archive volumes may be Self-Extracting (SFX).  Such an archive 
+       should be created using both the '-v' and '-sfx' switches. 
+
+
+    Example:
+
+    1. Archive drive C: on floppy drive A:
+
+       RAR a -r -v a:allhard c:\*.*
+
+    (current disk MUST NOT be a:)
+
+    2. Create archive volumes with 1440000 byte size in current
+       directory.
+
+       RAR a -v1440 4flopp
+
+       or
+
+       RAR a -v1440 4flopp *.*
+
+   .. -vd erase disk contents before creating volume
+
+       All files and directories on the target disk will be erased when 
+       '-vd' is used.  The switch applies only to removable media, the 
+       hard disk cannot be erased using this switch. 
+
+   ..  -w&lt;path&gt; assign work directory
+
+       This switch may be used to assign the directory for temporary 
+       files to another drive.  For example a RAM drive or high 
+       performance disc. 
+
+    Example:
+
+       RAR a -we:\tmp bmps *.bmp
+
+       Temporary files would be created in directory E:\TMP
+
+
+   ..  -x&lt;mask&gt; exclude files specified by mask
+
+    Example:
+
+       RAR a -x*.bak purearch.rar
+
+       You may specify the switch '-x' several times:
+
+       RAR a -r -x*.arj -x*.rar rawfiles
+
+   ..  -x@&lt;list&gt; exclude files using specified list file
+
+    Example:
+
+       RAR a -x@exlist.txt arch *.exe
+
+   ..  -y   assume Yes on all queries
+
+   ..  -z&lt;file&gt; add comment to archive
+
+
+   3.3. SFX switches
+
+    An SFX archive module may be handled by the switches:
+
+   ..  -e   Extract from the SFX archive
+
+       The switch is used by default similar to 'x' command in RAR.
+
+   ..  -t   Test the SFX archive
+
+       This is similar to 't' command in RAR.
+
+   ..  -v   View the archive content
+
+       This is similar to 'v' command in RAR.
+
+   3.4. The file order list for solid archiving - RARFILES.LST.
+
+       RARFILES.LST contains user-defined file list which tells RAR
+       the order to add files to a solid archive. It may contain file
+       names, wildcards and special entry - $default. The default
+       entry defines the place in order list for files not matched
+       with other entries in this file. The comment character is ';'.
+
+       This file should be placed in the same directory as RAR.
+
+       Tips to provide improved compression and speed of operation:
+
+       - similar files should be grouped together in the archive;
+       - frequently accessed files should be placed at the beginning.
+
+
+ --------------------------------------------------------------------------
+ |.............................  Glossary  ...............................|
+ --------------------------------------------------------------------------
+
+   Archive       Special file containing one or more files optionally 
+                 encoded and/or compressed. 
+
+   Compression   A method of encoding data to reduce it's size. 
+
+   CRC           Cyclic Redundancy Check. Mathematical method 
+                 calculating special checking information for data 
+                 validity. 
+
+   Dictionary    The length of a buffer used to search similarities
+   size          (the stage of a compression process) in a file been
+                 added to the archive.
+
+   SFX           Archive module used to extract files from when 
+                 executed. (SelF-eXtracting module), usually in the 
+                 form of a .EXE file.
+
+   Sliding       See the 'Dictionary size' description.
+   dictionary
+
+   Solid         An archive packed using a special compression method 
+                 which sees all files as one continuous data stream.  
+                 Particularly advantageous when packing a large number 
+                 of small files. 
+
+   Volume        Part of a split archive. Splitting an archive to 
+                 volumes allows storing them on diskettes. Volumes must 
+                 be extracted starting from first in sequence. </B>
+
