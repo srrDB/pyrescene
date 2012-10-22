@@ -129,7 +129,7 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 				for j in range(i):
 					frame_sizes[i] -= frame_sizes[j]
 		else: # EbmlLaceType.Ebml
-			bc = 0;
+			bc = 0
 
 			if i == 0:
 				frame_sizes[i], bc = GetEbmlUIntStream(stream)
@@ -240,12 +240,12 @@ class EbmlReader(object):
 
 	def read(self):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
-		# SkipContents() must be called before Read() can be called again");
+		# SkipContents() must be called before Read() can be called again"
 		assert self.read_done or (self.mode == EbmlReadMode.SRS and
 		       self.element_type == EbmlElementType.Block)
 		
 		element_start_position = self._ebml_stream.tell()
-		
+
 		# too little data (+2: 1B element ID + 1B data size)
 		if element_start_position + 2 > self._file_length:
 			return False
@@ -341,10 +341,9 @@ class EbmlReader(object):
 
 			# read in time code (2 bytes) and flags (1 byte)
 			blockHeader += self._ebml_stream.read(3)
-#			timecode = ((blockHeader[len(blockHeader) - 3] << 8)
-#						+ blockHeader[len(blockHeader) - 2])
-			i = len(blockHeader) - 3
-			(timecode,) = S_SHORT.unpack(blockHeader[i:i+2])
+			timecode = ((S_BYTE.unpack(blockHeader[
+			                               len(blockHeader) - 3])[0] << 8) + 
+			            S_BYTE.unpack(blockHeader[len(blockHeader) - 2])[0])
 
 			# need to grab the flags (last byte of the header) 
 			# to check for lacing
@@ -355,9 +354,10 @@ class EbmlReader(object):
 			frameSizes, bytesConsumed = GetBlockFrameLengths(lace_type, 
 			                              data_length, self._ebml_stream)
 			if bytesConsumed > 0:
+				newBlockHeader = blockHeader
 				self._ebml_stream.seek(-bytesConsumed, os.SEEK_CUR)
-				newBlockHeader = self._ebml_stream.read(len(blockHeader))
-				blockHeader = newBlockHeader;
+				newBlockHeader += self._ebml_stream.read(bytesConsumed)
+				blockHeader = newBlockHeader
 
 			element_length -= len(blockHeader)
 			
@@ -373,11 +373,11 @@ class EbmlReader(object):
 			
 		# the following line will write mkvinfo-like output from the parser 
 		# (extremely useful for debugging)
-#		print("{0}: {3} + {1} bytes @ {2}".format(
-#		                            EbmlElementTypeName[self.element_type],
-#		                            element_length, # without header
-#		                            element_start_position,
-#		                            len(self.elementHeader)))
+		print("{0}: {3} + {1} bytes @ {2}".format(
+		                            EbmlElementTypeName[self.element_type],
+		                            element_length, # without header
+		                            element_start_position,
+		                            len(self.elementHeader)))
 
 		return True
 	
