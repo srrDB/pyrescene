@@ -467,7 +467,7 @@ def create_srr(srr_name, infiles, in_folder="",
 						srr.close()
 						os.unlink(srr_name)
 						raise ValueError("Archive uses unsupported "
-						                 "compression method: %s", rarfile)
+						                 "compression method: %s" % rarfile)
 			elif _is_recovery(block):
 				_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 					  packed_size=block.packed_size,
@@ -653,7 +653,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 						  packed_size=block.packed_size,
 						  unpacked_size=block.unpacked_size,
 						  file_name=block.file_name)
-					if block.compression_method != rar.COMPR_STORING:
+					if block.compression_method != COMPR_STORING:
 						_fire(MsgCode.COMPRESSION, 
 						      message="Don't delete 'em yet!")
 	#					srr.close()

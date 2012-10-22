@@ -208,9 +208,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 def create_srr(options, infolder, infiles, working_dir):
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN]
 	if options.verbose:
-		msgs.append([])
+		msgs += [MsgCode.BLOCK, MsgCode.FBLOCK, MsgCode.RBLOCK, 
+		         MsgCode.NO_FILES, MsgCode.MSG]
+		mthread.set_all(True)
 	mthread.set_messages(msgs)
-	mthread.set_all(True)
 
 	store_files = options.store_files
 	save_paths = options.paths
@@ -239,8 +240,9 @@ def create_srr(options, infolder, infiles, working_dir):
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.")
-	except EnvironmentError:
+	except (EnvironmentError, ValueError):
 		# Can not read basic block header
+		# ValueError: compressed SRR
 		mthread.done = True
 		mthread.join()
 		print(sys.exc_info()[1])
