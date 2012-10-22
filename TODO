@@ -2,7 +2,6 @@ pyReScene
 =========
 
  - Reconstruction of SRRs for compressed RARs
- - -v verbose option doesn't work yet
  
  
 pyReSample
