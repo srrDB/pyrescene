@@ -373,11 +373,11 @@ class EbmlReader(object):
 			
 		# the following line will write mkvinfo-like output from the parser 
 		# (extremely useful for debugging)
-		print("{0}: {3} + {1} bytes @ {2}".format(
-		                            EbmlElementTypeName[self.element_type],
-		                            element_length, # without header
-		                            element_start_position,
-		                            len(self.elementHeader)))
+#		print("{0}: {3} + {1} bytes @ {2}".format(
+#		                            EbmlElementTypeName[self.element_type],
+#		                            element_length, # without header
+#		                            element_start_position,
+#		                            len(self.elementHeader)))
 
 		return True
 	
