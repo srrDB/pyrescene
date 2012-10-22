@@ -1,0 +1,20 @@
+
+
+
+
+pyReSample 0.1
+==============
+
+ * Initial version. Changes since ReSample .NET 1.2:
+ * MP4 support: SRS construction and sample reconstruction
+ 
+pyReScene 0.1
+=============
+
+ * Initial version 
+ 
+ 
+pyReScene Usenet 1.3
+====================
+
+ * See srr_usenet.py

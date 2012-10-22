@@ -1,0 +1,30 @@
+pyReScene
+=========
+
+ - Reconstruction of SRRs for compressed RARs
+ - -v verbose option doesn't work yet
+ 
+ 
+pyReSample
+==========
+
+ - Support for additional video formats
+    * VOB (DVDRs)
+    * M2TS (BDRs)
+    * WMV
+    * OGM
+    * MPEG
+ - Support to backup and restore meta data for audio formats
+    * MP3
+    * FLAC
+    
+    
+General
+=======
+
+ - Figure out how to get all the unit tests completing successfully when 
+   running them all at once with nose instead of running them individually. 
+   https://nose.readthedocs.org/en/latest/
+   
+   
+   
