@@ -26,7 +26,7 @@ Usage:
 
 You don't need to edit the code anymore to use multiple servers.
 You can point to a configuration file with --settings /file
-De default configuration file name is "srr_usenet.cfg".
+The default configuration file name is "srr_usenet.cfg".
 
 To log the output, do:
 	python srr_usenet.py /dir | tee outputfile.txt
@@ -107,6 +107,11 @@ Changelog version 1.3 (2012-08-28)
  - bug: processing could fail for NZBs with same files in them
  - 'unknownerror' folder not used anymore for known error
  - 'except:' less
+ 
+Changelog version 1.4
+ - raised size a bit to catch all small IMDb images
+ - version number will be added to SRR files
+ 
 
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
@@ -165,6 +170,9 @@ sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 import rescene
 from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
+
+__version_info__ = ('1', '4')
+__version__ = '.'.join(__version_info__)
 
 EXTRA_SERVERS = [ # now in srr_usenet.cfg
 	# NNTP_SERVER, NNTP_PORT, NNTP_LOGIN, NNTP_PASSWORD, (readermode)
@@ -1171,7 +1179,7 @@ def create_srr(nzb_path, options):
 			print("JPG check:"),
 			size = sum([f.bytes for f in afile.segments.itervalues()])
 			# check the resolution? -> no, IMDb raised the resolution
-			if size < 8000: # I have seen valid 10KiB images
+			if size < 9000: # I have seen valid 10KiB images
 				print("image not added.")
 				continue
 			else:
@@ -1392,7 +1400,7 @@ def process_dir(path, amount):
 	return amount
 
 def main(options, args):
-	rescene.change_rescene_name_version("pyReScene Usenet")
+	rescene.change_rescene_name_version("pyReScene Usenet %s" % __version__)
 	
 	global NNTP_LOGIN, NNTP_PASSWORD, NNTP_SERVER, NNTP_PORT, \
            NO_CLI_SERVER, EXTRA_SERVERS
@@ -1516,7 +1524,7 @@ if __name__ == '__main__':
 		"This tool will generate a SRR file based on a NZB file.\n"
 		"The nzb file will be moved to a dir success or failure.\n"
 		"SRR files for compressed RARs will be moved to a separate subdir.",
-		version="%prog 1.3 (2012-08-28)") # --help, --version
+		version="%prog %s" % __version__) # --help, --version
 
 	parser.add_option("-o", help="SRR output DIRECTORY\n"
 				"The default directory is where the NZB files are located. "
