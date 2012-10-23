@@ -10,21 +10,30 @@
 General Information
 ===================
 
-  pyReScene
+  pyReScene is a port of ReScene .NET to the Python programming language.
+ReScene is a mechanism for backing up and restoring the metadata from "scene" 
+released RAR files. RAR archive volumes are rebuild using the stored metadata 
+in the SRR file and the extracted files from the RAR archive. Thus far this
+process only works on RAR files created with "Store" mode (otherwise known as 
+-m0 or No Compression). pyReScene consists of multiple related tools. 
 
+  pyReScene Usenet is able to create SRR files from NZB files. It works by
+downloading only (parts of) the segments it needs for creating an SRR file.
+srr_usenet.py and other NZB related scripts are located in the usenet 
+directory. The compiled _yenc.so module (for more speed) can be obtained from 
+http://pypi.python.org/pypi/yenc/. Create a srr_usenet.cfg configuration file 
+in the usenet directory for easy usage. A template example file is available.
 
+  pyReSample is a companion to ReScene. It does for samples what ReScene does 
+for RARs. You can use ReSample to build a blueprint of a MKV, AVI or MP4
+sample, and then use that blueprint (the .srs file) with the full video file
+to recreate that sample. It contains backups of all parts of the sample file 
+that are not the actual track data as well as a signature that helps ReSample 
+locate the missing track data from the full video file.
 
-  pyReScene Usenet
+View srr_spec.txt and http://rescene.wikidot.com/ for more info.
 
+Dependencies
+============
 
-TODO: version number in appname
-
-  pyReSample
-
-
-
-
-
-
-
-http://www.debian.org/doc/packaging-manuals/python-policy/
+pyReScene requires Python 2.6 or 2.7 to run.  
