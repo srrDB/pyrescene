@@ -111,7 +111,8 @@ Changelog version 1.3 (2012-08-28)
 Changelog version 1.4
  - raised size a bit to catch all small IMDb images
  - version number will be added to SRR files
- 
+ - no renamed RARs from kere.ws
+  
 
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
@@ -1125,6 +1126,13 @@ def create_srr(nzb_path, options):
 			"kere.ws" in nfile.name:
 			print("Repack detected: %s" % nfile.name)
 			raise Repack
+		
+		# fail if kere.ws rename is detected
+		if (nfile.name[-4:].lower() == ".rar" and len(nfile.name) == 20 + 4
+		and re.match("[a-zA-Z0-9]*", nfile.name[:-4])):
+			print("kere.ws repack detected: %s" % nfile.name)
+			# these posts don't always have SFVs
+			raise Repack
 
 	# filter out duplicate SFV files (has side effects otherwise)
 	unique = []
@@ -1524,7 +1532,7 @@ if __name__ == '__main__':
 		"This tool will generate a SRR file based on a NZB file.\n"
 		"The nzb file will be moved to a dir success or failure.\n"
 		"SRR files for compressed RARs will be moved to a separate subdir.",
-		version="%prog %s" % __version__) # --help, --version
+		version="%%prog %s" % __version__) # --help, --version
 
 	parser.add_option("-o", help="SRR output DIRECTORY\n"
 				"The default directory is where the NZB files are located. "

@@ -47,6 +47,8 @@ def read_nzb(nzb_file):
 		for line in open(nzb_file, "r").readlines():
 			line = re.sub(XML_AMP_FIX, "&amp;", line)
 			line = re.sub("&ouml;", "ö", line)
+			# invalid XML characters from NewsLeecher
+			line = re.sub("\00", "", line)
 			fixed_nzb.write(line)
 		# do not fail on empty NZB files
 		if fixed_nzb.tell() == 0:

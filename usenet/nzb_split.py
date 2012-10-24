@@ -47,8 +47,10 @@ UHQ = ".*< ?(?P<relname>.{17,}?) ?>.*"
 LOU = ".*Sponsored by SSL-News.info>>( -)? ? (presents )?(?P<relname>.*?)( -|- ).*"
 GOU = ".*>ghost-of-usenet.org<ENG-DVDR><< (?P<relname>.*?) >>.*"
 TN = ".*(www.Thunder-News.org) >(?P<relname>.*?)< >Sponsored by Secretusenet.*"
+TEEVEE = ".*\[ (?P<relname>.*) \].*"
 
-REGEX = TN
+#TODO: do like nzbsrr.py and try them all
+REGEX = TEEVEE
 
 # we assume that all files of a release are together (to improve memory usage)
 
@@ -153,7 +155,8 @@ def main(options, args):
 				regexrelname = match.group("relname")
 				
 				# 5: .cd1.
-				if len(base) < len(regexrelname) + 5:
+				# 7: -sample
+				if len(base) < len(regexrelname) + 8:
 					base = regexrelname
 			else:
 				if len(base) < len(ln):
@@ -169,6 +172,8 @@ def main(options, args):
 			rel = rel.replace('|', '_')
 			rel = rel.replace('/', '_')
 			rel = rel.replace('\\', '_')
+			# no _ at beginning or end e.g. : not part of rel name
+			rel = rel.strip("_")
 			
 			if rel != current_rel:
 				try:
