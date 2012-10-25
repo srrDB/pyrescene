@@ -7,6 +7,8 @@ pyReSample 0.1
 
  * Initial version. Changes since ReSample .NET 1.2:
  * MP4 support: SRS construction and sample reconstruction
+ * SRS creation of a rarred sample failed: Corruption detected: 
+   Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
  
 pyReScene 0.1
 =============

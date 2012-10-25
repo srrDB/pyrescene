@@ -3,6 +3,8 @@ not -o, -s
 	=> -s something.nfo -s *.jpg
 - It would be nice if it was possible to use *sfv on the first paramete
 
+http://www.debian.org/doc/packaging-manuals/python-policy/
+
 DONE! - list file size in verbose output	=> possible!
 DONE! - repair with missing files
 DONE! - create paths when extracting files (.NET never does this) -> it does with -p parameter?

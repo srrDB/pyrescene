@@ -315,7 +315,7 @@ if __name__ == "__main__":
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
 	# TODO: prompt for overwriting SRR file
-	parser.add_option("-v", help="Enable verbose (technical) creation.",
+	parser.add_option("-v", help="enable verbose (technical) creation",
 						action="store_true", dest="verbose", default=False)
 	# TODO: get all the messages in order
 	
@@ -364,7 +364,7 @@ if __name__ == "__main__":
 #	creation.set_description("These options are used for creating an SRR file.")
 	edit.add_option("-x", "--extract",
 					  	action="store_true", dest="extract", default=False,
-					  	help="Extract SRR stored files only.")
+					  	help="extract SRR stored files only")
 	edit.add_option("-s", help="<file list>: Store additional files in the"
 						" SRR (wildcards supported)", action="append",
 						metavar="FILES", dest="store_files")

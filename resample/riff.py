@@ -105,7 +105,7 @@ class RiffReader(object):
 		
 		# might not keep this check
 		# the length check should catch corruption on its own...
-		if not fourCCValidator.match(fourcc):
+		if not fourCCValidator.match(str(fourcc)):
 			raise InvalidDataException("Invalid FourCC value (%s) at 0x%08X" % 
 			                           (fourcc, self.chunkStartPos))
 		

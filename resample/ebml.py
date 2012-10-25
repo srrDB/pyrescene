@@ -62,11 +62,11 @@ def GetEbmlElementID(stream):
 def GetEbmlUInt(buff, offset, count):
 	"""buff: header bytes
 	offset: offset start integer in buffer
-	count: Lenght Descriptor byte"""
+	count: Length Descriptor byte"""
 	# length descriptor bytes not wanted: remove those from the first byte
-	size = S_BYTE.unpack(buff[offset])[0] & (0xFF >> count) # 255, 127, ...
+	size = S_BYTE.unpack(buff[offset:offset+1])[0] & (0xFF >> count) # 255, 127, ...
 	for i in range(1, count):
-		size = (size << 8) + S_BYTE.unpack(buff[offset+i])[0]
+		size = (size << 8) + S_BYTE.unpack(buff[offset+i:offset+i+1])[0]
 
 	return size # integer size
 
@@ -87,7 +87,7 @@ def MakeEbmlUInt(number):
 	length_mask = 0
 
 	for i in range(1, 8):
-		length_mask = 1L << (i * 8 - i)
+		length_mask = 1 << (i * 8 - i)
 		if number < length_mask:
 			length_descriptor = i
 			number |= length_mask
@@ -186,30 +186,30 @@ class BlockElement(EbmlElement):
 		self.timecode = 0
 		self.frame_lengths = []
 		self.raw_block_header = ""
-	
+
 class EbmlID(object):
 	"""Element IDs (also called EBML IDs)"""
-	EBML = "1A45DFA3"
-	SEGMENT = "18538067"
-	TIMECODE_SCALE = "2AD7B1"
+	EBML = "\x1A\x45\xDF\xA3"
+	SEGMENT = "\x18\x53\x80\x67"
+	TIMECODE_SCALE = "\x2A\xD7\xB1"
 
-	CLUSTER = "1F43B675"
-	TIMECODE = "E7"
-	BLOCK_GROUP = "A0"
-	BLOCK = "A1"
-	SIMPLE_BLOCK = "A3"
+	CLUSTER = "\x1F\x43\xB6\x75"
+	TIMECODE = "\xE7"
+	BLOCK_GROUP = "\xA0"
+	BLOCK = "\xA1"
+	SIMPLE_BLOCK = "\xA3"
 
-	ATTACHMENT_LIST = "1941A469"
-	ATTACHMENT = "61A7"
-	ATTACHED_FILE_NAME = "466E"
-	ATTACHED_FILE_DATA = "465C"
+	ATTACHMENT_LIST = "\x19\x41\xA4\x69"
+	ATTACHMENT = "\x61\xA7"
+	ATTACHED_FILE_NAME = "\x46\x6E"
+	ATTACHED_FILE_DATA = "\x46\x5C"
 
-	RESAMPLE = "1F697576" # Class D - \x1fiuv
-	RESAMPLE_FILE = "6A75" # ju
-	RESAMPLE_TRACK = "6B75" # ku
+	RESAMPLE = "\x1F\x69\x75\x76" # Class D - \x1fiuv
+	RESAMPLE_FILE = "\x6A\x75" # ju
+	RESAMPLE_TRACK = "\x6B\x75" # ku
 
-	CRC32 = "BF"
-
+	CRC32 = "\xBF"
+	
 class EbmlReader(object):
 	"""Implements a simple Reader class that reads through MKV or 
 	MKV-SRS files one element at a time."""
@@ -274,7 +274,7 @@ class EbmlReader(object):
 		# 3) Data -------------------------------------------------------------
 		# these comparisons are ordered by the frequency with which they 
 		# will be encountered to avoid unnecessary processing
-		eh = self.elementHeader[0:id_length_descriptor].encode('hex').upper()
+		eh = self.elementHeader[0:id_length_descriptor]
 		if eh == EbmlID.BLOCK or eh == EbmlID.SIMPLE_BLOCK:
 			self.element_type = EbmlElementType.Block
 		elif eh == EbmlID.BLOCK_GROUP:

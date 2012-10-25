@@ -34,7 +34,7 @@ import unittest
 import tempfile
 import collections
 
-from os.path import join, basename
+from os.path import basename
 from struct import Struct
 from zlib import crc32
 
@@ -63,35 +63,6 @@ http://sourceforge.net/projects/pymedia/files/pymedia/
 https://code.google.com/p/mutagen/
 
 """
-#
-#base = "D://dump//tNEW//Bomb.Girls.S01E01.REPACK.720p.HDTV.x264-2HD//Sample//sample-bomb.girls.s01e01.repack.720p.hdtv.x264-2hd"
-#
-#mkv = base + ".mkv"
-#srs = base + ".srs"
-#
-#mkv = "party.down.s02e01.720p.hdtv.x264-immerse.sample.mkv"
-#
-##http://bazaar.launchpad.net/~exaile-devel/exaile/exaile-0.3.x/view/head:/xl/metadata/_matroska.py
-#
-#import ebmlchanged
-#from ebmlchanged import dump_structure, matroska
-#
-#mod_name = "ebmlchanged.matroska"
-#cls_name = "MatroskaDocument"
-#
-#try:
-#	doc_mod = __import__(mod_name, fromlist=[cls_name])
-#	doc_cls = getattr(doc_mod, cls_name)
-#except ImportError:
-#	print('unable to import module %s' % mod_name)
-#except AttributeError:
-#	print('unable to import class %s from %s' % (cls_name, mod_name))
-#
-#with open(mkv, 'rb') as stream:
-#	doc = doc_cls(stream)
-##	dump_structure.dump_document(doc)
-#	
-	
 
 S_LONGLONG = Struct('<Q') # unsigned long long: 8 bytes
 S_LONG = Struct('<L') # unsigned long: 4 bytes
@@ -113,31 +84,31 @@ class FileType(object):
 
 def get_file_type(ifile):
 	"""Decide the type of file based on the magic marker"""
-	MARKER_MKV = "1A45DFA3" # .Eߣ
-	MARKER_AVI = "52494646" # RIFF
-	MARKER_RAR = "526172211A0700" # Rar!...
-	MARKER_MP4 = "66747970" # ....ftyp
-	MARKER_MP4_3GP = "33677035" # 3gp5
-	MARKER_MP3 = "494433" # ID3 (different for an EOS mp3)
+	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eߣ
+	MARKER_AVI = b"\x52\x49\x46\x46" # RIFF
+	MARKER_RAR = b"\x52\x61\x72\x21\x1A\x07\x00" # Rar!...
+	MARKER_MP4 = b"\x66\x74\x79\x70" # ....ftyp
+	MARKER_MP4_3GP = b"\x33\x67\x70\x35" # 3gp5
+	MARKER_MP3 = b"\x49\x44\x33" # ID3 (different for an EOS mp3)
 	
 	with open(ifile, 'rb') as ofile:
-		marker = ofile.read(14).encode('hex').upper()
+		marker = ofile.read(14)
 		
-	if marker[:14] == MARKER_RAR:
+	if marker.startswith(MARKER_RAR):
 		# Read first file from the RAR archive
 		rs = rarstream.RarStream(ifile)
-		marker = rs.read(8).encode('hex').upper()
+		marker = rs.read(8)
 		rs.close()
 		
-	if marker[:8] == MARKER_MKV:
+	if marker.startswith(MARKER_MKV):
 		return FileType.MKV
-	elif marker[:8] == MARKER_AVI:
+	elif marker.startswith(MARKER_AVI):
 		return FileType.AVI
-	if marker[8:16] == MARKER_MP4 or marker[:4] == MARKER_MP4_3GP:
+	if marker[4:].startswith(MARKER_MP4) or marker.startswith(MARKER_MP4_3GP):
 		# http://wiki.multimedia.cx/index.php?title=QuickTime_container
 		# Extensions: mov, qt, mp4, m4v, m4a, m4p, m4b, m4r, k3g, skm, 3gp, 3g2
 		return FileType.MP4
-	elif marker[:6] == MARKER_MP3:
+	elif marker.startswith(MARKER_MP3):
 		return FileType.Unknown
 	else:
 		return FileType.Unknown
@@ -169,8 +140,13 @@ class FileData(object):
 		self.crc32 = 0
 		
 		if file_name:
-			self.name = file_name
-			self.size = os.path.getsize(file_name)
+			if utility.is_rar(file_name):
+				rs = rarstream.RarStream(file_name)
+				self.size = rs.seek(0, os.SEEK_END)
+				self.name = str(rs.packed_file_name)
+			else:
+				self.name = file_name
+				self.size = os.path.getsize(file_name)
 		elif buff:
 			# flags: unsigned integer 16
 			# appname length: uint16
@@ -210,7 +186,7 @@ class FileData(object):
 	def serialize_as_ebml(self):
 		data = self.serialize()
 		elementLengthCoded = MakeEbmlUInt(len(data))
-		element = EbmlID.RESAMPLE_FILE.decode('hex')
+		element = EbmlID.RESAMPLE_FILE
 		element += elementLengthCoded
 		element += data
 		return element
@@ -320,7 +296,7 @@ class TrackData(object):
 	def serialize_as_ebml(self):
 		data = self.serialize()
 		elementLengthCoded = MakeEbmlUInt(len(data))
-		element = EbmlID.RESAMPLE_TRACK.decode('hex')
+		element = EbmlID.RESAMPLE_TRACK
 		element += elementLengthCoded
 		element += data
 		return element
@@ -547,6 +523,8 @@ def avi_profile_sample(avi_data): # FileData object
 	                        sep(total_size - other_length), sep(total_size)))
 	
 	if avi_data.size != total_size:
+		print(avi_data.size)
+		print(total_size)
 		msg = ("Error: Parsed size does not equal file size.\n",
 		       "       The sample is likely corrupted or incomplete.") 
 		raise IncompleteSample(msg)
@@ -832,11 +810,11 @@ def mp4_profile_sample(mp4_data):
 		
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",
-		      "\t Expected: %d" % sep(total_size),
-		      "\t Found   : %d\n" % sep(mp4_data.size), 
+		      "\t Expected: %s" % sep(total_size),
+		      "\t Found   : %s\n" % sep(mp4_data.size), 
 		      sep='\n', file=sys.stderr)
 	
-	remove_spinner()
+#	remove_spinner() #XXX: is there a spinner?
 
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
@@ -968,7 +946,7 @@ def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 					track_elements.append(track_ebml)
 					element_size += len(track_ebml)
 					
-				srsf.write(EbmlID.RESAMPLE.decode('hex'))
+				srsf.write(EbmlID.RESAMPLE)
 				srsf.write(MakeEbmlUInt(element_size))
 				srsf.write(file_element)
 				for track in track_elements:

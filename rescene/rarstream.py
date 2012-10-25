@@ -104,6 +104,7 @@ class RarStream(io.IOBase):
 					
 					self._rar_volumes.append(cvol)
 					self._packed_file_length += block.packed_size
+		self.packed_file_name = packed_file_name
 
 	def length(self):
 		"""Length of the packed file being accessed."""
