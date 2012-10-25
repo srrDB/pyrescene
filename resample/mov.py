@@ -107,20 +107,27 @@ class MovReader(object):
 			self._atom_header += bsize
 			hsize += 8
 		elif atom_length == 0:
-			# the atom extends to the end of the file
-			atom_length = self._file_length - 8 - atom_start_position
-			#print("Box without size found.")
+			print("Box without size found.")
+			# FoV/COMPULSiON samples have an atom that consists of just 8
+			# null bytes. This is the case if it is followed by an mdat
+			# try to make it work with those samples too
+			# https://code.google.com/p/mp4parser/ can not open these files!
+			if self.atom_type == "\x00\x00\x00\x00":
+				atom_length = 8
+			else:
+				# the atom extends to the end of the file
+				atom_length = self._file_length - atom_start_position
 
 		# sanity check on atom length
 		# Skip check on mdat so we can still report expected size.
 		# This is only applied on samples,
 		# since a partial movie might still be useful.
-		endOffset = atom_start_position+ atom_length # + hsize 
+		endOffset = atom_start_position + atom_length
 		if (self.mode == MovReadMode.Sample and self.atom_type != "mdat" and 
 			endOffset > self._file_length):
 			raise InvalidDataException("Invalid box length at 0x%08X" % 
 			                           atom_start_position)
-		
+			
 		self.current_atom = Atom(atom_length, self.atom_type)
 		self.current_atom.raw_header = self._atom_header
 		self.current_atom.start_pos = atom_start_position

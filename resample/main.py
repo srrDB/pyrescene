@@ -699,6 +699,7 @@ def profile_mp4(mp4_data): # FileData object
 			mr.move_to_child()
 		elif atype == "mdat":
 			data = mr.read_contents()
+			data_length = len(data)
 			mp4_data.crc32 = crc32(data, mp4_data.crc32)
 		else:
 			data = mr.read_contents()
@@ -760,7 +761,8 @@ def profile_mp4(mp4_data): # FileData object
 					(out,) = BE_LONG.unpack(data[j:j+4])
 					current_track.sample_lengths.append(out)
 			else:
-				current_track.sample_lengths.append(sample_size)
+				for i in range(sample_count):
+					current_track.sample_lengths.append(sample_size)
 #			print(current_track.sample_lengths)
 	
 		if (current_track and (not track_processed) and 
@@ -775,8 +777,9 @@ def profile_mp4(mp4_data): # FileData object
 			                                                    mp4_data.name)			
 			# the size of the track
 			current_track.data_length = sum(current_track.sample_lengths)
-			
+	
 	mp4_data.other_length = meta_length
+#	assert meta_length == mp4_data.size - data_length
 	return tracks
 
 def stsc(samples_chunk):
@@ -807,14 +810,14 @@ def mp4_profile_sample(mp4_data):
 	total_size = mp4_data.other_length
 	for _, track in tracks.items():
 		total_size += track.data_length
-		
+
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",
 		      "\t Expected: %s" % sep(total_size),
 		      "\t Found   : %s\n" % sep(mp4_data.size), 
 		      sep='\n', file=sys.stderr)
 	
-#	remove_spinner() #XXX: is there a spinner?
+#	remove_spinner() #TODO: is there a spinner?
 
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
@@ -826,7 +829,7 @@ def mp4_profile_sample(mp4_data):
 	print("                -----  -------------")
 	stream_length = 0
 	for _, track in tracks.items():
-		print("                {0:5n}  {1:>13}".format(track.track_number, 
+		print("                {0:5d}  {1:>13}".format(track.track_number, 
 		                                               sep(track.data_length)))
 		stream_length += track.data_length
 
@@ -1797,7 +1800,9 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 					(out,) = BE_LONG.unpack(data[j:j+4])
 					current_track.sample_lengths.append(out)
 			else:
-				current_track.sample_lengths.append(sample_size)
+				for i in range(sample_count):
+					current_track.sample_lengths.append(sample_size)
+				
 	
 		if (current_track and (not track_processed) and 
 		    len(current_track.chunk_offsets) and
