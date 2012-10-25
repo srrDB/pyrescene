@@ -565,8 +565,8 @@ def mkv_profile_sample(mkv_data): # FileData object
 			fsize = e.element_start_pos + len(e.raw_header) + e.length
 			if (fsize != mkv_data.size):
 				print("\nWarning: File size does not appear to be correct!",
-				      "\t Expected: %d" % sep(fsize),
-				      "\t Found   : %d\n" % sep(mkv_data.size), 
+				      "\t Expected: %s" % sep(fsize),
+				      "\t Found   : %s\n" % sep(mkv_data.size), 
 				      sep='\n', file=sys.stderr)
 			er.move_to_child()
 		elif etype == EbmlElementType.Cluster:
