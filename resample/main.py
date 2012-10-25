@@ -813,8 +813,8 @@ def mp4_profile_sample(mp4_data):
 
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",
-		      "\t Expected: %s" % sep(total_size),
-		      "\t Found   : %s\n" % sep(mp4_data.size), 
+		      "\t Expected at least: %s" % sep(total_size),
+		      "\t Found            : %s\n" % sep(mp4_data.size), 
 		      sep='\n', file=sys.stderr)
 	
 #	remove_spinner() #TODO: is there a spinner?
