@@ -318,7 +318,7 @@ class EbmlReader(object):
 		if (self.mode == EbmlReadMode.Sample and 
 			self.element_type != EbmlElementType.Segment and 
 			endOffset > self._file_length):
-			raise InvalidDataException("Invalid element length at 0x{0:x8}"
+			raise InvalidDataException("Invalid element length at 0x{0:08X}"
 			                           .format(element_start_position))
 			
 		if self.element_type != EbmlElementType.Block:
