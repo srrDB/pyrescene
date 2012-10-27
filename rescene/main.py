@@ -38,6 +38,7 @@ import io
 import os
 import sys
 import zlib
+import re
 
 import hashlib
 import nntplib
@@ -1285,12 +1286,15 @@ def _search(files, folder=""):
 	"""
 	if not isinstance(files, (list, tuple)): # we need a list
 		files = [files]		# otherwise iterating over characters
+		
+	folder = escape_glob(folder)
 
 	for file_name in files:
 		# use path relative to folder if the path isn't relative or absolute 
-		search_name = file_name  \
-			if os.path.isabs(file_name) or file_name[:2] == os.pardir  \
-			else os.path.join(folder, file_name)
+		if os.path.isabs(file_name) or file_name[:2] == os.pardir:
+			search_name = file_name
+		else:
+			search_name = os.path.join(folder, file_name)
 		found = False
 		
 		for found_file in glob(search_name):
@@ -1300,7 +1304,18 @@ def _search(files, folder=""):
 		if not found:
 			_fire(MsgCode.FILE_NOT_FOUND, message="File(s) not found: '%s'. "
 				  "Continuing with searching for other files." % search_name)
-		
+
+def escape_glob(path):
+	# http://bugs.python.org/issue8402
+	transdict = {
+            '[': '[[]',
+            ']': '[]]',
+            '*': '[*]',
+            '?': '[?]',
+            }
+	rc = re.compile('|'.join(map(re.escape, transdict)))
+	return rc.sub(lambda m: transdict[m.group(0)], path)
+
 def _is_new_recovery(block):
 	return block.rawtype == BlockType.RarNewSub and block.is_recovery
 
