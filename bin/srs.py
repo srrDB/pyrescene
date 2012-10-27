@@ -42,9 +42,9 @@ from rescene.utility import sep
 def can_overwrite(file_path):
 	if not options.always_yes and os.path.isfile(file_path):
 		print("Warning: File %s already exists." % file_path)
-		char = raw_input(" Do you wish to continue? (Y/N): ").lower()
+		char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		while char not in ('y', 'n'):
-			char = raw_input(" Do you wish to continue? (Y/N): ").lower()
+			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		if char == 'n':
 			return False
 	return True

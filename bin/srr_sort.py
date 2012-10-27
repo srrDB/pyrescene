@@ -1,52 +1,62 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (c) 2012 pyReScene
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
 
 import optparse
 import sys
 import os
 import glob
-import rar
 import re
 from os.path import join, dirname, realpath
 
 # for running the script directly from command line
-sys.path.append(join(dirname(realpath(sys.argv[0])), '..', 'rescene'))
+sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
 import rescene
+from rescene.rar import RarReader, BlockType, COMPR_STORING
 
 def check_compression(srr_file):
 	fb = None
-	for block in rar.RarReader(srr_file):
-		if block.rawtype == rar.BlockType.RarPackedFile:
+	for block in RarReader(srr_file):
+		if block.rawtype == BlockType.RarPackedFile:
 			fb = block
 			break
-	if fb and fb.compression_method != rar.COMPR_STORING:
+	if fb and fb.compression_method != COMPR_STORING:
 		return True
 	return False
 		
 def check_empty(srr_file):
-	for block in rar.RarReader(srr_file):
-		if block.rawtype == rar.BlockType.RarPackedFile:
+	for block in RarReader(srr_file):
+		if block.rawtype == BlockType.RarPackedFile:
 			return False
 	return True
 
 def check_image(srr_file, noproof):
 	images = (".jpg", ".png", ".bmp", ".gif", "jpeg")
-	for block in rar.RarReader(srr_file):
-		if (block.rawtype == rar.BlockType.SrrStoredFile and
+	for block in RarReader(srr_file):
+		if (block.rawtype == BlockType.SrrStoredFile and
 			os.path.splitext(block.file_name)[1] in images):
 			if noproof and "proof" in block.file_name.lower():
 				return False
@@ -55,37 +65,37 @@ def check_image(srr_file, noproof):
 
 def check_repack(srr_file):
 	tmatch = ("rpk", "repack", "-r.part01.rar", "-r.rar")
-	for block in rar.RarReader(srr_file):
-		if block.rawtype == rar.BlockType.SrrRarFile:
+	for block in RarReader(srr_file):
+		if block.rawtype == BlockType.SrrRarFile:
 			matchf = lambda keyword: keyword in block.file_name 
 			if len(filter(matchf, tmatch)):
 				return True
 	return False
 
 def check_nfos(srr_file):
-	for block in rar.RarReader(srr_file):
+	for block in RarReader(srr_file):
 		nfo_count = 0
-		if (block.rawtype == rar.BlockType.SrrStoredFile and
+		if (block.rawtype == BlockType.SrrStoredFile and
 			block.file_name[-4:].lower() == ".nfo"):
 			nfo_count += 1
 	return False if nfo_count <= 1 else True
 
 def check_for_possible_nonscene(srr_file):
-	for block in rar.RarReader(srr_file):
-		if (block.rawtype == rar.BlockType.SrrRarFile and
+	for block in RarReader(srr_file):
+		if (block.rawtype == BlockType.SrrRarFile and
 			block.file_name != block.file_name.lower()):
 			return True
 	return False
 
 def check_availability_stored_files(srr_file):
-	for block in rar.RarReader(srr_file):
-		if block.rawtype == rar.BlockType.SrrStoredFile:
+	for block in RarReader(srr_file):
+		if block.rawtype == BlockType.SrrStoredFile:
 			return False
 	return True
 
 def check_for_no_ext(srr_file, extention):
-	for block in rar.RarReader(srr_file):
-		if (block.rawtype == rar.BlockType.SrrStoredFile and
+	for block in RarReader(srr_file):
+		if (block.rawtype == BlockType.SrrStoredFile and
 			block.file_name.lower()[-4:] == extention):
 			return False
 	return True

@@ -106,14 +106,14 @@ def can_overwrite(file_path):
 		
 		print("Warning: File %s already exists." % file_path)
 		# http://www.python.org/dev/peps/pep-3111/
-		char = raw_input(" Do you wish to continue? (Y/N): ").lower()
+		char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		while char not in ('y', 'n'):
-			char = raw_input(" Do you wish to continue? (Y/N): ").lower()
+			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		if char == 'n':
 			retvalue = False
 	return retvalue 
 
-rescene.can_overwrite = can_overwrite
+rescene.main.can_overwrite = can_overwrite
 	
 def display_info(srr_file):
 	"""Print out different sections with SRR info."""
@@ -206,7 +206,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			print(sys.exc_info()[1])
 
 def create_srr(options, infolder, infiles, working_dir):
-	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN]
+	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
 	if options.verbose:
 		msgs += [MsgCode.BLOCK, MsgCode.FBLOCK, MsgCode.RBLOCK, 
 		         MsgCode.NO_FILES, MsgCode.MSG]
