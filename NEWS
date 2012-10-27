@@ -9,14 +9,17 @@ pyReSample 0.1
  * MP4 support: SRS construction and sample reconstruction
  * SRS creation of a rarred sample failed: Corruption detected: 
    Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
+ * -y, yes to all, option added
  
 pyReScene 0.1
 =============
 
- * Initial version 
+ * Initial version. Changes since ReScene .NET 1.2:
+ * Asks for confirmation before overwriting an SRR file.
+ * Ability to replace missing file data with zero bytes when reconstructing.
  
  
-pyReScene Usenet 1.3
-====================
+pyReScene Usenet
+================
 
  * See srr_usenet.py

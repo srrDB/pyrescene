@@ -2,6 +2,7 @@ pyReScene
 =========
 
  - Reconstruction of SRRs for compressed RARs
+ - SRR support for ZIP files
  
  
 pyReSample

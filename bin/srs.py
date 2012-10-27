@@ -49,15 +49,6 @@ def can_overwrite(file_path):
 			return False
 	return True
 
-def sample_class_factory(file_type):
-	"""Choose the right class based on the sample's file type."""
-	if file_type == resample.FileType.AVI:
-		return resample.AviReSample()
-	elif file_type == resample.FileType.MKV:
-		return resample.MkvReSample()
-	elif file_type == resample.FileType.MP4:
-		return resample.Mp4ReSample()
-		
 def main(options, args):
 	ftype_arg0 = ""
 		
@@ -78,7 +69,7 @@ def main(options, args):
 			parser.print_help()
 			parser.exit(1, msg)
 			
-	sample = sample_class_factory(ftype_arg0)
+	sample = resample.sample_class_factory(ftype_arg0)
 
 	t0 = time.clock()
 	
@@ -178,7 +169,7 @@ def main(options, args):
 		# should be the same as srs type
 		movie_type = resample.get_file_type(movie)
 #		srs_data = FileData()
-		movi = sample_class_factory(movie_type)
+		movi = resample.sample_class_factory(movie_type)
 		
 		out_folder = "."
 		if options.output_dir:

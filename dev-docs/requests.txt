@@ -3,6 +3,8 @@ not -o, -s
 	=> -s something.nfo -s *.jpg
 - It would be nice if it was possible to use *sfv on the first paramete
 
+Feature request: Be able to use the srs command like this: srs *.mp4
+
 http://www.debian.org/doc/packaging-manuals/python-policy/
 
 DONE! - list file size in verbose output	=> possible!
@@ -1034,3 +1036,23 @@ Actual      :       7.370.752  237689AE
 
 Rebuild failed for sample: the.mentalist.s01.extras.dvdrip.xvid-ingot.sample.avi
 
+
+n\srs.py royal.pains.s04e06.hdtv.x264-asap.sample.mp4
+
+Warning: File size does not appear to be correct!
+         Expected: 36
+         Found   : 4.721.928
+
+File Details:   Size           CRC
+                -------------  --------
+                    4.721.928  216ABEB9
+
+Track Details:  Track  Length
+                -----  -------------
+
+Parse Details:   Metadata     Stream Data    Total
+                 -----------  -------------  -------------
+                          36              0             36
+
+Error: Parsed size does not equal file size.
+       The sample is likely corrupted or incomplete.

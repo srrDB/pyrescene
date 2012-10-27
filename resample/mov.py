@@ -107,7 +107,7 @@ class MovReader(object):
 			self._atom_header += bsize
 			hsize += 8
 		elif atom_length == 0:
-			print("Box without size found.")
+			#print("Box without size found.")
 			# FoV/COMPULSiON samples have an atom that consists of just 8
 			# null bytes. This is the case if it is followed by an mdat
 			# try to make it work with those samples too

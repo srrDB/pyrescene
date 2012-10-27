@@ -321,6 +321,14 @@ class ReSample(object):
 		srs_data, _tracks = self.load_srs(srs_file)
 		return srs_data
 
+def sample_class_factory(file_type):
+	"""Choose the right class based on the sample's file type."""
+	if file_type == FileType.AVI:
+		return AviReSample()
+	elif file_type == FileType.MKV:
+		return MkvReSample()
+	elif file_type == FileType.MP4:
+		return Mp4ReSample()
 	
 # AviReSample.cs --------------------------------------------------------------	
 class AviReSample(ReSample):

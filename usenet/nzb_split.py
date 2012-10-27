@@ -50,6 +50,7 @@ TN = ".*(www.Thunder-News.org) >(?P<relname>.*?)< >Sponsored by Secretusenet.*"
 TEEVEE = ".*\[ (?P<relname>.*) \].*"
 
 #TODO: do like nzbsrr.py and try them all
+REGEX_LIST = [SEK9, TN, GOU, LOU, TEEVEE, UHQ, CHEESE, NORDIC]
 REGEX = TEEVEE
 
 # we assume that all files of a release are together (to improve memory usage)
@@ -139,7 +140,10 @@ def main(options, args):
 	
 	# group everything together
 	for nzb_file in nzb_utils.read_nzb(args[0]):
-		match = re.match(REGEX, nzb_file.subject)
+		for regex in REGEX_LIST:
+			match = re.match(regex, nzb_file.subject)
+			if match:
+				break
 		file_name = nzb_utils.parse_name(nzb_file.subject)
 		ln = longest_name(nzb_file.subject, file_name)
 
@@ -154,10 +158,11 @@ def main(options, args):
 			if match:
 				regexrelname = match.group("relname")
 				
-				# 5: .cd1.
-				# 7: -sample
-				if len(base) < len(regexrelname) + 8:
-					base = regexrelname
+				base = regexrelname
+#				# 5: .cd1.
+#				# 7: -sample
+#				if len(base) < len(regexrelname) + 8:
+#					base = regexrelname
 			else:
 				if len(base) < len(ln):
 					if '"' not in ln:
@@ -213,6 +218,13 @@ def longest_name(subject, file_name):
 	subject = subject.replace("]", " ")
 	subject = subject.replace("<", " ")
 	subject = subject.replace(">", " ")
+	subject = subject.replace('?', ' ')
+	subject = subject.replace('*', ' ')
+	subject = subject.replace(':', ' ')
+	subject = subject.replace('"', ' ')
+	subject = subject.replace('|', ' ')
+	subject = subject.replace('/', ' ')
+	subject = subject.replace('\\', ' ')
 	strgroups = subject.split(" ")
 	length = 0
 	relname = ""
