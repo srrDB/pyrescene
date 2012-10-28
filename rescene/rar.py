@@ -691,6 +691,10 @@ class SrrRarFileBlock(RarBlock):
 			# we always set this flag, even if there aren't RR
 			self.flags = self.RECOVERY_BLOCKS_REMOVED
 			self.file_name = file_name
+			# Paths always use forward slashes as the directory separator
+			# File paths in RAR files use backward slashes.
+			if os.sep != "/" and os.sep in file_name:
+				file_name = file_name.replace(os.sep, "/")
 	
 			# parameter: full length header
 			self._write_header(HEADER_LENGTH + 2 + len(file_name))
