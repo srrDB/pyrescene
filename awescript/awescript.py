@@ -73,6 +73,8 @@ Type "awescript --help" in any path in your terminal.
 awescript -R . --srr-dir=~/srrs
 """
 
+# version modified to work with pyReScene
+
 #TODO: ask for updated version/what features are requested
 
 # This version always creates a .srr file with the -p option: paths will be stored.
@@ -116,23 +118,20 @@ awescript -R . --srr-dir=~/srrs
 
 
 if(os.name == "nt"):
-    path_to_srs = "srs"
-    path_to_srr = "srr"
+    path_to_srs = "pysrs"
+    path_to_srr = "pysrr"
 else:
     path_to_srs = "mono /usr/local/bin/srs.exe"
     path_to_srr = "mono /usr/local/bin/srr.exe"
 path_to_unrar = "unrar"
 
 overwrite_existing_subs = 1
-
 overwrite_existing_samples = 1
-
 
 
 def get_files(path, cwdsolo):
     
     sfvList = []
-    fileList = []
     fileMainList = []
     blackList = []
     sets_in_main = 0
@@ -144,7 +143,8 @@ def get_files(path, cwdsolo):
     #exit()
     for root,dirs,files in os.walk(path):
         base = os.path.relpath(root) + slash
-        if base == "."+slash: base = ""
+        if base == "."+slash: 
+            base = ""
         for d in dirs:
             fileList += glob.glob(base + d + slash + "*.*")
     fileList.sort()
@@ -255,7 +255,8 @@ def get_files(path, cwdsolo):
                 if fileMainList[i][1].lower() == main_file.lower():
                     add = False
                     break #RAR file added by SFV, skip
-            if not add: continue
+            if not add:
+                continue
             
             if len(fset) == 0: #NO SFV!
                 print("no sfv for %s" % main_file)
@@ -343,7 +344,8 @@ def get_files(path, cwdsolo):
                 break
             if not typ:
                 for s in output: #could be multiple files in the rar
-                    if not s: continue #for blanks at the end from splitting \r\n or \n
+                    if not s: 
+                        continue #for blanks at the end from splitting \r\n or \n
                     if re.search("\.(srt|sub|idx|rar)$", s, re.IGNORECASE):
                         if re.search("vob.?sub", main_file, re.IGNORECASE):
                             typ = "VobSubs"
@@ -356,7 +358,7 @@ def get_files(path, cwdsolo):
                         if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
                             if not folder: dest = "Extras" + slash + dest
                         break
-            if not typ: typ = "Other"
+                typ = "Other"
         
         #Check for Video files NOT in RAR files - i.e. samples or previously extracted video        
         elif re.search("\.(avi|mkv|vob|m2ts)$", main_file, re.IGNORECASE):
@@ -786,7 +788,8 @@ def srr(files, options, cwdsolo, ignore_extras):
                 dest = options.srr_dir
                 print("SRR directory %s created." % options.srr_dir)
             else:
-                print("SRR directory %s could not be created.  SRR will default to release directory." % options.srr_dir)
+                print("SRR directory %s could not be created.  "
+                      "SRR will default to release directory." % options.srr_dir)
     elif options.unrar_dir:
         if not os.path.exists(options.unrar_dir):
             if options.debug:
@@ -812,16 +815,17 @@ def srr(files, options, cwdsolo, ignore_extras):
         cmd += " \"" + folder+file + "\""
         srrNum += 1
     
-    if joined and srrNum == 0: return 1, files
-    elif srrNum == 0: return 1, files
+    if joined and srrNum == 0: 
+        return 1, files
+    elif srrNum == 0: 
+        return 1, files
     
-    cmd += " -s" #-s include files below (at least *.nfo)
-    
+    #-s include files below (at least *.nfo)
+    cmd += " -s *.nfo"
     if options.include_srs_in_srr:
         for file in files:
             if file[4] == "Sample" and (file[5] == "SRS" or file[5] == "Extras_SRS"):
-                cmd += " \"%s%s\"" % (file[0],file[1])
-    cmd += " *.nfo"
+                cmd += " -s \"%s%s\"" % (file[0],file[1])
     
     if dest and os.path.isdir(dest):
         cmd += " -o \"%s%s%s\"" % (dest.rstrip(slash),slash,srr_file)
@@ -1021,7 +1025,8 @@ def deleteDirectories(wildcards, debug):
 def main(options, path):
     global origcwd, cwd, slash
 
-    if options.exit_if_par2_exists: #altbinz mode - fix for altbinz sending lowercase dirname
+    #altbinz mode - fix for altbinz sending lowercase dirname
+    if options.exit_if_par2_exists:
         for p in glob.glob(os.path.normpath(os.path.join(path, '..'))+slash+"*"):
             if path.lower() == p.lower() or path.lower() == p.lower()[2:]:
                 os.chdir(p)
@@ -1060,8 +1065,6 @@ def main(options, path):
         for i in range(len(files)):
             print(str(i+1) + ": " + str(files[i]) + "\n")
         print("")
-    
-    code = 1
     
     files = move_files(files, options, cwdsolo)
     
@@ -1144,8 +1147,10 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit()
     
-    if options.extract_to_main_dir and not options.extract_rars: options.extract_rars = True
-    if options.unrar_dir: options.unrar_dir = os.path.abspath(options.unrar_dir)
+    if options.extract_to_main_dir and not options.extract_rars:
+        options.extract_rars = True
+    if options.unrar_dir: 
+        options.unrar_dir = os.path.abspath(options.unrar_dir)
     
     globals()["origcwd"] = os.getcwd()
     sys.path.append(globals()["origcwd"])
@@ -1174,7 +1179,8 @@ if __name__ == '__main__':
             current = "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
             for root,dirs,files in os.walk(path):
                 found = False
-                if current in root: continue
+                if current in root:
+                    continue
                 for file in files:
                     if re.search("\.(rar|00[0-1]|avi|mkv|ogm|divx|mpg)$", file):
                         found = True
