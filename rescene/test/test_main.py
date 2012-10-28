@@ -414,6 +414,7 @@ class TestCreate(TmpDirSetup):
 		create_srr(dest, rar, compressed=True)
 		#self._print_events()
 		self.assertEqual(MsgCode.BLOCK, self.o.last_event().code)
+		os.unlink(dest)
 
 def _copy(cfile, destination_dir):
 	"""Copies 'cfile' to 'destination_dir'. Returns path of new file.

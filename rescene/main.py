@@ -414,6 +414,9 @@ def create_srr(srr_name, infiles, in_folder="",
 		store_files = []
 	if not isinstance(infiles, (list, tuple)): # we need a list
 		infiles = [infiles]      # otherwise iterating over characters
+		
+	if not can_overwrite(srr_name):
+		raise EnvironmentError("Can't overwrite SRR file.")
 	
 	srr = open(srr_name, "wb")
 	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())

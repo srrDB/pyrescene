@@ -30,12 +30,7 @@ import sys
 import os
 import time
 import traceback
-
-from os.path import join, dirname, realpath
 from threading import Thread
-
-# for running the script directly from command line
-sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
 import rescene
 from rescene.main import MsgCode, FileNotFound
@@ -82,9 +77,6 @@ class MessageThread(Thread):
 	
 mthread = MessageThread()
 
-# http://stackoverflow.com/questions/4620547/real-time-output-of-subprocess-popen-and-not-line-by-line
-
-
 # TODO: UNIX return codes OK?
 
 def report_error(status, message):
@@ -94,27 +86,7 @@ def report_unsupported_flag():
 	report_error("Warning: Unsupported flag value encountered in SRR file. "
 				 "This file may use features not supported in this version "
 				 "of the application")
-	
-# http://love-python.blogspot.be/2010/03/getch-in-python-get-single-character.html
 
-
-def can_overwrite(file_path):
-	retvalue = True 
-	if not options.always_yes and os.path.isfile(file_path):
-		# make sure no messages pop up after our question
-		time.sleep(MessageThread.sleeptime)
-		
-		print("Warning: File %s already exists." % file_path)
-		# http://www.python.org/dev/peps/pep-3111/
-		char = raw_input("Do you wish to continue? (Y/N): ").lower()
-		while char not in ('y', 'n'):
-			char = raw_input("Do you wish to continue? (Y/N): ").lower()
-		if char == 'n':
-			retvalue = False
-	return retvalue 
-
-rescene.main.can_overwrite = can_overwrite
-	
 def display_info(srr_file):
 	"""Print out different sections with SRR info."""
 	info = rescene.info(srr_file)
@@ -249,46 +221,8 @@ def create_srr(options, infolder, infiles, working_dir):
 		print(sys.exc_info()[1])
 		print("SRR creation failed. Aborting.")
 
-def main(options, infiles):
-	try:
-		mthread.start()
-		working_dir = os.path.abspath(os.path.curdir)
-		
-		# check existence and type of the input files
-		for infile in infiles:
-			ext = infile[-4:]
-			if not os.path.exists(infile):
-				print(parser.format_help())
-				report_error(1, "Input file not found: %s\n" % infile)
-			elif ext != ".srr" and ext != ".sfv" and ext != ".rar":
-				print(parser.format_help())
-				report_error(-1, "Input file type not recognized: %s\n" %
-							 infile)
-				
-		if not len(infiles):
-			print(parser.format_help())
-			report_error(1, "No input file(s) specified.")
-			
-		infolder = working_dir
-		if options.input_base: # -i
-			infolder = options.input_base
-			
-		if infiles[0][-4:] == ".srr":
-			manage_srr(options, infolder, infiles, working_dir)
-		else:
-			create_srr(options, infolder, infiles, working_dir)
-	except KeyboardInterrupt:
-		print()
-		print("Ctrl+C pressed. Aborting.")
-	except Exception:
-		traceback.print_exc()
-		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])
-	finally:
-		mthread.done = True
-		mthread.join(0.5)
-#		mthread.join(None)
-
-if __name__ == "__main__":
+def main(argv=None):
+	global parser
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog [input file list]  [options]\n"
 	"To create a display file (.srr), use the .sfv file(s) accompanied" 
@@ -370,12 +304,85 @@ if __name__ == "__main__":
 						" SRR (wildcards supported)", action="append",
 						metavar="FILES", dest="store_files")
 	
+	if argv is None:
+		argv = sys.argv[1:]
+		
 	# no arguments given
-	if len(sys.argv) < 2:
+	if not len(argv):
 		# show application usage
 		print(parser.format_help())
-	else:	   
-		(options, args) = parser.parse_args()
-		status = main(options, args)
-		sys.exit(status)
+		return 0
 	
+	(options, infiles) = parser.parse_args(args=argv)
+	
+	def can_overwrite(file_path):
+		retvalue = True 
+		if not options.always_yes and os.path.isfile(file_path):
+			# make sure no messages pop up after our question
+			time.sleep(MessageThread.sleeptime)
+			
+			print("Warning: File %s already exists." % file_path)
+			# http://www.python.org/dev/peps/pep-3111/
+			char = raw_input("Do you wish to continue? (Y/N): ").lower()
+			while char not in ('y', 'n'):
+				char = raw_input("Do you wish to continue? (Y/N): ").lower()
+			if char == 'n':
+				retvalue = False
+		return retvalue 
+	
+	rescene.main.can_overwrite = can_overwrite
+	
+	try:
+		mthread.start()
+		working_dir = os.path.abspath(os.path.curdir)
+		
+		# check existence and type of the input files
+		for infile in infiles:
+			ext = infile[-4:]
+			if not os.path.exists(infile):
+				print(parser.format_help())
+				report_error(1, "Input file not found: %s\n" % infile)
+			elif ext != ".srr" and ext != ".sfv" and ext != ".rar":
+				print(parser.format_help())
+				report_error(-1, "Input file type not recognized: %s\n" %
+							 infile)
+				
+		if not len(infiles):
+			print(parser.format_help())
+			report_error(1, "No input file(s) specified.")
+			
+		infolder = working_dir
+		if options.input_base: # -i
+			infolder = options.input_base
+			
+		if infiles[0][-4:] == ".srr":
+			manage_srr(options, infolder, infiles, working_dir)
+		else:
+			create_srr(options, infolder, infiles, working_dir)
+	except KeyboardInterrupt:
+		print()
+		print("Ctrl+C pressed. Aborting.")
+	except Exception:
+		traceback.print_exc()
+		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])
+	finally:
+		mthread.done = True
+		mthread.join(0.5)
+#		mthread.join(None)
+
+if __name__ == "__main__":
+	if "--profile" in sys.argv:
+		print("Profiling...")
+		sys.argv.remove("--profile")
+		import cProfile
+		import pstats
+		# view with RunSnakeRun
+		profile_filename = 'bin.rescene_profile.txt'
+		cProfile.run('main()', profile_filename)
+		statsfile = open("profile_stats.txt", "wb")
+		p = pstats.Stats(profile_filename, stream=statsfile)
+		stats = p.strip_dirs().sort_stats('cumulative')
+		stats.print_stats()
+		statsfile.close()
+		sys.exit(0)
+	sys.exit(main())
