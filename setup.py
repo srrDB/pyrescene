@@ -9,7 +9,7 @@ from distutils.core import setup
 setup(
     name = "pyReScene",
     packages = ["rescene", "resample"],
-    scripts  = ["./bin/srr", "./bin/srs"],
+    scripts  = ["bin/srr", "bin/srs"],
     version = "0.1",
     description = "Python ReScene and ReSample implementation",
     author = "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)

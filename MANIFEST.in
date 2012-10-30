@@ -13,5 +13,3 @@ include README
 include TODO 
 prune rescene/test
 prune resample/test
-
-

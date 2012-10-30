@@ -1,3 +1,5 @@
+Converted to TODO and NEWS:
+
 -o *.nfo *.jpg fails if there is no jpg in the dir
 not -o, -s
 	=> -s something.nfo -s *.jpg
@@ -31,7 +33,7 @@ DONE! but creates bad rars for other files - recreate rars of only a single cd/e
 
 - dot not create srr based on empty sfv files
 - instead of renaming the temporary files, put their data inside the original srr file	? -> but is more IO!
-DONE! separate script - fix merged srr files/detect
+DONE! ? separate script - fix merged srr files/detect
 - show srr differences
 - indicate when something smells in an srr file
 - calculate filecount (# of rars for the main movie)
@@ -44,7 +46,7 @@ DONE! separate script - fix merged srr files/detect
 
 - http://fire.no-ip.info/FireSCene/details.php?release=Brave.Story.2006.DVD5.720p.BluRay.x264-FaNSuB
   sample does not work with getid3()
-- Python 2.6+ support
+DONE! - Python 2.6+ support
 - .exe support Windows
 http://guide.python-distribute.org/
 

@@ -4,14 +4,24 @@ pyReScene 0.1
 rescene:
  * Initial version. Changes since ReScene .NET 1.2:
  * Asks for confirmation before overwriting an SRR file.
- * Ability to replace missing file data with zero bytes when reconstructing.
+ * Ability to replace missing file data with zero bytes when reconstructing:
+   reconstruct with missing files.
+ * -l option lists file sizes and CRCs too.
+ * -e option lists detailed SRR information.
+ * Add, remove, rename stored files API available.
+ * Able to locate more data files in Linux.
+ * Able to write the corrupt end block of certain P0W4 releases.
+   e.g. Psych.S06E02.HDTV.XviD-P0W4
+ * Separate script for fixing/detecting merged SRR files
+   copy /b cd1.srr+cd2.srr cdALL.srr
+   The merged SRR file contains two application names.
  
 resample:
  * Initial version. Changes since ReSample .NET 1.2:
- * MP4 support: SRS construction and sample reconstruction
+ * MP4 support: SRS construction and sample reconstruction.
  * SRS creation of a rarred sample failed: Corruption detected: 
    Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
- * -y, yes to all, option added
+ * -y, yes to all, option added.
 
 usenet:
  * See srr_usenet.py

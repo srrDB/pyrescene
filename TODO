@@ -3,7 +3,12 @@ pyReScene
 
  - Reconstruction of SRRs for compressed RARs
  - SRR support for ZIP files
- 
+ - *.sfv as the first parameter
+ - add, remove, rename stored files from CLI
+ - new block for empty directories?
+ - new block for oso hashes of archived files (at the end of the SRR)
+ - do not create SRR based on empty SFV files (but do so when .mkv in there)
+ - show SRR differences -> use rescene.php
  
 pyReSample
 ==========
@@ -17,14 +22,18 @@ pyReSample
  - Support to backup and restore meta data for audio formats
     * MP3
     * FLAC
+ - Be able to use the srs command like this: srs *.mp4
+ - try to extract sample from one big AVI (sample across CDs)
     
     
 General
 =======
 
  - Figure out how to get all the unit tests completing successfully when 
-   running them all at once with nose instead of running them individually. 
-   https://nose.readthedocs.org/en/latest/
-   
-   
+   running them all at once with nose in Eclipse instead of running them 
+   individually. https://nose.readthedocs.org/en/latest/
+ - http://www.debian.org/doc/packaging-manuals/python-policy/
+ - http://infinitemonkeycorps.net/docs/pph/
+ - http://guide.python-distribute.org/
+ - EXE files for Windows
    
