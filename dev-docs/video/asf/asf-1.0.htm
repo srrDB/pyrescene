@@ -1,0 +1,514 @@
+<html>
+<link rel="STYLESHEET" type="text/css" href="all.css">
+<head>
+<title>Introduction into Advanced Streaming Format version 1.0</title>
+</head>
+<body>
+<br><br><br>
+<h3>Background</h3><br>
+<font size=2>
+&nbsp;&nbsp; Advanced ( formerly Active ) Streaming Format was developed by <a href="http://www.microsoft.com">
+Microsoft</a> in 1995-1998. Its main purpose is to serve as an universal format
+for storing and streaming media. There are two versions of ASF. Version that is
+known as 2.0 is well-documented and its specifications are publicly available.
+Unfortunately, they are not very helpful for developers because 
+this format is not widely used ( if used at all ).<br>
+&nbsp;&nbsp; On the other hand, there's
+another version of ASF format ( 1.0 ). It is <i>extremely</i> popular. All files
+with extensions .asf, .asx, .wmv and .wma that you can find in the 'Net are
+stored in ASF 1.0. Microsoft <i>never</i> released any documentation covering
+this format. There's a rumour that this format is even patented! This situation
+similar to the one with MPEG-4 specifications: Microsoft appears to take active
+part in development of specifications for MPEG-4 but does not use these
+ formats in its products, instead, it promotes their closed-source variations  
+ ( DivX ;-) and Windows Media Video ).<br>
+&nbsp;&nbsp; As long as Microsoft does not provide implementations of ASF reader
+or writer for any platforms except Windows and Macintosh, it is necessary
+to have at least minimal specification of the format to implement tools
+for working with ASF 1.0 on all other platforms. This document tries to organize
+all available information covering the format, received from different sources.<br>
+&nbsp;&nbsp; Readers are encouraged to get acquainted with ASF 2.0 specifications
+ to better understand the ideas beyond the format and other features that it
+ offers.<br>
+<h3>Disclaimer</h3><br>
+<p class=text>
+  This specification was created by analyzing data contained
+ in freely-available media files. No reverse-engineering or other illegal activity took place
+ during collection of this information. Neither author nor any contributors
+ guarantee that any bit of this information is correct.<br>
+<h3>Data types</h3><br>
+<p class=text>
+UINT8, UINT16, UINT32, UINT64 - unsigned integer values, 8, 16, 32 or 64-bit long.
+In GNU C compiler they are represented by types 'unsigned char', 'unsigned short', 'unsigned long'
+and 'unsigned long long'.<br>
+FILETIME - unsigned 64-bit integer. Number of 100-nanosecond intervals
+since midnignt, January 1, 1601, GMT.<br>
+GUID - 128-bit value, that can be generated on any system using special
+algorithm. The algorithm guarantees uniqueness of any such value ( it means
+that two different computers or even the same computer in different
+moments of time cannot generate the same GUIDs ).<br>
+BITMAPINFOHEADER - universal structure that describes format of a ( compressed ) image.<br>
+<pre>
+typedef struct
+{
+    long 	biSize; // sizeof(BITMAPINFOHEADER)
+    long  	biWidth;
+    long  	biHeight;
+    short 	biPlanes; // unused
+    short 	biBitCount;
+    long 	biCompression; // fourcc of image
+    long 	biSizeImage;   // size of image. For uncompressed images
+			       // ( biCompression 0 or 3 ) can be zero.
+			       
+			      
+    long  	biXPelsPerMeter; // unused
+    long  	biYPelsPerMeter; // unused
+    long 	biClrUsed;     // valid only for palettized images.
+			       // Number of colors in palette.
+    long 	biClrImportant;
+} BITMAPINFOHEADER;
+</pre><br>
+WAVEFORMATEX - universal structure that describes format of a ( compressed ) sound stream.<br>
+<pre>
+typedef struct
+{
+  short   wFormatTag; // value that identifies compression format
+  short   nChannels;
+  long  nSamplesPerSec;
+  long  nAvgBytesPerSec;
+  short   nBlockAlign; // size of a data sample
+  short   wBitsPerSample;
+  short   cbSize;    // size of format-specific data
+} WAVEFORMATEX;
+This structure is immediately followed with an array of bytes of size cbSize.
+</pre><br>
+All time intervals are either measured in 100-nanosecond steps
+and represented with 64-bit type ( they wrap around each
+ several million years ), or measured in milliseconds and represented
+with 32-bit ( they wrap around roughly each 49.7 days ) or 16-bit types ( each 65.5 seconds ).<br>
+<h3>Basic information</h3><br>
+<p class=text>
+&nbsp;&nbsp; ASF 1.0 file consists of 'chunks'. They are similar to
+chunks from AVI format, but size of their fields was increased.<br>
+Chunk:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Chunk type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Chunk length</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Data</td><td>-</td><td>Variable</td></tr>
+</table>
+Chunk type describes type of content in the chunk. See below for list of
+known chunk type GUIDs.<br>
+Chunk length corresponds to the entire chunk ( i.e. length of data only is 
+chunk length minus 24 ).<br>
+The other important concept is 'packet'. Since the format is supposed to be
+streamable, all actual data, such as compressed audio or video, is stored
+in 'packets'. Unlike in ASF 2.0, all packets have fixed size.<br>
+Each valid file should contain at least two chunks. They are File Header Chunk
+and Data Chunk. File Header Chunk contains all the information required
+to start processing actual data, while Data Chunk contains data packets.<br>
+<h3>Headers</h3><br>
+File Header chunk:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Chunk type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Chunk length</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Number of subchunks</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Unknown</td><td>-</td><td>2</td></tr>
+<tr><td>Chunks</td><td>-</td><td>Variable</td></tr>
+</table>
+This chunk is special because it contains other chunks in the data field.
+There may be any number of such chunks, but we need to know about two
+special kinds of them.<br>
+<br>
+Header Object:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Chunk type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Chunk length</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Client GUID</td><td>GUID</td><td>16</td></tr>
+<tr><td>File size</td><td>UINT64</td><td>8</td></tr>
+<tr><td>File creation time</td><td>FILETIME</td><td>8</td></tr>
+<tr><td>Number of packets</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Timestamp of the end position</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Duration of the playback</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Timestamp of the start position</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Unknown, maybe reserved ( usually contains 0 )</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Flags ( usually contains 2 )</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Minimum size of packet, in bytes</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Maximum size of packet</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Size of uncompressed video frame</td><td>UINT32</td><td>4</td></tr>
+</table>
+Value 0x02 in flags probably means that the file is seekable.<br>
+Minimum & maximum sizes of packet are typically equal. It is not precisely known how to handle ASF file if it's not true.<br>
+Stream Object:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Chunk type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Chunk length</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Stream type (audio/video)</td><td>GUID</td><td>16</td></tr>
+<tr><td>Audio error concealment type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Unknown, maybe reserved ( usually contains 0 )</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Total size of type-specific data</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Size of stream-specific data</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Stream number</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Unknown</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Type-specific</td><td>-</td><td>Variable</td></tr>
+<tr><td>Stream-specific</td><td>-</td><td>Variable</td></tr>
+</table>
+
+Type-specific data is data which meaning can be derived only from stream type.
+It may be followed by fields that also depend on value of audio error concealment
+type.<br>
+Second unknown value in this object seems to be absolutely random, 
+but if there is more than one stream in the file, they all hold the same
+value here.<br>
+
+Type-specific data for video stream:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Picture width</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Picture height</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Unknown</td><td>UINT8</td><td>1</td></tr>
+<tr><td>BITMAPINFOHEADER size</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Picture format</td><td>BITMAPINFOHEADER</td><td>Variable</td></tr>
+</table>
+Field 'Picture format' usually contains BITMAPINFOHEADER structure, which
+is 40 bytes long, but it is not a good idea to rely on this fact, since it may contain
+something of a larger size.<br><br>
+Type-specific data for audio stream:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Sound format</td><td>WAVEFORMATEX</td><td>14</td></tr>
+<tr><td>Sound format extension</td><td>-</td><td>Variable</td></tr>
+</table>
+Size of sound format extension is equal to cbSize member of WAVEFORMATEX
+structure.<br><br>
+Stream-specific data for audio stream:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td> H, Total number of audio blocks in each scramble group</td><td>UINT8</td><td>1</td></tr>
+<tr><td> W, Byte size of each scrambling chunk</td><td>UINT16</td><td>2</td></tr>
+<tr><td> Block_align_1, usually = nBlockAlign</td><td>UINT16</td><td>2</td></tr>
+<tr><td> Block_align_2, usually = nBlockAlign</td><td>UINT16</td><td>2</td></tr>
+<tr><td> Unknown</td><td>UINT8</td><td>1</td></tr>
+</table>
+This data is only present if 'Audio error concealment type' field in the
+main structure contains corresponding GUID.
+See section 'Audio error concealment' for details on this field.<br><br>
+All valid ASF files contain one Header Object, as well as one Stream Object
+per stream.<br>
+<h3>Data chunk</h3><br>
+Data chunk:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Chunk type</td><td>GUID</td><td>16</td></tr>
+<tr><td>Chunk length</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Unknown</td><td>GUID</td><td>16</td></tr>
+<tr><td>Number of packets</td><td>UINT64</td><td>8</td></tr>
+<tr><td>Unknown</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Unknown</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Packets</td><td>-</td><td>variable</td></tr>
+</table>
+As mentioned above, packets have fixed size. It can be found in the corresponding
+field of Header Object.<br>
+<h3>Packets</h3><br>
+&nbsp;&nbsp; Compressed video and audio data are usually organized into 'frames' or 'objects' of an arbitrary
+size. When one needs to transfer such data in packets of a fixed size, there 
+can be three opportunities:<br>
+a) Frame size is close to the size of the packet. It would be acceptable
+to store the frame completely in one packet and pad it to needed size.<br>
+b) Frame is larger than the packet. Then it needs to be 'fragmented'
+into several fragments and sent in different packets.<br>
+c) Frame is significantly less than the packet. In this case it would
+be a good idea to send multiple frames in the same packet. It is called
+'grouping'.<br>
+&lt;Packet&gt;: &lt;Header&gt; &lt;Segment&gt; [&lt;Segment&gt;] ... &lt;Padding&gt;<br>
+There may be several formats of headers, but packets in most movies start with
+the V82_Header:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>0x82</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Always 0x0 (?)</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Flags</td><td>UINT8</td><td>1</td></tr>
+<tr><td colspan=3>
+    Flags are bitwise OR of:<br>
+	  0x40    Explicit packet size specified<br>
+          0x10    16-bit padding size specified<br>
+          0x08    8-bit padding size specified<br>
+          0x01    More than one segment<br>
+</td></tr>
+<tr><td>Segment type ID</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Packet size</td><td>UINT16</td><td>0 or 2 ( present if bit 0x40 is set in flags )</td></tr>
+<tr><td>Padding size</td><td>Variable</td><td>0, 1 or 2 ( depends on flags )</td></tr>
+<tr><td>Send time, milliseconds</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Duration, milliseconds</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Number of segments & segment properties</td><td>UINT8</td><td>0 or 1 ( depends on flags )</td></tr>
+</table>
+<br>
+Precise meaning of 'packet size' is not known. It rarely appears in ASF streams, and when it
+does, it shows complete length of data in this packet ( from the beginning of packet header 
+to the end of the last segment ). Sometimes it's OR'ed with 0x10 or 0x8, but I've never seen
+packets with specified nonzero padding size and 0x40 set in flags.<br>
+Segment:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Stream ID</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Sequence number</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Segment-specific fields</td><td>-</td><td>Variable</td></tr>
+</table>
+Most significant bit ( 0x80 ) is set in the stream ID if the segment 
+contains a keyframe.<br>
+Here things become a bit more complicated.
+Segment-specific fields depend on whether this segment is grouped
+( i.e. it contains more than one frame ) or not. This can be
+deduced from flags value, which is inside segment-specific fields
+itself!<br><br>
+Segment-specific fields, no grouping:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Fragment offset</td><td>UINT8, UINT16 or UINT32</td><td>Variable</td></tr>
+<tr><td>Flags</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Object length</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Object start time, milliseconds</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Data length</td><td>UINT8 or UINT16</td><td>0, 1 or 2</td></tr>
+<tr><td>Data</td><td>-</td><td>Variable</td></tr>
+</table>
+"Fragment offset" is offset of this fragment in the object ( e.g. video frame ) 
+that contains it. For complete frame in the fragment, fragment offset is
+0 and data length is equal to object length.<br>
+"Flags" can be either 0x01 or 0x08. 0x01 means "grouping ( multiple objects
+in segment )", and 0x08 means "no grouping ( single object or fragment )".<br>
+"Data length" field is not needed if this segment is the only one in
+the packet, because in this case data takes all remaining space in the packet
+ ( of course, taking padding into account ). Thus, it's only
+present when bit 0x01 is set in packet flags.<br>
+"Fragment offset" field size is determined by 'Segment Type ID' packet header value.
+Known possible values for the latter are 0x55, 0x59 and 0x5D, which correspond
+to 1, 2 and 4 byte sizes.<br>
+"Data length" field size is determined by 'Number of segments' packet header value.
+When 'Number of segments' field is present, its lower bits ( probably 6 of them ) contain
+number of segments, set bit 0x40 means that 'Data length' segment field is 1-byte wide,
+and set bit 0x80 means that 'Data length' segment field is 2-byte wide. Otherwise,
+this field size defaults to 2 bytes.<br>
+<br>
+
+Segment-specific fields, grouping:<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Object start time, milliseconds</td><td>UINT8, UINT16 or UINT32</td><td>Variable</td></tr>
+       <tr><td>Flags</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Unknown</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Data length</td><td>UINT16</td><td>0 or 2</td></tr>
+<tr><td colspan=3>Repeat until we run out of data length:</td></tr>
+<tr><td>Object length</td><td>UINT8</td><td>1</td></tr>
+<tr><td>Data</td><td>-</td><td>Variable</td></tr>
+<tr><td colspan=3>...</td></tr>
+</table>
+<br>
+This structure is similar to the one with 'no grouping', but it does not
+have 'fragment offset' field, because fragmentation and grouping can
+not take place simultaneously.<br>
+Each segment has a field called 'sequence number'. It can be used
+to reassemble fragmented objects. Subsequent objects have sequence numbers
+that differ by 1 ( there will be larger skips in 'sequence number' fields
+when grouping takes place ). Different fragments of the same object have 
+the same sequence number and the same object start time.<br>
+Packets are usually organized in order of increasing timestamps. It is not
+known if it's always true. Packets may be missing, and this case should be
+properly handled.<br>
+<h3>Audio error concealment</h3><br>
+&nbsp;&nbsp; Sometimes compressed audio is stored in stream in a special 'scrambled' manner.
+It should be descrambled before passing data do audio decompressor. This
+technique is supposed to increase stream tolerance to errors.<br>
+All audio data is separated into 'audio blocks'. Size of an audio block
+is a multiple of data sample size.
+The process is defined with two variables: audio block length ( Width )
+and number of audio blocks in 'scrambling chunk' ( Height ). This process
+is most simple to demonstrate with the picture.<br>
+<pre>
+Data sent to decoder: [0] [4] [8] [1] [5] [9] [2] [6] [10] [3] [7] [11]
+width=4
+height=3
+
+[0] [1] [2] [3]
+[4] [5] [6] [7]
+[8] [9] [10][11]
+
+Data stored in the stream: [0] [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11]
+
+</pre>
+Here each [x] is data region with size specified in Block_align_1 field of 
+scramble definition structure. Width is first field of that structure, and Height
+is second field, divided by third.<br>
+When total amount of data is not multiple of 'scrambling chunk' size 
+( in bytes, that's first field times second field ), the remaining part
+is written as is, without scrambling.<br>
+Even when GUID in the stream header indicates that audio is scrambled, there
+may be no need in it, because very often values of W or H are equal to 1.<br>
+<h3>Streaming over the Internet</h3><br>
+&nbsp;&nbsp; Media content in ASF format can be streamed over the Internet
+in several ways. Most popular way is streaming using HTTP protocol. Other protocols,
+such as UDP, may be supported as well.<br>
+URLs for ASF files may lead to 'redirectors'. Redirector is a XML file that
+describes media that it refers to, includes other URLs and additional data
+ needed for stream playback. Redirector files often have extensions .asx, but 
+ it's probably not a requirement. Some details can be found at 
+<a href="http://msdn.microsoft.com/peerjournal/wm/g060199a.asp">
+http://msdn.microsoft.com/peerjournal/wm/g060199a.asp</a>.<br>
+<h3>Streaming using HTTP protocol</h3><br>
+ASF URLs that start with http:// or mms:// refer to streams that are delivered
+to end-user over protocol that's based on HTTP. They can consist of
+redirectors, pre-recorded or live ( broadcast ) data. To start transmission,
+ client program connects to server using TCP ( often on port 80 ),
+ sends a HTTP request and listens for data.<br>
+Here are descriptions of HTTP requests, in sprintf()-compatible form.<br>
+<br>
+The initial HTTP request of media player.
+It is used to query for the media type header of
+the stream (needed for checking if the codecs are
+installed at the client and for obtaining the type
+of stream (live stream, pre-recorded content etc..).
+Note that the request-context changes with every new HTTP request:<br>
+<br>
+"GET %s HTTP/1.0\r\n", filename<br>
+"Accept: */*\r\n"<br>
+"User-Agent: NSPlayer/4.1.0.3856\r\n"<br>
+"Host: %s\r\n", server_name<br>
+"Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=0:0,request-context=1,max-duration=0\r\n"<br>
+"Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"<br>
+"Connection: Close\r\n\r\n"<br>
+<br>
+The HTTP request that starts downloading
+prerecorded (=seekable) content.
+The stream-offset parameter defines the start offset
+in the ASF file on the server.
+The stream-time is the timecode (milliseconds) for
+seeking within the stream:<br>
+<br>
+
+"GET %s HTTP/1.0\r\n", file<br>
+"Accept: */*\r\n"<br>
+"User-Agent: NSPlayer/4.1.0.3856\r\n"<br>
+"Host: %s\r\n", server_name<br>
+"Pragma: no-cache,rate=1.000000,stream-time=0,stream-offset=%u:%u,request-context=2,max-duration=%u\r\n",
+    offset_hi, offset_lo, length<br>
+"Pragma: xPlayStrm=1\r\n"<br>
+"Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"<br>
+"Pragma: stream-switch-count=%d\r\n", num_streams<br>
+"Pragma: stream-switch-entry=%s\r\n", stream_selection<br>
+"Connection: Close\r\n\r\n"<br>
+<br> 
+Pay some attention to lines with 'stream-switch-count' and 'stream-switch-entry'. First line includes a number of streams which you want to receive. Second line includes a string in the following form:<br>
+ffff:1:0 ffff:2:2 ffff:4:2 ( etc. )<br>
+where each entry corresponds to one stream, first value is always 'ffff', second value is the stream ID from ASF header and third value is unknown.<br>
+Even if you request for only selected streams, server may send you all of them. So, request with num_streams=1 and stream_selection="ffff:1:0" will sometimes give you all streams ( instead of one ). Same rules apply to broadcast request, described further.<br>
+This is the HTTP request that starts downloading
+live (=broadcast) content.<br>
+<br>
+"GET %s HTTP/1.0\r\n", file<br>
+"Accept: */*\r\n"<br>
+"User-Agent: NSPlayer/4.1.0.3856\r\n"<br>
+"Host: %s\r\n", server_name<br>
+"Pragma: no-cache,rate=1.000000,request-context=2\r\n"<br>
+"Pragma: xPlayStrm=1\r\n"<br>
+"Pragma: xClientGUID={c77e7400-738a-11d2-9add-0020af0a3278}\r\n"<br>
+"Pragma: stream-switch-count=1\r\n"<br>
+"Pragma: stream-switch-entry=ffff:1:0\r\n"<br>
+"Connection: Close\r\n\r\n"<br>
+<br>
+Server reply on these requests consists of an arbitrary number of lines
+which are terminated by \n ( 0x0A ) or \r\n ( 0x0D 0x0A ) ( HTTP header ),
+an empty line and actual content. <br>
+First line of HTTP header has form:<br>
+"HTTP/1.%d %d %s", version, errorcode, string<br>
+where version is 0 or 1, errorcode is 3-digit HTTP error code and string
+is an optional server message. Possible error codes include 200 - no error,
+404 - file not found, and others.<br>
+Other important HTTP header lines:<br>
+"Content-Type: %s", content_type<br>
+&nbsp; Content type of data. Possible values:<br>
+&nbsp; application/octet-stream - 'real' binary ASF stream.<br>
+&nbsp; audio/x-ms-wax, audio/x-ms-wma, video/x-ms-asf, video/x-ms-afs,
+    video/x-ms-wvx, video/x-ms-wmv, video/x-ms-wma - ASX redirectors.<br>
+"Pragma: features=%s",features<br>
+&nbsp; If "features" has substring "broadcast", the stream is live ( not prerecorded ).<br>
+Headers are followed by actual content, separated into chunks. However,
+these chunks are different from the ones described in previous sections.<br>
+<table border=1>
+<tr><td>Field</td><td>Type</td><td>Size (bytes)</td></tr>
+<tr><td>Basic chunk type</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Chunk length</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Sequence number</td><td>UINT32</td><td>4</td></tr>
+<tr><td>Unknown</td><td>-</td><td>2</td></tr>
+<tr><td>Chunk length confirmation</td><td>UINT16</td><td>2</td></tr>
+<tr><td>Body data</td><td>-</td><td>Variable</td></tr>
+</table>
+Chunk length corresponds to data that starts from sequence number field.<br>
+Basic chunk type can be 0x4424 ( Data follows ), 0x4524 ( Transfer complete ) and 0x4824 ( ASF header chunk follows ).<br>
+For type 0x4824 'body data' should be parsed according to the same rules as a local ASF file. It is arranged so that ASF recorder program
+would not need to leave any 'holes' in file while recording - this chunk includes all ASF content up to the beginning of first packet with compressed media.<br>
+For type 0x4424 'body data' contains a complete packet ( for example, first byte of this data is usually 0x82 ). Network transmission may send chunks that are 
+shorter than pktsize from ASF file header, by chopping off padding section.<br> 
+Some fields in ASF file header may be empty, especially for the live stream.<br>
+<br>
+<h3>Known GUIDs</h3><br>
+<pre>
+struct GUID 
+{
+    long v1;
+    short v2;
+    short v3;
+    unsigned char v4[8];
+    int operator==(const GUID& guid) const{return !memcmp(this, &guid, sizeof(GUID));}
+};
+
+/* GUID indicating audio stream header */
+const GUID guid_audio_stream=
+	{ 0xF8699E40, 0x5B4D, 0x11CF, 0xA8, 0xFD, 0x00, 0x80, 0x5F, 0x5C, 0x44, 0x2B };
+
+/* GUID indicating video stream header */
+const GUID guid_video_stream=
+	{ 0xBC19EFC0, 0x5B4D, 0x11CF, 0xA8, 0xFD, 0x00, 0x80, 0x5F, 0x5C, 0x44, 0x2B };
+
+/* GUID indicating that audio error concealment is absent */
+const GUID guid_audio_conceal_none=
+	{ 0x49f1a440, 0x4ece, 0x11d0, 0xa3, 0xac, 0x00, 0xa0, 0xc9, 0x03, 0x48, 0xf6 };
+
+/* GUID indicating that interleaved audio error concealment is present */
+const GUID guid_audio_conceal_interleave=
+	{ 0xbfc3cd50, 0x618f, 0x11cf, 0x8b, 0xb2, 0x00, 0xaa, 0x00, 0xb4, 0xe2, 0x20 };
+
+/* GUID for header chunk */
+const GUID guid_header=
+	{0x75B22630, 0x668E, 0x11CF, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C};
+
+/* GUID for data chunk */
+const GUID guid_data_chunk=
+	{0x75b22636, 0x668e, 0x11cf, 0xa6, 0xd9, 0x00, 0xaa, 0x00, 0x62, 0xce, 0x6c};
+
+/* GUID for index chunk */
+const GUID guid_index_chunk=
+	{0x33000890, 0xe5b1, 0x11cf, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb};
+
+/* GUID for stream header chunk */
+const GUID guid_stream_header=
+	{0xB7DC0791, 0xA9B7, 0x11CF, 0x8E, 0xE6, 0x00, 0xC0, 0x0C, 0x20, 0x53, 0x65};
+
+/* ASF 2.0 header */
+const GUID guid_header_2_0=
+	{0xD6E229D1, 0x35da, 0x11d1, 0x90, 0x34, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xbe};
+
+/* File header object */
+const GUID guid_file_header=
+	{0x8CABDCA1, 0xA947, 0x11CF, 0x8E, 0xE4, 0x00, 0xC0, 0x0C, 0x20, 0x53, 0x65};
+</pre>
+<h3>Credits</h3><br>
+<p class=text>
+Most of the information contained in this document was collected by
+Avery Lee &lt;uleea05 at umail.ucsb.edu&gt; and by unknown author of
+ASFRecorder program. Translated from C/C++ into readable English by
+yours, truly &lt;divx at euro.ru&gt;. Comments and improvements are welcome.
+<br>
+<p align=right>Last modified on April 5, 2001<br>
+</body></html>

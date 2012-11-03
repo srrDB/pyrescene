@@ -12,9 +12,10 @@ rescene:
  * Able to locate more data files in Linux.
  * Able to write the corrupt end block of certain P0W4 releases.
    e.g. Psych.S06E02.HDTV.XviD-P0W4
- * Separate script for fixing/detecting merged SRR files
+ * Separate script for fixing merged SRR files (fccleanup.py)
    copy /b cd1.srr+cd2.srr cdALL.srr
-   The merged SRR file contains two application names.
+   The merged SRR file contains two application names and not all files
+   are at the start of the SRR file.
  
 resample:
  * Initial version. Changes since ReSample .NET 1.2:

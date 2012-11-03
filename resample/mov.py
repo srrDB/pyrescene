@@ -45,9 +45,9 @@ class InvalidDataException(ValueError):
 	pass
 	
 class Atom(object):
-	def __init__(self, size, atom_type):
+	def __init__(self, size, object_guid):
 		self.size = size
-		self.type = atom_type
+		self.type = object_guid
 		self.raw_header = ""
 		self.start_pos = -1
 		
@@ -122,9 +122,9 @@ class MovReader(object):
 		# Skip check on mdat so we can still report expected size.
 		# This is only applied on samples,
 		# since a partial movie might still be useful.
-		endOffset = atom_start_position + atom_length
+		end_offset = atom_start_position + atom_length
 		if (self.mode == MovReadMode.Sample and self.atom_type != "mdat" and 
-			endOffset > self._file_length):
+			end_offset > self._file_length):
 			raise InvalidDataException("Invalid box length at 0x%08X" % 
 			                           atom_start_position)
 			

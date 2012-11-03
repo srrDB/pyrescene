@@ -31,27 +31,42 @@ import tempfile
 from resample.main import get_file_type, stsc, FileType
 
 class TestGetFileType(unittest.TestCase):
-	"""http://samples.mplayerhq.hu/"""
+	"""http://samples.mplayerhq.hu/
+	http://archive.org/details/2012.10.samples.mplayerhq.hu"""
 	def test_mkv(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("1A45DFA3934282886D6174726F736B6142".decode('hex'))
+		f.write("\x1A\x45\xDF\xA3\x93\x42\x82\x88"
+		        "\x6D\x61\x74\x72\x6F\x73\x6B\x61\x42")
 		f.close()
 		self.assertEqual(FileType.MKV, get_file_type(f.name))
 		os.unlink(f.name)
+		
 	def test_avi(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("5249464610F66E01415649204C4953547E".decode('hex'))
+		f.write("\x52\x49\x46\x46\x10\xF6\x6E\x01"
+		        "\x41\x56\x49\x20\x4C\x49\x53\x54\x7E")
 		f.close()
 		self.assertEqual(FileType.AVI, get_file_type(f.name))
 		os.unlink(f.name)
+		
 	def test_mp4(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("00000018667479706D703431000000006D".decode('hex'))
+		f.write("\x00\x00\x00\x18\x66\x74\x79\x70"
+		        "\x6D\x70\x34\x31\x00\x00\x00\x00\x6D")
 		f.close()
 		self.assertEqual(FileType.MP4, get_file_type(f.name))
 		os.unlink(f.name)
 		
+	def test_wmv(self):
+		f = tempfile.NamedTemporaryFile(delete=False)
+		f.write("\x30\x26\xB2\x75\x8E\x66\xCF\x11"
+		        "\xA6\xD9\x00\xAA\x00\x62\xCE\x6C")
+		f.close()
+		self.assertEqual(FileType.WMV, get_file_type(f.name))
+		os.unlink(f.name)
+		
 class TestStsc(unittest.TestCase):
+	"""Help function for decompressing data structure in MP4 files."""
 	def test_normal(self):
 		inlist = [(1, 4, 0), (2, 4, 0), (3, 4, 0), (4, 4, 0), ]
 		outlist = stsc(inlist)
