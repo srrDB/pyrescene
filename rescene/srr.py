@@ -310,7 +310,7 @@ def main(argv=None):
 	# no arguments given
 	if not len(argv):
 		# show application usage
-		print(parser.format_help())
+		parser.format_help()
 		return 0
 	
 	(options, infiles) = parser.parse_args(args=argv)

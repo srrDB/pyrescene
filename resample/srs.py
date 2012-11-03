@@ -105,7 +105,7 @@ def main(argv=None):
 	# no arguments given
 	if not len(argv):
 		# show application usage
-		print(parser.print_help())
+		parser.print_help()
 		return 0
 	
 	(options, args) = parser.parse_args(args=argv)
