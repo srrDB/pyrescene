@@ -224,7 +224,7 @@ def create_srr(options, infolder, infiles, working_dir):
 def main(argv=None):
 	global parser
 	parser = optparse.OptionParser(
-	usage=("Usage: %prog [input file list]  [options]\n"
+	usage=("Usage: %prog [input file list] [options]\n"
 	"To create a display file (.srr), use the .sfv file(s) accompanied" 
 	" with the archives or pick the first .rar file(s).\n"
 	"All files referenced by the .sfv"
@@ -310,7 +310,7 @@ def main(argv=None):
 	# no arguments given
 	if not len(argv):
 		# show application usage
-		parser.format_help()
+		parser.print_help()
 		return 0
 	
 	(options, infiles) = parser.parse_args(args=argv)
