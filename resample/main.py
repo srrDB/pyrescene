@@ -58,6 +58,7 @@ except AttributeError:
 	from rescene import ordereddict
 	odict = ordereddict.OrderedDict
 
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
 
 """
 http://forum.doom9.org/showthread.php?s=&threadid=62723
@@ -145,12 +146,14 @@ class FileData(object):
 		self.crc32 = 0
 		
 		if file_name:
+			self.name = file_name # can be RAR
 			if utility.is_rar(file_name):
 				rs = rarstream.RarStream(file_name)
 				self.size = rs.seek(0, os.SEEK_END)
-				self.name = str(rs.packed_file_name)
+				self.sample_name = str(rs.packed_file_name)
+				rs.close()
 			else:
-				self.name = file_name
+				self.sample_name = file_name
 				self.size = os.path.getsize(file_name)
 		elif buff:
 			# flags: unsigned integer 16
@@ -161,7 +164,8 @@ class FileData(object):
 			(applength,) = S_SHORT.unpack_from(buff, 2)
 			self.appname = buff[4:4+applength]
 			(namelength,) = S_SHORT.unpack_from(buff, 4+applength)
-			self.name = buff[4+applength+2:4+applength+2+namelength]
+			self.sample_name = buff[4+applength+2:4+applength+2+namelength]
+			self.name = self.sample_name
 			offset = 4+applength+2+namelength
 			(self.size,) = S_LONGLONG.unpack_from(buff, offset)
 			(self.crc32,) = S_LONG.unpack_from(buff, offset+8)
@@ -171,7 +175,7 @@ class FileData(object):
 	def serialize(self):
 		#"".encode("utf-8")
 		app_name = resample.APPNAME
-		file_name = basename(self.name)
+		file_name = basename(self.sample_name)
 		data_length = 18 + len(app_name) + len(file_name)
 	
 		buff = io.BytesIO()
@@ -1020,11 +1024,12 @@ def asf_data_read_packet_fields(packet, flags, data, length):
 	packet.duration = S_SHORT.unpack(data[skip:skip+2])[0] # 2 bytes
 	skip += 2
 
-	print("Packet length: %d" % packet.length)
-	print("Packet sequence: %d" % packet.sequence)
-	print("Packet padding length: %d" % packet.padding_length)
-	print("Packet send time: %d" % packet.send_time)
-	print("Packet duration: %d" % packet.duration)
+	if _DEBUG:
+		print("Packet length: %d" % packet.length)
+		print("Packet sequence: %d" % packet.sequence)
+		print("Packet padding length: %d" % packet.padding_length)
+		print("Packet send time: %d" % packet.send_time)
+		print("Packet duration: %d" % packet.duration)
 	
 	assert datalength == skip
 	return datalength
@@ -1070,7 +1075,8 @@ def asf_data_get_packet(packet, packet_size):
 
 		packet.ec_data = packet.data[read:read+packet.ec_length]
 		read += packet.ec_length
-		print("Error correction length: %d" % packet.ec_length)
+		if _DEBUG:
+			print("Error correction length: %d" % packet.ec_length)
 	else:
 		packet.ec_length = 0
 		packet.ec_data = None
@@ -1087,8 +1093,9 @@ def asf_data_get_packet(packet, packet_size):
 	(packet_property,) = S_BYTE.unpack(packet.data[read])
 	read += 1
 	
-	print("Packet flags: %d" % packet_flags)
-	print("Packet property: %d" % packet_property)
+	if _DEBUG:
+		print("Packet flags: %d" % packet_flags)
+		print("Packet property: %d" % packet_property)
 	
 	tmp = asf_data_read_packet_fields(packet, packet_flags,
 	                                  packet.data[read:],
@@ -1133,8 +1140,10 @@ def asf_data_get_packet(packet, packet_size):
 	else:
 		packet.payload_count = 1
 	packet.payload_data_len = packet.length - read
-	print("Payload count: %d" % packet.payload_count)
-	print("Payload data length: %d (incl. padding)" % packet.payload_data_len)
+	if _DEBUG:
+		print("Payload count: %d" % packet.payload_count)
+		print("Payload data length: %d (incl. padding)" % 
+		      packet.payload_data_len)
 	
 	if packet.payload_count > packet.payloads_size:
 		packet.payloads_size = packet.payload_count
@@ -1273,7 +1282,8 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen):
 			skip += pl.data_length
 			i += 1
 
-			print("payload(%d/%d) stream: %d, key frame: %d, object: %d, "
+			if _DEBUG:
+				print("payload(%d/%d) stream: %d, key frame: %d, object: %d, "
 			      "offset: %d, pts: %d, datalen: %d" % (i, packet.payload_count,
 			      pl.stream_number, pl.key_frame, pl.media_object_number,
 			      pl.media_object_offset, pl.pts, pl.data_length))
@@ -1288,7 +1298,7 @@ def profile_wmv(wmv_data): # FileData object
 	tracks = odict()
 	
 	meta_length = 0
-	wmv_data.crc32 = 0x0 # start value CRC 
+	wmv_data.crc32 = 0x0 # start value CRC
 	ar = AsfReader(AsfReadMode.Sample, wmv_data.name)
 	while ar.read():
 		o = ar.current_object
@@ -1312,6 +1322,8 @@ def profile_wmv(wmv_data): # FileData object
 			for i in range(total_data_packets):
 				data = ar.read_data_part(start + i * psize, psize)
 				wmv_data.crc32 = crc32(data, wmv_data.crc32)
+				
+				show_spinner(i)
 				
 				packet = AsfDataPacket()
 				packet.data = data
@@ -1346,10 +1358,6 @@ def profile_wmv(wmv_data): # FileData object
 						sig += payload.data[0:lsig-len(sig)]
 						track.signature_bytes = sig
 					
-#				print(packet.payload_data_len)
-#				print(packet.padding_length)
-#				print(payloads_sizes)
-#				print(headers_sizes)
 				assert (packet.payload_data_len - packet.padding_length ==
 				        payloads_sizes + headers_sizes)
 				meta_length += packet.data_size - payloads_sizes
@@ -1364,7 +1372,7 @@ def profile_wmv(wmv_data): # FileData object
 					        "\x00" * packet.padding_length)
 				padding_amount += packet.padding_length
 				
-			print("Padding: %d" % padding_amount)
+#			print("Padding: %d" % padding_amount)
 		else:
 			data = ar.read_contents()
 			meta_length += len(data)
@@ -1390,6 +1398,7 @@ def profile_wmv(wmv_data): # FileData object
 				      sep='\n', file=sys.stderr)
 			
 	wmv_data.other_length = meta_length
+	remove_spinner()
 	return tracks
 	
 def wmv_profile_sample(wmv_data):	
@@ -1406,8 +1415,6 @@ def wmv_profile_sample(wmv_data):
 		      "\t Found            : %s\n" % sep(wmv_data.size), 
 		      sep='\n', file=sys.stderr)
 	
-#	remove_spinner() #TODO: is there a spinner?
-
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
 	print("                {0:>13}  {1:08X}\n".format(sep(wmv_data.size), 
@@ -1425,10 +1432,6 @@ def wmv_profile_sample(wmv_data):
 	print()
 	print("Parse Details:   Metadata     Stream Data    Total")
 	print("                 -----------  -------------  -------------")
-#	print("                 {0:11n}  {1:13n}  {2:13n}\n".format(
-#						other_length - stream_length, 
-#						stream_length, 
-#						other_length))	
 	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
 						sep(wmv_data.other_length), 
 						sep(stream_length), 

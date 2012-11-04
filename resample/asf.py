@@ -105,7 +105,7 @@ class AsfReader(object):
 		# This is only applied on samples,
 		# since a partial movie might still be useful.
 		end_offset = object_start_position + size
-		print(object_start_position)
+#		print(object_start_position)
 #		print(size)
 #		print(self._file_length)
 		if (self.mode == AsfReadMode.Sample and 
