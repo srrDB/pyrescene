@@ -257,6 +257,8 @@ class EbmlReader(object):
 		# length descriptor: the leading bits of the header
 		# used to identify the length of the ID (ID: like xml tags)
 		read_byte = self._ebml_stream.read(1)
+		if not len(read_byte):
+			raise ValueError("Missing data")
 		(id_length_descriptor,) = S_BYTE.unpack(read_byte)
 		id_length_descriptor = GetUIntLength(id_length_descriptor)
 		self.elementHeader = read_byte
@@ -264,6 +266,8 @@ class EbmlReader(object):
 		
 		# 2) Data size --------------------------------------------------------
 		read_byte = self._ebml_stream.read(1)
+		if not len(read_byte):
+			raise ValueError("Missing data")
 		(data_length_descriptor,) = S_BYTE.unpack(read_byte)
 		data_length_descriptor = GetUIntLength(data_length_descriptor)
 		self.elementHeader += read_byte
