@@ -127,7 +127,7 @@ def main(argv=None):
 				ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
 				if ftype == resample.FileType.Unknown:
 					msg = ("Could not locate MKV, AVI or MP4 data "
-					       "in file: %s\n" % ifile)
+					       "in file: %s\n" % os.path.basename(ifile))
 			else:
 				msg = "Input file not found: %s\n" % ifile
 				
