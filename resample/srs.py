@@ -332,7 +332,7 @@ def main(argv=None):
 		
 		parser.exit(0)
 	
-	except ValueError:
+	except (ValueError, AssertionError):
 		parser.exit(2, "Corruption detected: %s. Aborting." % 
 				sys.exc_info()[1])
 	except Exception:
