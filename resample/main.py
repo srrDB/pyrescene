@@ -49,7 +49,9 @@ from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType,
 from resample.riff import RiffReader, RiffReadMode, RiffChunkType
 from resample.mov import MovReader, MovReadMode
 from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT, 
-						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT)
+						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT,
+						GUID_SRS_FILE, GUID_SRS_TRACK, AsfDataPacket,
+						asf_data_get_packet)
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -57,8 +59,6 @@ except AttributeError:
 	# Python 2.6 OrderedDict
 	from rescene import ordereddict
 	odict = ordereddict.OrderedDict
-
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
 
 """
 http://forum.doom9.org/showthread.php?s=&threadid=62723
@@ -213,7 +213,14 @@ class FileData(object):
 		atom += "SRSF"
 		atom += data
 		return atom
-		
+	
+	def serialize_as_asf(self):
+		data = self.serialize()
+		asf_object = GUID_SRS_FILE 
+		asf_object += S_LONGLONG.pack(len(data) + 16 + 8)
+		asf_object += data
+		return asf_object
+	
 # SampleTrackInfo.cs ----------------------------------------------------------					
 class TrackData(object):
 	"""Flags: big sample or not?
@@ -324,6 +331,13 @@ class TrackData(object):
 		atom += data
 		return atom
 	
+	def serialize_as_asf(self):
+		data = self.serialize()
+		asf_object = GUID_SRS_TRACK
+		asf_object += S_LONGLONG.pack(len(data) + 16 + 8)
+		asf_object += data
+		return asf_object
+	
 class ReSample(object):
 	def srs_info(self, srs_file):
 		"""Returns FileData object."""
@@ -397,11 +411,9 @@ class WmvReSample(ReSample):
 	def profile_sample(self, *args, **kwargs):
 		return wmv_profile_sample(*args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		pass
-#		return wmv_create_srs(*args, **kwargs)
+		return wmv_create_srs(*args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		pass
-#		return wmv_load_srs(*args, **kwargs)
+		return wmv_load_srs(*args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
 		pass
 #		return wmv_find_sample_streams(*args, **kwargs)
@@ -462,8 +474,6 @@ def mp4_load_srs(infile):
 	tracks = {}
 	mr = MovReader(MovReadMode.SRS, infile)
 	while mr.read():
-#		if mr.atom_type in ("moov", "SRS "):
-#			mr.move_to_child()
 		if mr.atom_type == "SRSF":
 			srs_data = FileData(mr.read_contents())
 		elif mr.atom_type == "SRST":
@@ -473,6 +483,24 @@ def mp4_load_srs(infile):
 			mr.move_to_child()
 		else:
 			mr.skip_contents()	
+	return srs_data, tracks
+
+def wmv_load_srs(infile):
+	tracks = {}
+	ar = AsfReader(AsfReadMode.SRS, infile)
+	while ar.read():
+		o = ar.current_object
+		
+		if o.type == GUID_SRS_FILE:
+			srs_data = FileData(ar.read_contents())
+		elif o.type == GUID_SRS_TRACK:
+			track = TrackData(ar.read_contents())
+			tracks[track.track_number] = track
+		else:
+			ar.skip_contents()	
+			
+	print(srs_data)
+	print(tracks)
 	return srs_data, tracks
 
 def avi_profile_sample(avi_data): # FileData object
@@ -922,375 +950,8 @@ def mp4_signature_bytes(track, mp4_file):
 		
 		previous_samples += samples_in_chunk
 		if len(signature_bytes) == SIG_SIZE:
-#			print(len(signature_bytes))
 			return signature_bytes
-#	print(len(signature_bytes))
 	return signature_bytes
-
-# -- start LGPLed code \/------------------------------------------------------
-# https://github.com/juhovh/libasf
-# http://www.google.com/patents?id=kY57AAAAEBAJ
-# http://avifile.sourceforge.net/asf-1.0.htm
-				
-class AsfDataPacket():
-	def __init__(self):
-		self.ec_length = 0
-		self.ec_data = None
-	
-		self.length = 0
-		self.padding_length = 0
-		self.send_time = 0
-		self.duration = 0
-	
-		self.payload_count = 0 # value read from data
-		self.payloads = [] # AsfPayload objects
-		self.payloads_size = 0 # == packet.payload_count
-	
-		self.payload_data_len = 0 # payload headers included
-		self.payload_data = None
-	
-		self.data = None
-		self.data_file_offset = 0
-		self.data_size = 0
-		
-	def get_data(self, stream):
-		stream.seek(self.data_file_offset, os.SEEK_SET)
-		return stream.read(self.data_size)
-
-class AsfPayload():
-	def __init__(self):
-		self.stream_number = 0 # also grabbed from GUID_STREAM_OBJECT object
-		self.key_frame = 0 # the segment (payload) contains a keyframe
-		self.pts = 0 # wtf is this? payload time stamp?
-		
-		self.media_object_number = 0 # because it can be split across payloads
-		self.media_object_offset = 0 # if split, the offset of this part
-		self.replicated_length = 0
-		self.replicated_data = None
-		
-		self.header_size = 0
-		
-		self.data_length = 0
-		self.data = None
-		
-def getlen2b(bits):
-	"""bits, description
-	00  The field does not exist. 
-	01  The field is coded using a BYTE. 
-	10  The field is coded using a WORD. 
-	11  The field is coded using a DWORD."""
-	return 4 if (bits == 0x03) else bits
-
-def getvalue2b(bits, data):
-	length = getlen2b(bits)
-	if bits != 0x03:
-		if bits != 0x02:
-			if bits != 0x01:
-				return 0
-			else:
-				return S_BYTE.unpack(data[:length])[0]
-		else:
-			return S_SHORT.unpack(data[:length])[0]
-	else:
-		return S_LONG.unpack(data[:length])[0]
-
-def asf_data_read_packet_fields(packet, flags, data, length):                           
-	assert len(data) == length
-	
-	datalength = (getlen2b((flags >> 1) & 0x03) +
-	              getlen2b((flags >> 3) & 0x03) +
-	              getlen2b((flags >> 5) & 0x03) + 6)
-
-	if datalength > length:
-		raise ValueError("Invalid length")
-
-	skip = 0
-	# Packet size	UINT16	0 or 2 ( present if bit 0x40 is set in flags )
-	packet.length = getvalue2b((flags >> 5) & 0x03, data[skip:])
-	skip += getlen2b((flags >> 5) & 0x03)
-	
-	packet.sequence = getvalue2b((flags >> 1) & 0x03, data[skip:])
-	skip += getlen2b((flags >> 1) & 0x03)
-	
-	# Padding size	Variable	0, 1 or 2 ( depends on flags )
-	packet.padding_length = getvalue2b((flags >> 3) & 0x03, data[skip:])
-	skip += getlen2b((flags >> 3) & 0x03)
-	
-	# Send time, milliseconds	UINT32	4
-	packet.send_time = S_LONG.unpack(data[skip:skip+4])[0] # 4 bytes
-	skip += 4
-	
-	# Duration, milliseconds	UINT16	2
-	packet.duration = S_SHORT.unpack(data[skip:skip+2])[0] # 2 bytes
-	skip += 2
-
-	if _DEBUG:
-		print("Packet length: %d" % packet.length)
-		print("Packet sequence: %d" % packet.sequence)
-		print("Packet padding length: %d" % packet.padding_length)
-		print("Packet send time: %d" % packet.send_time)
-		print("Packet duration: %d" % packet.duration)
-	
-	assert datalength == skip
-	return datalength
-
-def asf_data_read_payload_fields(payload, flags, data, size):
-	datalen = (getlen2b(flags & 0x03) +
-	           getlen2b((flags >> 2) & 0x03) +
-	           getlen2b((flags >> 4) & 0x03))
-
-	if datalen > size:
-		raise ValueError("Invalid length")
-	
-	skip = 0
-	payload.media_object_number = getvalue2b((flags >> 4) & 0x03, data[skip:])
-	skip += getlen2b((flags >> 4) & 0x03)
-	payload.media_object_offset = getvalue2b((flags >> 2) & 0x03, data[skip:])
-	skip += getlen2b((flags >> 2) & 0x03)
-	payload.replicated_length = getvalue2b(flags & 0x03, data[skip:])
-	skip += getlen2b(flags & 0x03)
-	
-	assert skip == datalen
-	return datalen;
-
-def asf_data_get_packet(packet, packet_size):
-	read = 0
-	
-	# Error correction data ---------------------------------------------------
-	flags = S_BYTE.unpack(packet.data[read])[0]
-	assert flags == 0x82
-	read += 1
-	
-	if flags & 0x80:
-		packet.ec_length = flags & 0x0F
-		opaque_data = (flags >> 4) & 0x01
-		ec_length_type = (flags >> 5) & 0x03
-
-		if (ec_length_type != 0x00 or opaque_data != 0 or 
-		    packet.ec_length != 0x02):
-			raise ValueError("Incorrect error correction flags")
-		
-		if read + packet.ec_length > packet_size:
-			raise ValueError("Invalid length")
-
-		packet.ec_data = packet.data[read:read+packet.ec_length]
-		read += packet.ec_length
-		if _DEBUG:
-			print("Error correction length: %d" % packet.ec_length)
-	else:
-		packet.ec_length = 0
-		packet.ec_data = None
-		
-	if read + 2 > packet_size:
-		raise ValueError("Invalid length")
-	
-	# Packet parsing information ----------------------------------------------
-	# Flags	UINT8	1
-	(packet_flags,) = S_BYTE.unpack(packet.data[read])
-	read += 1
-	
-	# Segment type ID	UINT8	1
-	(packet_property,) = S_BYTE.unpack(packet.data[read])
-	read += 1
-	
-	if _DEBUG:
-		print("Packet flags: %d" % packet_flags)
-		print("Packet property: %d" % packet_property)
-	
-	tmp = asf_data_read_packet_fields(packet, packet_flags,
-	                                  packet.data[read:],
-	                                  packet_size - read)
-	read += tmp
-	
-	#/* this is really idiotic, packet length can (and often will) be
-	# * undefined and we just have to use the header packet size as the size
-	# * value */
-	if ((packet_flags >> 5) & 0x03) == 0:
-		packet.length = packet_size
-
-	#/* this is also really idiotic, if packet length is smaller than packet
-	# * size, we need to manually add the additional bytes into padding length
-	# * because the padding bytes only count up to packet length value */
-	if packet.length < packet_size:
-		packet.padding_length += packet_size - packet.length
-		packet.length = packet_size
-		
-	if packet.length != packet_size:
-		raise ValueError("packet with invalid length value")
-	
-	# check if we have multiple payloads
-	# Number of segments & segment properties UINT8	0 or 1 ( depends on flags )
-	if packet_flags & 0x01:
-		# 0x01 More than one segment
-		if read + 1 > packet.length:
-			raise ValueError("invalid value")
-
-		tmp = S_BYTE.unpack(packet.data[read])[0]
-		read += 1
-
-		packet.payload_count = tmp & 0x3F
-		payload_length_type = (tmp >> 6) & 0x03
-
-		if packet.payload_count == 0:
-			raise ValueError("there should always be at least one payload")
-			
-		if payload_length_type != 0x02:
-			raise ValueError("in multiple payloads "
-			                 "datalen should always be a word")
-	else:
-		packet.payload_count = 1
-	packet.payload_data_len = packet.length - read
-	if _DEBUG:
-		print("Payload count: %d" % packet.payload_count)
-		print("Payload data length: %d (incl. padding)" % 
-		      packet.payload_data_len)
-	
-	if packet.payload_count > packet.payloads_size:
-		packet.payloads_size = packet.payload_count
-		
-	packet.payload_data = packet.data[read:]
-	read += packet.payload_data_len
-	
-	# The return value will be consumed bytes, not including the padding
-	tmp = asf_data_read_payloads(packet, packet_flags & 0x01,
-	                        packet_property, packet.payload_data,
-	                        packet.payload_data_len - packet.padding_length)
-	assert packet.payload_data_len == tmp + packet.padding_length
-
-	assert read == packet_size
-	assert packet.payload_count == len(packet.payloads)
-	return read
-	
-def asf_data_read_payloads(packet, multiple, flags, data, datalen):
-	skip = 0
-	i = 0
-	while i < packet.payload_count:
-		pl = AsfPayload()
-		pts_delta = 0
-		compressed = 0
-		if skip + 1 > datalen:
-			raise ValueError("Invalid length")
-		
-		pl.stream_number = (S_BYTE.unpack(data[skip])[0] & 0x7F)
-		pl.key_frame = bool(S_BYTE.unpack(data[skip])[0] & 0x80)
-		skip += 1
-		pl.header_size += 1
-
-		tmp = asf_data_read_payload_fields(pl, flags, 
-		                                   data[skip:], datalen - skip)
-		skip += tmp
-		pl.header_size += tmp
-		
-		if pl.replicated_length > 1:
-			if pl.replicated_length < 8 or pl.replicated_length + skip > datalen:
-				raise ValueError("Not enough data")
-			pl.replicated_data = data[skip:skip+pl.replicated_length]
-			skip += pl.replicated_length
-			pl.header_size += pl.replicated_length
-			
-			pl.pts = S_LONG.unpack(pl.replicated_data[4:8])[0]
-		elif pl.replicated_length == 1:
-			if skip + 1 > datalen:
-				raise ValueError("Not enough data")
-			
-			# in compressed payload object offset is actually pts
-			pl.pts = pl.media_object_offset
-			pl.media_object_offset = 0
-			
-			pl.replicated_length = 0
-			pl.replicated_data = None
-			
-			pts_delta = data[skip]
-			skip += 1
-			pl.header_size += 1
-			compressed = 1
-		else:
-			pl.pts = packet.send_time
-			pl.replicated_data = None
-			
-		# substract preroll value from pts since it's counted in */
-		#		if (pl.pts > preroll) {
-		#			pl.pts -= preroll;
-		#		} else {
-		#			pl.pts = 0;
-		#		}
-		
-		if multiple:
-			# Data length	UINT16	0 or 2
-			if skip + 2 > datalen:
-				raise ValueError("Not enough data")
-			pl.data_length = S_SHORT.unpack(data[skip:skip+2])[0]
-			skip += 2
-			pl.header_size += 2
-		else:
-			pl.data_length = datalen - skip
-			
-		if compressed:
-			print("No support for this compressed shit.")
-			assert False
-#		if (compressed) {
-#			uint32_t start = skip, used = 0;
-#			int payloads, idx;
-#
-#			/* count how many compressed payloads this payload includes */
-#			for (payloads=0; used < pl.data_length; payloads++) {
-#				used += 1 + data[start + used];
-#			}
-#
-#			if (used != pl.data_length) {
-#				/* invalid compressed data size */
-#				return ASF_ERROR_INVALID_LENGTH;
-#			}
-#
-#			/* add additional payloads excluding the already allocated one */
-#			packet->payload_count += payloads - 1;
-#			if (packet->payload_count > packet->payloads_size) {
-#				void *tempptr;
-#
-#				tempptr = realloc(packet->payloads,
-#				                  packet->payload_count * sizeof(asf_payload_t));
-#				if (!tempptr) {
-#					return ASF_ERROR_OUTOFMEM;
-#				}
-#				packet->payloads = tempptr;
-#				packet->payloads_size = packet->payload_count;
-#			}
-#
-#			for (idx = 0; idx < payloads; idx++) {
-#				pl.data_length = data[skip];
-#				skip++;
-#
-#				/* Set data correctly */
-#				pl.data = data + skip;
-#				skip += pl.data_length;
-#
-#				/* Copy the final payload and update the PTS */
-#				memcpy(&packet->payloads[i], &pl, sizeof(asf_payload_t));
-#				packet->payloads[i].pts = pl.pts + idx * pts_delta;
-#				i++;
-#
-#				debug_printf("payload(%d/%d) stream: %d, key frame: %d, object: %d, offset: %d, pts: %d, datalen: %d",
-#					     i, packet->payload_count, pl.stream_number, (int) pl.key_frame, pl.media_object_number,
-#					     pl.media_object_offset, pl.pts + idx * pts_delta, pl.data_length);
-#			}
-		else:
-			pl.data = data[skip:skip+pl.data_length]
-			assert len(pl.data) == pl.data_length
-			packet.payloads.append(pl)
-			
-			# update the skipped data amount and payload index
-			skip += pl.data_length
-			i += 1
-
-			if _DEBUG:
-				print("payload(%d/%d) stream: %d, key frame: %d, object: %d, "
-			      "offset: %d, pts: %d, datalen: %d" % (i, packet.payload_count,
-			      pl.stream_number, pl.key_frame, pl.media_object_number,
-			      pl.media_object_offset, pl.pts, pl.data_length))
-
-	return skip
-		
-# -- end LGPLed code /\--------------------------------------------------------
 
 def profile_wmv(wmv_data): # FileData object
 	"""Reads the necessary track header data 
@@ -1558,6 +1219,58 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 			else:
 				# do copy everything else
 				movf.write(mr.read_contents())
+				
+def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
+	assert False
+	with open(srs, "wb") as srsf:
+		ar = AsfReader(AsfReadMode.WMV, sample)
+		while(ar.read()):
+			o = ar.current_object
+			
+			srsf.write(o.raw_header)
+			
+			if o.type == GUID_DATA_OBJECT:
+				i = 16 + 8 + 16
+				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				# data packet/media object size
+				psize = (o.size - len(o.raw_header)) / total_data_packets
+				start = o.start_pos + len(o.raw_header)
+				for i in range(total_data_packets):
+					data = ar.read_data_part(start + i * psize, psize)
+					
+					packet = AsfDataPacket()
+					packet.data = data
+					packet.data_file_offset = start + i * psize
+					packet.data_size = len(data) # psize
+					
+					asf_data_get_packet(packet, psize)
+					
+					header_data = data[:-packet.payload_data_len]
+					srsf.write(header_data)
+					print(data[:-packet.payload_data_len].encode('hex'))
+					
+					for payload in packet.payloads:
+#						header_data = payload.data[:payload.header_size]
+						header_data = payload.header_data
+						srsf.write(header_data)
+						print(payload.header_data.encode('hex'))
+						
+						
+#					sys.exit()
+
+				# in store mode, create and write our custom objects
+				# as object child in the root
+				file_atom = sample_data.serialize_as_asf()
+				srsf.write(file_atom)
+				
+				for track in tracks.values():
+					if big_file:
+						track.flags |= TrackData.BIG_FILE
+					track_object = track.serialize_as_asf()
+					srsf.write(track_object)
+			else:
+				# do copy everything else
+				srsf.write(ar.read_contents())
 
 def show_spinner(amount):
 	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])

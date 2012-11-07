@@ -32,7 +32,9 @@ import time
 import traceback
 
 import resample
-from rescene.utility import sep 
+from rescene.utility import sep
+
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
 
 def can_overwrite(file_path, yes_option=False):
 	if not yes_option and os.path.isfile(file_path):
@@ -333,6 +335,8 @@ def main(argv=None):
 		parser.exit(0)
 	
 	except (ValueError, AssertionError):
+		if _DEBUG:
+			traceback.print_exc()
 		parser.exit(2, "Corruption detected: %s. Aborting." % 
 				sys.exc_info()[1])
 	except Exception:
