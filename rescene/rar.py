@@ -1234,9 +1234,7 @@ class RarReader(object):
 				# search for RAR marker block offset
 				# 79280 for wrar400.exe
 				# 123904 for wrar-x64-400.exe
-				# "256 KiB ought to be enough for all past and future 
-				#  WinRAR SFX files."
-				data = self._rarstream.read(0x40000) # 262144 bytes
+				data = self._rarstream.read(0x100000) # unrar max SFX size
 				offset = data.find(RAR_MARKER_BLOCK)
 				self._initial_offset += offset + 3 # 2 + 1 read
 				if offset < 0 or self._initial_offset > self._file_length:
