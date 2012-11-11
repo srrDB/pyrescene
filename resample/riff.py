@@ -157,7 +157,7 @@ class RiffReader(object):
 		# if read_done is set, we've already read or skipped it.
 		# back up and read again?
 		if self.read_done:
-			self._riff_stream.seek(-self.current_element.length - 
+			self._riff_stream.seek(-self.current_chunk.length - 
 			                       (1 if self.has_padding else 0), os.SEEK_CUR)
 
 		self.read_done = True
