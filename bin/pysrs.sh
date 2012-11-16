@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/env python srs "$1"
+/usr/bin/env python srs "$@"
