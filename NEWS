@@ -20,6 +20,7 @@ rescene:
 resample:
  * Initial version. Changes since ReSample .NET 1.2:
  * MP4 support: SRS construction and sample reconstruction.
+ * WMV support: SRS construction and sample reconstruction.
  * SRS creation of a rarred sample failed: Corruption detected: 
    Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
  * -y, yes to all, option added.

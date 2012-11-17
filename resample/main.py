@@ -51,7 +51,7 @@ from resample.mov import MovReader, MovReadMode
 from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT, 
 						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT,
 						GUID_SRS_FILE, GUID_SRS_TRACK, AsfDataPacket,
-						asf_data_get_packet)
+						asf_data_get_packet, GUID_SRS_PADDING)
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -130,8 +130,8 @@ class AttachmentData(object):
 		return ("<attachement_data name=%r size=%r>" % self.name, self.size)
 
 # SampleFileInfo.cs -----------------------------------------------------------
-	"""Stored tool and file data like size and crc32 from SRS file."""
 class FileData(object):
+	"""Stored tool and file data like size and crc32 from SRS file."""
 	NO_FLAGS = 0x0
 	SIMPLE_BLOCK_FIX = 0x1
 	ATTACHEMENTS_REMOVED = 0x2
@@ -415,14 +415,11 @@ class WmvReSample(ReSample):
 	def load_srs(self, *args, **kwargs):
 		return wmv_load_srs(*args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		pass
-#		return wmv_find_sample_streams(*args, **kwargs)
+		return wmv_find_sample_streams(*args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		pass
-#		return wmv_extract_sample_streams(*args, **kwargs)
+		return wmv_extract_sample_streams(*args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		pass
-#		return wmv_rebuild_sample(*args, **kwargs)
+		return wmv_rebuild_sample(*args, **kwargs)
 	
 def avi_load_srs(infile):
 	tracks = {}
@@ -496,11 +493,12 @@ def wmv_load_srs(infile):
 		elif o.type == GUID_SRS_TRACK:
 			track = TrackData(ar.read_contents())
 			tracks[track.track_number] = track
+		elif o.type == GUID_SRS_PADDING:
+			# no 0-bytes used for padding
+			srs_data.padding_bytes = ar.read_contents()
 		else:
 			ar.skip_contents()	
 			
-	print(srs_data)
-	print(tracks)
 	return srs_data, tracks
 
 def avi_profile_sample(avi_data): # FileData object
@@ -591,8 +589,6 @@ def avi_profile_sample(avi_data): # FileData object
 	                        sep(total_size - other_length), sep(total_size)))
 	
 	if avi_data.size != total_size:
-		print(avi_data.size)
-		print(total_size)
 		msg = ("Error: Parsed size does not equal file size.\n",
 		       "       The sample is likely corrupted or incomplete.") 
 		raise IncompleteSample(msg)
@@ -885,7 +881,7 @@ def mp4_profile_sample(mp4_data):
 		      "\t Found            : %s\n" % sep(mp4_data.size), 
 		      sep='\n', file=sys.stderr)
 	
-#	remove_spinner() #TODO: is there a spinner?
+	# no spinner to remove
 
 	print("File Details:   Size           CRC")
 	print("                -------------  --------")
@@ -904,10 +900,6 @@ def mp4_profile_sample(mp4_data):
 	print()
 	print("Parse Details:   Metadata     Stream Data    Total")
 	print("                 -----------  -------------  -------------")
-#	print("                 {0:11n}  {1:13n}  {2:13n}\n".format(
-#						other_length - stream_length, 
-#						stream_length, 
-#						other_length))	
 	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
 						sep(mp4_data.other_length), 
 						sep(stream_length), 
@@ -970,11 +962,11 @@ def profile_wmv(wmv_data): # FileData object
 		wmv_data.crc32 = crc32(o.raw_header, wmv_data.crc32)
 	
 		# 2) doing body
-		# TODO: show spinner
 		if oguid in (GUID_HEADER_OBJECT):
 			ar.move_to_child()
 		elif oguid == GUID_DATA_OBJECT:
 			padding_amount = 0
+			padding_bytes = ""
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
 			# data packet/media object size
@@ -984,7 +976,8 @@ def profile_wmv(wmv_data): # FileData object
 				data = ar.read_data_part(start + i * psize, psize)
 				wmv_data.crc32 = crc32(data, wmv_data.crc32)
 				
-				show_spinner(i)
+				if i % 15 == 0:
+					show_spinner(i)
 				
 				packet = AsfDataPacket()
 				packet.data = data
@@ -997,16 +990,19 @@ def profile_wmv(wmv_data): # FileData object
 				payloads_sizes = 0
 				headers_sizes = 0
 				for payload in packet.payloads:
-					header_data += payload.data[:payload.header_size]
+					header_data += payload.header_data
 					
 					if not payload.stream_number in tracks:
-						assert False # GUID_STREAM_OBJECT is bad
+						#assert False # GUID_STREAM_OBJECT is bad
 						td = TrackData()
 						td.track_number = payload.stream_number
 						tracks[payload.stream_number] = td
 				
 					track = tracks[payload.stream_number]
 					track.data_length += payload.data_length
+					assert payload.data_length == len(payload.data)
+					assert payload.header_size == len(payload.header_data)
+					
 					
 					payloads_sizes += payload.data_length
 					headers_sizes += payload.header_size
@@ -1027,13 +1023,15 @@ def profile_wmv(wmv_data): # FileData object
 				assert (packet.payload_data_len - payloads_sizes == 
 				        packet.padding_length + headers_sizes)
 				
-				if packet.padding_length != 0:
-					# fail on weird wmv files (no 0 bytes used for padding)
-					assert (data[-packet.padding_length:] == 
-					        "\x00" * packet.padding_length)
-				padding_amount += packet.padding_length
+				if packet.padding_length:
+					padding_amount += packet.padding_length
+					padding_bytes += data[-packet.padding_length:]
+					assert (len(data[-packet.padding_length:])
+					        == packet.padding_length)
 				
-#			print("Padding: %d" % padding_amount)
+			# for wmv files without 0 as padding bytes (large SRS files)
+			wmv_data.padding_bytes = padding_bytes
+			wmv_data.padding_amount = padding_amount
 		else:
 			data = ar.read_contents()
 			meta_length += len(data)
@@ -1221,7 +1219,6 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 				movf.write(mr.read_contents())
 				
 def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
-	assert False
 	with open(srs, "wb") as srsf:
 		ar = AsfReader(AsfReadMode.WMV, sample)
 		while(ar.read()):
@@ -1247,16 +1244,10 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 					
 					header_data = data[:-packet.payload_data_len]
 					srsf.write(header_data)
-					print(data[:-packet.payload_data_len].encode('hex'))
 					
 					for payload in packet.payloads:
-#						header_data = payload.data[:payload.header_size]
 						header_data = payload.header_data
 						srsf.write(header_data)
-						print(payload.header_data.encode('hex'))
-						
-						
-#					sys.exit()
 
 				# in store mode, create and write our custom objects
 				# as object child in the root
@@ -1268,6 +1259,18 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 						track.flags |= TrackData.BIG_FILE
 					track_object = track.serialize_as_asf()
 					srsf.write(track_object)
+					
+				# padding object
+				if (sample_data.padding_bytes != 
+					"\x00" * sample_data.padding_amount):
+					size = 16 + 8 + len(sample_data.padding_bytes)
+					print("Larger (%dB) SRS file because of irregular"
+					      " padding bytes." % size)
+					asf_object = GUID_SRS_PADDING 
+					asf_object += S_LONGLONG.pack(size)
+					asf_object += sample_data.padding_bytes
+					srsf.write(asf_object)
+				
 			else:
 				# do copy everything else
 				srsf.write(ar.read_contents())
@@ -1421,8 +1424,6 @@ def _mkv_block_find(tracks, er, done):
 		buff = er.read_contents()
 		offset = 0
 		for i in range(len(er.current_element.frame_lengths)):
-#			if track.track_number == 3:
-#				print(track)
 			# see if a false positive match was detected
 			if track.check_bytes != "" and (len(track.check_bytes) < 
 			                                len(track.signature_bytes)):
@@ -1653,9 +1654,133 @@ def mp4_find_sample_streams(tracks, main_mp4_file):
 			continue
 	return tracks
 
+def wmv_find_sample_streams(tracks, main_wmv_file):
+	ar = AsfReader(AsfReadMode.WMV, main_wmv_file)
+	done = False
+	while ar.read() and not done:
+		o = ar.current_object
+		
+		if o.type == GUID_DATA_OBJECT:
+			i = 16 + 8 + 16
+			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			# data packet/media object size
+			psize = (o.size - len(o.raw_header)) / total_data_packets
+			start = o.start_pos + len(o.raw_header)
+			for i in range(total_data_packets):
+				if i % 15 == 0:
+					show_spinner(i)
+				data = ar.read_data_part(start + i * psize, psize)
+				
+				packet = AsfDataPacket()
+				packet.data = data
+				packet.data_file_offset = start + i * psize
+				packet.data_size = len(data) # psize
+				
+				asf_data_get_packet(packet, psize, AsfReadMode.WMV)
+				
+				prev_payloads_size = 0
+				for payload in packet.payloads:
+					# grab track or create new track
+					track_number = payload.stream_number
+					if not tracks.has_key(track_number):
+						tracks[track_number] = TrackData()
+					track = tracks[track_number]
+					track.track_number = track_number
+					
+					if (track.match_offset == 0 or 
+						len(track.check_bytes) < len(track.signature_bytes)):
+						# It's possible the sample didn't require or contain data
+						# for all tracks in the main file. If that happens, 
+						# we obviously don't want to try to match the data
+						if track.signature_bytes != "":
+							if (track.check_bytes != "" and 
+							    len(track.check_bytes) 
+							    < len(track.signature_bytes)):
+								lcb = min(len(track.signature_bytes),
+											payload.data_length + 
+											len(track.check_bytes))
+								check_bytes = track.check_bytes
+								check_bytes += payload.data[:lcb-
+								                        len(track.check_bytes)]
+								
+								# track found!
+								if (track.signature_bytes[:len(check_bytes)] 
+								    == check_bytes):
+									track.check_bytes = check_bytes
+								else:
+									# It was only a partial match. Start over.
+									track.check_bytes = ""
+									track.match_offset = 0
+									track.match_length = 0
+						
+						# this is a bit weird, but if we had a false positive match
+						# going and discovered it above, we check this payload again
+						# to see if it's the start of a new match 
+						# (probably will never happen with AVI 
+						# but it does in MKV, so just in case...)	
+						if track.check_bytes == "":
+							payload_bytes = payload.data
+							
+							search_byte = track.signature_bytes[0]
+							found_pos = payload_bytes.find(search_byte, 0)
+							
+							while found_pos > -1:
+								lcb = min(len(track.signature_bytes),
+											len(payload_bytes) - found_pos)
+								check_bytes = payload_bytes[found_pos:
+								                          found_pos+lcb]
+								
+								# track found!
+								if (track.signature_bytes[:len(check_bytes)] 
+								    == check_bytes):
+									track.check_bytes = check_bytes
+									track.match_offset = (
+									    packet.data_file_offset +
+									    prev_payloads_size + 
+									    payload.header_size + 
+									    found_pos)
+									track.match_length = min(
+									    track.data_length, 
+									    len(payload_bytes) - found_pos)
+									break
+								found_pos = payload_bytes.find(search_byte, 
+								                             found_pos + 1)
+						else:
+							track.match_length = min(track.data_length 
+							                         - track.match_length, 
+							                         payload.data_length)
+									
+													
+					elif track.match_length < track.data_length:
+						track.match_length += min(track.data_length -
+						                          track.match_length, 
+						                          payload.data_length)
+						
+						track_done = True
+						for track in tracks.values():
+							if track.match_length < track.data_length:
+								track_done = False
+								break
+						done = track_done
+						
+					prev_payloads_size += (payload.data_length + 
+					                       payload.header_size)
+				if done:
+					break
+			ar.skip_contents()
+			done = True
+		else:
+			ar.skip_contents()	
+			
+	remove_spinner()
+	
+	return tracks
+
+
 def avi_extract_sample_streams(tracks, movie):
 	rr = RiffReader(RiffReadMode.AVI, movie)
 	
+	# TODO: never used start_offset?
 	# search for first match offset
 	start_offset = 2 ** 63 # long.MaxValue + 1
 	for track in tracks.values():
@@ -1834,6 +1959,96 @@ def mp4_extract_sample_stream(track, mtrack, main_mp4_file):
 	
 	mtrack.trackstream.stream.close()
 	return track
+
+def wmv_extract_sample_streams(tracks, main_wmv_file):
+	ar = AsfReader(AsfReadMode.Sample, main_wmv_file)
+	
+	# search for first match offset
+	start_offset = 2 ** 63 # long.MaxValue + 1
+	for track in tracks.values():
+		if track.match_offset > 0:
+			start_offset = min(track.match_offset, start_offset)
+			
+	done = False
+	while ar.read() and not done:
+		o = ar.current_object
+		oguid = ar.object_guid
+		
+		if oguid == GUID_DATA_OBJECT:
+			i = 16 + 8 + 16
+			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			# data packet/media object size
+			psize = (o.size - len(o.raw_header)) / total_data_packets
+			start = o.start_pos + len(o.raw_header)
+			for i in range(total_data_packets):
+				# don't do unnecessary processing
+				if start + i * psize + psize < start_offset:
+					continue
+				data = ar.read_data_part(start + i * psize, psize)
+				assert len(data) == psize
+				
+				if i % 15 == 0:
+					show_spinner(i)
+				
+				packet = AsfDataPacket()
+				packet.data = data
+				packet.data_file_offset = start + i * psize
+				packet.data_size = len(data) # psize
+				
+				tmp = asf_data_get_packet(packet, psize)
+				assert tmp == packet.length == psize
+				
+				prev_payloads_size = 0
+				for payload in packet.payloads:
+					# grab track or create new track
+					track_number = payload.stream_number
+					if not tracks.has_key(track_number):
+						tracks[track_number] = TrackData()
+						tracks[track_number].track_number = track_number
+					track = tracks[track_number]
+					
+					if (packet.data_file_offset + prev_payloads_size
+						+ payload.header_size
+						+ payload.data_length >= track.match_offset):
+						if track.track_file == None:
+							track.track_file = tempfile.TemporaryFile()
+							
+						# check if we grabbed enough data
+						if track.track_file.tell() < track.data_length:
+							if (packet.data_file_offset + prev_payloads_size
+								 + payload.header_size
+								>= track.match_offset):
+								# all the payload data
+								track.track_file.write(payload.data)
+							else:
+								# stream started from the middle of a payload
+								print("WMV does this too? Tell me.")
+								payload_offset = (track.match_offset - 
+								    (packet.data_file_offset + 
+									 prev_payloads_size + payload.header_size))
+								track.track_file.write(payload.data[
+								    payload_offset:])
+				
+						tracks_done = True
+						for track_data in tracks.values():
+							if (track_data.track_file == None or 
+								track_data.track_file.tell() < 
+								track_data.data_length):
+								tracks_done = False
+								break
+						done = tracks_done
+						
+					prev_payloads_size += (payload.data_length + 
+					                       payload.header_size)
+				if done:
+					break
+			ar.skip_contents()
+		else:
+			ar.skip_contents()	
+	remove_spinner()
+	
+	return tracks, {} #attachments
+	
 	
 def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	crc = 0 # Crc32.StartValue
@@ -2081,6 +2296,97 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 			track_processed = True
 			
 	return tracks
+
+def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+	crc = 0 # Crc32.StartValue
+	ar = AsfReader(AsfReadMode.SRS, path=srs)
+	padding_index = 0
+	
+	# set cursor for temp files back at the beginning
+	for track in tracks.values():
+		track.track_file.seek(0)
+	
+	sample_file = os.path.join(out_folder, srs_data.name)
+	with open(sample_file, "wb") as sample:
+		while ar.read():
+			# skip over our custom chunks in rebuild mode 
+			# (only read it in load mode)
+			if (ar.current_object.type == GUID_SRS_FILE or 
+			    ar.current_object.type == GUID_SRS_TRACK or
+			    ar.current_object.type == GUID_SRS_PADDING):
+				ar.skip_contents()
+				continue
+			
+			o = ar.current_object
+			oguid = ar.object_guid
+			
+			# 1) header
+			sample.write(ar.current_object.raw_header)
+			crc = crc32(ar.current_object.raw_header, crc) & 0xFFFFFFFF
+			
+			# 2) body
+			if oguid == GUID_DATA_OBJECT:
+				i = 16 + 8 + 16
+				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				# data packet/media object size
+				psize = (o.osize - len(o.raw_header)) / total_data_packets
+				rp_offsets = 0
+				start = o.start_pos + len(o.raw_header)
+				for i in range(total_data_packets):
+					if i % 15 == 0:
+						show_spinner(i)
+	
+					packet = AsfDataPacket()
+					packet.data_file_offset = start + rp_offsets
+					data = ar.read_data_part(packet.data_file_offset, psize)
+					packet.data = data
+					packet.data_size = len(data)
+
+					s = asf_data_get_packet(packet, psize, AsfReadMode.SRS)
+					rp_offsets += s
+					
+					# 1) packet header
+					pheader_data = data[:packet.header_length]
+					sample.write(pheader_data)
+					crc = crc32(pheader_data, crc) & 0xFFFFFFFF
+
+					# 2) packet payload
+					for payload in packet.payloads:
+						track = tracks[payload.stream_number]
+						
+						# 1) header data
+						sample.write(payload.header_data)
+						crc = crc32(payload.header_data, crc) & 0xFFFFFFFF
+						assert payload.header_size == len(payload.header_data)
+						
+						# 2) payload data
+						buff = track.track_file.read(payload.data_length)
+						sample.write(buff)
+						crc = crc32(buff, crc) & 0xFFFFFFFF
+				
+					# 3) padding bytes
+					try:
+						data = srs_data.padding_bytes[padding_index:
+						          padding_index+packet.padding_length]
+						sample.write(data)
+						crc = crc32(data, crc) & 0xFFFFFFFF
+						padding_index += packet.padding_length
+					except AttributeError:
+						data = "\x00" * packet.padding_length
+						sample.write(data)
+						crc = crc32(data, crc) & 0xFFFFFFFF
+			
+				ar.skip_contents()	
+			else:
+				buff = ar.read_contents()
+				sample.write(buff)
+				crc = crc32(buff, crc) & 0xFFFFFFFF
+			
+	remove_spinner()	
+	
+	ofile = FileData(file_name=sample_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
 
 if __name__ == "__main__":
 	unittest.main()
