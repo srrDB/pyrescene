@@ -163,6 +163,12 @@ def main(options, args):
 #				# 7: -sample
 #				if len(base) < len(regexrelname) + 8:
 #					base = regexrelname
+				# no - in last 10 chars: bad relname
+				if "-" not in regexrelname[-10:]:
+					base = ln
+					
+				if options.substring:
+					base = ln
 			else:
 				if len(base) < len(ln):
 					if '"' not in ln:
@@ -183,12 +189,22 @@ def main(options, args):
 			if rel != current_rel:
 				try:
 					new = os.path.join(output_dir, 
-					                   current_rel.replace('"', '') + ".nzb")
-					with open(new, "w") as nzb:
+					              current_rel.replace('"', '') + ".nzb")
+					exists = os.path.exists(new)
+					if current_rel and not exists:
+						with open(new, "w") as nzb:
+							doc = nzb_utils.empty_nzb_document()
+							for rfile in reldict.pop(current_rel):
+								nzb_utils.add_file(doc, rfile)
+							nzb.write(nzb_utils.get_xml(doc))
+					elif exists:
 						doc = nzb_utils.empty_nzb_document()
-						for rfile in reldict.pop(current_rel):
-							nzb_utils.add_file(doc, rfile)
-						nzb.write(nzb_utils.get_xml(doc))
+						for nzbfile in nzb_utils.read_nzb(new):
+							nzb_utils.add_file(doc, nzbfile)
+						with open(new, "w") as nzb:
+							for rfile in reldict.pop(current_rel):
+								nzb_utils.add_file(doc, rfile)
+							nzb.write(nzb_utils.get_xml(doc))
 				except KeyError:
 					pass
 				current_rel = rel
@@ -198,6 +214,18 @@ def main(options, args):
 			reldict[rel] = files
 		else:
 			print("Failed: %s" % nzb_file.subject)
+		
+	# write out last match
+	try:
+		new = os.path.join(output_dir, 
+		                   current_rel.replace('"', '') + ".nzb")
+		with open(new, "w") as nzb:
+			doc = nzb_utils.empty_nzb_document()
+			for rfile in reldict.pop(current_rel):
+				nzb_utils.add_file(doc, rfile)
+			nzb.write(nzb_utils.get_xml(doc))
+	except KeyError:
+		pass
 			
 def grab_base_name(filename):
 	#"invandraren-walla25.sfv" (1/1)
@@ -209,7 +237,7 @@ def grab_base_name(filename):
 		filename = filename.replace(suffix, "")
 	filename = filename.strip("_-")
 	m = re.match("(.*?)(.part\d\d\d?.rar|.par2|.(r|s)\d\d|.sfv|.srr|.srs|"
-				".vob|.mkv|.avi|.mp4|.vol\d.*|\.rar|.nfo|.nzb|.jpg|.png|"
+				".vob|.mkv|.avi|.mp4|.wmv|.vol\d.*|\.rar|.nfo|.nzb|.jpg|.png|"
 				".\d\d\d)$", filename, re.I)
 	return m.group(1)
 
@@ -251,6 +279,8 @@ if __name__ == '__main__':
 		usage="Usage: %prog [nzb file] [output dir]'\n"
 		"This tool will split a large NZB file.\n",
 		version="%prog 0.4 (2012-09-28)") # --help, --version
+	parser.add_option("-l", help="longest substring is releasename", 
+	                  action="store_true", dest="substring", default=False)
 
 	# no arguments given
 	if len(sys.argv) < 2:
