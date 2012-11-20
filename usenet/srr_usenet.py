@@ -111,7 +111,7 @@ Changelog version 1.3 (2012-08-28)
 Changelog version 1.4
  - raised size a bit to catch all small IMDb images
  - version number will be added to SRR files
- - no renamed RARs from kere.ws
+ - no renamed RARs from kere.ws + fix for detection
   
 
 Could be added:
@@ -1129,7 +1129,7 @@ def create_srr(nzb_path, options):
 		
 		# fail if kere.ws rename is detected
 		if (nfile.name[-4:].lower() == ".rar" and len(nfile.name) == 20 + 4
-		and re.match("[a-zA-Z0-9]*", nfile.name[:-4])):
+		and re.match("^[a-zA-Z0-9]{20}$", nfile.name[:-4])):
 			print("kere.ws repack detected: %s" % nfile.name)
 			# these posts don't always have SFVs
 			raise Repack
