@@ -34,8 +34,8 @@ import struct
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
 
-S_LONG = struct.Struct('>L') # unsigned long: 4 bytes
-S_LONGLONG = struct.Struct('>Q') # unsigned long long: 8 bytes
+BE_LONG = struct.Struct('>L') # unsigned long: 4 bytes
+BE_LONGLONG = struct.Struct('>Q') # unsigned long long: 8 bytes
 
 class MovReadMode(object):
 	MP4, Sample, SRS = list(range(3))
@@ -95,7 +95,7 @@ class MovReader(object):
 		
 		self._atom_header = self._mov_stream.read(8)
 		# 4 bytes for atom length, 4 bytes for atom type
-		(atom_length,) = S_LONG.unpack(self._atom_header[:4])
+		(atom_length,) = BE_LONG.unpack(self._atom_header[:4])
 		self.atom_type = self._atom_header[4:]
 		
 		# special sizes
@@ -103,7 +103,7 @@ class MovReader(object):
 		if atom_length == 1:
 			# 8-byte size field after the atom type
 			bsize = self._mov_stream.read(8)
-			(atom_length,) = S_LONGLONG.unpack(bsize)
+			(atom_length,) = BE_LONGLONG.unpack(bsize)
 			self._atom_header += bsize
 			hsize += 8
 		elif atom_length == 0:
