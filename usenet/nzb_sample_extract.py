@@ -122,7 +122,7 @@ def main(options, args):
 	for element in args:
 		if os.path.isdir(element):
 			for lfile in os.listdir(element):
-				check_file(lfile)
+				check_file(os.path.join(element, lfile))
 		elif os.path.isfile(element):
 			check_file(element)
 		else:
