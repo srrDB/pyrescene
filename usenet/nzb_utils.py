@@ -27,11 +27,11 @@ from xml.dom import minidom
 def read_nzb(nzb_file):
 	""" Returns empty list for empty NZB files. """
 	print("Reading %s." % os.path.basename(nzb_file))
-	def parse(nzb_file):
+	def parse(pnzb_file):
 		try: # file on disk
-			return pynzb.nzb_parser.parse(open(nzb_file).read())
+			return pynzb.nzb_parser.parse(open(pnzb_file).read())
 		except: # an open file object
-			return pynzb.nzb_parser.parse(nzb_file.read())
+			return pynzb.nzb_parser.parse(pnzb_file.read())
 
 	try:
 		return parse(nzb_file)
