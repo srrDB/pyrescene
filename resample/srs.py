@@ -251,8 +251,7 @@ def main(argv=None):
 				try:
 					os.makedirs(out_folder)
 				except:
-					pass
-					print("Creating folder failed.")
+					print("Creating output folder failed.")
 					
 			# 1) Read in the SRS file
 			srs_data, tracks = sample.load_srs(srs)
