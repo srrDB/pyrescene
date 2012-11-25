@@ -27,6 +27,9 @@ Version 0.2 (2012-09-07)
  
 Version 0.3 (2012-09-23)
  - Works with subdirs too
+ 
+Version 0.4 (2012-11-25)
+ - MP4 and WMV support for -c switch
 
 Author: Gfy <tsl@yninovg.pbz>"""
 
@@ -58,14 +61,15 @@ def main(options, args):
 		fullreldir = os.path.abspath(os.path.join(parg, reldir))
 		if os.path.isdir(fullreldir):
 			sampfiles = list_files(fullreldir)
-			if (len(sampfiles) > 1 and options.more) or \
-				(not len(sampfiles) and options.none) or \
+			if ((len(sampfiles) > 1 and options.more) or
+				(not len(sampfiles) and options.none) or
 				(options.usenet and len(filter(
-				        lambda x: "usenet" in x, sampfiles)) or \
+				        lambda x: "usenet" in x, sampfiles)) or
 				(options.capitals and len(filter(lambda x: ".MKV.txt" in x or 
-				        ".AVI.txt" in x, sampfiles)))) or \
+				        ".AVI.txt" in x or ".MP4.txt" in x or ".WMV.txt" in x, 
+				        sampfiles)))) or
 				(options.empty and not len(filter(lambda x: os.path.getsize(
-				        os.path.join(fullreldir, x)) != 0, sampfiles))):
+				        os.path.join(fullreldir, x)) != 0, sampfiles)))):
 				print(reldir)
 				do_move(options.output_dir, fullreldir)
 				
@@ -83,7 +87,8 @@ if __name__ == '__main__':
 	                  action="store_true", default=False, dest="empty")
 	parser.add_option("-u", "--usenet", help="usenet-space-cowbys.info", 
 	                  action="store_true", default=False, dest="usenet")
-	parser.add_option("-c", "--capitals", help=".MKV.txt or .AVI.txt", 
+	parser.add_option("-c", "--capitals", help=".MKV.txt, .AVI.txt"
+					  ", MP4.txt or WMV.txt", 
 	                  action="store_true", default=False, dest="capitals")
 	parser.add_option("-o", help="move the found directories to this location",
 				dest="output_dir", metavar="DIRECTORY", default=None)
