@@ -115,7 +115,7 @@ def main(argv=None):
 	if ((options.directory and options.parent_directory) or 
 		(options.directory and options.srs_parent_directory) or 
 		(options.parent_directory and options.srs_parent_directory)):
-		parser.exit(1, "Make up your mind with the d's...")
+		parser.exit(1, "Make up your mind with the d's...\n")
 		
 	try:
 		ftype_arg0 = ""
@@ -130,7 +130,7 @@ def main(argv=None):
 				if ftype == resample.FileType.Unknown:
 					msg = ("Could not locate MKV, AVI, MP4 or WMV data "
 					       "in file: %s\n" % os.path.basename(ifile))
-					msg += ("File size: %s bytes" % 
+					msg += ("File size: %s bytes\n" % 
 					        sep(os.path.getsize(ifile)))
 			else:
 				msg = "Input file not found: %s\n" % ifile
@@ -151,7 +151,7 @@ def main(argv=None):
 			if (os.path.getsize(sample_file) >= 0x80000000 and 
 				not options.big_file):
 				parser.exit(1, "Samples over 2GB are not supported without the"
-				               " -b switch.  Are you sure it's a sample?")
+				               " -b switch.  Are you sure it's a sample?\n")
 				
 			out_folder = os.path.abspath(os.curdir)
 			srs_name = None
@@ -166,7 +166,7 @@ def main(argv=None):
 				out_folder = os.path.dirname(sample_file).rsplit(os.sep, 1)[0]
 			if not os.path.exists(out_folder):
 				parser.exit(1, "Output directory does not exist:"
-				               " %s" % out_folder)
+				               " %s\n" % out_folder)
 				
 			# almost always, unless a specific sample name was given
 			if not srs_name: 
@@ -181,7 +181,7 @@ def main(argv=None):
 					srs_name = os.path.join(out_folder, samp + ".srs")
 			srsdir = os.path.dirname(srs_name)
 			if not os.path.exists(srsdir):
-				parser.exit(1, "Output directory does not exist: %s" % srsdir)
+				parser.exit(1, "Output directory does not exist: %s\n" % srsdir)
 					
 			# 1) Profile the sample
 			sample_file_data = resample.FileData(file_name=sample_file)
@@ -192,7 +192,7 @@ def main(argv=None):
 	
 			if not len(tracks):
 				parser.exit(2, "No A/V data was found. "
-				               "The sample is likely corrupted.")
+				               "The sample is likely corrupted.\n")
 			
 			# show sample information only, no SRS creation
 			if options.info_only: # -i
@@ -203,13 +203,13 @@ def main(argv=None):
 				print("Checking that sample exists "
 				      "in the specified full file...")
 				if resample.get_file_type(options.check) != sample.file_type:
-					parser.exit(1, "Sample and -c file not the same format.")
+					parser.exit(1, "Sample and -c file not the same format.\n")
 				tracks = sample.find_sample_streams(tracks, options.check)
 				
 				for track in tracks.values():
 					if track.signature_bytes and track.match_offset == 0:
 						msg = ("\nUnable to locate track signature for"
-						       " track %s. Aborting." % track.track_number)
+						       " track %s. Aborting.\n" % track.track_number)
 						parser.exit(3, msg)
 					elif not track.signature_bytes:
 						tracks.remove(track)
@@ -217,7 +217,7 @@ def main(argv=None):
 			
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
-				parser.exit(0, "Operation aborted.")
+				parser.exit(0, "Operation aborted.\n")
 				
 			sample.create_srs(tracks, sample_file_data, sample_file, 
 			                  srs_name, options.big_file)
@@ -279,7 +279,7 @@ def main(argv=None):
 				for track in tracks.values():
 					if track.signature_bytes != "" and track.match_offset == 0:
 						msg = ("\nUnable to locate track signature for track"
-						       " %s. Aborting." % track.track_number)
+						       " %s. Aborting.\n" % track.track_number)
 						parser.exit(3, msg)
 						
 			# 3) Extract those sample streams to memory
@@ -294,13 +294,13 @@ def main(argv=None):
 				if track.signature_bytes != "" and (track.track_file == None or 
 						track.track_file.tell() < track.data_length):
 					msg = ("\nUnable to extract correct amount of data for "
-					       "track %s. Aborting." % track.track_number)
+					       "track %s. Aborting.\n" % track.track_number)
 					parser.exit(4, msg)
 					
 			# 5) Ask user for overwrite permission
 			if not can_overwrite(os.path.join(out_folder, srs_data.name),
 				                 options.always_yes):
-				parser.exit(0, "\nOperation aborted.")
+				parser.exit(0, "\nOperation aborted.\n")
 				
 			# 6) Recreate the sample
 			sfile = sample.rebuild_sample(srs_data, tracks, attachments, 
@@ -326,7 +326,7 @@ def main(argv=None):
 			if sfile.crc32 == srs_data.crc32:
 				print("\nSuccessfully rebuilt sample: %s" % srs_data.name)
 			else:
-				msg = "\nRebuild failed for sample: %s" % srs_data.name
+				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
 				parser.exit(5, msg)
 				
 		else:
@@ -338,12 +338,12 @@ def main(argv=None):
 	except (ValueError, AssertionError):
 		if _DEBUG:
 			traceback.print_exc()
-		parser.exit(2, "Corruption detected: %s. Aborting." % 
+		parser.exit(2, "Corruption detected: %s. Aborting.\n" % 
 				sys.exc_info()[1])
 	except Exception:
 		traceback.print_exc()
 		
-		parser.exit(99, "Unexpected Error:\n%s" % sys.exc_info()[1])
+		parser.exit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
 
 if __name__ == "__main__":
 	if "--profile" in sys.argv:
