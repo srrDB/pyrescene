@@ -2099,6 +2099,11 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	
 	ofile = FileData(file_name=sample_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
+	
+	if ofile.crc32 != srs_data.crc32:
+		#TODO: try again with the correct interleaving for LOL samples
+		pass
+		
 	return ofile
 
 def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):

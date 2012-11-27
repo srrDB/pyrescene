@@ -25,6 +25,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+# http://www.jmcgowan.com/avitech.html#AVISpec
+
 import struct
 import re
 import os

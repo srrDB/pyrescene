@@ -326,6 +326,7 @@ def main(argv=None):
 			if sfile.crc32 == srs_data.crc32:
 				print("\nSuccessfully rebuilt sample: %s" % srs_data.name)
 			else:
+				#TODO: try again with the correct interleaving for LOL samples
 				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
 				parser.exit(5, msg)
 				
