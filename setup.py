@@ -2,6 +2,13 @@ from distutils.core import setup
 # http://infinitemonkeycorps.net/docs/pph/
 # http://as.ynchrono.us/2007/12/filesystem-structure-of-python-project_21.html
 
+# http://packages.python.org/distribute/setuptools.html#specifying-your-project-s-version
+# http://stackoverflow.com/questions/458550/standard-way-to-embed-version-into-python-package
+# http://guide.python-distribute.org/creation.html#arranging-your-file-and-directory-structure
+
+# http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+# http://docs.python.org/library/pydoc.html
+
 # http://docs.python.org/2/distutils/sourcedist.html
 # build the package:
 # $ python setup.py sdist
@@ -9,7 +16,7 @@ from distutils.core import setup
 setup(
     name = "pyReScene",
     packages = ["rescene", "resample"],
-    scripts  = ["bin/srr", "bin/srs"],
+    scripts  = ["bin/srr", "bin/srs", "bin/pyrescene.py"],
     version = "0.1",
     description = "Python ReScene and ReSample implementation",
     author = "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
@@ -18,7 +25,7 @@ setup(
     download_url = "https://bitbucket.org/Gfy/pyrescene/downloads",
     license = "MIT",
     keywords = ["rescene", "srr", "resample", "srs", "repackage", "rar",
-	            "avi", "mkv", "mp4"],
+	            "avi", "mkv", "mp4", "wmv"],
     classifiers = [
 		"Development Status :: 4 - Beta",
         "Programming Language :: Python :: 2.6",

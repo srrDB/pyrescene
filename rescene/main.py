@@ -125,8 +125,9 @@ def can_overwrite(file_path):
 	"""Method must be wrapped in the application to ask what to do. 
 		Returns False when file exists.
 		Returns True when file does not exist."""
-	if _DEBUG: print("check overwrite: %s (%s)" %
-	                 (file_path, not os.path.isfile(file_path)))
+	if _DEBUG:
+		print("check overwrite: %s (%s)" %
+	          (file_path, not os.path.isfile(file_path)))
 	return not os.path.isfile(file_path)
 
 def change_rescene_name_version(new_name):
@@ -271,17 +272,30 @@ def add_stored_files(srr_file, store_files, in_folder="", save_paths=False,
 			if block.rawtype == BlockType.SrrStoredFile:
 				tmpfile.write(block.srr_data())
 			# XXX: will this always work correct? 
+			
+		if not location: # music video SRR file: add to end
+			if not usenet:
+				amount_added = 0
+				for f in _search(store_files, in_folder):
+					_store(f, tmpfile, save_paths, in_folder)
+					amount_added += 1
+				if not amount_added:
+					_fire(MsgCode.NO_FILES,
+					      message="No files found to add.")
+			else: #TODO: make it nicer
+				for f in store_files:
+					_store_fh(f, tmpfile)	
 	except:
 		tmpfile.close()
 		os.unlink(tmpname)
 		raise
 	else:
 		tmpfile.close()
-		if not location:
-			# Bad SRR file or RAR file given.
-			os.remove(tmpname)
-			raise NotSrrFile("No SrrRarFile blocks detected. -> Not SRR. "
-							 "Zero files added.")
+#		if not location:
+#			# Bad SRR file or RAR file given.
+#			os.remove(tmpname)
+#			raise NotSrrFile("No SrrRarFile blocks detected. -> Not SRR. "
+#							 "Zero files added.")
 		# original srr file is replaced by the temp file
 		os.remove(srr_file)
 		os.rename(tmpname, srr_file)

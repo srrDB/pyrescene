@@ -419,6 +419,9 @@ stored file block (sfv) in the middle of srr rar blocks
 11:39 < YopoM> yup
 11:50 < YopoM> all right, all finished, going to leave one unconfirmed, although it is done and rdy to be (a place marker)
 
+http://forum.doom9.org/showthread.php?s=eb9fc739b3bd40d3c7986cf3eab2d582&t=156349
+
+
 12:22 < XDot> anyone uses everything program?
 12:31 < HellRezor> what program ?
 12:34 < XDot> everything

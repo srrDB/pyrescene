@@ -35,32 +35,3 @@ from rescene.utility import *
 # 0.1 (2011-11-11) Initial release
 
 APPNAME = "pyReScene " + __version__
-
-#
-#import os, sys, optparse
-#
-## make the scripts in the scripts folder work when ran from terminal
-#cmd_folder = os.path.dirname(os.path.abspath(__file__))
-#if cmd_folder not in sys.path:
-#    sys.path.insert(0, cmd_folder)
-#    
-#import rescene
-#import rar
-#import utility
-#import rarstream
-#import osohash 
-    
-#VERSION = "0.1 (2011-06-06)"
-#PACKAGE = "rescene"
-#APPNAME = "pyReScene"
-#LICENSE = "MIT"
-#WEBSITE = ""
-
-# 0.1 (date) ?
-#http://packages.python.org/distribute/setuptools.html#specifying-your-project-s-version
-#http://stackoverflow.com/questions/458550/standard-way-to-embed-version-into-python-package
-
-# http://guide.python-distribute.org/creation.html#arranging-your-file-and-directory-structure
-
-# http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
-# http://docs.python.org/library/pydoc.html
