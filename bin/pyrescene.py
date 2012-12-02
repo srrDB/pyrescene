@@ -89,12 +89,14 @@ def get_sample_files(reldir):
 
 def get_proof_files(reldir):
 	"""Includes proof RAR files."""
-	sample_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") + 
-	                get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
-	                get_files(reldir, "*.rar"))
+	image_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") + 
+	               get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
+	               get_files(reldir, "*.rar"))
 	result = []
-	for sample in sample_files:
-		if "proof" in sample.lower():
+	for sample in image_files:
+		# images in sample folders are ok
+		# others need to contain the word proof in their path
+		if "proof" in sample.lower() or "sample" in sample.lower():
 			if sample[-4:] == ".rar":
 				# no body.of.proof. rar files
 				if os.path.getsize(sample) % 1000 != 0:
@@ -110,11 +112,11 @@ def remove_unwanted_sfvs(sfv_list):
 	wanted_sfvs = []
 	for sfv in sfv_list:
 		sfv_name = os.path.basename(sfv)
-		if "subs" in sfv_name.lower():
+		if "subs" in sfv_name.lower() or "vobsub" in sfv_name.lower():
 			continue
 		# subs not in filename, but the folder is called subs or vobsubs
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
-		if "subs" == pardir or "vobsubs" == pardir:
+		if "subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir:
 			continue
 		
 		wanted = True
