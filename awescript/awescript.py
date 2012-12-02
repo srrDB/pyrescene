@@ -79,6 +79,7 @@ awescript -R . --srr-dir=~/srrs
 #   paths will be stored.
 # - works with mp4 and wmv releases
 # - the nfo file will be stored at the top
+# - will always overwrite existing .srr files
 
 
 # better handling of srs-dir and srr-dir - i.e. remove meta=DIREECTORY and just os.path.normalize it
@@ -847,7 +848,8 @@ def srr(files, options, cwdsolo, ignore_extras):
         cmd += " -o \"%s\"" % srr_file
 
     # we will always do paths when creating the srr file
-    cmd += " -p"
+    # always overwrite an existing .srr file (no question popup)
+    cmd += " -p -y"
 
     try:
         print(cmd)
