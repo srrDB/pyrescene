@@ -2111,6 +2111,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	er = EbmlReader(RiffReadMode.SRS, path=srs)
 	
 	for track in tracks.values():
+		#TODO: track_file can not be initialized here
 		track.track_file.seek(0)
 	
 	sample_file = os.path.join(out_folder, srs_data.name)

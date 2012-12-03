@@ -26,10 +26,14 @@
 
 """
 design decisions:
-- must work from dvdrs and directories with read only access: 
-doesn't write any files in the dirs it processes
--c parameter pysrs (check against main movie file)
+- must work from DVDRs and directories with read only access: 
+  It doesn't write any files in the dirs it processes
+- -c parameter pysrs (check against main movie file)
 - .ext.txt text files for failed samples
+
+Sorting isn't how we want it in this case:
+ E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\CD2\
+ E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
 from optparse import OptionParser
@@ -126,6 +130,11 @@ def remove_unwanted_sfvs(sfv_list):
 				sfvf.file_name.endswith(".flac")):
 				wanted = False
 				break
+		
+		# hardcoded for issue on own dvd
+		if (sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND\dmd-happyfeet-cd2.sfv") or
+			sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND/dmd-happyfeet-cd2.sfv")):
+			wanted = False
 		if wanted:		
 			wanted_sfvs.append(sfv)
 	return wanted_sfvs
@@ -161,9 +170,12 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	except:
 		pass
 	
-	# copy over file
-	shutil.copyfile(copy_file, dest_file)	
-	
+	try:
+		# copy over file
+		shutil.copyfile(copy_file, dest_file)	
+	except IOError:
+		print("Could not copy %s." % copy_file)
+		
 	return dest_file
 
 def generate_srr(reldir, working_dir, options):
@@ -182,9 +194,18 @@ def generate_srr(reldir, working_dir, options):
 	main_rars = get_start_rar_files(main_sfvs)
 	
 	if len(main_sfvs):
-		rescene.create_srr(srr, main_sfvs, reldir, [], True, options.compressed)
-		mthread.done = True
-		mthread.join()
+		try:
+			rescene.create_srr(srr, main_sfvs, reldir, [], True, 
+			                   options.compressed)
+			mthread.done = True
+			mthread.join()
+		except IOError:
+			print("Read error. DVD disk unreadable? Try again!")
+			os.unlink(srr)
+			return False
+		except KeyboardInterrupt:
+			os.unlink(srr)
+			raise
 	else:
 		return False
 	
@@ -255,9 +276,13 @@ def generate_srr(reldir, working_dir, options):
 	for sfv in rarsfv:
 		copied_files.append(sfv)
 	
+	# some of copied_files can not exist
+	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
 
 	empty_folder(working_dir)
+	
+	return True
 
 def get_release_directories(path):
 	"""Generator that yields all possible release directories."""
@@ -321,7 +346,8 @@ def main(argv=None):
 					 help="verifies sample agains main movie files")
 	parser.add_option("-o", "--output", dest="output_dir", metavar="DIR",
 					default=".",
-					help="<path>: Specify output file or directory path.")
+					help="<path>: Specify output file or directory path. "
+					"The default output path is the current directory.")
 	parser.add_option("-e", "--eject",
 					 action="store_true", dest="eject",
 					 help="eject DVD drive after processing")
@@ -361,21 +387,35 @@ def main(argv=None):
 	working_dir = mkdtemp(".pyReScene")	
 	
 	drive_letters = []
-	for reldir in indirs:
-		reldir = os.path.abspath(reldir)
-		if not options.recursive:
-			generate_srr(reldir, working_dir, options)
-		else:
-			for release_dir in get_release_directories(reldir):
-				generate_srr(release_dir, working_dir, options)
-		# gather drive info
-		drive_letters.append(reldir[:2])
+	failures = False
+	aborted = False
+	try:
+		for reldir in indirs:
+			reldir = os.path.abspath(reldir)
+			if not options.recursive:
+				result = generate_srr(reldir, working_dir, options)
+				if not result:
+					failures = True
+			else:
+				for release_dir in get_release_directories(reldir):
+					result = generate_srr(release_dir, working_dir, options)
+					if not result:
+						failures = True
+			# gather drive info
+			drive_letters.append(reldir[:2])
+	except KeyboardInterrupt:
+		print("Process aborted.")
+		aborted = True
+	if failures:
+		print("------------------------------------")
+		print("Warning: some SRRs were not created!")
+		print("------------------------------------")
 				
 	# delete temporary working dir
 	shutil.rmtree(working_dir)
 	
 	# see if we need to eject a disk drive
-	if options.eject and os.name == "nt":
+	if options.eject and os.name == "nt" and not aborted:
 		import ctypes
 		import winsound
 		
@@ -386,8 +426,12 @@ def main(argv=None):
 				u"set ddrive door open", None, 0, None)
 		
 		winsound.Beep(1000, 500)
-	elif options.eject:
-		print("Sorry, the eject option only works on Windows.")
+	elif options.eject and not aborted:
+		import subprocess
+		
+		subprocess.call(["eject"])
+		print("\a")
+	return 0
 
 if __name__ == "__main__":
 	sys.exit(main())

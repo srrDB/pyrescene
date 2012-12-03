@@ -54,7 +54,8 @@ def main(argv=None, no_exit=False):
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
 		
-	"To create a ReSample file (SRS), pass in the sample MKV or AVI file.\n"
+	"To create a ReSample file (SRS), pass in the sample file.\n"
+	"This can be an AVI, MKV, MP4 or WMV file."
 	"	ex: srs sample.mkv -dd\n"
 	"To recreate a sample, pass in the SRS file and the full MKV or AVI\n"
 	"or the first file of a RAR set containing the MKV or AVI.\n"

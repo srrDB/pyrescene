@@ -1061,3 +1061,29 @@ Parse Details:   Metadata     Stream Data    Total
 
 Error: Parsed size does not equal file size.
        The sample is likely corrupted or incomplete.
+       
+       
+
+       
+cxx	just got another failure
+	cxx	Traceback (most recent call last):
+	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/srs.py", line 307, in main
+	cxx	 srs, out_folder)
+	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/main.py", line 390, in rebuild_sample
+	cxx	 return mkv_rebuild_sample(*args, **kwargs)
+15:27	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/main.py", line 2109, in mkv_rebuild_sample
+	cxx	 track.track_file.seek(0)
+	cxx	AttributeError: 'NoneType' object has no attribute 'seek'
+	cxx	Unexpected Error:
+	cxx	'NoneType' object has no attribute 'seek'
+cxx	The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH
+
+
+
+
+cxx		Gfy: some samples with subs don't rebuid properly, subs are replaced with random chars
+cxx		Gfy: this sample failed to rebuild Saboteur.1942.MULTi.1080p.BluRay.x264-ROUGH
+15:18	Gfy	it fails with rescene.net too?
+15:26	cxx	i don't jh
+	cxx	have rescene dotnet anymore*
+       

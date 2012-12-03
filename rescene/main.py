@@ -435,69 +435,72 @@ def create_srr(srr_name, infiles, in_folder="",
 	srr = open(srr_name, "wb")
 	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
 	
-	# STORE FILES
-	# We store copies of any files included in the store_files list 
-	# in the .srr using a "store block".
-	# Any SFV files used are also included.
-	store_files.extend([f for f in infiles if f[-4:].lower() == ".sfv"])
-	
-	if not len([_store(f, srr, save_paths, in_folder)
-				for f in _search(store_files, in_folder)]):
-		_fire(MsgCode.NO_FILES, message="No files found to add.")
-	
-	# COLLECT ARCHIVES
-	rarfiles = []
-	for infile in infiles:
-		if infile[-4:].lower() == ".sfv":
-			rarfiles.extend(_handle_sfv(infile))
-		else:
-			rarfiles.extend(_handle_rar(infile))
-
-	# STORE ARCHIVE BLOCKS
-	for rarfile in rarfiles:
-		if not os.path.isfile(rarfile):
-			_fire(code=MsgCode.FILE_NOT_FOUND,
-				  message="Referenced file not found: %s" % rarfile)
-			srr.close()	  
-			os.unlink(srr_name)
-			raise FileNotFound("Referenced file not found: %s" % rarfile)
-
-		fname = os.path.relpath(rarfile, in_folder) if save_paths  \
-			else os.path.basename(rarfile)
-		_fire(MsgCode.MSG, message="Processing file: %s." % fname)
+	try:
+		# STORE FILES
+		# We store copies of any files included in the store_files list 
+		# in the .srr using a "store block".
+		# Any SFV files used are also included.
+		store_files.extend([f for f in infiles if f[-4:].lower() == ".sfv"])
 		
-		rarblock = SrrRarFileBlock(file_name=fname)
-#		if save_paths:
-#			rarblock.flags |= SrrRarFileBlock.PATHS_SAVED
-		srr.write(rarblock.block_bytes())
+		if not len([_store(f, srr, save_paths, in_folder)
+					for f in _search(store_files, in_folder)]):
+			_fire(MsgCode.NO_FILES, message="No files found to add.")
 		
-		rr = RarReader(rarfile)
-		for block in rr.read_all():
-			if block.rawtype == BlockType.RarPackedFile:
-				_fire(MsgCode.FBLOCK, message="RAR Packed File Block",
-					  compression_method=block.compression_method,
-					  packed_size=block.packed_size,
-					  unpacked_size=block.unpacked_size,
-					  file_name=block.file_name)
-				if block.compression_method != COMPR_STORING:
-					_fire(MsgCode.COMPRESSION, message="Don't delete 'em yet!")
-					if not compressed:
-						srr.close()
-						os.unlink(srr_name)
-						raise ValueError("Archive uses unsupported "
-						                 "compression method: %s" % rarfile)
-			elif _is_recovery(block):
-				_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
-					  packed_size=block.packed_size,
-					  recovery_sectors=block.recovery_sectors,
-					  data_sectors=block.data_sectors)
+		# COLLECT ARCHIVES
+		rarfiles = []
+		for infile in infiles:
+			if infile[-4:].lower() == ".sfv":
+				rarfiles.extend(_handle_sfv(infile))
 			else:
-				_fire(MsgCode.BLOCK, message="RAR Block",
-					  type=block.rawtype, size=block.header_size)
-			# store the raw data for any blocks found
-			srr.write(block.block_bytes())
+				rarfiles.extend(_handle_rar(infile))
+	
+		# STORE ARCHIVE BLOCKS
+		for rarfile in rarfiles:
+			if not os.path.isfile(rarfile):
+				_fire(code=MsgCode.FILE_NOT_FOUND,
+					  message="Referenced file not found: %s" % rarfile)
+				srr.close()	  
+				os.unlink(srr_name)
+				raise FileNotFound("Referenced file not found: %s" % rarfile)
+	
+			fname = os.path.relpath(rarfile, in_folder) if save_paths  \
+				else os.path.basename(rarfile)
+			_fire(MsgCode.MSG, message="Processing file: %s." % fname)
 			
-	srr.close()
+			rarblock = SrrRarFileBlock(file_name=fname)
+	#		if save_paths:
+	#			rarblock.flags |= SrrRarFileBlock.PATHS_SAVED
+			srr.write(rarblock.block_bytes())
+			
+			rr = RarReader(rarfile)
+			for block in rr.read_all():
+				if block.rawtype == BlockType.RarPackedFile:
+					_fire(MsgCode.FBLOCK, message="RAR Packed File Block",
+						  compression_method=block.compression_method,
+						  packed_size=block.packed_size,
+						  unpacked_size=block.unpacked_size,
+						  file_name=block.file_name)
+					if block.compression_method != COMPR_STORING:
+						_fire(MsgCode.COMPRESSION, 
+						      message="Don't delete 'em yet!")
+						if not compressed:
+							srr.close()
+							os.unlink(srr_name)
+							raise ValueError("Archive uses unsupported "
+							           "compression method: %s" % rarfile)
+				elif _is_recovery(block):
+					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
+						  packed_size=block.packed_size,
+						  recovery_sectors=block.recovery_sectors,
+						  data_sectors=block.data_sectors)
+				else:
+					_fire(MsgCode.BLOCK, message="RAR Block",
+						  type=block.rawtype, size=block.header_size)
+				# store the raw data for any blocks found
+				srr.write(block.block_bytes())
+	finally:
+		# when an IOError is raised, we close the file for further cleanup
+		srr.close()
 
 def _rarreader_usenet(rarfile, read_retries=7):
 	"""Tries redownloading data read_retries times if it fails.
