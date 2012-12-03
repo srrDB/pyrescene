@@ -120,11 +120,13 @@ def remove_unwanted_sfvs(sfv_list):
 	wanted_sfvs = []
 	for sfv in sfv_list:
 		sfv_name = os.path.basename(sfv)
-		if "subs" in sfv_name.lower() or "vobsub" in sfv_name.lower():
+		if ("subs" in sfv_name.lower() or "vobsub" in sfv_name.lower() or
+			"subtitle" in sfv_name.lower()):
 			continue
 		# subs not in filename, but the folder is called subs or vobsubs
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
-		if "subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir:
+		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
+			"subtitles" == pardir):
 			continue
 		
 		wanted = True
