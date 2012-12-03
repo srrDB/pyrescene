@@ -53,7 +53,7 @@ except ImportError:
 import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
-from rescene.main import MsgCode
+from rescene.main import MsgCode, FileNotFound
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -207,6 +207,9 @@ def generate_srr(reldir, working_dir, options):
 		except KeyboardInterrupt:
 			os.unlink(srr)
 			raise
+		except FileNotFound:
+			os.unlink(srr)
+			return False
 	else:
 		return False
 	
@@ -395,28 +398,33 @@ def main(argv=None):
 	working_dir = mkdtemp(".pyReScene")	
 	
 	drive_letters = []
-	failures = False
 	aborted = False
+	missing = []
 	try:
 		for reldir in indirs:
 			reldir = os.path.abspath(reldir)
 			if not options.recursive:
 				result = generate_srr(reldir, working_dir, options)
 				if not result:
-					failures = True
+					missing.append(reldir)
 			else:
 				for release_dir in get_release_directories(reldir):
-					result = generate_srr(release_dir, working_dir, options)
+					try:
+						result = generate_srr(release_dir, working_dir, options)
+					except FileNotFound:
+						result = False
 					if not result:
-						failures = True
+						missing.append(release_dir)
 			# gather drive info
 			drive_letters.append(reldir[:2])
 	except KeyboardInterrupt:
 		print("Process aborted.")
 		aborted = True
-	if failures:
+	if len(missing):
 		print("------------------------------------")
 		print("Warning: some SRRs were not created!")
+		for item in missing:
+			print(item)
 		print("------------------------------------")
 				
 	# delete temporary working dir
