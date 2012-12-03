@@ -213,6 +213,10 @@ def generate_srr(reldir, working_dir, options):
 		except FileNotFound:
 			# rescene doesn't leave a half finished file
 			return False
+		except ValueError:
+			# e.g. 0 byte RAR file
+			os.unlink(srr)
+			return False
 	else:
 		return False
 	
