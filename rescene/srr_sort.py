@@ -38,13 +38,10 @@ import rescene
 from rescene.rar import RarReader, BlockType, COMPR_STORING
 
 def check_compression(srr_file):
-	fb = None
 	for block in RarReader(srr_file):
 		if block.rawtype == BlockType.RarPackedFile:
-			fb = block
-			break
-	if fb and fb.compression_method != COMPR_STORING:
-		return True
+			if block.compression_method != COMPR_STORING:
+				return True
 	return False
 		
 def check_empty(srr_file):
