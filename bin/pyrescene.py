@@ -208,7 +208,7 @@ def generate_srr(reldir, working_dir, options):
 			os.unlink(srr)
 			raise
 		except FileNotFound:
-			os.unlink(srr)
+			# rescene doesn't leave a half finished file
 			return False
 	else:
 		return False
