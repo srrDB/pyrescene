@@ -43,6 +43,7 @@ import os
 import re
 import shutil
 import fnmatch
+import time
 
 try:
 	import _preamble
@@ -288,6 +289,13 @@ def get_release_directories(path):
 	"""Generator that yields all possible release directories."""
 	path = os.path.abspath(path)
 	last_release = ""
+	
+	if os.name != "nt":
+		# wait until the DVD drive is mounted
+		while not len(os.listdir(path)):
+			print("Waiting 2 seconds for mount.")
+			time.sleep(2000)
+		
 	for dirpath, dirnames, filenames in os.walk(path):
 		if last_release in dirpath and last_release:
 			continue # subfolders of a found release
