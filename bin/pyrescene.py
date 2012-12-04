@@ -122,11 +122,19 @@ def remove_unwanted_sfvs(sfv_list):
 		sfv_name = os.path.basename(sfv)
 		if ("subs" in sfv_name.lower() or "vobsub" in sfv_name.lower() or
 			"subtitle" in sfv_name.lower()):
-			continue
-		# subs not in filename, but the folder is called subs or vobsubs
+			# false positive: the.substitute.4.vrs.cd1.rar 92341f72
+			# The.Substitute.4.2001.Failure.Is.Not.An.Option.iNT.DVDRip.XVID-vRs
+			if ("subs" in sfv_name.lower() and 
+				re.match(".*cd\d.*", sfv_name, re.IGNORECASE)):
+				pass
+			else:
+				continue
+		# subs not in filename, but the folder is called subs, vobsubs,...
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
 		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
-			"subtitles" == pardir):
+			"subtitles" == pardir or "sub" == pardir):
+			# X-Files.1x00.Pilot.DVDRip.XviD-SDG\Subtitles
+			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
 			continue
 		
 		wanted = True
