@@ -1,7 +1,19 @@
 pyReScene 0.1
 =============
 
-rescene:
+pyReScene Auto: (pyrescene.py)
+ * Initial version. It can automatically create a complete SRR file.
+ * No write access to the release directory is required. This means it works
+   with DVDs. It also guarantees that nothing in the processed directories
+   will change. (not a guarantee of awescript)
+ * -s parameter verifies sample against main movie files. If this fails it will
+   still try to create an SRS file.
+ * -r parameter to recursively create SRR files.
+ * -c parameter will create SRRs for compressed RAR files.
+ * .ext.txt text files for corrupt samples. They show the error and the
+   file size.
+
+ReScene: (srr)
  * Initial version. Changes since ReScene .NET 1.2:
  * Asks for confirmation before overwriting an SRR file.
  * Ability to replace missing file data with zero bytes when reconstructing:
@@ -17,7 +29,7 @@ rescene:
    The merged SRR file contains two application names and not all files
    are at the start of the SRR file.
  
-resample:
+ReSample: (srs)
  * Initial version. Changes since ReSample .NET 1.2:
  * MP4 support: SRS construction and sample reconstruction.
  * WMV support: SRS construction and sample reconstruction.
@@ -25,5 +37,5 @@ resample:
    Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
  * -y, yes to all, option added.
 
-usenet:
+pyReScene Usenet:
  * See srr_usenet.py
