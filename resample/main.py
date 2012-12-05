@@ -763,7 +763,7 @@ def profile_mp4(mp4_data): # FileData object
 			mr.move_to_child()
 		elif atype == "mdat":
 			data = mr.read_contents()
-			data_length = len(data)
+#			data_length = len(data)
 			mp4_data.crc32 = crc32(data, mp4_data.crc32)
 		else:
 			data = mr.read_contents()

@@ -28,7 +28,7 @@
 design decisions:
 - must work from DVDRs and directories with read only access: 
   It doesn't write any files in the dirs it processes
-- -c parameter pysrs (check against main movie file)
+- -s parameter pysrs (check against main movie file)
 - .ext.txt text files for failed samples
 
 Sorting isn't how we want it in this case:
