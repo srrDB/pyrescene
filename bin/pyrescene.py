@@ -132,7 +132,7 @@ def remove_unwanted_sfvs(sfv_list):
 		# subs not in filename, but the folder is called subs, vobsubs,...
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
 		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
-			"subtitles" == pardir or "sub" == pardir):
+			"subtitles" == pardir or "sub" == pardir or "subpack" == pardir):
 			# X-Files.1x00.Pilot.DVDRip.XviD-SDG\Subtitles
 			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
 			continue
@@ -223,8 +223,9 @@ def generate_srr(reldir, working_dir, options):
 		except FileNotFound:
 			# rescene doesn't leave a half finished file
 			return False
-		except ValueError:
+		except (ValueError, EnvironmentError):
 			# e.g. 0 byte RAR file
+			# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
 			os.unlink(srr)
 			return False
 	else:
@@ -313,8 +314,8 @@ def get_release_directories(path):
 	if os.name != "nt":
 		# wait until the DVD drive is mounted
 		while not len(os.listdir(path)):
-			print("Waiting 2 seconds for mount.")
-			time.sleep(2)
+			print("Waiting 5 seconds for mount.")
+			time.sleep(5)
 		
 	for dirpath, dirnames, filenames in os.walk(path):
 		if last_release in dirpath and last_release:
