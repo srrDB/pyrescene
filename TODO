@@ -9,6 +9,7 @@ pyReScene
  - new block for oso hashes of archived files (at the end of the SRR)
  - do not create SRR based on empty SFV files (but do so when .mkv in there)
  - show SRR differences -> use rescene.php
+ - an option to just verify an extracted release is valid
  
 pyReSample
 ==========
@@ -16,7 +17,6 @@ pyReSample
  - Support for additional video formats
     * VOB (DVDRs)
     * M2TS (BDRs)
-    * WMV
     * OGM
     * MPEG
  - Support to backup and restore meta data for audio formats

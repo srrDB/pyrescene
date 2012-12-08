@@ -268,15 +268,23 @@ def generate_srr(reldir, working_dir, options):
 				except ValueError:
 					print("Sample not found in %s." % main)			
 		if not found:
+			original_stderr = sys.stderr
+			txt_error_file = current_sample + ".txt"
+			sys.stderr = open(txt_error_file, "wb")
+			keep_txt = False
 			try:
 				srsmain([current_sample, "-y", "-o", 
 				         os.path.dirname(current_sample)], True)
 				copied_files.append(current_sample[:-4] + ".srs")
 			except ValueError:
-				with open(current_sample + ".txt", "wb") as stderr:
-					stderr.write(sys.exc_info()[1].message)
-				copied_files.append(current_sample + ".txt")
+				keep_txt = True
+				copied_files.append(txt_error_file)
 				
+			sys.stderr.close()
+			if not keep_txt:
+				os.unlink(txt_error_file)
+				
+			sys.stderr = original_stderr
 		os.unlink(current_sample)
 		
 	#TODO: TXT files for m2ts with crc?

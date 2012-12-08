@@ -25,6 +25,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
 import optparse
 import sys
 import os
@@ -114,6 +115,7 @@ def main(argv=None, no_exit=False):
 			parser.exit(status, msg)
 		else:
 			if status != 0:
+				print(msg, file=sys.stderr)
 				raise ValueError(msg)
 		
 	# no arguments given
@@ -178,7 +180,7 @@ def main(argv=None, no_exit=False):
 				out_folder = os.path.dirname(sample_file).rsplit(os.sep, 1)[0]
 			if not os.path.exists(out_folder):
 				pexit(1, "Output directory does not exist:"
-				               " %s\n" % out_folder)
+				         " %s\n" % out_folder)
 				
 			# almost always, unless a specific sample name was given
 			if not srs_name: 
@@ -204,7 +206,7 @@ def main(argv=None, no_exit=False):
 	
 			if not len(tracks):
 				pexit(2, "No A/V data was found. "
-				               "The sample is likely corrupted.\n")
+				         "The sample is likely corrupted.\n")
 			
 			# show sample information only, no SRS creation
 			if options.info_only: # -i

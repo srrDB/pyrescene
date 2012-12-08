@@ -1087,3 +1087,6 @@ cxx		Gfy: this sample failed to rebuild Saboteur.1942.MULTi.1080p.BluRay.x264-RO
 15:26	cxx	i don't jh
 	cxx	have rescene dotnet anymore*
        
+       
+aidan		Gfy: does pyrescene have an option to just verify an exracted release is valid?
+
