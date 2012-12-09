@@ -1424,10 +1424,11 @@ def _mkv_block_find(tracks, er, done):
 			# see if a false positive match was detected
 			if track.check_bytes != "" and (len(track.check_bytes) < 
 			                                len(track.signature_bytes)):
-#				lcb = min(len(track.signature_bytes, 
-#				er.current_element.frame_lengths[i] + len(track.check_bytes)))
-				check_bytes = track.check_bytes #[:lcb]
-				check_bytes += buff[offset:offset+len(check_bytes)-len(track.check_bytes)]
+				lcb = min(len(track.signature_bytes), 
+				          er.current_element.frame_lengths[i] + 
+				          len(track.check_bytes))
+				check_bytes = track.check_bytes
+				check_bytes += buff[offset:offset+lcb-len(track.check_bytes)]
 				
 				if track.signature_bytes[:len(check_bytes)] == check_bytes:
 					track.check_bytes = check_bytes
@@ -1849,7 +1850,7 @@ def mkv_extract_sample_streams(tracks, movie):
 		if track.match_offset > 0:
 			start_offset = min(track.match_offset, start_offset)
 			
-	attachements = {}
+	attachments = {}
 	current_attachment = None
 	cluster_count = 0
 	done = False
@@ -1875,11 +1876,11 @@ def mkv_extract_sample_streams(tracks, movie):
 				er.move_to_child()
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
-			if not attachements.has_key(current_attachment):
+			if not attachments.has_key(current_attachment):
 				att = AttachmentData(current_attachment)
-				attachements[current_attachment] = att
+				attachments[current_attachment] = att
 		elif er.element_type == EbmlElementType.AttachedFileData:
-			attachement = attachements[current_attachment]
+			attachement = attachments[current_attachment]
 			attachement.size = er.current_element.length
 			
 			# in extract mode, 
@@ -1895,14 +1896,15 @@ def mkv_extract_sample_streams(tracks, movie):
 
 	remove_spinner()
 	
-	return tracks, attachements
+	return tracks, attachments
 
 def _mkv_block_extract(tracks, er, done):
 	track = tracks[er.current_element.track_number]
 	
 	if (er.current_element.element_start_pos + 
-		len(er.current_element.raw_header) + er.current_element.length 
-		> track.match_offset):
+		len(er.current_element.raw_header) + 
+		len(er.current_element.raw_block_header) + 
+		er.current_element.length > track.match_offset):
 		if track.track_file == None:
 			track.track_file = tempfile.TemporaryFile()
 		buff = er.read_contents()
