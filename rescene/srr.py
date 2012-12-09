@@ -157,8 +157,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		                         in_folder, save_paths)
 	else:
 		mthread.set_messages([MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN,
-							])
-#		mthread.set_all(True)
+							MsgCode.MSG])
 		hints = dict()
 		if options.hints:
 			for hint in options.hints.split(';'):

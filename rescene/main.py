@@ -1027,8 +1027,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				except: pass
 				ofile = _opath(block, extract_paths, out_folder)
 				if can_overwrite(ofile):
-					_fire(MsgCode.MSG, 
-						  message="Re-creating RAR file: %s" % ofile)
+					_fire(MsgCode.MSG, message="Re-creating RAR file: %s" % 
+						os.path.basename(ofile))
 					if not os.path.isdir(os.path.dirname(ofile)):
 						os.makedirs(os.path.dirname(ofile))
 					rarfs = open(ofile, "w+b")
