@@ -339,10 +339,7 @@ class TrackData(object):
 		return asf_object
 	
 class ReSample(object):
-	def srs_info(self, srs_file):
-		"""Returns FileData object."""
-		srs_data, _tracks = self.load_srs(srs_file)
-		return srs_data
+	pass
 
 def sample_class_factory(file_type):
 	"""Choose the right class based on the sample's file type."""

@@ -240,15 +240,21 @@ def main(argv=None, no_exit=False):
 		
 		# showing SRS info
 		elif (len(args) == 1 and args[0][-4:].lower() == ".srs"
-		    	and options.srs_info):
-			srs_data = sample.srs_info(args[0])
+		    	and options.srs_info): # -l
+			srs_data, tracks = sample.load_srs(args[0])
 			
 			print("SRS Type   : {0}".format(ftype_arg0))
 			print("SRS App    : {0}".format(srs_data.appname))
 			print("Sample Name: {0}".format(srs_data.name))
 			print("Sample Size: {0}".format(sep(srs_data.size)))
 			print("Sample CRC : {0:08X}".format(srs_data.crc32))
-		
+			for track in tracks.values():
+				offset = ""
+				if track.match_offset:
+					offset = "@ %s" % sep(track.match_offset)
+				print("Track %d: %s bytes %s" % (track.track_number,
+				                                 sep(track.data_length),
+				                                 offset))
 		# reconstructing sample
 		elif len(args) == 2 and args[0][-4:].lower() == ".srs":
 			# reconstruct sample
