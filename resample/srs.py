@@ -213,7 +213,7 @@ def main(argv=None, no_exit=False):
 				pexit(0)
 				
 			# 2) check sample against main movie file
-			if options.check: # main AVI file to check against
+			if options.check: # main AVI, MKV,... file to check against
 				print("Checking that sample exists "
 				      "in the specified full file...")
 				if resample.get_file_type(options.check) != sample.file_type:
@@ -226,6 +226,7 @@ def main(argv=None, no_exit=False):
 						       " track %s. Aborting.\n" % track.track_number)
 						pexit(3, msg)
 					elif not track.signature_bytes:
+						# main movie file has more tracks
 						tracks.remove(track)
 				print("Check Complete. All tracks located.")
 			
@@ -291,10 +292,15 @@ def main(argv=None, no_exit=False):
 				      "Elapsed Time: {0:.2f}s".format(total))
 				
 				for track in tracks.values():
-					if track.signature_bytes != "" and track.match_offset == 0:
+					if track.signature_bytes and track.match_offset == 0:
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
 						pexit(3, msg)
+					elif not track.signature_bytes:
+						# fixes The.Butterfly.Effect.3.Revelations.2009.STV
+						# .FRENCH.720p.BluRay.x264-ROUGH bug?
+						# main movie file has more tracks
+						tracks.remove(track)
 						
 			# 3) Extract those sample streams to memory
 			tracks, attachments = movi.extract_sample_streams(tracks, movie)
@@ -305,7 +311,7 @@ def main(argv=None, no_exit=False):
 			
 			# 4) Check for failure
 			for track in tracks.values():
-				if track.signature_bytes != "" and (track.track_file == None or 
+				if track.signature_bytes and (track.track_file == None or 
 						track.track_file.tell() < track.data_length):
 					msg = ("\nUnable to extract correct amount of data for "
 					       "track %s. Aborting.\n" % track.track_number)

@@ -1904,8 +1904,8 @@ def _mkv_block_extract(tracks, er, done):
 	track = tracks[er.current_element.track_number]
 	
 	if (er.current_element.element_start_pos + 
-	len(er.current_element.raw_header) + er.current_element.length 
-	> track.match_offset):
+		len(er.current_element.raw_header) + er.current_element.length 
+		> track.match_offset):
 		if track.track_file == None:
 			track.track_file = tempfile.TemporaryFile()
 		buff = er.read_contents()
