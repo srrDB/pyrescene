@@ -1078,7 +1078,7 @@ cxx	just got another failure
 	cxx	'NoneType' object has no attribute 'seek'
 cxx	The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH
 
-
+ -> fixed
 
 
 cxx		Gfy: some samples with subs don't rebuid properly, subs are replaced with random chars
@@ -1087,6 +1087,8 @@ cxx		Gfy: this sample failed to rebuild Saboteur.1942.MULTi.1080p.BluRay.x264-RO
 15:26	cxx	i don't jh
 	cxx	have rescene dotnet anymore*
        
+ -> fixed
        
 aidan		Gfy: does pyrescene have an option to just verify an exracted release is valid?
 
+ -> added

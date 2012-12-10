@@ -226,6 +226,12 @@ def sep(number, loc=''):
 	locale.setlocale(locale.LC_ALL, loc)
 	return locale.format('%d', number, True)
 	
+def show_spinner(amount):
+	"""amount: a number"""
+	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
+
+def remove_spinner():
+	sys.stdout.write("\b"), # removes spinner
 	
 ###############################################################################
 

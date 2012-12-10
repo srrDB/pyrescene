@@ -28,6 +28,7 @@ ReScene: (srr)
    copy /b cd1.srr+cd2.srr cdALL.srr
    The merged SRR file contains two application names and not all files
    are at the start of the SRR file.
+ * -q parameter to verify an extracted release is valid.
  
 ReSample: (srs)
  * Initial version. Changes since ReSample .NET 1.2:
@@ -36,6 +37,7 @@ ReSample: (srs)
  * SRS creation of a rarred sample failed: Corruption detected: 
    Invalid FourCC value (Rar!) at 0x00000000.  Aborting.
  * -y, yes to all, option added.
+ * System.NullReferenceException from the .NET version is fixed.
 
 pyReScene Usenet:
  * See srr_usenet.py

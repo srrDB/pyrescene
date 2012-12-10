@@ -30,10 +30,12 @@ import sys
 import os
 import time
 import traceback
+import zlib
 from threading import Thread
 
 import rescene
-from rescene.main import MsgCode, FileNotFound
+from rescene.main import MsgCode, FileNotFound 
+from rescene.utility import show_spinner, remove_spinner
 
 # make it work with Python 3 too
 #if sys.hexversion >= 0x3000000:
@@ -138,6 +140,29 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		display_info(infiles[0])
 	elif options.list_details: # -e
 		rescene.print_details(infiles[0])
+	elif options.verify: # -q
+		archived_files = rescene.info(infiles[0])["archived_files"].values()
+		for afile in archived_files:
+			name = os.path.join(in_folder, afile.file_name)
+			if not os.path.exists(name):
+				print("File %s not found. Skipping." % name)
+			else:
+				crc = 0
+				count = 0
+				with open(name, "rb") as f:
+					x = f.read(65536)
+					while x:
+						count += 1
+						show_spinner(count)
+						crc = zlib.crc32(x, crc)
+						x = f.read(65536)
+					remove_spinner()
+				crc = crc & 0xFFFFFFFF
+				if afile.crc32 == "%X" % crc:
+					print("File OK: %s." % afile.file_name)
+				else:
+					print("File CORRUPT: %s!" % afile.file_name)
+		
 	elif options.extract: # -x
 		mthread.set_messages([])
 		# extract ALL possible files
@@ -259,7 +284,9 @@ def main(argv=None):
 	display.add_option("-e", "--details", 
 					  action="store_true", dest="list_details", default=False,
 					  help="list detailed SRR file info")
-
+	display.add_option("-q", "--verify", 
+					  action="store_true", dest="verify", default=False,
+					  help="verify extracted RAR contents")
 	
 	creation.add_option("-c", "--compressed",
 					 action="store_true", dest="allow_compressed",

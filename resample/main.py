@@ -42,7 +42,7 @@ import resample
 
 from rescene import rarstream
 from rescene import utility
-from rescene.utility import sep
+from rescene.utility import sep, show_spinner, remove_spinner
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            MakeEbmlUInt, EbmlID)
@@ -1272,12 +1272,6 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 				# do copy everything else
 				srsf.write(ar.read_contents())
 
-def show_spinner(amount):
-	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
-
-def remove_spinner():
-	sys.stdout.write("\b"), # removes spinner
-	
 def avi_find_sample_streams(tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file)
 	block_count = 0
