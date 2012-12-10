@@ -215,7 +215,7 @@ class EbmlReader(object):
 	MKV-SRS files one element at a time."""
 	def __init__(self, read_mode, path=None, stream=None):
 		assert path or stream
-		self.elementHeader = "" # 12 bytes
+		self.element_header = "" # 12 bytes
 		
 		self._ebml_stream = None
 		self.mode = None
@@ -258,27 +258,29 @@ class EbmlReader(object):
 		# used to identify the length of the ID (ID: like xml tags)
 		read_byte = self._ebml_stream.read(1)
 		if not len(read_byte):
-			raise ValueError("Missing data")
+			return False
+#			raise ValueError("Missing data")
 		(id_length_descriptor,) = S_BYTE.unpack(read_byte)
 		id_length_descriptor = GetUIntLength(id_length_descriptor)
-		self.elementHeader = read_byte
-		self.elementHeader += self._ebml_stream.read(id_length_descriptor - 1)
+		self.element_header = read_byte
+		self.element_header += self._ebml_stream.read(id_length_descriptor - 1)
 		
 		# 2) Data size --------------------------------------------------------
 		read_byte = self._ebml_stream.read(1)
 		if not len(read_byte):
-			raise ValueError("Missing data")
+			return False
+#			raise ValueError("Missing data")
 		(data_length_descriptor,) = S_BYTE.unpack(read_byte)
 		data_length_descriptor = GetUIntLength(data_length_descriptor)
-		self.elementHeader += read_byte
-		self.elementHeader += self._ebml_stream.read(data_length_descriptor - 1)
+		self.element_header += read_byte
+		self.element_header += self._ebml_stream.read(data_length_descriptor - 1)
 		
-		assert id_length_descriptor + data_length_descriptor == len(self.elementHeader)
+		assert id_length_descriptor + data_length_descriptor == len(self.element_header)
 		
 		# 3) Data -------------------------------------------------------------
 		# these comparisons are ordered by the frequency with which they 
 		# will be encountered to avoid unnecessary processing
-		eh = self.elementHeader[0:id_length_descriptor]
+		eh = self.element_header[0:id_length_descriptor]
 		if eh == EbmlID.BLOCK or eh == EbmlID.SIMPLE_BLOCK:
 			self.element_type = EbmlElementType.Block
 		elif eh == EbmlID.BLOCK_GROUP:
@@ -310,7 +312,7 @@ class EbmlReader(object):
 		else:
 			self.element_type = EbmlElementType.Unknown
 			
-		element_length = GetEbmlUInt(self.elementHeader, 
+		element_length = GetEbmlUInt(self.element_header, 
 		                             id_length_descriptor, 
 		                             data_length_descriptor)
 		
@@ -327,7 +329,7 @@ class EbmlReader(object):
 			
 		if self.element_type != EbmlElementType.Block:
 			self.current_element = EbmlElement()
-			self.current_element.raw_header = self.elementHeader
+			self.current_element.raw_header = self.element_header
 			self.current_element.element_start_pos = element_start_position
 			self.current_element.length = element_length
 		else: # it's a block
@@ -371,7 +373,7 @@ class EbmlReader(object):
 			self.current_element.frame_lengths = frameSizes
 			self.current_element.raw_block_header = blockHeader
 			
-			self.current_element.raw_header = self.elementHeader
+			self.current_element.raw_header = self.element_header
 			self.current_element.element_start_pos = element_start_position
 			self.current_element.length = element_length
 			
@@ -381,7 +383,7 @@ class EbmlReader(object):
 #		                            EbmlElementTypeName[self.element_type],
 #		                            element_length, # without header
 #		                            element_start_position,
-#		                            len(self.elementHeader)))
+#		                            len(self.element_header)))
 
 		return True
 	

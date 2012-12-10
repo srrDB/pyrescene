@@ -586,7 +586,7 @@ def avi_profile_sample(avi_data): # FileData object
 	                        sep(total_size - other_length), sep(total_size)))
 	
 	if avi_data.size != total_size:
-		msg = ("Error: Parsed size does not equal file size.\n",
+		msg = ("Error: Parsed size does not equal file size.\n"
 		       "       The sample is likely corrupted or incomplete.") 
 		raise IncompleteSample(msg)
 	
@@ -730,7 +730,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 		  sep(total_size - attachmentSize - other_length), sep(total_size)))
 	
 	if mkv_data.size != total_size:
-		msg = ("Error: Parsed size does not equal file size.\n",
+		msg = ("Error: Parsed size does not equal file size.\n"
 		       "       The sample is likely corrupted or incomplete.") 
 		raise IncompleteSample(msg)
 	
