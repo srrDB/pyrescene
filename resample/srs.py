@@ -226,8 +226,8 @@ def main(argv=None, no_exit=False):
 						       " track %s. Aborting.\n" % track.track_number)
 						pexit(3, msg)
 					elif not track.signature_bytes:
-						# main movie file has more tracks
-						tracks.remove(track)
+						# main movie file has more tracks? or empty track?
+						tracks.pop(track.track_number)
 				print("Check Complete. All tracks located.")
 			
 			# ask the user for permission to replace an existing SRS file
@@ -304,9 +304,12 @@ def main(argv=None, no_exit=False):
 						pexit(3, msg)
 					elif not track.signature_bytes:
 						# fixes The.Butterfly.Effect.3.Revelations.2009.STV
-						# .FRENCH.720p.BluRay.x264-ROUGH bug?
-						# main movie file has more tracks
-						tracks.remove(track)
+						# .FRENCH.720p.BluRay.x264-ROUGH reconstruction bug
+						# It gives an error in ReSample .NET 1.2:
+						#   Unexpected Error:
+						#   System.NullReferenceException
+						# main movie file has more tracks? or empty track?
+						tracks.pop(track.track_number)
 						
 			# 3) Extract those sample streams to memory
 			tracks, attachments = movi.extract_sample_streams(tracks, movie)
