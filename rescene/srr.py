@@ -273,7 +273,6 @@ def main(argv=None):
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
-	# TODO: prompt for overwriting SRR file
 	parser.add_option("-v", help="enable verbose (technical) creation",
 						action="store_true", dest="verbose", default=False)
 	# TODO: get all the messages in order

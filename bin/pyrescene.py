@@ -137,6 +137,10 @@ def remove_unwanted_sfvs(sfv_list):
 			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
 			continue
 		
+		# subpack inside release dir
+		if "subpack" in sfv.lower() or "subfix" in sfv.lower():
+			continue
+		
 		wanted = True
 		# not wanted if SFV contains .mp3 or .flac files
 		for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
@@ -149,6 +153,7 @@ def remove_unwanted_sfvs(sfv_list):
 		if (sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND\dmd-happyfeet-cd2.sfv") or
 			sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND/dmd-happyfeet-cd2.sfv")):
 			wanted = False
+		
 		if wanted:		
 			wanted_sfvs.append(sfv)
 	return wanted_sfvs
@@ -226,7 +231,10 @@ def generate_srr(reldir, working_dir, options):
 		except (ValueError, EnvironmentError):
 			# e.g. 0 byte RAR file
 			# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
-			os.unlink(srr)
+			try:
+				os.unlink(srr)
+			except WindowsError:
+				pass
 			return False
 	else:
 		return False
@@ -447,6 +455,7 @@ def main(argv=None):
 		print("Process aborted.")
 		aborted = True
 	if len(missing):
+		print("")
 		print("------------------------------------")
 		print("Warning: some SRRs were not created!")
 		for item in missing:

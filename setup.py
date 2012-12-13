@@ -9,6 +9,8 @@ from distutils.core import setup
 # http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
 # http://docs.python.org/library/pydoc.html
 
+# http://www.pyinstaller.org/
+
 # http://docs.python.org/2/distutils/sourcedist.html
 # build the package:
 # $ python setup.py sdist
