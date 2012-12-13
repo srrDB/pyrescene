@@ -214,10 +214,14 @@ def generate_srr(reldir, working_dir, options):
 	
 	if len(main_sfvs):
 		try:
-			rescene.create_srr(srr, main_sfvs, reldir, [], True, 
+			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
 			                   options.compressed)
 			mthread.done = True
 			mthread.join()
+			
+			# when the user decides not to overwrite an existing SRR
+			if not result:
+				return False
 		except IOError:
 			print("Read error. DVD disk unreadable? Try again!")
 			os.unlink(srr)
@@ -379,7 +383,11 @@ def main(argv=None):
 	
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
-					  help="assume Y(es) for all prompts")
+					  help="assume Yes for all prompts")
+	parser.add_option("-n", "--always-no", dest="always_no", default=False,
+					  action="store_true",
+					  help="assume No for all prompts")
+	
 	parser.add_option("-r", "--recursive", dest="recursive", default=False,
 					  action="store_true",
 					  help="recursively create SRR files")
@@ -407,17 +415,27 @@ def main(argv=None):
 		return 0
 	
 	(options, indirs) = parser.parse_args(args=argv)
+	
+	if options.always_yes and options.always_no:
+		print("Is it 'always yes' (-y) or 'always no' (-n)?")
+		return 0
 
 	# check for existence output directory
 	options.output_dir = os.path.abspath(options.output_dir)
 	if not os.path.exists(options.output_dir):
 		if can_create(options.always_yes, options.output_dir):
 			os.makedirs(options.output_dir)
+		else:
+			print("No output directory created.")
+			return 0
 			
 	# overwrite user input request function
 	def can_overwrite(file_path):
 		retvalue = True 
 		if not options.always_yes and os.path.isfile(file_path):
+			# when a user does not want to process releases he has already done
+			if options.always_no:
+				return False
 			print("Warning: File %s already exists." % file_path)
 			# http://www.python.org/dev/peps/pep-3111/
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()

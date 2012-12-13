@@ -407,7 +407,7 @@ def merge_srrs(srr_files, output_file, application_name=None):
 		# everything else in the same order as the original file
 		for block in other_blocks:
 			new.write(block.block_bytes())
-			#TODO: this is skipping data in some less common casess?
+			#TODO: this is skipping data in some less common cases?
 
 def create_srr(srr_name, infiles, in_folder="",
                store_files=None, save_paths=False, compressed=False):
@@ -424,13 +424,14 @@ def create_srr(srr_name, infiles, in_folder="",
 				 
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
-	if store_files is None:      # no default initialisation with []
+	if store_files is None:      # no default initialization with []
 		store_files = []
 	if not isinstance(infiles, (list, tuple)): # we need a list
 		infiles = [infiles]      # otherwise iterating over characters
 		
 	if not can_overwrite(srr_name):
-		raise EnvironmentError("Can't overwrite SRR file.")
+		return False
+#		raise EnvironmentError("Can't overwrite SRR file.")
 	
 	srr = open(srr_name, "wb")
 	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
@@ -498,6 +499,7 @@ def create_srr(srr_name, infiles, in_folder="",
 						  type=block.rawtype, size=block.header_size)
 				# store the raw data for any blocks found
 				srr.write(block.block_bytes())
+		return True
 	finally:
 		# when an IOError is raised, we close the file for further cleanup
 		srr.close()
