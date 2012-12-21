@@ -27,7 +27,7 @@
 """
 design decisions:
 - must work from DVDRs and directories with read only access: 
-  It doesn't write any files in the dirs it processes
+  It doesn't write or move any files in the dirs it processes
 - -s parameter pysrs (check against main movie file)
 - .ext.txt text files for failed samples
 
@@ -148,11 +148,6 @@ def remove_unwanted_sfvs(sfv_list):
 				sfvf.file_name.endswith(".flac")):
 				wanted = False
 				break
-		
-		# hardcoded for issue on own dvd
-		if (sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND\dmd-happyfeet-cd2.sfv") or
-			sfv.endswith("Happy.Feet.DVDRip.XviD-DiAMOND/dmd-happyfeet-cd2.sfv")):
-			wanted = False
 		
 		if wanted:		
 			wanted_sfvs.append(sfv)
@@ -341,38 +336,63 @@ def get_release_directories(path):
 		if last_release in dirpath and last_release:
 			continue # subfolders of a found release
 		
-		release = False
-		# A folder is considered being an original scene release directory when
-		# there is an .nfo file or an .sfv file
-		# or an .sfv file in a CDx/DiskX subdir (when nfo file is missing)
-		for filename in filenames:
-			if (filename[-4:].lower() in (".nfo", ".sfv") and
-				filename != "motechnetfiles.nfo" and 
-				filename != "movie.nfo" and
-				filename != "imdb.nfo"):
-				release = True
-				last_release = dirpath
+		if is_release(dirpath, dirnames, filenames):
+			last_release = dirpath
+			yield last_release
+			
+def is_release(dirpath, dirnames=None, filenames=None):
+	if dirnames == None:
+		l = lambda x: not os.path.isfile(os.path.join(dirpath, x))
+		dirnames = filter(l, os.listdir(dirpath))
+	if filenames == None:
+		l = lambda x: os.path.isfile(os.path.join(dirpath, x))
+		filenames = filter(l, os.listdir(dirpath))
+		
+	release = False
+	# A folder is considered being an original scene release directory when
+	# there is an .nfo file or an .sfv file
+	# or an .sfv file in a CDx/DiskX subdir (when nfo file is missing)
+	for filename in filenames:
+		if (filename[-4:].lower() in (".nfo", ".sfv") and
+			filename not in ("motechnetfiles.nfo", "movie.nfo", "imdb.nfo",
+							"scc.nfo")):
+			release = True
+			break
+
+	if not release:
+		# SFV file in one of the interesting subdirs?
+		interesting_dirs = []
+		for dirname in dirnames:
+			if re.match("^(CD|DISK)\d$", dirname, re.IGNORECASE):
+				interesting_dirs.append(dirname)
+		
+		for idir in interesting_dirs:
+			for lfile in os.listdir(os.path.join(dirpath, idir)):
+				if lfile[-4:].lower() == ".sfv":
+					release = True
+					break
+			if release:
 				break
 
-		if not release:
-			# SFV file in one of the interesting subdirs?
-			interesting_dirs = []
-			for dirname in dirnames:
-				if re.match("^(CD|DISK)\d$", dirname, re.IGNORECASE):
-					interesting_dirs.append(dirname)
-			
-			for idir in interesting_dirs:
-				for lfile in os.listdir(os.path.join(dirpath, idir)):
-					if lfile[-4:].lower() == ".sfv":
-						release = True
-						last_release = dirpath
-						break
-				if release:
-					break
-			
-		rel_folders = "^((CD|DISK)\d)|(Vob)?Samples?|Covers?|Proofs?$"
-		if release and not re.match(rel_folders, last_release, re.IGNORECASE):
-			yield last_release
+	rel_folders = ("^((CD|DISK)\d)|(Vob)?Samples?|Covers?|Proofs?|"
+	               "Subs?(pack)?|(vob)?subs?$")
+	if release and not re.match(rel_folders, dirpath, re.IGNORECASE):
+		release = True
+	else:
+		return False
+	
+	# season torrent packs have often an additional NFO file in the root
+	# don't detect as a release if this is the case
+	if len(filenames) == 1 and filenames[0].lower()[-4:] == ".nfo":
+		# could still be a regular release with multiple CDs
+		# each other subdir must be a release dir -> not reldir itself
+		release = False
+		for reldir in dirnames:
+			if not is_release(os.path.join(dirpath, reldir)):
+				release = True
+				break
+				
+	return release 
 
 def main(argv=None):
 	parser = OptionParser(
