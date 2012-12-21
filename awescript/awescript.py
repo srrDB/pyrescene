@@ -133,7 +133,6 @@ overwrite_existing_samples = 1
 
 
 def get_files(path, cwdsolo):
-
     sfvList = []
     fileMainList = []
     blackList = []
@@ -141,10 +140,10 @@ def get_files(path, cwdsolo):
 
     fileList = glob.glob("*.*")
 
-    # for file in fileList:
-    #    print(file)
+    # for lfile in fileList:
+    #    print(lfile)
     # exit()
-    for root, dirs, files in os.walk(path):
+    for root, dirs, _files in os.walk(path):
         base = os.path.relpath(root) + slash
         if base == "." + slash:
             base = ""
@@ -153,14 +152,14 @@ def get_files(path, cwdsolo):
     fileList.sort()
 
     # move sfv files to top of list
-    for file in fileList:
-        if re.search("\.sfv$", file, re.IGNORECASE):
-            sfvList.append(file)
-            fileList.remove(file)
+    for sfv_file in fileList:
+        if re.search("\.sfv$", sfv_file, re.IGNORECASE):
+            sfvList.append(sfv_file)
+            fileList.remove(sfv_file)
 
     fileList = sfvList + fileList
 
-    for file in fileList:
+    for lfile in fileList:
         add = True
         folder = ""
         main_file = ""
@@ -171,9 +170,8 @@ def get_files(path, cwdsolo):
         subtyp = ""
         dest = ""
         sr_dir = ""  # dir to store path for srs or srr that was created for fileset
-        part_fix = False
 
-        (folder, filename) = os.path.split(file)
+        (folder, filename) = os.path.split(lfile)
         if folder: folder += slash
 
         if not re.search("\.(avi|mkv|mp4|wmv|divx|ogm|mpg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr)$", filename, re.IGNORECASE):
@@ -183,7 +181,6 @@ def get_files(path, cwdsolo):
                 basename = filename.split(".rar", 1)[0]
                 if not os.path.exists(folder + basename + ".r00"):
                     continue
-                part_fix = True
 
         # SFV Detection
         if re.search("\.sfv$", filename, re.IGNORECASE):
@@ -361,9 +358,11 @@ def get_files(path, cwdsolo):
                             if not folder:
                                 dest = "Subs" + slash
                         if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
-                            if not folder: dest = "Extras" + slash + dest
+                            if not folder: 
+                                dest = "Extras" + slash + dest
                         break
-                typ = "Other"
+                if not typ:
+                    typ = "Other"
 
         # Check for Video files NOT in RAR files
         # i.e. samples or previously extracted video
@@ -425,9 +424,7 @@ def get_files(path, cwdsolo):
     if sets_in_main >= 2 and not re.search("([\._\s]s?\d{1,3}[\._\s]?[ex]\d{1,3}|s\d{1,3})", cwdsolo, re.IGNORECASE):  # 2 or more CDs possible
         fileMainList = get_cds(fileMainList)
 
-
     return fileMainList
-
 
 
 def is_sample(video):
@@ -444,7 +441,6 @@ def is_sample(video):
     return False
 
 
-
 def only_samples(files):
     sample = False
     for sfile in files:
@@ -453,7 +449,6 @@ def only_samples(files):
         elif sfile[4] == "Sample":
             sample = True
     return sample
-
 
 
 def get_cds(fileMainList):
@@ -541,7 +536,6 @@ def get_cds(fileMainList):
     return fileMainList
 
 
-
 def wildc(folder, file):
     global slash
     if not os.path.exists(folder + file): return False
@@ -575,7 +569,6 @@ def wildc(folder, file):
 
 
     return folder + basename + wildcard
-
 
 
 def move_files(files, options, cwdsolo):
@@ -619,7 +612,6 @@ def move_files(files, options, cwdsolo):
         files = move(files, "Other", "Extras", True, options.debug)
 
     return files
-
 
 
 def move(files, typ, subtyp, overwrite, debug):
@@ -682,15 +674,9 @@ def move(files, typ, subtyp, overwrite, debug):
     return files
 
 
-
 # move full directories post-extraction if unrar_dir set?
 def move_dir(file):
-    global slash
-
-
-
     return file
-
 
 
 def srs_srr(files, options, cwdsolo):
@@ -711,7 +697,6 @@ def srs_srr(files, options, cwdsolo):
             deleteFiles(["*.srs", "*[Ss][Aa][Mm][Pp][Ll][Ee]*/*.srs"], "Re-Sample (SRS)", None, False)  # delete *.srs
 
     return code, files
-
 
 
 def srs(files, options, cwdsolo):
@@ -981,10 +966,7 @@ def cleanup(files, options, code):
     # need to delete empty folders
     deleteDirectories(["*[Cc][Dd][1-9]*/", "*[Ss][Aa][Mm][Pp][Ll][Ee]*/"], options.debug)
 
-
-
     return
-
 
 
 def deleteFiles(wildcards, word, ignoreList, debug):
@@ -996,27 +978,26 @@ def deleteFiles(wildcards, word, ignoreList, debug):
         print("No %s files to delete." % word)
         return 0
 
-    for file in fileList:
+    for dfile in fileList:
         cont = True
         if ignoreList:
             for ignore in ignoreList:
-                if file == ignore:
+                if dfile == ignore:
                     ignoreList.remove(ignore)
                     cont = False
                     break
         if cont:
             try:
                 if debug:
-                    print("remove %s" % file)
+                    print("remove %s" % dfile)
                 else:
-                    os.remove(file)
-                    print("%s deleted." % file)
+                    os.remove(dfile)
+                    print("%s deleted." % dfile)
             except OSError:
-                print("Error trying to remove %s" % file)
+                print("Error trying to remove %s" % dfile)
                 return -1
 
     return 0
-
 
 
 def deleteDirectories(wildcards, debug):
@@ -1035,7 +1016,6 @@ def deleteDirectories(wildcards, debug):
                 print("%s was empty but could not be removed." % directory)
 
     return
-
 
 
 def main(options, path):
@@ -1173,7 +1153,8 @@ if __name__ == '__main__':
 
     if os.name == "nt":
         globals()["slash"] = "\\"
-    else: globals()["slash"] = "/"
+    else: 
+        globals()["slash"] = "/"
 
     for path in args:
         # file = open(r"E:\DOWNLOAD\xvid.txt", 'a')
@@ -1197,8 +1178,8 @@ if __name__ == '__main__':
                 found = False
                 if current in root:
                     continue
-                for file in files:
-                    if re.search("\.(rar|00[0-1]|avi|mkv|mp4|wmv|ogm|divx|mpg)$", file):
+                for mfile in files:
+                    if re.search("\.(rar|00[0-1]|avi|mkv|mp4|wmv|ogm|divx|mpg)$", mfile):
                         found = True
                         break
                 if not found:
