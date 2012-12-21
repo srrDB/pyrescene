@@ -144,11 +144,11 @@ def get_files(path, cwdsolo):
     #    print(lfile)
     # exit()
     for root, dirs, _files in os.walk(path):
-        base = os.path.relpath(root) + slash
-        if base == "." + slash:
+        base = os.path.relpath(root) + os.sep
+        if base == "." + os.sep:
             base = ""
         for d in dirs:
-            fileList += glob.glob(base + d + slash + "*.*")
+            fileList += glob.glob(base + d + os.sep + "*.*")
     fileList.sort()
 
     # move sfv files to top of list
@@ -172,7 +172,8 @@ def get_files(path, cwdsolo):
         sr_dir = ""  # dir to store path for srs or srr that was created for fileset
 
         (folder, filename) = os.path.split(lfile)
-        if folder: folder += slash
+        if folder: 
+            folder += os.sep
 
         if not re.search("\.(avi|mkv|mp4|wmv|divx|ogm|mpg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr)$", filename, re.IGNORECASE):
             if not (re.search("\.rar$", filename, re.IGNORECASE) and not re.search("\.part\d{2,3}\.rar$", filename, re.IGNORECASE)):
@@ -262,7 +263,7 @@ def get_files(path, cwdsolo):
                 print("no sfv for %s" % main_file)
                 fset = glob.glob(wildc(folder, main_file))
                 for i in range(len(fset)):
-                    fset[i] = fset[i].rsplit(slash)[-1:][0]  # remove path, keeping only filename
+                    fset[i] = fset[i].rsplit(os.sep)[-1:][0]  # remove path, keeping only filename
                 # print(fset)
 
             if len(fset) >= 2:
@@ -325,7 +326,7 @@ def get_files(path, cwdsolo):
             if re.search("extra", main_file, re.IGNORECASE):
                 subtyp = "Extras"
                 if not re.search("extra", cwdsolo, re.IGNORECASE):
-                    dest = "Extras" + slash
+                    dest = "Extras" + os.sep
 
             #
             # need to check if already in a folder and use that
@@ -352,14 +353,14 @@ def get_files(path, cwdsolo):
                         if re.search("vob.?sub", main_file, re.IGNORECASE):
                             typ = "VobSubs"
                             if not folder:
-                                dest = "VobSubs" + slash
+                                dest = "VobSubs" + os.sep
                         else:
                             typ = "Subs"
                             if not folder:
-                                dest = "Subs" + slash
+                                dest = "Subs" + os.sep
                         if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
                             if not folder: 
-                                dest = "Extras" + slash + dest
+                                dest = "Extras" + os.sep + dest
                         break
                 if not typ:
                     typ = "Other"
@@ -375,18 +376,18 @@ def get_files(path, cwdsolo):
                 if re.search("\.vob$", main_file, re.IGNORECASE):
                     typ = "VobSample"
                     if not folder:
-                        dest = "VobSample" + slash
+                        dest = "VobSample" + os.sep
                 elif re.search("\.m2ts$", main_file, re.IGNORECASE):
                     typ = "m2tsSample"
                     if not folder:
-                        dest = "Sample" + slash
+                        dest = "Sample" + os.sep
                 else:
                     typ = "Sample"
                     if not folder:
-                        dest = "Sample" + slash
+                        dest = "Sample" + os.sep
                 if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
                     if not folder:
-                        dest = "Extras" + slash + dest
+                        dest = "Extras" + os.sep + dest
             else:
                 # not a sample, add as extracted video
                 typ = "Video"
@@ -403,11 +404,11 @@ def get_files(path, cwdsolo):
             if re.search("extra", main_file, re.IGNORECASE):
                 subtyp = "Extras_SRS"
                 if not folder:
-                    dest = "Extras" + slash + "Sample" + slash
+                    dest = "Extras" + os.sep + "Sample" + os.sep
             else:
                 subtyp = "SRS"
                 if not folder:
-                    dest = "Sample" + slash
+                    dest = "Sample" + os.sep
             typ = "Sample"
 
         elif re.search("\.srr$", main_file, re.IGNORECASE):
@@ -415,7 +416,7 @@ def get_files(path, cwdsolo):
             subtyp = "SRR"
 
         if len(fset) == 0: fset.append(main_file)
-        # if dest and options.unrar_dir: dest = options.unrar_dir.rstrip(slash) + slash + dest
+        # if dest and options.unrar_dir: dest = options.unrar_dir.rstrip(os.sep) + os.sep + dest
 
         fileMainList.append([folder, main_file, sfv, fset, typ, subtyp, dest, sr_dir])
 
@@ -452,8 +453,7 @@ def only_samples(files):
 
 
 def get_cds(fileMainList):
-    global slash
-    # folder,main_file,sfv,fset,typ,dest
+    # folder, main_file, sfv, fset, typ, dest
     fileList = fileMainList
 
     fileListNew = []
@@ -526,7 +526,7 @@ def get_cds(fileMainList):
         print(file + " is CD" + cd)
 
         # get/make directory
-        fileMainList[i][6] = "CD" + cd + slash
+        fileMainList[i][6] = "CD" + cd + os.sep
         if re.search("\.(rar|00[0-1])$", file, re.IGNORECASE):
             fileMainList[i][5] = "CD"
         else:
@@ -537,8 +537,8 @@ def get_cds(fileMainList):
 
 
 def wildc(folder, file):
-    global slash
-    if not os.path.exists(folder + file): return False
+    if not os.path.exists(folder + file):
+        return False
 
     basename = False
     wildcard = False
@@ -572,8 +572,6 @@ def wildc(folder, file):
 
 
 def move_files(files, options, cwdsolo):
-    global slash
-
     if options.move_subs:
         files = move(files, "Subs", "", True, options.debug)
         files = move(files, "VobSubs", "", True, options.debug)
@@ -615,8 +613,6 @@ def move_files(files, options, cwdsolo):
 
 
 def move(files, typ, subtyp, overwrite, debug):
-    global slash
-
     for i in range(len(files)):
         if files[i][4] != typ or files[i][5] != subtyp or not files[i][6]:
             continue
@@ -632,8 +628,8 @@ def move(files, typ, subtyp, overwrite, debug):
             else:
                 os.makedirs(dest)
             # directory = ""
-            # for d in dest.rstrip(slash).split(slash):
-            #    directory += d + slash
+            # for d in dest.rstrip(os.sep).split(os.sep):
+            #    directory += d + os.sep
             #    if not os.path.isdir(directory):
             #        os.mkdir(directory)
 
@@ -668,7 +664,7 @@ def move(files, typ, subtyp, overwrite, debug):
 
         if ok:
             file[0] = dest  # folder = dest
-            file[6] = ""  # unrar_dir.rstrip(slash) + slash
+            file[6] = ""  # unrar_dir.rstrip(os.sep) + os.sep
             files[i] = file
 
     return files
@@ -680,8 +676,6 @@ def move_dir(file):
 
 
 def srs_srr(files, options, cwdsolo):
-    global slash
-
     code = 0
 
     if options.create_srs:
@@ -700,7 +694,7 @@ def srs_srr(files, options, cwdsolo):
 
 
 def srs(files, options, cwdsolo):
-    global slash, path_to_srs
+    global path_to_srs
 
     code = -1
     filesToAdd = []
@@ -721,10 +715,10 @@ def srs(files, options, cwdsolo):
             cmd += " -o \""
             if options.srs_dir:
                 if os.path.exists(options.srs_dir):
-                    folder = options.srs_dir.rstrip(slash) + slash
+                    folder = options.srs_dir.rstrip(os.sep) + os.sep
                 else:  # create srs_dir
                     if os.makedirs(options.srs_dir):
-                        folder = options.srs_dir.rstrip(slash) + slash
+                        folder = options.srs_dir.rstrip(os.sep) + os.sep
                         print("SRS directory %s created." % options.srs_dir)
                     else:
                         print("SRS directory %s could not be created.  SRS will default to release directory." % options.srs_dir)
@@ -770,7 +764,7 @@ def srs(files, options, cwdsolo):
 
 
 def srr(files, options, cwdsolo, ignore_extras):
-    global slash, path_to_srr
+    global path_to_srr
 
     cmd = path_to_srr
     code = -1
@@ -828,7 +822,7 @@ def srr(files, options, cwdsolo, ignore_extras):
                 cmd += " -s \"%s%s\"" % (file[0], file[1])
 
     if dest and os.path.isdir(dest):
-        cmd += " -o \"%s%s%s\"" % (dest.rstrip(slash), slash, srr_file)
+        cmd += " -o \"%s%s%s\"" % (dest.rstrip(os.sep), os.sep, srr_file)
     else:
         cmd += " -o \"%s\"" % srr_file
 
@@ -863,7 +857,7 @@ def srr(files, options, cwdsolo, ignore_extras):
 
 
 def unrar(files, options, code):
-    global slash, path_to_unrar
+    global path_to_unrar
     # options.unrar_dir, options.extract_to_main_dir, options.delete_rars, options.delete_sfv
     # [folder,main_file,sfv,fset,typ,subtyp,dest]
 
@@ -885,14 +879,14 @@ def unrar(files, options, code):
         fset = fileset[3]
         if folder and (not options.extract_to_main_dir or fileset[5] == "Extras"):
             if options.unrar_dir:
-                dest = options.unrar_dir.rstrip(slash) + slash + folder
+                dest = options.unrar_dir.rstrip(os.sep) + os.sep + folder
             else:
                 dest = folder
         else:
             if options.unrar_dir:
-                dest = options.unrar_dir.rstrip(slash) + slash
+                dest = options.unrar_dir.rstrip(os.sep) + os.sep
             else:
-                dest = "." + slash
+                dest = "." + os.sep
 
         try:
             # input file
@@ -957,8 +951,6 @@ def unrar(files, options, code):
 
 
 def cleanup(files, options, code):
-    global slash
-
     if options.delete_par2 and not (code != 0 and options.extract_rars):
         deleteFiles(["*.[Pp][Aa][Rr]2"], "PAR2", None, options.debug)
     deleteFiles(["*.[Nn][Zz][Bb]"], "NZB", None, options.debug)
@@ -1019,11 +1011,11 @@ def deleteDirectories(wildcards, debug):
 
 
 def main(options, path):
-    global origcwd, cwd, slash
+    global origcwd, cwd
 
     # altbinz mode - fix for altbinz sending lowercase dirname
     if options.exit_if_par2_exists:
-        for p in glob.glob(os.path.normpath(os.path.join(path, '..')) + slash + "*"):
+        for p in glob.glob(os.path.normpath(os.path.join(path, '..')) + os.sep + "*"):
             if path.lower() == p.lower() or path.lower() == p.lower()[2:]:
                 os.chdir(p)
                 break
@@ -1070,14 +1062,12 @@ def main(options, path):
 
     cleanup(files, options, code)
 
-
     return
-
 
 
 if __name__ == '__main__':
     usage = "usage: %prog -<option 1> -<option N> <@listdirs...>"
-    version = "%prog 0.5c"
+    version = "%prog 0.6"
     parser = OptionParser(usage=usage, version=version)
     parser.add_option("--altbinz", dest="exit_if_par2_exists", action="store_true", default=False,
                       help="Alt.Binz mode: exit if par2 exists in directory.  Fixes multiple execution issues.")
@@ -1150,11 +1140,6 @@ if __name__ == '__main__':
 
     globals()["origcwd"] = os.getcwd()
     sys.path.append(globals()["origcwd"])
-
-    if os.name == "nt":
-        globals()["slash"] = "\\"
-    else: 
-        globals()["slash"] = "/"
 
     for path in args:
         # file = open(r"E:\DOWNLOAD\xvid.txt", 'a')
