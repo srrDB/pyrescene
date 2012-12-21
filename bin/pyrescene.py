@@ -27,7 +27,8 @@
 """
 design decisions:
 - must work from DVDRs and directories with read only access: 
-  It doesn't write or move any files in the dirs it processes
+  It doesn't write or move any files in the dirs it processes, unless -d
+  option is used to output the SRR file into the release directory.
 - -s parameter pysrs (check against main movie file)
 - .ext.txt text files for failed samples
 
@@ -201,7 +202,11 @@ def generate_srr(reldir, working_dir, options):
 	mthread.start()
 	
 	print(reldir)
-	srr = os.path.join(options.output_dir, os.path.split(reldir)[1] + ".srr")
+	if options.srr_in_reldir:
+		srr_directory = reldir
+	else:
+		srr_directory = options.output_dir
+	srr = os.path.join(srr_directory, os.path.split(reldir)[1] + ".srr")
 	
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs)
@@ -421,6 +426,9 @@ def main(argv=None):
 					default=".",
 					help="<path>: Specify output file or directory path. "
 					"The default output path is the current directory.")
+	parser.add_option("-d", "--srr-in-reldir",
+					 action="store_true", dest="srr_in_reldir",
+					 help="overrides -o parameter")
 	parser.add_option("-e", "--eject",
 					 action="store_true", dest="eject",
 					 help="eject DVD drive after processing")
