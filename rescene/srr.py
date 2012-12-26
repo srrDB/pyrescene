@@ -79,8 +79,6 @@ class MessageThread(Thread):
 	
 mthread = MessageThread()
 
-# TODO: UNIX return codes OK?
-
 def report_error(status, message):
 	parser.exit(status, message)
 	
@@ -141,6 +139,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	elif options.list_details: # -e
 		rescene.print_details(infiles[0])
 	elif options.verify: # -q
+		status = 0
 		archived_files = rescene.info(infiles[0])["archived_files"].values()
 		for afile in archived_files:
 			name = os.path.join(in_folder, afile.file_name)
@@ -162,8 +161,11 @@ def manage_srr(options, in_folder, infiles, working_dir):
 					print("File OK: %s." % afile.file_name)
 				else:
 					print("File CORRUPT: %s!" % afile.file_name)
+					status = 1
+		return status
 		
 	elif options.extract: # -x
+		status = 0
 		mthread.set_messages([])
 		# extract ALL possible files
 		files = rescene.extract_files(infiles[0], out_folder, save_paths)
@@ -174,8 +176,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 				result = "extracted."
 			else:
 				result = "not extracted!"
+				status = 1
 			efile = efile[len(out_folder):]
 			print("%s: %s" % (efile, result))
+		return status
 	elif options.store_files: # -s
 		mthread.set_messages([MsgCode.STORING])
 		rescene.add_stored_files(infiles[0], options.store_files, 
@@ -200,6 +204,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			mthread.done = True
 			mthread.join()
 			print(sys.exc_info()[1])
+			return 1
 
 def create_srr(options, infolder, infiles, working_dir):
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
@@ -244,6 +249,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		mthread.join()
 		print(sys.exc_info()[1])
 		print("SRR creation failed. Aborting.")
+		return 1
 
 def main(argv=None):
 	global parser
@@ -369,7 +375,7 @@ def main(argv=None):
 				report_error(1, "Input file not found: %s\n" % infile)
 			elif ext != ".srr" and ext != ".sfv" and ext != ".rar":
 				print(parser.format_help())
-				report_error(-1, "Input file type not recognized: %s\n" %
+				report_error(1, "Input file type not recognized: %s\n" %
 							 infile)
 				
 		if not len(infiles):
@@ -381,12 +387,13 @@ def main(argv=None):
 			infolder = options.input_base
 			
 		if infiles[0][-4:] == ".srr":
-			manage_srr(options, infolder, infiles, working_dir)
+			return manage_srr(options, infolder, infiles, working_dir)
 		else:
-			create_srr(options, infolder, infiles, working_dir)
+			return create_srr(options, infolder, infiles, working_dir)
 	except KeyboardInterrupt:
 		print()
 		print("Ctrl+C pressed. Aborting.")
+		return 130 # http://tldp.org/LDP/abs/html/exitcodes.html
 	except Exception:
 		traceback.print_exc()
 		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])

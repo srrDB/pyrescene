@@ -329,7 +329,7 @@ def main(argv=None, no_exit=False):
 			# 5) Ask user for overwrite permission
 			if not can_overwrite(os.path.join(out_folder, srs_data.name),
 				                 options.always_yes):
-				pexit(0, "\nOperation aborted.\n")
+				pexit(1, "\nOperation aborted.\n")
 				
 			# 6) Recreate the sample
 			sfile = sample.rebuild_sample(srs_data, tracks, attachments, 

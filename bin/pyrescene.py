@@ -99,20 +99,29 @@ def get_sample_files(reldir):
 	return result
 
 def get_proof_files(reldir):
-	"""Includes proof RAR files."""
+	"""
+	Includes proofs, proof RAR files, image files in Sample directories.
+	"""
 	image_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") + 
 	               get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
-	               get_files(reldir, "*.rar"))
+	               get_files(reldir, "*.jpeg"))
+	rar_files = get_files(reldir, "*.rar")
 	result = []
 	for sample in image_files:
-		# images in sample folders are ok
+		# images in Sample and Proof folders are ok
 		# others need to contain the word proof in their path
 		if "proof" in sample.lower() or "sample" in sample.lower():
-			if sample[-4:] == ".rar":
-				# no body.of.proof. rar files
-				if os.path.getsize(sample) % 1000 != 0:
-					result.append(sample)
-			else:
+			result.append(sample)
+		else:
+			# proof file in root dir without the word proof somewhere
+			if os.path.getsize(sample) > 100000:
+				result.append(sample)
+	for sample in rar_files:
+		if "proof" in sample.lower():
+			# no "body.of.proof" main rar files
+			# + fix problem with .partXX.rar files
+			if (os.path.getsize(sample) % 1000 != 0 and
+				".part" not in os.path.basename(sample)):
 				result.append(sample)
 	return result
 
@@ -531,7 +540,11 @@ def main(argv=None):
 		
 		subprocess.call(["eject"])
 		print("\a")
-	return 0
+		
+	if aborted or len(missing):
+		return 1
+	else:
+		return 0
 
 if __name__ == "__main__":
 	sys.exit(main())
