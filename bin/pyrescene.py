@@ -25,6 +25,8 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 """
+This tool creates an SRR file from a release directory.
+
 design decisions:
 - must work from DVDRs and directories with read only access: 
   It doesn't write or move any files in the dirs it processes, unless -d
@@ -226,8 +228,9 @@ def generate_srr(reldir, working_dir, options):
 			print("Read error. DVD disk unreadable? Try again!")
 			os.unlink(srr)
 			return False
-		except KeyboardInterrupt:
-			os.unlink(srr)
+		except KeyboardInterrupt, e:
+			if e.message != "DONT_DELETE":
+				os.unlink(srr)
 			raise
 		except FileNotFound:
 			# rescene doesn't leave a half finished file

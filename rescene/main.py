@@ -424,14 +424,17 @@ def create_srr(srr_name, infiles, in_folder="",
 				 
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
-	if store_files is None:      # no default initialization with []
-		store_files = []
-	if not isinstance(infiles, (list, tuple)): # we need a list
-		infiles = [infiles]      # otherwise iterating over characters
-		
-	if not can_overwrite(srr_name):
-		return False
-#		raise EnvironmentError("Can't overwrite SRR file.")
+	try:
+		if store_files is None:      # no default initialization with []
+			store_files = []
+		if not isinstance(infiles, (list, tuple)): # we need a list
+			infiles = [infiles]      # otherwise iterating over characters
+			
+		if not can_overwrite(srr_name):
+			return False
+	except KeyboardInterrupt:
+		# so an existing SRR file won't be removed
+		raise KeyboardInterrupt("DONT_DELETE")
 	
 	srr = open(srr_name, "wb")
 	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
