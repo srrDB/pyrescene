@@ -199,8 +199,9 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	try:
 		# copy over file
 		shutil.copyfile(copy_file, dest_file)	
-	except IOError:
+	except IOError, e:
 		print("Could not copy %s." % copy_file)
+		print("Reason: %s" % e.message)
 		
 	return dest_file
 
@@ -273,6 +274,12 @@ def generate_srr(reldir, working_dir, options):
 	# Create SRS files
 	for sample in get_sample_files(reldir):
 		current_sample = copy_to_working_dir(working_dir, reldir, sample)
+		
+		# copying the sample file to the temp directory failed
+		# temp path too long? rights issue?
+		if not os.path.exists(current_sample):
+			print("!!! Skipping this sample file.")
+			continue
 		
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
