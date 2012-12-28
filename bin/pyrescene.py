@@ -201,8 +201,14 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 		shutil.copyfile(copy_file, dest_file)	
 	except IOError, e:
 		print("Could not copy %s." % copy_file)
-		print("Reason: %s" % e.message)
-		
+		print("Reason: %s" % e)
+		if "[Errno 2] No such file or directory" in str(e) and os.name == "nt":
+			print("Trying again!")
+			try:
+				shutil.copyfile("\\\\?\\" + copy_file, dest_file)
+			except IOError, e:
+				print("Failed again...")
+
 	return dest_file
 
 def generate_srr(reldir, working_dir, options):
@@ -276,7 +282,7 @@ def generate_srr(reldir, working_dir, options):
 		current_sample = copy_to_working_dir(working_dir, reldir, sample)
 		
 		# copying the sample file to the temp directory failed
-		# temp path too long? rights issue?
+		# temp path too long? nope! rights issue still possible
 		if not os.path.exists(current_sample):
 			print("!!! Skipping this sample file.")
 			continue
