@@ -125,10 +125,10 @@ def main(options, args):
                 for path in glob.glob(nzb):
                     print("Reading %s" % os.path.basename(path))
                     read_nzb(path)
-            except:
+            except Exception, e:
                 print("Reading NZB file(s) failed. Trying SQL.")
                 print("Reading %s" % os.path.basename(nzb))
-                read_tvbinz(nzb)
+#                read_tvbinz(nzb)
                 
     if options.rename_dir:
         print("This does not for SRR files that need to be merged.")
@@ -242,7 +242,7 @@ def printList(list):
 def parseSubject(subject): #[#altbin@EFNet]-[FULL]-[RELNAM
     exts = "\.(srr|srs|avi|mkv)"
     #exts = "\.(avi)"
-    patternEfnet = (".*\[.*EFNet\]-(?:\[(FULL|PART|Movie-Info.org)\]-)?"
+    patternEfnet = (".*\[(.*EFNet|#a.b.teevee)\]-(?:\[(FULL|PART|Movie-Info.org)\]-)?"
                     "\[?\s?(?P<release>[^\s\[\]]+(?=(\]|\s.*\]|-\s)))"
                     "(\s.*)?\]?-?"
                     ".*(&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
@@ -282,6 +282,8 @@ class TestParse(unittest.TestCase):
                 """FILENAME.srr&quot; yEnc (1/1)""")
         teevee2 = ("[42377]-[FULL]-[#a.b.teevee@EFNet]-[ REL-NAME ]-[02/29] -"
                 """ "FILENAME.mkv" yEnc (1/100)""")
+        teevee3 = ("[120579]-[FULL]-[#a.b.teevee]-[ REL-NAME ]- "
+        		'''"FILENAME.srr"''')
         moovee = ("[1014]-[FULL]-[#a.b.moovee@EFNet]-[ REL-NAME"
                 """ ]- "FILENAME.srr" (1/1)""")
         moovee2 = ("[1060]-[FULL]-[#a.b.moovee@EFNet]-[ REL-NAME"
@@ -298,6 +300,7 @@ class TestParse(unittest.TestCase):
         sample = ("[5804]-[#a.b.hdtv.x264@EFNet]-[REL-NAME SAMPLE]- "
                 '"FILENAME.mkv" (4/4)')
         
+        self.assertEqual(parseSubject(teevee3), ("REL-NAME", "FILENAME.srr"))
         self.assertEqual(parseSubject(teevee), ("REL-NAME", "FILENAME.srr"))
         self.assertEqual(parseSubject(teevee2), ("REL-NAME", "FILENAME.mkv"))
         self.assertEqual(parseSubject(moovee), ("REL-NAME", "FILENAME.srr"))
