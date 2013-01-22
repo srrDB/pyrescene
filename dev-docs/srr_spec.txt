@@ -1,8 +1,8 @@
  ____  ____  ____                                          ____  ____  ____
 / ___||  _ \|  _ \      Scene Release Reconstruction      / ___||  _ \/ ___|
 \___ \| |_) | |_) |       File Format Specification       \___ \| |_) \___ \
- ___) |  _ <|  _ <          Version 0.1 - Draft            ___) |  _ < ___) |
-|____/|_| \_\_| \_\       Last revision: 2010-08-08       |____/|_| \_\____/
+ ___) |  _ <|  _ <          Version 0.2 - Draft            ___) |  _ < ___) |
+|____/|_| \_\_| \_\       Last revision: 2013-01-22       |____/|_| \_\____/
 
 
 I. Introduction
@@ -173,11 +173,12 @@ VII. History - Applications
   to show the file sizes of RAR files, list the files stored inside the RARs
   and show some recovery record information like the rescene.com databases did.
   It was written by "Gfy" and released to the public under the LAGPL
-  (LGPLv3 with Affero clause) on XXXX.
+  (LGPLv3 with Affero clause) on XXXX. (still private)
   
   A second major ReScene implementation was pyReScene. It is written in
   Python and was made public after the second, PHP based, web site became
   established. (Mercurial repository: 2012-10-18)
+  Version 0.1 was released on 2013-01-14, shortly after v2 of srrdb.com.
 
 
 VIII. History - Databases and community
@@ -497,8 +498,8 @@ IX. General overview of a .srr file
     [[RAR End Archive Block]]
 
 
-IX. SRR archive processing
---------------------------
+X. SRR archive processing
+-------------------------
     
   A SRR Archive can be processed in the following manner:
 
@@ -517,8 +518,8 @@ IX. SRR archive processing
          read or skip sizeof(BLOCK) - HEAD_SIZE bytes
   3. go to 1.
 
-X. SRR file blocks
-------------------
+XI. SRR file blocks
+-------------------
 
   The SRR file format is based on the RAR file format. This makes it easier 
   to program and understand. Files stored are in arbitrary order. 
@@ -644,9 +645,27 @@ RAR Archive End Block
  
 same, but AV, CMT, old RR, ...
     
-    
-IX. In the news / links
------------------------
+
+XII. SRS file format specification
+----------------------------------
+
+See pyReSample implementation for details.
+
+MKV
+===
+
+AVI
+===
+
+MP4
+===
+
+WMV
+===
+
+  
+XIII. In the news / links
+-------------------------
 
   http://scenelingo.wordpress.com/2009/02/10/dont-repack-it-rescene-it/
   
@@ -657,8 +676,8 @@ IX. In the news / links
   http://www.wotsit.org/list.asp?search=rar&button=GO%21
 
  
-X. Terminology/Glossary
------------------------
+XIV. Terminology/Glossary
+-------------------------
 
     Archive      Special file containing one or more files optionally
                  compressed and/or encrypted.
@@ -681,7 +700,7 @@ X. Terminology/Glossary
                  Solid volumes must be extracted starting from first 
                  volume in sequence.
 
-XI. Copyrights
+XV. Copyrights
 --------------
 
   The text of this document comes from various sources and can be adapted or
@@ -695,10 +714,14 @@ XI. Copyrights
         - How it works
         - How to use it
         - Changelogs
-    (c) 2011-2012 pyReScene
+    (c) 2011-2013 pyReScene
         - History
         - SRR file format specification
 
+XVI. Change log
+---------------
+
+2010-08-08: one of the first revisions
 
 
 TODO: srr file verification build-in for pyReScene
@@ -706,9 +729,3 @@ TODO: srr file verification build-in for pyReScene
  - starts with srr marker
  - all stored files before first srr rar
  - new future blocks added at the end?
-
-
-Change log
-------------
-
-
