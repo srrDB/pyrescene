@@ -78,13 +78,18 @@ def can_create(always_yes, path):
 def get_files(release_dir, extention):
 	"""Gather all 'extention' files from the subdirs."""
 	matches = []
-	for dirpath, _dirnames, filenames in os.walk(release_dir):
-		for filename in filenames:
-			if fnmatch.fnmatchcase(filename, extention.lower()):
-				matches.append(os.path.join(dirpath, filename))
-			if fnmatch.fnmatchcase(filename, extention.upper()):
-				matches.append(os.path.join(dirpath, filename))
-	return matches
+	try:
+		for dirpath, _dirnames, filenames in os.walk(release_dir):
+			for filename in filenames:
+				if fnmatch.fnmatchcase(filename, extention.lower()):
+					matches.append(os.path.join(dirpath, filename))
+				if fnmatch.fnmatchcase(filename, extention.upper()):
+					matches.append(os.path.join(dirpath, filename))
+		return matches
+	except TypeError:
+		# release_dir too long
+		# TypeError: must be (buffer overflow), not str
+		return matches
 
 def get_sample_files(reldir):
 	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 

@@ -28,12 +28,13 @@ def main(options, args):
 	if os.path.isfile(rellist):
 		with open(rellist, 'r') as rel:
 			groups = get_groups(rel)
-		print("Got the groups.")
+		print("Got the groups: %d groups." % len(groups))
 	else:
 		print("WTF are you supplying me?")
 		
 	for tododir in tododirs:
 		if os.path.isdir(tododir):
+			print("Processing directory '%s'." % tododir)
 			for elem in os.listdir(tododir):
 				if " " in elem:
 					continue
@@ -51,7 +52,6 @@ def main(options, args):
 					else:
 						dest = os.path.join(tododir, "scene", elem)
 					os.renames(os.path.join(tododir, elem), dest)
-
 		
 def get_groupname(release):
 	release = release.replace(".nzb", "").replace(".srr", "")
@@ -74,7 +74,7 @@ def get_groups(rellist):
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [rellist scene releases] [dir]'\n"
-		"This tool will move the releases from all the groups that are in"
+		"This tool will move the releases from all the groups that are in "
 		"the release list.\n",
 		version="%prog 0.1 (2012-05-13)") # --help, --version
 
