@@ -387,13 +387,13 @@ def main(argv=None):
 			infolder = options.input_base
 			
 		if infiles[0][-4:] == ".srr":
-			return manage_srr(options, infolder, infiles, working_dir)
+			parser.exit(manage_srr(options, infolder, infiles, working_dir))
 		else:
-			return create_srr(options, infolder, infiles, working_dir)
+			parser.exit(create_srr(options, infolder, infiles, working_dir))
 	except KeyboardInterrupt:
 		print()
 		print("Ctrl+C pressed. Aborting.")
-		return 130 # http://tldp.org/LDP/abs/html/exitcodes.html
+		parser.exit(130) # http://tldp.org/LDP/abs/html/exitcodes.html
 	except Exception:
 		traceback.print_exc()
 		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])
