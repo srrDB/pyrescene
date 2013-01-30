@@ -9,29 +9,29 @@ def get_show_info(release_name):
 
 #(?(id/name)yes-pattern|no-pattern)
 
-regular = ("[\.-]?([sS](?P<season>\d?\d)(?![\dxX])[\.]?|" # season: S2 or s02
+regular = ("[\.-]?((?<![a-zA-Z])[sS](?P<season>\d?\d)(?![\dxX])[\.]?|" # season: S2 or s02
 		   "(?<![xX])[eE][pP]?(\d{1,3})|[eE][pP]?(\d{1,3})"		  # episode: e1, E02 or E112, Ep10, Ep9
 		   "((\.[eE]|-?[eE]?)" # 24.S01E13.12.Noon-1PM.INTERNAL.DVDRip.XviD-RETRO; . sep
 		   "\d{2,3})+)+") # double episode XXX: can it be 1#?
 
-fov = ("\.?(?P<fseason>\d{1,2})[x](?P<fepisode>\d{2,3})" # season/episode
+fov = ("\.?(?<!\d)(?P<fseason>\d{1,2})[x](?P<fepisode>\d{2,3})" # season/episode
 	   "([\._-]((?P<feseason>\d{1,2})[x])?)?"
 	   "(?P<feepisode>(?<![\.])\d{2,3})?[\._]?") # multiple episode
 
 #retro = "\.[eE][pP](\d{2,3})" # Un.Gars.Une.Fille.Ep020.FRENCH.DVDRiP.XViD.INT-uGuF
 
 
-iso8601 = ("(?P<year>(19|20)?\d\d)"
+iso8601 = ("((?P<year>(19|20)?\d\d)"
 		   "(?P<sep>[-\.]?)" # separator
 		   "(?P<month>0[1-9]|1[012])"
 		   "(?P=sep)" # same separator; \n: nth group
-		   "(?P<day>0[1-9]|[12][0-9]|3[01])")
+		   "(?P<day>0[1-9]|[12][0-9]|3[01]))(?=.+(HDTV|PDTV|DSR|TVRip|dTV|SATRip).+)")
 
-daterev = ("(?P<rday>0[1-9]|[12][0-9]|3[01])"
+daterev = ("((?P<rday>0[1-9]|[12][0-9]|3[01])"
 		   "(?P<pes>[-\.])"
 		   "(?P<rmonth>0[1-9]|1[012])"
 		   "(?P=pes)"
-		   "(?P<ryear>(19|20)?\d\d)")
+		   "(?P<ryear>(19|20)?\d\d))(?=.+(HDTV|PDTV|DSR|TVRip|dTV|SATRip).+)")
 
 part = "((Part|Pt|PART)[\._-]?(?P<pepisode>\d{1,3}))[^\d]"
 
@@ -117,6 +117,10 @@ nomatch = [
 		   "Open.Season.2.2008.FLEMiSH.STV.DVDRip.XviD-CaRRe",
 		   "The.Final.Season.2007.DVDRip.XviD-FLAiTE",
 		   "W.2008.720p.BluRay.x264-AVS720",
+		   "Taiheiyou_no_Arashi_JPN_PS3-HR",
+		   "NBA_2K12_PAL_PS2DVD-2CH",
+		   "Flo_Rida_and_Juliet_Simms-Medley_(The_Voice_2012-05-08)-720p-x264-2012-SRPx",
+		   "Gameloft.Littles.Pet.Shop.v1.2.4.128x128.J2ME.Retail-MSGPDA",
 		   ]
 # should not match; false positive, sees date
 # "24.1X01.12.00.AM_1.00.AM.AC3.iNTERNAL.DVDRip_WS_XviD-FoV",
