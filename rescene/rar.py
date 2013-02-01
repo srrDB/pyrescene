@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2011-2012 pyReScene
+# Copyright (c) 2011-2013 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -234,6 +234,7 @@ class BlockType: # saved as integer number internally
 	# we use the range just below that (0x69 to 0x71) for SRR
 	SrrHeader = 0x69        # i -> 0x73 (s) RarVolumeHeader
 	SrrStoredFile = 0x6A    # j -> 0x74 (t) RarPackedFile
+	SrrOsoHash = 0x6B       # k
 	SrrRarFile = 0x71       # q -> 0x7A (z) RarNewSub
 	
 class SrrFlags():
@@ -246,7 +247,7 @@ class SrrFlags():
 BLOCK_NAME = {
 	0x69: "SRR Volume Header", # i
 	0x6A: "SRR Stored File", # j
-	0x6B: "SRR", # unused
+	0x6B: "SRR OSO Hash", # unused
 	0x6C: "SRR", # unused
 	0x6D: "SRR", # unused
 	0x6E: "SRR", # unused
@@ -718,7 +719,7 @@ class SrrRarFileBlock(RarBlock):
 		out += "+Rar name: " + self.file_name + "\n"
 		return out
 	
-class SrrOsoHash(RarBlock):
+class SrrOsoHashBlock(RarBlock):
 	"""SRR block that contains an OpenSubtitles.Org hash.
 	http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 	
@@ -735,7 +736,55 @@ class SrrOsoHash(RarBlock):
 	    Because HL is also 2 bytes, NL can't use the full range.
 	    0xFFFF - 7 - 8 - 8 - 2 = 65510 (0xFFE6)
 	File name: must match a stored file name"""
-	pass
+	SUPPORTED_FLAG_MASK = 0
+	
+	def __init__(self, bbytes=None, filepos=None, fname=None,
+				file_size=None, file_name=None, oso_hash=None):
+		if bbytes != None:
+			super(SrrOsoHashBlock, self).__init__(bbytes, filepos, fname)
+			
+			# 8 bytes for the file size
+			self.file_size = struct.unpack("<Q", 
+				self._rawdata[self._p:self._p+8])[0]
+			
+			# 8 bytes for the OSO hash
+			self.oso_hash = "%016x" % struct.unpack("<Q", 
+				self._rawdata[self._p+8:self._p+16])[0]
+				
+			# 2 bytes for name length, then the name (unsigned short)
+			name_length = struct.unpack(str("<H"), 
+				self._rawdata[self._p+16:self._p+16+2])[0]
+			self.file_name = self._rawdata[self._p+18:self._p+18+name_length]
+			self._p += 18 + name_length
+		elif file_size != None and file_name != None and oso_hash != None:
+			self.crc = 0x6B6B
+			self.rawtype = 0x6B
+			self.flags = 0
+			
+			self.file_size = file_size
+			self.oso_hash = oso_hash 
+			self.file_name = file_name
+			
+			assert len(oso_hash) == 16
+		
+			# parameter: full length header
+			self._write_header(HEADER_LENGTH + 8 + 8 + 2 + len(file_name))
+			self._rawdata += struct.pack("<Q", self.file_size) # ulonglong
+			self._rawdata += struct.pack("<Q", int(self.oso_hash, 16))
+			self._rawdata += struct.pack("<H", len(file_name)) # ushort
+			self._rawdata += str(file_name)
+		else:
+			raise AttributeError("Invalid values for the constructor.")
+			
+	def explain(self):
+		out = super(SrrOsoHashBlock, self).explain()
+		out += "+File size (8 bytes): " + self.explain_size(
+												self.file_size) + "\n"
+		out += "+OSO hash (8 bytes): " + self.oso_hash + "\n"
+		out += "+Name length (2 bytes): " + self.explain_size(
+		                                        len(self.file_name)) + "\n"
+		out += "+File name: " + self.file_name + "\n"
+		return out
 	
 class RarVolumeHeaderBlock(RarBlock): # 0x73
 	""" Archive header ( MAIN_HEAD )
@@ -1163,6 +1212,7 @@ BTYPES_CLASSES = {
 	BlockType.SrrHeader: SrrHeaderBlock,
 	BlockType.SrrStoredFile: SrrStoredFileBlock,
 	BlockType.SrrRarFile: SrrRarFileBlock,
+	BlockType.SrrOsoHash: SrrOsoHashBlock,
 	BlockType.RarVolumeHeader: RarVolumeHeaderBlock,
 	BlockType.RarPackedFile: RarPackedFileBlock,
 	BlockType.RarOldRecovery: RarOldRecoveryBlock,

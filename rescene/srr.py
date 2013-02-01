@@ -122,6 +122,12 @@ def display_info(srr_file):
 								sfile.file_size))
 		print("")
 		
+	if len(info["oso_hashes"]):
+		print("OpenSubtitles.org hashes:")
+		for (name, ohash, size) in info["oso_hashes"]:
+			print("\t%s %s %d" % (name, ohash, size))
+		print("")
+		
 	if len(info["sfv_comments"]):
 		print("SFV comments:")
 		for sfvline in info["sfv_comments"]:

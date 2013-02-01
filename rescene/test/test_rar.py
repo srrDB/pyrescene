@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2013 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -273,7 +273,20 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		                  file_name="j" * 0xFFF3, file_size=1337)
 		self.assertRaises(AttributeError, SrrStoredFileBlock,
 		                  file_name="", file_size=31337)
-			
+		
+class TestOsoHashBlocks(unittest.TestCase):
+	def test_create_oso_hash_block(self):
+		block = SrrOsoHashBlock(file_name="breakdance.avi",
+							file_size=12909756, oso_hash="8e245d9679d31e12")
+		self.assertEqual(block.file_name, "breakdance.avi")
+		self.assertEqual(block.file_size, 12909756)
+		self.assertEqual(block.oso_hash, "8e245d9679d31e12")
+		
+		block2 = SrrOsoHashBlock(bbytes=block.block_bytes())
+		self.assertEqual(block2.file_name, "breakdance.avi")
+		self.assertEqual(block2.file_size, 12909756)
+		self.assertEqual(block2.oso_hash, "8e245d9679d31e12")
+		
 class TestRarBlocks(unittest.TestCase):
 	""" For testing all RAR block classes. """
 	

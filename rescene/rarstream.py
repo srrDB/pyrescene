@@ -54,14 +54,20 @@ class RarStream(io.IOBase):
 	a RAR archive set. Only store-mode (m0) RAR sets are supported.
 	The compressed bytes will be returned for m1 - m5 compression."""
 	
-	def __init__(self, first_rar, packed_file_name=None):
+	def __init__(self, first_rar, packed_file_name=None, middle=False):
+		"""
+		If middle is set, the check for being the first RAR volume is skipped.
+		This can be the case when generating OSO hashes.
+		"""
 		self._rar_volumes = list()
 		self._current_volume = None
 		self._packed_file_length = 0
 		self._current_position = 0
 		self._closed = False
 
-		if not _check(first_rar):
+		# don't do the first RAR check if told not to
+		# this is only when we know that the previous RARs are not needed
+		if not middle and not _check(first_rar):
 			raise AttributeError("Archive without stored files.")
 		
 		rar_file = first_rar
@@ -274,7 +280,7 @@ class RarStream(io.IOBase):
 		file_stream
 			A file stream of the archive that has the packed file.
 		"""
-		
+
 class SrrStream(io.IOBase):
 	""" TODO: Direct file like access (read-only) + change name?
 		to files stored in the SRR file.

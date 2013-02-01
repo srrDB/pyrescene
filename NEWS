@@ -1,3 +1,8 @@
+pyReScene 0.2
+=============
+
+ * ReScene: OpenSubtitles.org hashes are stored wile creating SRR files
+ 
 pyReScene 0.1
 =============
 

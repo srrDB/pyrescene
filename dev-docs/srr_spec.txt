@@ -472,6 +472,12 @@ IX. General overview of a .srr file
         [RAR Block]
         [...]
     [...]
+    [SRR OSO Hash Block  \
+        - File size      |
+        - OSO hash       |    For each archived file in previous RARs
+        - File name      |
+    ]                    /
+    [...]
     
     - The SRR file must start with the header block.
     - Stored file blocks are optional, but they are almost always used because
@@ -624,6 +630,37 @@ SRR RAR File Block
         0xFFFF - 7 - 2 = 65526 (0xFFF6)
   NAME:
     "/" must always be used as path separator.
+    UTF-8 must be used as encoding.
+
+SRR OSO Hash Block
+==================
+
+  These blocks store hashes from 0penSubtitles.Org of archived files
+  larger than 64KiB. The blocks are located after all RAR meta data.
+  http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
+  It is possible that there are blocks with the same FILE_NAME or OSO_HASH.
+  This block consists only of a header.
+  
+    [SRR OSO Hash Block
+        - HEAD_CRC: 0x6B6B                                  2 bytes
+        - HEAD_TYPE: 0x6B                                   1 byte
+        - HEAD_FLAGS:                                       2 bytes
+            0x0001: recovery data removed
+        - HEAD_SIZE                                         2 bytes
+        - FILE_SIZE: size of the archived file              8 bytes
+        - OSO_HASH: 64 bit hash                             8 bytes
+        - NAME_SIZE: length of FILE_NAME string             2 bytes
+        - FILE_NAME: name of the archived file (no path)    NAME_SIZE bytes
+    ]  
+    
+  FILE_SIZE:
+    The size of the archived file. Read out from the RAR meta data.
+  OSO_HASH:
+    The 0penSubtitles.Org hash, stored as a number, not ASCII.
+  NAME_SIZE:
+    The maximum length of the name is 65510 (0xFFE6).
+        0xFFFF - 7 - 8 - 8 - 2 = 65510 (0xFFE6)
+  FILE_NAME:
     UTF-8 must be used as encoding.
     
 RAR Marker Block

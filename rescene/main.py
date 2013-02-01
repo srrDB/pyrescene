@@ -47,10 +47,11 @@ import collections
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
-	RarPackedFileBlock, _DEBUG)
+	RarPackedFileBlock, _DEBUG, SrrOsoHashBlock)
 from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, 
                              first_rars, next_archive)
+from rescene.osohash import osohash_from
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -410,7 +411,8 @@ def merge_srrs(srr_files, output_file, application_name=None):
 			#TODO: this is skipping data in some less common cases?
 
 def create_srr(srr_name, infiles, in_folder="",
-               store_files=None, save_paths=False, compressed=False):
+               store_files=None, save_paths=False, compressed=False,
+               oso_hash=True):
 	"""
 	infiles:     RAR or SFV file(s) to create SRR from
 	store_files: a list of files to store in the SRR
@@ -421,6 +423,8 @@ def create_srr(srr_name, infiles, in_folder="",
 	srr_name:    path and name of the SRR file to create
 	save_paths:  if the path relative to in_folder 
 	             must be stored with the file name e.g. Sample/ or Proof/
+	compressed:  Do we create an SRR or not when encountered compressed files?
+	oso_hash:    Only false for the unit tests.
 				 
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
@@ -458,6 +462,7 @@ def create_srr(srr_name, infiles, in_folder="",
 			else:
 				rarfiles.extend(_handle_rar(infile))
 	
+		oso_dict = {}
 		# STORE ARCHIVE BLOCKS
 		for rarfile in rarfiles:
 			if not os.path.isfile(rarfile):
@@ -492,6 +497,9 @@ def create_srr(srr_name, infiles, in_folder="",
 							os.unlink(srr_name)
 							raise ValueError("Archive uses unsupported "
 							           "compression method: %s" % rarfile)
+					elif not oso_dict.has_key(block.file_name):
+						# store first RAR where we encounter the stored file
+						oso_dict[block.file_name] = rarfile
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -502,6 +510,17 @@ def create_srr(srr_name, infiles, in_folder="",
 						  type=block.rawtype, size=block.header_size)
 				# store the raw data for any blocks found
 				srr.write(block.block_bytes())
+				
+		# STORE OSO HASHES
+		if oso_hash:
+			for (fname, rarname) in oso_dict.items():
+				try:
+					oso_hash, file_size = osohash_from(rarname, fname, True)
+					block = SrrOsoHashBlock(file_size=file_size, 
+						file_name=os.path.basename(fname), oso_hash=oso_hash)
+					srr.write(block.block_bytes())	
+				except ValueError:
+					pass # file is too small
 		return True
 	finally:
 		# when an IOError is raised, we close the file for further cleanup
@@ -648,6 +667,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		# STORE ARCHIVE BLOCKS ------------------------------------------------
 		end_segments_tested = False
 		has_end_segment = False
+		oso_dict = {}
 		
 		def test_end_segments():
 			if stat:
@@ -686,6 +706,9 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 	#					os.unlink(srr_name)
 	#					raise ValueError("Archive uses unsupported compression "
 	#									 "method: %s", rarfile)
+					elif not oso_dict.has_key(block.file_name):
+						# store first RAR where we encounter the stored file
+						oso_dict[block.file_name] = rarfile
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -711,6 +734,8 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 				
 				#TODO: when starting from RARs, detect when incomplete!!!!
 	
+		# STORE OSO HASHES
+		# Not for Usenet as we can't be 100% sure the hash will be valid
 		srr.close()
 	except KeyboardInterrupt:
 		srr.close()	
@@ -817,6 +842,7 @@ def info(srr_file):
 	recovery = None         # FileInfo object: size recovery record
 	current_rar = None      # for calculating file size
 	compression = False     # RAR compression on some files
+	oso_hashes = []
 
 	for block in RarReader(srr_file).read_all():
 		add_size = True
@@ -919,6 +945,12 @@ def info(srr_file):
 			if _DEBUG: print(msg)
 			_fire(MsgCode.AUTHENTCITY, message=msg)
 			
+		elif block.rawtype == BlockType.SrrOsoHash:
+			if _DEBUG: print("OSO hash block found.")
+			oso_hashes.append(
+				(block.file_name, block.oso_hash, block.file_size))
+			current_rar = None # end the file size counting
+			
 		# calculate size of RAR file
 		if current_rar:
 			if add_size:
@@ -943,7 +975,8 @@ def info(srr_file):
 			"recovery": recovery,
 			"sfv_entries": sfv_entries, 
 			"sfv_comments": sfv_comments,
-			"compression": compression,}
+			"compression": compression,
+			"oso_hashes": oso_hashes}
 
 def content_hash(srr_file, algorithm='sha1'):
 	"""Returns a Sha1 hash for comparing SRR files.
@@ -980,6 +1013,9 @@ def print_details(file_path):
 	
 	for block in rr.read_all():
 		print(block.explain())
+		
+	srr_hash = content_hash(file_path)
+	print("SRR sha1 content hash: %s" % srr_hash)
 			
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False):

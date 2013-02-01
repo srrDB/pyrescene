@@ -350,7 +350,7 @@ class TestCreate(TmpDirSetup):
 		
 		# FROM SFV
 		dest = os.path.join(self.tdir, "newrr_sfv.srr")
-		create_srr(dest, sfv)
+		create_srr(dest, sfv, oso_hash=False)
 		self.assertEqual(MsgCode.STORING, self.o.events[0].code)
 		# sfv also has .srr file included
 		self.assertEqual(MsgCode.NO_RAR, self.o.events[1].code)
@@ -364,7 +364,7 @@ class TestCreate(TmpDirSetup):
 		self._clear_events()
 		assert len(self.o.events) == 0
 		dest = os.path.join(self.tdir, "newrr_rar.srr")
-		create_srr(dest, rar)
+		create_srr(dest, rar, oso_hash=False)
 		self.assertEqual(MsgCode.NO_FILES, self.o.events[0].code)
 		self.assertEqual(MsgCode.MSG, self.o.events[1].code)
 		self.assertTrue(cmp(srr, dest), "Files not equivalent.")
@@ -380,14 +380,14 @@ class TestCreate(TmpDirSetup):
 		
 		# FROM SFV
 		dest = os.path.join(self.tdir, "oldfolder_sfv.srr")
-		create_srr(dest, sfv)
+		create_srr(dest, sfv, oso_hash=False)
 		self.assertEqual(MsgCode.STORING, self.o.events[0].code)
 		self.assertTrue(cmp(origcopy, dest), "Files not equivalent.")
 		
 		# FROM RAR
 		self._clear_events()
 		dest = os.path.join(self.tdir, "oldfolder_rar.srr")
-		create_srr(dest, rar)
+		create_srr(dest, rar, oso_hash=False)
 		self.assertEqual(MsgCode.NO_FILES, self.o.events[0].code)
 		self.assertEqual(MsgCode.MSG, self.o.events[1].code)
 		remove_stored_files(origcopy, os.path.basename(sfv))

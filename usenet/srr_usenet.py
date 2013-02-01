@@ -108,7 +108,7 @@ Changelog version 1.3 (2012-08-28)
  - 'unknownerror' folder not used anymore for known error
  - 'except:' less
  
-Changelog version 1.4
+Changelog version 1.4 (2012-10-24)
  - raised size a bit to catch all small IMDb images
  - version number will be added to SRR files
  - no renamed RARs from kere.ws + fix for detection

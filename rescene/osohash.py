@@ -45,11 +45,12 @@ def compute_hash(mfile):
 		finally:
 			stream.close()
 			
-def osohash_from(rar_archive, enclosed_file=None):
+def osohash_from(rar_archive, enclosed_file=None, middle=False):
 	"""If enclosed_file is not supplied, the srr_hash will be calculated based
 	on the first file in the archive(s). To get a list of the files inside the
-	archive, use RarReader.list_files()."""
-	return _osorg_hash(RarStream(rar_archive, enclosed_file))
+	archive, use RarReader.list_files().
+	middle: not the first RAR archive from the set is expected in the stream"""
+	return _osorg_hash(RarStream(rar_archive, enclosed_file, middle))
 	#TODO: return dict with srr_hash for each file in the archive
 	# or list with tuples (path, filename, srr_hash)
 	
