@@ -1142,6 +1142,9 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			rarfs.write(block.block_bytes())
 			# -> P0W4 cleared RAR archive end block: 
 			# almost all zeros except for the header size field
+		elif block.rawtype == BlockType.SrrOsoHash:
+			# so no warning message 'unknown block' is shown
+			pass
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
@@ -1165,6 +1168,7 @@ def _write_recovery_record(block, rarfs):
 		based on the recovery sector count. (512 bytes * recovery sector count)
 	Each slice will get one parity sector created by xor-ing the 
 	corresponding bytes from all other sectors in the slice."""
+	#TODO: this function is way too slow
 	recovery_sectors = block.recovery_sectors
 	protected_sectors = block.data_sectors
 	_fire(MsgCode.RBLOCK, message="RAR Recovery Block",

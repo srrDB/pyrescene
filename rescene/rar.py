@@ -1125,10 +1125,10 @@ class RarOldRecoveryBlock(RarBlock): # 0x78
 		# 2 bytes for recovery sector count
 		# 4 bytes for data sector count
 		(self.packed_size, self.rar_version, self.recovery_sectors,
-		 self.data_sectors) = struct.unpack("<HBHI", 
-		                                    self._rawdata[self._p:self._p+9])
+		 self.data_sectors) = struct.unpack("<IBHI", 
+		                                    self._rawdata[self._p:self._p+11])
 		# next 8 bytes for 'Protect!'
-		self._p += 9 + 8
+		self._p += 11 + 8
 		# Protect! is part of the header (last field before the recovery data)
 		
 		# for when the ADD_SIZE flag isn't set
