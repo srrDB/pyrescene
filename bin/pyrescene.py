@@ -327,11 +327,7 @@ def generate_srr(reldir, working_dir, options):
 				os.unlink(txt_error_file)
 				
 			sys.stderr = original_stderr
-		try:
-			os.unlink(current_sample)
-		except WindowsError:
-			# this should never happen, but apparently it did
-			pass
+		os.unlink(current_sample)
 		
 	#TODO: TXT files for m2ts with crc?
 		

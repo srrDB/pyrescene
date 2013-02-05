@@ -189,6 +189,12 @@ class RiffReader(object):
 		assert self.chunk_type == RiffChunkType.List
 		self.read_done = True
 	
+	def close(self):
+		try: # close the file/stream
+			self._riff_stream.close()
+		except:
+			pass
+		
 	def __del__(self):
 		try: # close the file/stream
 			self._riff_stream.close()

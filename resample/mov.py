@@ -175,7 +175,13 @@ class MovReader(object):
 		# skip the header bytes
 		hl = len(self.current_atom.raw_header)
 		self._mov_stream.seek(hl, os.SEEK_CUR)
-	
+		
+	def close(self):
+		try: # close the file/stream
+			self._mov_stream.close()
+		except:
+			pass	
+		
 	def __del__(self):
 		try: # close the file/stream
 			self._mov_stream.close()

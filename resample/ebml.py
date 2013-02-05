@@ -413,6 +413,12 @@ class EbmlReader(object):
 	def move_to_child(self):
 		self.read_done = True
 	
+	def close(self):
+		try: # close the file/stream
+			self._ebml_stream.close()
+		except:
+			pass
+		
 	def __del__(self):
 		try: # close the file/stream
 			self._ebml_stream.close()

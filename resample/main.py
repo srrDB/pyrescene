@@ -439,6 +439,7 @@ def avi_load_srs(infile):
 				break
 			else:
 				rr.skip_contents()
+	rr.close()
 	return srs_data, tracks
 
 def mkv_load_srs(infile):
@@ -461,7 +462,8 @@ def mkv_load_srs(infile):
 				er.skip_contents()
 				done = True
 		else:
-			er.skip_contents()	
+			er.skip_contents()
+	er.close()
 	return srs_data, tracks
 
 def mp4_load_srs(infile):
@@ -477,6 +479,7 @@ def mp4_load_srs(infile):
 			mr.move_to_child()
 		else:
 			mr.skip_contents()	
+	mr.close()
 	return srs_data, tracks
 
 def wmv_load_srs(infile):
@@ -495,7 +498,7 @@ def wmv_load_srs(infile):
 			srs_data.padding_bytes = ar.read_contents()
 		else:
 			ar.skip_contents()	
-			
+	ar.close()
 	return srs_data, tracks
 
 def avi_profile_sample(avi_data): # FileData object
@@ -561,7 +564,8 @@ def avi_profile_sample(avi_data): # FileData object
 				other_length += 1
 				avi_data.crc32 = crc32(S_BYTE.pack(rr.padding_byte), 
 				                       avi_data.crc32)
-			
+	
+	rr.close()		
 	remove_spinner()
 	total_size = other_length
 	
@@ -689,7 +693,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 			mkv_data.crc32 = crc32(er.read_contents(), mkv_data.crc32)
 		
 		assert er.read_done
-
+	er.close()
 	remove_spinner()
 	
 	total_size = other_length
@@ -838,6 +842,7 @@ def profile_mp4(mp4_data): # FileData object
 			                                                    mp4_data.name)			
 			# the size of the track
 			current_track.data_length = sum(current_track.sample_lengths)
+	mr.close()
 	
 	mp4_data.other_length = meta_length
 #	assert meta_length == mp4_data.size - data_length
@@ -1052,7 +1057,8 @@ def profile_wmv(wmv_data): # FileData object
 				      "\t Expected: %s" % sep(file_size),
 				      "\t Found   : %s\n" % sep(wmv_data.size), 
 				      sep='\n', file=sys.stderr)
-			
+	ar.close()		
+	
 	wmv_data.other_length = meta_length
 	remove_spinner()
 	return tracks
@@ -1139,6 +1145,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 				
 				if rr.has_padding:
 					srsf.write(S_BYTE.pack(rr.padding_byte))
+		rr.close()
 
 def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
@@ -1187,6 +1194,7 @@ def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 				# anything not caught above is considered metadata, 
 				# so we copy it as is
 				srsf.write(er.read_contents())
+		er.close()
 
 def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as movf:
@@ -1214,7 +1222,8 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 			else:
 				# do copy everything else
 				movf.write(mr.read_contents())
-				
+		mr.close()
+			
 def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		ar = AsfReader(AsfReadMode.WMV, sample)
@@ -1271,7 +1280,8 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 			else:
 				# do copy everything else
 				srsf.write(ar.read_contents())
-
+		ar.close()
+		
 def avi_find_sample_streams(tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file)
 	block_count = 0
@@ -1285,6 +1295,7 @@ def avi_find_sample_streams(tracks, main_avi_file):
 			                                      block_count, done)
 	remove_spinner()
 	
+	rr.close()
 	return tracks
 	
 def _avi_normal_chunk_find(tracks, rr, block_count, done):
@@ -1395,6 +1406,7 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 	
 	remove_spinner()
 	
+	er.close()
 	return tracks	
 
 def _mkv_block_find(tracks, er, done):
@@ -1763,7 +1775,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 			done = True
 		else:
 			ar.skip_contents()	
-			
+	ar.close()
+	
 	remove_spinner()
 	
 	return tracks
@@ -1790,6 +1803,7 @@ def avi_extract_sample_streams(tracks, movie):
 			                                      block_count, done)
 	remove_spinner()
 	
+	rr.close()
 	return tracks, {} #attachments
 
 def _avi_normal_chunk_extract(tracks, rr, block_count, done):
@@ -1890,6 +1904,7 @@ def mkv_extract_sample_streams(tracks, movie):
 
 	remove_spinner()
 	
+	er.close()
 	return tracks, attachments
 
 def _mkv_block_extract(tracks, er, done):
@@ -2038,6 +2053,8 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 			ar.skip_contents()
 		else:
 			ar.skip_contents()	
+	ar.close()
+	
 	remove_spinner()
 	
 	return tracks, {} #attachments
@@ -2096,7 +2113,8 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	if ofile.crc32 != srs_data.crc32:
 		#TODO: try again with the correct interleaving for LOL samples
 		pass
-		
+	
+	rr.close()
 	return ofile
 
 def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
@@ -2165,6 +2183,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				sample.write(buff)
 				crc = crc32(buff, crc) & 0xFFFFFFFF
 				
+	er.close()
 	remove_spinner()	
 	
 	ofile = FileData(file_name=sample_file)
@@ -2208,6 +2227,7 @@ def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				buff = mr.read_contents()
 				sample.write(buff)
 				crc = crc32(buff, crc) & 0xFFFFFFFF
+	mr.close()
 	
 	ofile = FileData(file_name=sample_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
@@ -2293,7 +2313,8 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		    len(current_track.chunk_lengths) and
 		    len(current_track.sample_lengths)):
 			track_processed = True
-			
+	mr.close()
+		
 	return tracks
 
 def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
@@ -2379,8 +2400,8 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			else:
 				buff = ar.read_contents()
 				sample.write(buff)
-				crc = crc32(buff, crc) & 0xFFFFFFFF
-			
+				crc = crc32(buff, crc) & 0xFFFFFFF
+	ar.close()
 	remove_spinner()	
 	
 	ofile = FileData(file_name=sample_file)

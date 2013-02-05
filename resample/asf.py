@@ -201,7 +201,13 @@ class AsfReader(object):
 		# skip the header bytes
 		hl = len(self.current_object.raw_header)
 		self._asf_stream.seek(hl, os.SEEK_CUR)
-	
+
+	def close(self):
+		try: # close the file/stream
+			self._asf_stream.close()
+		except:
+			pass
+			
 	def __del__(self):
 		try: # close the file/stream
 			self._asf_stream.close()
