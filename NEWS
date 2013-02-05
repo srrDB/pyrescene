@@ -2,6 +2,8 @@ pyReScene 0.2
 =============
 
  * ReScene: OpenSubtitles.org hashes are stored wile creating SRR files
+ * PyPy support: it runs faster than with CPython
+ * BUG: reconstructing RARs with old style recovery records works
  
 pyReScene 0.1
 =============
