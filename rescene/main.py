@@ -519,8 +519,8 @@ def create_srr(srr_name, infiles, in_folder="",
 					block = SrrOsoHashBlock(file_size=file_size, 
 						file_name=os.path.basename(fname), oso_hash=oso_hash)
 					srr.write(block.block_bytes())	
-				except ValueError:
-					pass # file is too small
+				except (ValueError, AttributeError):
+					pass # file is too small or compressed RARs
 		return True
 	finally:
 		# when an IOError is raised, we close the file for further cleanup

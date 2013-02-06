@@ -173,7 +173,7 @@ VII. History - Applications
   to show the file sizes of RAR files, list the files stored inside the RARs
   and show some recovery record information like the rescene.com databases did.
   It was written by "Gfy" and released to the public under the LAGPL
-  (LGPLv3 with Affero clause) on XXXX. (still private)
+  (LGPLv3 with Affero clause) on 2013-02-05.
   
   A second major ReScene implementation was pyReScene. It is written in
   Python and was made public after the second, PHP based, web site became
