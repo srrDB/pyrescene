@@ -1,12 +1,12 @@
 pyReScene 0.3
 =============
 
+ * pyReScene Auto: -l parameter added to report sample issues
  * pyReScene Auto: CD1.srr files were created in certain cases
  * pyReScene Auto: Subservience.2007.BDRip.XviD-DOCUMENT wasn't detected
    as a release
  * pyReScene Auto: -c flag works again
  * pyReScene Auto: FIX-release inside release dir made it fail
- * pyReScene Auto: -l parameter added to report sample issues
  * ReScene: -e output bug for RAR end block fixed
 
 pyReScene 0.2
