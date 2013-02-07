@@ -47,6 +47,8 @@ import re
 import shutil
 import fnmatch
 import time
+import logging
+import datetime
 
 try:
 	import _preamble
@@ -159,7 +161,7 @@ def remove_unwanted_sfvs(sfv_list):
 			continue
 		
 		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
-		if ".fix" in pardir:
+		if "fix" in pardir:
 			continue
 		
 		wanted = True
@@ -294,6 +296,7 @@ def generate_srr(reldir, working_dir, options):
 		# temp path too long? nope! rights issue still possible
 		if not os.path.exists(current_sample):
 			print("!!! Skipping this sample file.")
+			logging.critical("Copying sample file failed: %s" % current_sample)
 			continue
 		
 		# optionally check against main movie files
@@ -312,7 +315,10 @@ def generate_srr(reldir, working_dir, options):
 					found = True
 					break
 				except ValueError:
-					print("Sample not found in %s." % main)			
+					print("Sample not found in %s." % main)	
+			if not found:
+				logging.info("%s: Sample failed to verify against main files: "
+				             "%s" % (reldir, os.path.basename(current_sample)))
 		if not found:
 			original_stderr = sys.stderr
 			txt_error_file = current_sample + ".txt"
@@ -325,6 +331,8 @@ def generate_srr(reldir, working_dir, options):
 			except ValueError:
 				keep_txt = True
 				copied_files.append(txt_error_file)
+				logging.info("%s: Could not create SRS file for %s." %
+				             (reldir, os.path.basename(current_sample)))
 				
 			sys.stderr.close()
 			if not keep_txt:
@@ -467,6 +475,9 @@ def main(argv=None):
 	parser.add_option("-e", "--eject",
 					 action="store_true", dest="eject",
 					 help="eject DVD drive after processing")
+	parser.add_option("-l", "--report",
+					action="store_true", dest="report",
+					help="reports which samples had issues")
 	
 	if argv is None:
 		argv = sys.argv[1:]
@@ -509,8 +520,16 @@ def main(argv=None):
 		return retvalue 
 	rescene.main.can_overwrite = can_overwrite
 			
+	if options.report:
+		now = datetime.datetime.now()
+		fn = os.path.join(options.output_dir, 
+						"pyReScene_report_%s.txt" % now.strftime("%Y-%m-%d"))
+		# log will append by default
+		logging.basicConfig(filename=fn, level=logging.INFO,
+		                    format="%(levelname)s:%(message)s")
+		
 	# create temporary working dir
-	working_dir = mkdtemp(".pyReScene")	
+	working_dir = mkdtemp(".pyReScene")
 	
 	drive_letters = []
 	aborted = False
@@ -530,6 +549,8 @@ def main(argv=None):
 						result = False
 					if not result:
 						missing.append(release_dir)
+						logging.warning("%s: SRR could not be created." % 
+									release_dir)
 			# gather drive info
 			drive_letters.append(reldir[:2])
 	except KeyboardInterrupt:
