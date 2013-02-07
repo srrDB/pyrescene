@@ -10,9 +10,6 @@ pyReScene
  - do not create SRR based on empty SFV files (but do so when .mkv in there)
  - show SRR differences -> use rescene.php
  - an option to just verify an extracted release is valid
- - Auto fails "it works when I send the command specific to that folder, but
-   not the whole releasefolder with -r -s"
-   Formula1.German.Grand.Prix.2005.PDTV.XviD-LOL\CD1
  - "Defently pysrr still dosnt work correctly when path is too long when 
    I'm missing about 100 samples"
    It created an srr, and stored all the files in, but didnt list any rar files

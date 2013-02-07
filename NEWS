@@ -1,3 +1,9 @@
+pyReScene 0.3
+=============
+
+ * pyReScene Auto: CD1.srr files were created in certain cases
+ * ReScene: -c flag works again
+
 pyReScene 0.2
 =============
 
