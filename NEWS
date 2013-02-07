@@ -2,6 +2,8 @@ pyReScene 0.3
 =============
 
  * pyReScene Auto: CD1.srr files were created in certain cases
+ * pyReScene Auto: Subservience.2007.BDRip.XviD-DOCUMENT wasn't detected
+   as a release
  * ReScene: -c flag works again
 
 pyReScene 0.2

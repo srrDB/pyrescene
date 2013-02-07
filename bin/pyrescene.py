@@ -409,8 +409,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			if release:
 				break
 
-	rel_folders = ("^((CD|DISK)\d)|(Vob)?Samples?|Covers?|Proofs?|"
-	               "Subs?(pack)?|(vob)?subs?$")
+	rel_folders = ("^((CD|DISK)\d|(Vob)?Samples?|Covers?|Proofs?|"
+	               "Subs?(pack)?|(vob)?subs?)$")
 	if release and not re.match(rel_folders, os.path.basename(dirpath), re.I):
 		release = True
 	else:
