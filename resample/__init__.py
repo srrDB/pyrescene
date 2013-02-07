@@ -24,7 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-__version_info__ = ('0', '2')
+__version_info__ = ('0', '3')
 __version__ = '.'.join(__version_info__)
 
 APPNAME = "pyReSample " + __version__
