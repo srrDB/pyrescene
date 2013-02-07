@@ -76,7 +76,7 @@ def can_create(always_yes, path):
 	return retvalue
 
 def get_files(release_dir, extention):
-	"""Gather all 'extention' files from the subdirs."""
+	"""Gather all 'extension' files from the subdirs."""
 	matches = []
 	try:
 		for dirpath, _dirnames, filenames in os.walk(release_dir):
@@ -156,6 +156,10 @@ def remove_unwanted_sfvs(sfv_list):
 		
 		# subpack inside release dir
 		if "subpack" in sfv.lower() or "subfix" in sfv.lower():
+			continue
+		
+		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
+		if ".fix" in pardir:
 			continue
 		
 		wanted = True
@@ -433,7 +437,8 @@ def main(argv=None):
 	parser = OptionParser(
 	usage=("Usage: %prog [directories] [options]\n"
 	"This tool can automatically create a complete SRR file for a "
-	"release directory. Example usage: %prog -r E:\ -o D:\ -s -c"), 
+	"release directory.\n"
+	"Example usage: %prog --recursive E:\ --output D:\ -s -c"), 
 	version="%prog " + rescene.__version__) # --help, --version
 	
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,

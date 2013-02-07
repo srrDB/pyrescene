@@ -1203,8 +1203,10 @@ class RarEndArchiveBlock(RarBlock):
 		
 	def explain(self):
 		out = super(RarEndArchiveBlock, self).explain()
-		out += "+RAR CRC (4 bytes): %X\n" % self.rarcrc
-		out += "+Volume number (2 bytes): %d\n" % self.volume_number
+		if self.flags & RarEndArchiveBlock.DATACRC:
+			out += "+RAR CRC (4 bytes): %X\n" % self.rarcrc
+		if self.flags & RarEndArchiveBlock.VOLNUMBER:
+			out += "+Volume number (2 bytes): %d\n" % self.volume_number
 		return out
 
 # to get the right class based on a hexadecimal number
