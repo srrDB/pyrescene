@@ -132,7 +132,7 @@ def get_proof_files(reldir):
 				result.append(sample)
 	return result
 
-def remove_unwanted_sfvs(sfv_list):
+def remove_unwanted_sfvs(sfv_list, release_dir):
 	"""
 	Remove SFVs from subs and music releases.
 	"""
@@ -161,7 +161,8 @@ def remove_unwanted_sfvs(sfv_list):
 			continue
 		
 		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
-		if "fix" in pardir:
+		# Mr.Fix.It.2006.PROPER.REPACK.DVDRip.XviD-VoMiT release dir
+		if "fix" in pardir and not "fix" in release_dir.lower():
 			continue
 		
 		wanted = True
@@ -238,7 +239,7 @@ def generate_srr(reldir, working_dir, options):
 	srr = os.path.join(srr_directory, os.path.split(reldir)[1] + ".srr")
 	
 	sfvs = get_files(reldir, "*.sfv")
-	main_sfvs = remove_unwanted_sfvs(sfvs)
+	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
 	
 	if len(main_sfvs):
