@@ -169,7 +169,7 @@ def next_archive(rfile):
 
 	if re.match(".*\.part\d*.rar$", rfile, re.IGNORECASE):
 		return inc(rfile[:-4]) + rfile[-4:]
-	elif re.match(".*\.rar", rfile, re.IGNORECASE):
+	elif re.match(".*\.rar$", rfile, re.IGNORECASE):
 		return rfile[:-4] + ".r00"
 	elif not is_rar(rfile):
 		raise AttributeError("The extension must be one form a RAR archive.")

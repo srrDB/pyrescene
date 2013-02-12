@@ -159,6 +159,8 @@ class TestUtility(unittest.TestCase):
 		self.assertEqual(next_archive(".part09.rar"), ".part10.rar")
 		self.assertRaises(AttributeError, next_archive, "comic.cbr")
 		self.assertRaises(AttributeError, next_archive, "comic.cbz")
+		self.assertEqual(next_archive("th.frag.rar.cd1.r00"),
+		                 "th.frag.rar.cd1.r01")
 		
 	def test_is_good(self):
 		self.assertTrue(is_good_srr("good- #@&$§£~(){}[]!çéè"))
