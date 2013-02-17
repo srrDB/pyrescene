@@ -1893,10 +1893,10 @@ def mkv_extract_sample_streams(tracks, movie):
 			
 			# in extract mode, 
 			# extract all attachments in case we need them later
-			if attachement.attachement_file == None:
-				attachement.attachement_file = tempfile.TemporaryFile()
-				attachement.attachement_file.write(er.read_contents())
-				attachement.attachement_file.seek(0)
+			if attachement.attachment_file == None:
+				attachement.attachment_file = tempfile.TemporaryFile()
+				attachement.attachment_file.write(er.read_contents())
+				attachement.attachment_file.seek(0)
 		elif er.element_type == EbmlElementType.Block:
 			tracks, done = _mkv_block_extract(tracks, er, done)
 		else:
@@ -2159,7 +2159,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			elif er.element_type == EbmlElementType.AttachedFileData:
 				attachment = attachments[current_attachment]
 				# restore data from extracted attachments
-				buff = attachment.attachement_file.read()
+				buff = attachment.attachment_file.read()
 				sample.write(buff)
 				crc = crc32(buff, crc) & 0xFFFFFFFF
 				if srs_data.flags & FileData.ATTACHEMENTS_REMOVED != 0:

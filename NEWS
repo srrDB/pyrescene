@@ -1,4 +1,11 @@
-pyReScene 0.3
+pyReScene 0.4 (2013-02-)
+=============
+
+ * pyReScene Auto: Fixing.Frank.2002.DVDRip.XviD-EXViD srr could not create
+ * pyReScene Auto: infinite loop on The.Haunting.1963.DVDRip.XviD-FRAGMENT
+ * ReSample: No sample recreation for certain releases
+ 
+pyReScene 0.3 (2013-02-07)
 =============
 
  * pyReScene Auto: -l parameter added to report sample issues
@@ -9,7 +16,7 @@ pyReScene 0.3
  * pyReScene Auto: FIX-release inside release dir made it fail
  * ReScene: -e output bug for RAR end block fixed
 
-pyReScene 0.2
+pyReScene 0.2 (2013-02-05)
 =============
 
  * ReScene: OpenSubtitles.org hashes are stored while creating SRR files
@@ -17,7 +24,7 @@ pyReScene 0.2
  * PyPy support: it runs faster than with CPython
  * EXE files for Windows available
  
-pyReScene 0.1
+pyReScene 0.1 (2013-01-14)
 =============
 
 pyReScene Auto: (pyrescene.py)
