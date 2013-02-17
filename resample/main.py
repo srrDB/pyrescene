@@ -127,22 +127,22 @@ class AttachmentData(object):
 		self.attachment_file = attachment_file
 		
 	def __repr__(self, *args, **kwargs):
-		return ("<attachement_data name=%r size=%r>" % self.name, self.size)
+		return ("<attachment_data name=%r size=%r>" % self.name, self.size)
 
 # SampleFileInfo.cs -----------------------------------------------------------
 class FileData(object):
 	"""Stored tool and file data like size and crc32 from SRS file."""
 	NO_FLAGS = 0x0
 	SIMPLE_BLOCK_FIX = 0x1
-	ATTACHEMENTS_REMOVED = 0x2
+	ATTACHMENTS_REMOVED = 0x2
 	#BIGFILE = 0x4
 	
 	# //default to using new features
-	SUPPORTED_FLAG_MASK = SIMPLE_BLOCK_FIX | ATTACHEMENTS_REMOVED
+	SUPPORTED_FLAG_MASK = SIMPLE_BLOCK_FIX | ATTACHMENTS_REMOVED
 	
 	def __init__(self, buff=None, file_name=None):
 		# default to using new features
-		self.flags = self.SIMPLE_BLOCK_FIX | self.ATTACHEMENTS_REMOVED 
+		self.flags = self.SIMPLE_BLOCK_FIX | self.ATTACHMENTS_REMOVED 
 		self.crc32 = 0
 		
 		if file_name:
@@ -1888,15 +1888,15 @@ def mkv_extract_sample_streams(tracks, movie):
 				att = AttachmentData(current_attachment)
 				attachments[current_attachment] = att
 		elif er.element_type == EbmlElementType.AttachedFileData:
-			attachement = attachments[current_attachment]
-			attachement.size = er.current_element.length
+			attachment = attachments[current_attachment]
+			attachment.size = er.current_element.length
 			
 			# in extract mode, 
 			# extract all attachments in case we need them later
-			if attachement.attachment_file == None:
-				attachement.attachment_file = tempfile.TemporaryFile()
-				attachement.attachment_file.write(er.read_contents())
-				attachement.attachment_file.seek(0)
+			if attachment.attachment_file == None:
+				attachment.attachment_file = tempfile.TemporaryFile()
+				attachment.attachment_file.write(er.read_contents())
+				attachment.attachment_file.seek(0)
 		elif er.element_type == EbmlElementType.Block:
 			tracks, done = _mkv_block_extract(tracks, er, done)
 		else:
@@ -2162,7 +2162,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				buff = attachment.attachment_file.read()
 				sample.write(buff)
 				crc = crc32(buff, crc) & 0xFFFFFFFF
-				if srs_data.flags & FileData.ATTACHEMENTS_REMOVED != 0:
+				if srs_data.flags & FileData.ATTACHMENTS_REMOVED != 0:
 					er.move_to_child() # really means do nothing in this case
 				else: 
 					er.skip_contents()
