@@ -1336,32 +1336,33 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 						track.match_offset = 0
 						track.match_length = 0
 			
-			# this is a bit weird, but if we had a false positive match
-			# going and discovered it above, we check this frame again
-			# to see if it's the start of a new match 
-			# (probably will never happen with AVI, 
-			# but it does in MKV, so just in case...)	
-			if track.check_bytes == "":
-				chunk_bytes = rr.read_contents()
-				
-				search_byte = track.signature_bytes[0]
-				found_pos = chunk_bytes.find(search_byte, 0)
-				
-				while found_pos > -1:
-					lcb = min(len(track.signature_bytes),
-								len(chunk_bytes) - found_pos)
-					check_bytes = chunk_bytes[found_pos:found_pos+lcb]
+				# this is a bit weird, but if we had a false positive match
+				# going and discovered it above, we check this frame again
+				# to see if it's the start of a new match 
+				# (probably will never happen with AVI, 
+				# but it does in MKV, so just in case...)	
+				if track.check_bytes == "":
+					chunk_bytes = rr.read_contents()
 					
-					# track found!
-					if track.signature_bytes[:len(check_bytes)] == check_bytes:
-						track.check_bytes = check_bytes
-						track.match_offset = (rr.current_chunk.chunk_start_pos
-						                      + len(rr.current_chunk.raw_header) 
-						                      + found_pos)
-						track.match_length = min(track.data_length, 
-												len(chunk_bytes) - found_pos)
-						break
-					found_pos = chunk_bytes.find(search_byte, found_pos + 1)
+					search_byte = track.signature_bytes[0]
+					found_pos = chunk_bytes.find(search_byte, 0)
+					
+					while found_pos > -1:
+						lcb = min(len(track.signature_bytes),
+									len(chunk_bytes) - found_pos)
+						check_bytes = chunk_bytes[found_pos:found_pos+lcb]
+						
+						# track found!
+						if track.signature_bytes[:len(check_bytes)] == check_bytes:
+							track.check_bytes = check_bytes
+							track.match_offset = (
+							                rr.current_chunk.chunk_start_pos
+							                + len(rr.current_chunk.raw_header) 
+							                + found_pos)
+							track.match_length = min(track.data_length, 
+							                     len(chunk_bytes) - found_pos)
+							break
+						found_pos = chunk_bytes.find(search_byte, found_pos + 1)
 			else:
 				track.match_length = min(track.data_length 
 				                         - track.match_length, 

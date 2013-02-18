@@ -3,7 +3,9 @@ pyReScene 0.4 (2013-02-)
 
  * pyReScene Auto: Fixing.Frank.2002.DVDRip.XviD-EXViD srr could not create
  * pyReScene Auto: infinite loop on The.Haunting.1963.DVDRip.XviD-FRAGMENT
- * ReSample: No sample recreation for certain releases
+ * ReSample: No sample recreation for MKV files with attachments (bug #2)
+ * ReSample: Die.Simpsons.S04E02.....iNTERNAL-UTOPiA
+   main AVI file with multiple audio tracks: the sample could not rebuild
  
 pyReScene 0.3 (2013-02-07)
 =============
@@ -20,7 +22,7 @@ pyReScene 0.2 (2013-02-05)
 =============
 
  * ReScene: OpenSubtitles.org hashes are stored while creating SRR files
- * BUG: reconstructing RARs with old style recovery records works
+ * BUG: reconstructing RARs with old style recovery records works (bug #1)
  * PyPy support: it runs faster than with CPython
  * EXE files for Windows available
  
