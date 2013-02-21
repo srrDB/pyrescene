@@ -927,7 +927,7 @@ def mp4_signature_bytes(track, mp4_file):
 		try:
 			samples_in_chunk = track.chunk_lengths[chnb][1]
 		except IndexError:
-			print("-SHOW ME-----------------------------------")
+			# House.of.Cards.2013.S01E01.REPACK.HDTV.x264-ASAP
 			# last element will contain right amount of samples
 			samples_in_chunk = track.chunk_lengths[-1][1]
 		# the sizes of the different samples of the chunk
@@ -1517,7 +1517,12 @@ def mp4_add_track_stream(track):
 	samples_amount = 0
 	prev_chunk = None
 	for chnb, chunk_offset in enumerate(track.chunk_offsets):
-		samples_in_chunk = track.chunk_lengths[chnb][1]
+		try:
+			samples_in_chunk = track.chunk_lengths[chnb][1]
+		except IndexError:
+			# House.of.Cards.2013.S01E01.REPACK.HDTV.x264-ASAP
+			# ASAP again, why aren't we surprised?
+			samples_in_chunk = track.chunk_lengths[-1][1]
 		chunk = TrackChunk(chunk_offset, samples_in_chunk, prev_chunk)
 		# bidirectional links
 		if prev_chunk:
