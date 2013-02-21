@@ -43,7 +43,7 @@ class TestRarReader(unittest.TestCase):
 		stream.seek(0)
 		
 		rr = RarReader(stream)
-		self.assertEqual(stream.__sizeof__(), 32)
+#		self.assertEqual(stream.__sizeof__(), 32)
 		self.assertEqual(rr._file_length, len(RAR_MARKER_BLOCK) +
 						 len(TestRarBlocks.FIRST_VOLUME))
 		
@@ -125,9 +125,8 @@ class TestRarReader(unittest.TestCase):
 			self.assertTrue(block)
 		
 	def test_read_sfx(self):
-		return # SFX support disabled
 		rr = RarReader(os.path.join(os.pardir, os.pardir, "test_files",
-					"best_little", "best_little_sfxgui.exe"))
+					"best_little", "best_little_sfxgui.exe"), enable_sfx=True)
 		read = rr.read_all()
 		self.assertEqual(len(read), 4, "No 4 blocks found.")
 		self.assertEqual(type(read[0]), RarBlock)

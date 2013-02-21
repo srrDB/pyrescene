@@ -14,10 +14,24 @@ pyReScene
    I'm missing about 100 samples"
    It created an srr, and stored all the files in, but didnt list any rar files
  - pysrr runs slow sometimes (and not a hard disk issue)
+ - here's an idea: if you find a tool, for example the gui one, to make 
+   the srr process automated, like select target folder > rescene scans it, 
+   makes a new folder somewhere else and copies the finished srrs in a perfect 
+   output structure.
+   i guess they want some tool to scan whatever they have and 
+   rescene-resample etc automated
+   without doing anything
+   meaning all..create srr, check rls for missing samples and resample, 
+   reconstruct avi's from srr etc
+   but not with commands etc i guess..they just want buttons and automatic
+   maybe an app which scans all your drives , checks which rls dont have srr 
+   on site, create srr for them, download srr packages from srrdb and re-sample
+   those rls which have missing Sample
  
 pyReSample
 ==========
 
+ - House.of.Cards.2013.S01E01.REPACK.HDTV.x264-ASAP sample
  - Support for additional video formats
     * VOB (DVDRs)
     * M2TS (BDRs)

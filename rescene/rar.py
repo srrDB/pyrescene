@@ -1021,7 +1021,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		return out
 	
 	def ftime(self, timetuple):
-		""" Formats the time tuple to a string. """
+		"""Formats the time tuple to a string."""
 		if not timetuple:
 			return "UNKNOWN"
 		return "%04d-%02d-%02d %02d:%02d:%02d" % timetuple
@@ -1032,6 +1032,41 @@ class RarPackedFileBlock(RarBlock): # 0x74
 	def is_compressed(self):
 		return self.compression_method != 0x30 # Storing
 	
+	def get_compression_parameter(self):
+		"""
+		Returns Rar.exe compression parameter
+		m<0..5>       Set compression level (0-store...3-default...5-maximal)
+		"""
+		compression_parameter = {
+			0x30: "-m0",
+			0x31: "-m1",
+			0x32: "-m2",
+			0x33: "-m3",
+			0x34: "-m4",
+			0x35: "-m5"
+		}
+		return compression_parameter[self.compression_method]
+	
+	def get_dictionary_size_parameter(self):
+		"""
+		Returns Rar.exe dictionary size parameter
+		md<size>   Dictionary size in KB (64,128,256,512,1024,2048,4096 or A-G)
+		"""
+		if self.flags & self.DICT4096:
+			return "-mdG"
+		if self.flags & self.DICT2048:
+			return "-mdF"
+		if self.flags & self.DICT1024:
+			return "-mdE"
+		if self.flags & self.DICT512:
+			return "-mdD"
+		if self.flags & self.DICT256:
+			return "-mdC"
+		if self.flags & self.DICT128:
+			return "-mdB"
+		if self.flags & self.DICT64:
+			return "-mdA"
+	
 	def get_os(self):
 		return "%s used to create this file block." % OS_NAME[self.os]
 	
@@ -1040,7 +1075,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 
 	def get_version(self):
 		return "Version %d.%d is needed to extract." %  \
-			divmod(self.rar_version, 10) #+ (RAR_VERSION[self.rar_version],)
+			divmod(self.rar_version, 10)
 
 	def explain_flags(self):
 		out = super(RarPackedFileBlock, self).explain_flags()
@@ -1073,10 +1108,10 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			out += self.flag_format(self.VERSION) + "LHD_VERSION "  \
 				"(an old file version, appended to file name as ';n')\n"
 		if self.flags & self.EXT_TIME:
-			out += self.flag_format(self.EXT_TIME) + "LHD_EXTTIME"  \
-				"(Extended time field present.)\n"
+			out += self.flag_format(self.EXT_TIME) + "LHD_EXTTIME "  \
+				"(Extended time field present)\n"
 		if self.flags & self.EXTFLAGS:
-			out += self.flag_format(self.EXTFLAGS) + "LHD_EXTFLAGS"  \
+			out += self.flag_format(self.EXTFLAGS) + "LHD_EXTFLAGS "  \
 				"(never used)\;"
 		out += self.flag_format(self.flags & self.DIRECTORY) +  \
 				"LHD_WINDOW (" + self.get_dictionary() + ")\n"
@@ -1279,16 +1314,15 @@ class RarReader(object):
 			elif block_type == BlockType.SrrHeader: # 0x69
 				self._readmode = self.SRR
 				self.recovery_records_removed = True # init to be sure
-			else: # SFX ?
-				print(bheader.encode('hex'))
-				raise ValueError("No support for SFX, test fails yes.")
-				assert False # TODO: enable_sfx + make it resceneable
+			elif enable_sfx: # SFX ?
+				# TODO: make it resceneable
 				# search for RAR marker block offset
 				# 79280 for wrar400.exe
 				# 123904 for wrar-x64-400.exe
+				self._rarstream.seek(self._initial_offset)
 				data = self._rarstream.read(0x100000) # unrar max SFX size
 				offset = data.find(RAR_MARKER_BLOCK)
-				self._initial_offset += offset + 3 # 2 + 1 read
+				self._initial_offset += offset
 				if offset < 0 or self._initial_offset > self._file_length:
 					raise ValueError("The file is not a valid .rar archive"
 					                 " or .srr file.")
@@ -1296,6 +1330,8 @@ class RarReader(object):
 				# What kind of errors if SRR is detected as SFX?
 				#	 srr_detected_as_sfx.exe EnvironmentError: 
 				#	 Invalid RAR block length (46325) at offset 0x124
+			else:
+				raise ValueError("SFX support not on or not a RAR archive.")
 		self._rarstream.seek(self._initial_offset)
 		self._current_index = 0
 

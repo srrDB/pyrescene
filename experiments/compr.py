@@ -7,6 +7,12 @@ import sys
 import pprint
 import filecmp
 
+# locations where the original rarlabs files are
+rar_windows = "Z:\rar\windows"
+rar_linux = "Z:\rar\linux"
+rar_bsd = "Z:\rar\bsd"
+rar_osx = "Z:\rar\osx"
+
 # locating installed unrar
 if(os.name == "nt"):
     try:
@@ -149,8 +155,8 @@ def _do_cmp(f1, f2):
     with open(f1, 'rb') as fp1:
         with open(f2, 'rb') as fp2:
             while True:
-                b1 = fp1._read(bufsize)
-                b2 = fp2._read(bufsize)
+                b1 = fp1.read(bufsize)
+                b2 = fp2.read(bufsize)
                 if b1 != b2:
                     return False
                 if not b1:
@@ -182,7 +188,7 @@ def custom_popen(cmd):
 #extract_rarexe("Z:\\rar", "Z:\\rar\\rarextract")
 
 #generate_testfiles("Z:\\rar\\rarextract", "Z:\\rar\\rarextract\\testcompression")
-compare("Z:\\rar\\rarextract\\testcompression")
+compare("Z:\\rar\\_rarextract\\testcompression")
 
 
 
@@ -207,7 +213,6 @@ compare("Z:\\rar\\rarextract\\testcompression")
 
 
 """
-
  Exit values
  ~~~~~~~~~~~
 

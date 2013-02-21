@@ -130,9 +130,11 @@ class TestRarStream(unittest.TestCase):
 		#TODO: test in Linux
 		
 	def test_error_compressed_rar(self):
+		compr = os.path.join(os.pardir, os.pardir, "test_files", 
+		                     "best_little", "best_little.rar")
 		# AttributeError: Compressed RARs are not supported
-		self.assertRaises(AttributeError, RarStream, os.path.join(os.pardir, 
-			os.pardir, "test_files", "best_little", "best_little.rar"))
+		self.assertRaises(AttributeError, RarStream, compr)
+		RarStream(compr, compressed=True)
 		
 	def test__check_function(self):
 		# http://superuser.com/questions/325643/how-do-i-create-a-null-rar/

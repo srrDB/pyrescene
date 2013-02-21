@@ -54,10 +54,13 @@ class RarStream(io.IOBase):
 	a RAR archive set. Only store-mode (m0) RAR sets are supported.
 	The compressed bytes will be returned for m1 - m5 compression."""
 	
-	def __init__(self, first_rar, packed_file_name=None, middle=False):
+	def __init__(self, first_rar, packed_file_name=None, 
+				middle=False, compressed=False):
 		"""
 		If middle is set, the check for being the first RAR volume is skipped.
 		This can be the case when generating OSO hashes.
+		If compressed is set, no errors will be thrown for using
+		compressed RAR files.
 		"""
 		self._rar_volumes = list()
 		self._current_volume = None
@@ -72,7 +75,7 @@ class RarStream(io.IOBase):
 		
 		rar_file = first_rar
 		while os.path.isfile(rar_file):
-			self._process(rar_file, packed_file_name)
+			self._process(rar_file, packed_file_name, compressed)
 			rar_file = utility.next_archive(rar_file)
 
 		try:
@@ -82,7 +85,7 @@ class RarStream(io.IOBase):
 			# IndexError: list index out of range
 			raise AttributeError("File not found in the archive.")
 		
-	def _process(self, rar_file, packed_file_name=None):
+	def _process(self, rar_file, packed_file_name=None, compressed=False):
 		"""Checks if the rar_file has the packed_file and adds 
 		the _RarVolumes it creates to the list.
 		If packed_file_name is not supplied, the first file will be used."""
@@ -94,7 +97,8 @@ class RarStream(io.IOBase):
 		reader = rar.RarReader(rar_file)
 		for block in reader.read_all():
 			if block.rawtype == rar.BlockType.RarPackedFile:
-				if block.compression_method != rar.COMPR_STORING:
+				if (block.compression_method != rar.COMPR_STORING and 
+					not compressed):
 					raise AttributeError("Compressed RARs are not supported")
 				
 				if not packed_file_name:

@@ -85,7 +85,7 @@ def report_error(status, message):
 def report_unsupported_flag():
 	report_error("Warning: Unsupported flag value encountered in SRR file. "
 				 "This file may use features not supported in this version "
-				 "of the application")
+				 "of the application.\n")
 
 def display_info(srr_file):
 	"""Print out different sections with SRR info."""
@@ -205,7 +205,8 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		try:
 			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths, 
 			                    hints, options.no_auto_crc, 
-			                    options.auto_locate, options.fake)
+			                    options.auto_locate, options.fake,
+			                    options.rar_executable_dir)
 		except FileNotFound:
 			mthread.done = True
 			mthread.join()
@@ -331,7 +332,11 @@ def main(argv=None):
 					"names for extracted files.  ex: srr example.srr -h "
 					"orginal.mkv:renamed.mkv;original.nfo:renamed.nfo",
 					metavar="HINTS", dest="hints")
-	
+	recon.add_option("-z", "--rar-folder", dest="rar_executable_dir", 
+					metavar="DIRECTORY",
+					help="Directory with preprocessed RAR executables created"
+					" by the preprardir.py script. This is necessary to "
+					"reconstruct compressed archives.")
 	
 #	creation.set_description("These options are used for creating an SRR file.")
 	edit.add_option("-x", "--extract",
@@ -369,6 +374,12 @@ def main(argv=None):
 	
 	rescene.main.can_overwrite = can_overwrite
 	
+	if options.allow_compressed:
+		print("*"*60)
+		print("WARNING: SRR files for compressed RARs are like SRS files:")
+		print("         you can never be sure they will reconstruct!")
+		print("*"*60)
+	
 	try:
 		mthread.start()
 		working_dir = os.path.abspath(os.path.curdir)
@@ -386,7 +397,7 @@ def main(argv=None):
 				
 		if not len(infiles):
 			print(parser.format_help())
-			report_error(1, "No input file(s) specified.")
+			report_error(1, "No input file(s) specified.\n")
 			
 		infolder = working_dir
 		if options.input_base: # -i

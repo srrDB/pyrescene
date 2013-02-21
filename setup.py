@@ -61,5 +61,8 @@ if 'py2exe' in sys.argv:
 	config_dict["zipfile"] = None
 	# targets to build
 	config_dict["console"] = config_dict["scripts"]
+	
+	#TODO: http://stackoverflow.com/questions/525329/embedding-icon-in-exe-with-py2exe-visible-in-vista
+	#http://stackoverflow.com/questions/9649727/changing-the-icon-of-the-produced-exe-py2exe
 
 setup(**config_dict)

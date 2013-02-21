@@ -52,6 +52,8 @@ from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, 
                              first_rars, next_archive)
 from rescene.osohash import osohash_from
+from rescene.comprrar import get_rar_data_object
+from rescene import comprrar
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -1018,7 +1020,8 @@ def print_details(file_path):
 	print("SRR sha1 content hash: %s" % srr_hash)
 			
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
-				skip_rar_crc=False, auto_locate_renamed=False, empty=False):
+				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
+				rar_executable_dir=None):
 	"""
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
@@ -1040,7 +1043,14 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	rebuild_recovery = False
 	running_crc = 0
 	
-	for block in RarReader(srr_file).read_all():
+	if rar_executable_dir:
+		comprrar.initialize_rar_repository(rar_executable_dir)
+		if not comprrar.repository.count():
+			_fire(MsgCode.MSG, message="No RAR executables found.")
+			return False
+	
+	blocks = RarReader(srr_file).read_all()
+	for block in blocks:
 		_fire(MsgCode.BLOCK, message="RAR Block",
 			  type=block.rawtype, size=block.header_size)
 		if block.rawtype == BlockType.SrrHeader:
@@ -1094,7 +1104,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			# write the block contents from the SRR file
 			rarfs.write(block.block_bytes())
 			
-#			if block.packed_size > 0: 
+#			if block.packed_size > 0:
 			# Make sure we have the correct extracted file open. 
 			# If not, attempt to locate and open it.
 			if source_name != block.file_name:
@@ -1104,30 +1114,20 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				running_crc = 0
 				try:
 					if block.compression_method != COMPR_STORING:
-						print("Trying to rebuild compressed file.")
-						#TODO: bytes to pack need to come from an other rar
-						
-						"""
-						rerar single file with the right compression method
-						use that data
-						
-						multiple files -> more difficult because it can be solid
-						
-						"""
-						
-						
-						first_rar = ""
-
-						raise NotImplementedError
-						
-						srcfs = RarStream(first_rar, source_name)
+						_fire(MsgCode.MSG,
+							message="Trying to rebuild compressed file.")
+						src = _locate_file(block, in_folder,
+										   hints, auto_locate_renamed)
+						srcfs = get_rar_data_object(block, blocks, src)
 					else: # uncompressed file
 						src = _locate_file(block, in_folder,
 										   hints, auto_locate_renamed)
 						srcfs = open(src, "rb")
 				except FileNotFound:
 					if empty:
-						srcfs = FakeFile(block.packed_size)
+						_fire(MsgCode.MSG,
+							message="File not found, using fake file.")
+						srcfs = FakeFile(block.unpacked_size)
 					else:
 						raise
 			assert srcfs
@@ -1152,6 +1152,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				  (block.rawtype, block.header_size))
 	if rarfs:
 		rarfs.close()
+	if srcfs:
+		srcfs.close()
 
 def _write_recovery_record(block, rarfs):
 	"""block: original rar recovery block from SRR
@@ -1282,7 +1284,8 @@ def _repack(block, rarfs, in_folder, srcfs, running_crc, skip_rar_crc):
 			# record was padded. Add null bytes to correct the length.
 			# bytes are not used in CRC check - See ReScene .NET 1.2
 			rarfs.write(bytearray(bytes_to_copy - bytes_read))
-			print("Crappy release group.")
+			print("Crappy release group. Adding %d zero bytes." % 
+			      (bytes_to_copy - bytes_read))
 			
 		bytes_copied_inc += bytes_to_copy
 	

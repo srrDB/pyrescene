@@ -9,6 +9,7 @@ pyReScene 0.4 (2013-02-)
  * ReSample: Die.Simpsons.S04E02.....iNTERNAL-UTOPiA
    main AVI file with multiple audio tracks: the sample could not rebuild
  * ReSample: ASAP sample failed reconstruction
+ * ReScene: Initial reconstruction support for compressed RAR files!
  
 pyReScene 0.3 (2013-02-07)
 =============
