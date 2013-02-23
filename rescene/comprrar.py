@@ -30,11 +30,10 @@ import shutil
 import subprocess
 import multiprocessing
 from tempfile import mkdtemp
-from rescene import rar
 from rescene.rar import RarReader, BlockType
 from rescene.rarstream import RarStream
 
-returncode = { #TODO: use in error messages
+RETURNCODE = {
 		0: "Successful operation",
 		1: "Non fatal error(s) occurred",
 		2: "A fatal error occurred",
@@ -51,6 +50,12 @@ returncode = { #TODO: use in error messages
 archived_files = {}
 repository = None
 
+class EmptyRepository(Exception):
+	"""The RAR repository is empty."""
+
+class RarNotFound(Exception):
+	"""No good RAR executable can be found."""
+	
 def get_rar_data_object(block, blocks, src):
 	return archived_files.setdefault(block.file_name,
 	                         compressed_rar_file_factory(block, blocks, src))
@@ -61,9 +66,13 @@ def initialize_rar_repository(location):
 	
 class RarRepository(object):
 	"""Class that manages all Rar.exe files."""
-	def __init__(self, bin_folder):
+	def __init__(self, bin_folder=None):
 		self.rar_executables = []
-		self.load_rar_executables(bin_folder)
+		if bin_folder:
+			self.load_rar_executables(bin_folder)
+		else:
+			#TODO: try a couple of default paths
+			pass
 		
 	def load_rar_executables(self, bin_folder):
 		for rarfile in os.listdir(bin_folder):
@@ -75,7 +84,10 @@ class RarRepository(object):
 		self.rar_executables.sort()
 	
 	def get_most_recent_version(self):
-		return self.rar_executables[-1]
+		try:
+			return self.rar_executables[-1]
+		except:
+			raise EmptyRepository("No RAR executables found.")
 		
 	def count(self):
 		return len(self.rar_executables)
@@ -83,17 +95,21 @@ class RarRepository(object):
 	def get_rar_executables(self, date):
 		before = []
 		after = []
+		previous = []
 		for rarexec in self.rar_executables:
 			if rarexec.date < date:
 				before.append(rarexec)
 			else:
 				after.append(rarexec)
-		# one from after first because of betas that can be in use
+		#if elements in archived_files, try those versions first!
+		if len(archived_files):
+			previous = [archived_files.values()[-1].good_rar]
 		before.reverse()
 		if len(after):
-			return [after[0]] + before + after[1:]
+			# one from after first because of betas that can be in use
+			return previous + [after[0]] + before + after[1:]
 		else:
-			return before
+			return previous + before
 
 class RarExecutable(object):
 	def __init__(self, folder, rar_sfx_file):
@@ -105,7 +121,7 @@ class RarExecutable(object):
 		# parse file name
 		match = re.match("(?P<date>\d{4}-\d{2}-\d{2})_rar"
 							"(?P<major>\d)(?P<minor>\d\d)"
-							"(?P<beta>b\d)?\.exe", rar_sfx_file)
+							"(?P<beta>b\d)?(\.exe)?", rar_sfx_file)
 		if match:
 			self.date, self.major, self.minor, self.beta = match.group(
 										"date", "major", "minor", "beta")
@@ -219,11 +235,11 @@ def get_archived_file_blocks(blocks, current_block):
 	for block in blocks:
 		if block == current_block:
 			set_current_block = current_set
-		if block.rawtype == rar.BlockType.RarPackedFile:
+		if block.rawtype == BlockType.RarPackedFile:
 			result.append(block)
 			
 		# get the sets from the SrrRarFile blocks
-		if block.rawtype == rar.BlockType.SrrRarFile:
+		if block.rawtype == BlockType.SrrRarFile:
 			nset = get_set(block)
 			if nset != current_set:
 				if not set_current_block:
@@ -259,27 +275,32 @@ class CompressedRarFile(io.IOBase):
 		
 		self.temp_dir = mkdtemp("_pyReScene")
 		
+		# make sure there is a RarRepository
+		global repository
+		if not repository:
+			repository = RarRepository()
+		
 		# search the correct RAR executable
 		self.good_rar = self.search_matching_rar_executable(first_block, blocks)
 		if not self.good_rar:
 			assert len(os.listdir(self.temp_dir)) == 0
 			try:
-				os.remove(self.temp_dir)
+				os.rmdir(self.temp_dir)
 			except:
 				print("Failure to remove temp dir: %s" % self.temp_dir)
-			raise ValueError("No good RAR version found.")
+			raise RarNotFound("No good RAR version found.")
 		print("Good RAR version detected: %s" % self.good_rar)
 		
-		#TODO: show rar.exe output here
-		print("Compressing...")
+		print("Compressing %s..." % os.path.basename(src))
 		self.good_rar.args.store_files = self.source_files
 		compress = custom_popen(self.good_rar.full())
 		stdout, stderr = compress.communicate()
 		
 		if compress.returncode != 0:
-			print("Some error occurred:")
 			print(stdout)
 			print(stderr)
+			print("Something went wrong executing Rar.exe:")
+			print(RETURNCODE[compress.returncode])
 			
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		self.rarstream = RarStream(out, compressed=True)
@@ -305,43 +326,36 @@ class CompressedRarFile(io.IOBase):
 		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
 		
-#		print size_compr, size_full, size_min
-#		
-#		ratio = size_compr / float(size_full)
-#		print ratio	
-		
-		#TODO: skip this all for small files?
-		
 		# we assume that newer versions always compress better
 		rarexe = repository.get_most_recent_version()
 		
+		window_size = block.get_dict_size()
 		args = RarArguments(block, out, [piece])
 		amount = 0
-		for i in list(range(1, 100, 2)):
+		for i in list(range(2, 100, 2)): # start with 2% increase of the ratio
 			increase = (float(size_full) / size_compr) + (i / 100.0)
-#			print("Increase: %f" % increase)
-			amount = min(size_full, int(size_min * increase))
-#			print("Amount: %d" % amount)
-			if amount == size_full:
-				copy_data(self.source_files[0], piece, amount)
-				break
+			amount = min(size_full, int(size_min * increase) + window_size)
 			
 			# copy bytes from source to destination
 			copy_data(self.source_files[0], piece, amount)
+			
+			if amount == size_full:
+				break
 			
 			proc = custom_popen([rarexe.path()] + args.arglist())
 			proc.wait()
 			
 			if proc.returncode != 0:
-				proc.stdout.read()
-				proc.stderr.read()
+				print(proc.stdout.read())
+				print(proc.stderr.read())
+				print("Something went wrong executing Rar.exe:")
+				print(RETURNCODE[proc.returncode])
 		
 			# check compressed size
 			for lego in RarReader(out):
 				if lego.rawtype == BlockType.RarPackedFile:
 					size = lego.packed_size
 					break
-#			print "Amount packed: %d" % size
 			if size >= size_min:
 				break
 		assert os.path.isfile(piece)
@@ -351,10 +365,11 @@ class CompressedRarFile(io.IOBase):
 			stdout, stderr = compress.communicate()
 			
 			if compress.returncode != 0:
-				print stderr
-				print stdout #TODO: msg
-				print("Something wrong executing Rar.exe: %d" % compress.returncode)
-				
+				print(stdout)
+				print(stderr)
+				print("Something went wrong executing Rar.exe:")
+				print(RETURNCODE[compress.returncode])
+
 			# check if this is a good RAR version
 			start = size_min
 			crc = 0
@@ -383,13 +398,11 @@ class CompressedRarFile(io.IOBase):
 						else:
 							readsize = start
 							start = 0
-						crc = zlib.crc32(rs.read(readsize), crc) & 0xFFFFFFFF
+						crc = zlib.crc32(rs.read(readsize), crc)
 
 			os.remove(out)
 			
-#			print crc
-#			print block.file_crc
-			if crc == block.file_crc:
+			if crc & 0xFFFFFFFF == block.file_crc:
 				return True
 			return False
 		
@@ -414,8 +427,7 @@ class CompressedRarFile(io.IOBase):
 					return rar
 
 		os.remove(piece)
-		os.remove(out)
-
+	
 	def set_new(self, source_file, block):
 		self.source_files.append(source_file)
 		self.current_block = block
@@ -430,15 +442,14 @@ class CompressedRarFile(io.IOBase):
 		stdout, stderr = compress.communicate()
 		
 		if compress.returncode != 0:
-			print("Some error occurred:")
 			print(stdout)
 			print(stderr)
+			print("Something went wrong executing Rar.exe:")
+			print(RETURNCODE[compress.returncode])
 
 		self.rarstream = RarStream(out, compressed=True,
 				packed_file_name=os.path.basename(self.source_files[-1]))
 		
-#		print block.packed_size
-#		print self.rarstream.length()
 		if self.rarstream.length() != block.packed_size:
 			raise ValueError("Something isn't good yet.")
 #			self.good_rar = self.search_matching_rar_executable(block, self.blocks)

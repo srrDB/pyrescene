@@ -37,6 +37,8 @@ design decisions:
 Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\CD2\
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
+ 
+TODO: don't store .rar files for proofs when they contain m2ts files.
 """
 
 from optparse import OptionParser

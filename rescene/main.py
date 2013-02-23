@@ -1113,16 +1113,18 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				source_name = block.file_name
 				running_crc = 0
 				try:
-					if block.compression_method != COMPR_STORING:
-						_fire(MsgCode.MSG,
-							message="Trying to rebuild compressed file.")
+					# block is a directory: make it not crash
+					if block.flags & block.DIRECTORY == block.DIRECTORY:
+						srcfs = FakeFile(block.unpacked_size)
+					else:
 						src = _locate_file(block, in_folder,
 										   hints, auto_locate_renamed)
-						srcfs = get_rar_data_object(block, blocks, src)
-					else: # uncompressed file
-						src = _locate_file(block, in_folder,
-										   hints, auto_locate_renamed)
-						srcfs = open(src, "rb")
+						if block.compression_method != COMPR_STORING:
+							_fire(MsgCode.MSG,
+								message="Trying to rebuild compressed file.")
+							srcfs = get_rar_data_object(block, blocks, src)
+						else: # uncompressed file
+							srcfs = open(src, "rb")
 				except FileNotFound:
 					if empty:
 						_fire(MsgCode.MSG,

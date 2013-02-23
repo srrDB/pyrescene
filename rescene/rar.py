@@ -1072,6 +1072,22 @@ class RarPackedFileBlock(RarBlock): # 0x74
 	
 	def get_dictionary(self):
 		return DICTIONARY_NAME[(self.flags & 0x00e0) >> 5]
+	
+	def get_dict_size(self):
+		if self.flags & self.DICT64:
+			return 64*1024
+		elif self.flags & self.DICT128:
+			return 128*1024
+		elif self.flags & self.DICT256:
+			return 256*1024
+		elif self.flags & self.DICT512:
+			return 512*1024
+		elif self.flags & self.DICT1024:
+			return 1024*1024
+		elif self.flags & self.DICT2048:
+			return 2048*1024
+		else:
+			return 4096*1024
 
 	def get_version(self):
 		return "Version %d.%d is needed to extract." %  \
