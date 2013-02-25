@@ -44,6 +44,7 @@ RETURNCODE = {
 		7: "Command line option error",
 		8: "Not enough memory for operation",
 		9: "Create file error",
+		10: "No files to extract",
 		255: "User stopped the process",
 	   }
 

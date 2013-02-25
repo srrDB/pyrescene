@@ -1,12 +1,10 @@
 pyReScene
 =========
 
- - Reconstruction of SRRs for compressed RARs
  - SRR support for ZIP files
  - *.sfv as the first parameter
  - add, remove, rename stored files from CLI
  - new block for empty directories?
- - new block for oso hashes of archived files (at the end of the SRR)
  - do not create SRR based on empty SFV files (but do so when .mkv in there)
  - show SRR differences -> use rescene.php
  - an option to just verify an extracted release is valid

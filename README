@@ -13,9 +13,12 @@ General Information
   pyReScene is a port of ReScene .NET to the Python programming language.
 ReScene is a mechanism for backing up and restoring the metadata from "scene" 
 released RAR files. RAR archive volumes are rebuild using the stored metadata 
-in the SRR file and the extracted files from the RAR archive. Thus far this
-process only works on RAR files created with "Store" mode (otherwise known as 
--m0 or No Compression). pyReScene consists of multiple related tools. 
+in the SRR file and the extracted files from the RAR archive. This process
+only worked on RAR files created with "Store" mode (otherwise known as 
+-m0 or No Compression), but since pyReScene version 0.4 this is also possible
+for various other compression settings. However, it is not guaranteed that
+reconstruction of compressed archives is always possible. pyReScene consists
+of multiple related tools and scripts.
 
   pyReSample is a companion to ReScene. It does for samples what ReScene does 
 for RARs. You can use ReSample to build a blueprint of an AVI, MKV, MP4 or WMV
@@ -40,8 +43,15 @@ View srr_spec.txt and http://rescene.wikidot.com/ for more info.
 Dependencies
 ============
 
-pyReScene requires Python 2.6 or 2.7 to run. There are currently no required
-external dependencies.
+pyReScene requires Python 2.6 or 2.7 to run. There are some executables
+made available for Windows users. There are currently no required
+external dependencies. However, if you want to reconstruct compressed RAR
+volumes, you will need to obtain a couple of the shareware (Win)RAR packages.
+These files will need to be preprocessed by the bin/preprardir.py script.
+This script extracts the RAR executables from the archives and renames them
+for further usage. The new folder with RAR executables will need to be passed
+to the -z parameter of ReScene when reconstructing compressed archives.
+http://rescene.wikidot.com/rar-versions
 
 Installation instructions
 =========================

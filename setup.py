@@ -21,16 +21,16 @@ import sys
 config_dict = {
     "name": "pyReScene",
     "packages": ["rescene", "resample"],
-    "scripts": ["bin/srr", "bin/srs", "bin/pyrescene.py"],
+    "scripts": ["bin/srr", "bin/srs", "bin/pyrescene.py", "bin/preprardir.py"],
     "version": rescene.__version__,
     "description": "Python ReScene and ReSample implementation",
     "author": "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
-    "author_email": "gfy@lavabit.com",
+    "author_email": "pyrescene@gmail.com",
     "url": "https://bitbucket.org/Gfy/pyrescene",
     "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads",
     "license": "MIT",
     "keywords": ["rescene", "srr", "resample", "srs", "repackage", "rar",
-	            "avi", "mkv", "mp4", "wmv"],
+	            "avi", "mkv", "mp4", "wmv", "scene", "compressed"],
     "classifiers": [
 		"Development Status :: 4 - Beta",
         "Programming Language :: Python :: 2.6",
@@ -57,11 +57,15 @@ process only works on RAR files created with "Store" mode (otherwise known as
 # for creating Windows EXE files
 if 'py2exe' in sys.argv:
 	import py2exe
-	config_dict["options"] = {'py2exe': {'bundle_files': 1, 'compressed': True}}
+	config_dict["options"] = {'py2exe': {'bundle_files': 1, 
+	                                     'compressed': True}}
 	config_dict["zipfile"] = None
 	# targets to build
 	config_dict["console"] = config_dict["scripts"]
-	
+	config_dict["windows"] = [{
+	    'script': config_dict["scripts"][2],
+	    'icon_resources': [(1,'images/icon.ico')]
+	}]
 	#TODO: http://stackoverflow.com/questions/525329/embedding-icon-in-exe-with-py2exe-visible-in-vista
 	#http://stackoverflow.com/questions/9649727/changing-the-icon-of-the-produced-exe-py2exe
 

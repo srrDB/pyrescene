@@ -3,12 +3,12 @@ pyReScene 0.4 (2013-02-)
 
  * pyReScene Auto: Fixing.Frank.2002.DVDRip.XviD-EXViD srr could not create
  * pyReScene Auto: infinite loop on The.Haunting.1963.DVDRip.XviD-FRAGMENT
- * pyReScene Auto: OSX issue fixed
- * pyReScene Auto: more subfolder fixes
+ * pyReScene Auto: OS X issue fixed
+ * pyReScene Auto: more subfolder detection fixes
  * ReSample: No sample recreation for MKV files with attachments (bug #2)
  * ReSample: Die.Simpsons.S04E02.....iNTERNAL-UTOPiA
    main AVI file with multiple audio tracks: the sample could not rebuild
- * ReSample: ASAP sample failed reconstruction
+ * ReSample: ASAP MP4 sample failed reconstruction
  * ReScene: Initial reconstruction support for compressed RAR files!
  
 pyReScene 0.3 (2013-02-07)

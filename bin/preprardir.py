@@ -25,11 +25,13 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 from optparse import OptionParser
+from datetime import datetime
 import sys
 import os
 import re
 import subprocess
 import shutil
+import tarfile
 
 try:
 	import _preamble
@@ -38,6 +40,7 @@ except ImportError:
 	
 import rescene
 from rescene.rar import RarReader
+from rescene.comprrar import RETURNCODE 
 
 def main(options, args):
 	for element in args:
@@ -48,11 +51,8 @@ def main(options, args):
 	input_dir = args[0]
 	output_dir = args[1]
 	
-	if os.name == "nt": # Windows
-		extract_rarexe(input_dir, output_dir)
-		copy_license_file(output_dir)
-	else:
-		print("No support for platforms other than Windows.")
+	extract_rarbin(input_dir, output_dir)
+	copy_license_file(output_dir)
 
 def locate_unrar():
 	"""locating installed unrar"""
@@ -78,46 +78,112 @@ def locate_unrar():
 	return unrar
 
 def copy_license_file(output_dir):
+	"""From WinRAR order.htm:
+	If you use WinRAR, you will need to copy the registration key file 
+	(rarreg.key) to a WinRAR folder or to %APPDATA%\WinRAR folder. By default 
+	WinRAR folder is "C:\Program Files\WinRAR", but it can be changed by a user
+	when installing WinRAR.
+	
+	If you use RAR/Unix and RAR for OS X, you should copy rarreg.key to your 
+	home directory or to one of the following directories: /etc, /usr/lib, 
+	/usr/local/lib, /usr/local/etc. You may rename it to .rarreg.key or 
+	.rarregkey, if you wish, but rarreg.key is also valid.
+	"""
 	unrar = locate_unrar()
 	if os.path.isfile(unrar):
+		# a WinRAR folder
 		licfile = os.path.join(os.path.basename(unrar), "RarReg.key")
 		if os.path.isfile(licfile):
 			shutil.copy(licfile, output_dir)
+			return True
+	# %APPDATA%\WinRAR folder
+	licfile = os.path.join(os.environ["appdata"], "WinRAR", "RarReg.key")
+	if os.path.isfile(licfile):
+		shutil.copy(licfile, output_dir)
+		return True
+	if os.name == "posix":
+		locations = ["~", "/etc", "/usr/lib", 
+					"/usr/local/lib", "/usr/local/etc"]
+		for loc in locations:
+			loc = os.path.expanduser(loc)
+			for name in ("rarreg.key", ".rarreg.key", ".rarregkey"):
+				reg = os.path.join(loc, name)
+				if os.path.isfile(reg):
+					shutil.copy(reg, output_dir)
+					return True
+	return False
 	
-def extract_rarexe(source, dest, unrar=locate_unrar()):
+def extract_rarbin(source, dest, unrar=locate_unrar()):
+	dest = os.path.abspath(dest)
 	for fname in os.listdir(source):
 		tag = versiontag(fname)
-		if not tag or not ".exe" in fname:
+		if (not tag or (not ".exe" in fname and not ".tar.gz" in fname and
+			not ".sfx" in fname)):
 			continue
-		elif tag.large < 2 or tag.beta:
+		elif tag.large < 2:
 			continue
-		date, name = get_rar_date_name(os.path.join(source, fname))
+		elif not options.enable_beta and tag.beta:
+			continue
+		archive_name = os.path.join(source, fname)
+		date, name = get_rar_date_name(archive_name)
 		if date and name:
-			new_name = date + "_rar%s.exe" % tag
-			print("Extracting %s..." % new_name)
-			args = [unrar, "e", os.path.join(source, fname), name, dest]
-			
-			extract = custom_popen(args)
-			if extract.wait() == 0:
-				try:
-					os.rename(os.path.join(dest, name), 
-							  os.path.join(dest, new_name))
-				except WindowsError: # [Error 183]
-					# ERROR_ALREADY_EXISTS
-					os.unlink(os.path.join(dest, name))
+			if tarfile.is_tarfile(archive_name):
+				new_name = date + "_rar%s" % tag
+				print("Extracting %s..." % new_name),
+				with tarfile.open(archive_name) as tf:
+					exe = tf.getmember("rar/rar")
+					tf.extract(exe, path=dest)
+					try:
+						os.rename(os.path.join(dest, "rar", "rar"),
+						          os.path.join(dest, new_name))
+						print("done.")
+					except: # WindowsError: # [Error 183]
+						# ERROR_ALREADY_EXISTS
+						os.unlink(os.path.join(dest, "rar", "rar"))	
+						print("failed.")
+					os.rmdir(os.path.join(dest, "rar"))
 			else:
-				print("error: %s" % fname)
+				new_name = date + "_rar%s.exe" % tag
+				if ".sfx" in fname:
+					# no extension for Linux executables
+					new_name = new_name[:-4]
+				print("Extracting %s..." % new_name),
+				args = [unrar, "e", archive_name, name, dest]
+				extract = custom_popen(args)
+				if extract.wait() == 0:
+					try:
+						# for rarln271.sfx and others
+						name = os.path.basename(name)
+						os.rename(os.path.join(dest, name), 
+								  os.path.join(dest, new_name))
+						print("done.")
+					except: # WindowsError: # [Error 183]
+						# ERROR_ALREADY_EXISTS
+						os.unlink(os.path.join(dest, name))
+						print("failed.")
+				else:
+					# Error 2 for example when there is a corrupt exe
+					# Verifying authenticity information ...  Failed
+					# Invalid authenticity information
+					print(RETURNCODE[extract.wait()])
 		else:
 			print("error: %s" % fname)
 
 def get_rar_date_name(file_name):
-	for block in RarReader(file_name, enable_sfx=True):
-		try:
-			if block.file_name in ("Rar.exe", "Rar.Exe"):
-				t = block.file_datetime
-				return ("%d-%02d-%02d" % (t[0], t[1], t[2]), block.file_name)
-		except Exception:
-			pass
+	if file_name.endswith(".exe") or file_name.endswith(".sfx"):
+		for block in RarReader(file_name, enable_sfx=True):
+			try:
+				if block.file_name in ("Rar.exe", "Rar.Exe", "rar\\rar", "rar"):
+					t = block.file_datetime
+					return ("%d-%02d-%02d" % (t[0], t[1], t[2]), 
+					                          block.file_name)
+			except Exception:
+				pass
+	elif tarfile.is_tarfile(file_name):
+		with tarfile.open(file_name) as tf:
+			mtime = tf.getmember("rar/rar").mtime
+			return (datetime.fromtimestamp(mtime).strftime("%Y-%m-%d"), 
+			        "rar/rar")
 	return None, None
 
 class VersionTag(object):
@@ -138,6 +204,7 @@ class VersionTag(object):
 	
 def versiontag(file_name):
 	"""Returns version tag object."""
+	# Windows
 	match = re.match("[a-zA-Z]+(?P<x64>-x64-)?"
 					 "(?P<large>\d)(?P<small>\d\d?)"
 					 "(?P<beta>b\d)?.+", file_name)
@@ -145,6 +212,17 @@ def versiontag(file_name):
 		x64, large, small, beta = match.group("x64", "large", "small", "beta")
 		if len(small) == 1:
 			small += "0"
+		return VersionTag(large, small, beta, x64)
+	# Linux, OS X, BSD
+	match = re.match("rar(osx|linux|bsd)-(?P<x64>x64-)?"
+					 "(?P<large>\d)\.(?P<small>\d(\.\d)?)\.?"
+					 "(?P<beta>b\d)?\.tar.gz", file_name)
+	if match:
+		x64, large, small, beta = match.group("x64", "large", "small", "beta")
+		if len(small) == 1:
+			small += "0"
+		else:
+			small = small.replace(".", "")
 		return VersionTag(large, small, beta, x64)
 	return None
 
@@ -177,8 +255,12 @@ if __name__ == '__main__':
 	"compressed RAR support for pyReScene.\n"
 	"Example usage: %prog Z:\\rar\\windows C:\\pyReScene\\rar"), 
 	version="%prog " + rescene.__version__) # --help, --version
+	
+	parser.add_option("-b", "--beta", dest="enable_beta", default=False,
+					  action="store_true",
+					  help="extract beta versions too")
 
-	if len(sys.argv) != 3:
+	if len(sys.argv) < 3:
 		# show application usage
 		parser.print_help()
 	else:
