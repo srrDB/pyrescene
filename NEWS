@@ -5,6 +5,7 @@ pyReScene 0.4 (2013-02-)
  * pyReScene Auto: infinite loop on The.Haunting.1963.DVDRip.XviD-FRAGMENT
  * pyReScene Auto: OS X issue fixed
  * pyReScene Auto: more subfolder detection fixes
+ * pyReScene Auto: only store proof RAR files when they contain image files
  * ReSample: No sample recreation for MKV files with attachments (bug #2)
  * ReSample: Die.Simpsons.S04E02.....iNTERNAL-UTOPiA
    main AVI file with multiple audio tracks: the sample could not rebuild

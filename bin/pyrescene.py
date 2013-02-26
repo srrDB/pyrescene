@@ -37,8 +37,6 @@ design decisions:
 Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\CD2\
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
- 
-TODO: don't store .rar files for proofs when they contain m2ts files.
 """
 
 from optparse import OptionParser
@@ -61,6 +59,7 @@ import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
+from rescene.rar import RarReader, BlockType
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -116,22 +115,24 @@ def get_proof_files(reldir):
 	               get_files(reldir, "*.jpeg"))
 	rar_files = get_files(reldir, "*.rar")
 	result = []
-	for sample in image_files:
+	for proof in image_files:
 		# images in Sample and Proof folders are ok
 		# others need to contain the word proof in their path
-		if "proof" in sample.lower() or "sample" in sample.lower():
-			result.append(sample)
+		if "proof" in proof.lower() or "sample" in proof.lower():
+			result.append(proof)
 		else:
 			# proof file in root dir without the word proof somewhere
-			if os.path.getsize(sample) > 100000:
-				result.append(sample)
-	for sample in rar_files:
-		if "proof" in sample.lower():
-			# no "body.of.proof" main rar files
-			# + fix problem with .partXX.rar files
-			if (os.path.getsize(sample) % 1000 != 0 and
-				".part" not in os.path.basename(sample)):
-				result.append(sample)
+			if os.path.getsize(proof) > 100000:
+				result.append(proof)
+	for proof in rar_files:
+		if "proof" in proof.lower():
+			# RAR file must contain image file
+			for block in RarReader(proof):
+				if block.rawtype == BlockType.RarPackedFile:
+					if (block.file_name[-4:] in 
+						(".jpg", "jpeg", ".png", ".bmp", ".gif")):
+						result.append(proof)
+						break
 	return result
 
 def remove_unwanted_sfvs(sfv_list, release_dir):
