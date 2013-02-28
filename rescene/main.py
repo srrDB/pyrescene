@@ -1021,7 +1021,7 @@ def print_details(file_path):
 			
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
-				rar_executable_dir=None):
+				rar_executable_dir=None, temp_dir=None):
 	"""
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
@@ -1042,6 +1042,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
 	running_crc = 0
+	
+	comprrar.temp_dir = temp_dir
 	
 	if rar_executable_dir:
 		comprrar.initialize_rar_repository(rar_executable_dir)

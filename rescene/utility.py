@@ -39,6 +39,8 @@ import difflib
 import mmap
 import warnings
 import locale
+import os
+import shutil
 
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
@@ -232,6 +234,14 @@ def show_spinner(amount):
 
 def remove_spinner():
 	sys.stdout.write("\b"), # removes spinner
+	
+def empty_folder(folder_path):
+	for file_object in os.listdir(folder_path):
+		file_object_path = os.path.join(folder_path, file_object)
+		if os.path.isfile(file_object_path):
+			os.unlink(file_object_path)
+		else:
+			shutil.rmtree(file_object_path)
 	
 ###############################################################################
 

@@ -60,6 +60,7 @@ from resample.srs import main as srsmain
 from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
 from rescene.rar import RarReader, BlockType
+from rescene.utility import empty_folder
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -196,14 +197,6 @@ def get_start_rar_files(sfv_list):
 			sfile = os.path.join(os.path.dirname(sfv), first[0])
 			wanted_rars.append(sfile)
 	return wanted_rars
-
-def empty_folder(folder_path):
-	for file_object in os.listdir(folder_path):
-		file_object_path = os.path.join(folder_path, file_object)
-		if os.path.isfile(file_object_path):
-			os.unlink(file_object_path)
-		else:
-			shutil.rmtree(file_object_path)
 
 def copy_to_working_dir(working_dir, release_dir, copy_file):
 	path = os.path.relpath(copy_file, release_dir)

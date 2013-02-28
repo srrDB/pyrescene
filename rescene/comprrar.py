@@ -32,6 +32,7 @@ import multiprocessing
 from tempfile import mkdtemp
 from rescene.rar import RarReader, BlockType
 from rescene.rarstream import RarStream
+from rescene.utility import empty_folder
 
 RETURNCODE = {
 		0: "Successful operation",
@@ -50,12 +51,22 @@ RETURNCODE = {
 
 archived_files = {}
 repository = None
+temp_dir = None
 
 class EmptyRepository(Exception):
 	"""The RAR repository is empty."""
 
 class RarNotFound(Exception):
 	"""No good RAR executable can be found."""
+	
+def get_temp_directory():
+	global temp_dir
+	if temp_dir and os.path.isdir(temp_dir):
+		if not len(os.listdir(temp_dir)):
+			return temp_dir
+		else:
+			print("Temporary directory not empty.")
+	return mkdtemp("_pyReScene")
 	
 def get_rar_data_object(block, blocks, src):
 	return archived_files.setdefault(block.file_name,
@@ -273,7 +284,7 @@ class CompressedRarFile(io.IOBase):
 		
 		self.solid = first_block.flags & first_block.SOLID
 		
-		self.temp_dir = mkdtemp("_pyReScene")
+		self.temp_dir = get_temp_directory()
 		
 		# make sure there is a RarRepository
 		global repository
@@ -285,7 +296,9 @@ class CompressedRarFile(io.IOBase):
 		if not self.good_rar:
 			assert len(os.listdir(self.temp_dir)) == 0
 			try:
-				os.rmdir(self.temp_dir)
+				# don't remove users' temp dir
+				if self.temp_dir != temp_dir:
+					os.rmdir(self.temp_dir)
 			except:
 				print("Failure to remove temp dir: %s" % self.temp_dir)
 			raise RarNotFound("No good RAR version found.")
@@ -497,7 +510,12 @@ class CompressedRarFile(io.IOBase):
 		As a convenience, it is allowed to call this method more than once; 
 		only the first call, however, will have an effect."""
 		self.rarstream.close()
-		shutil.rmtree(self.temp_dir)
+		global temp_dir
+		if self.temp_dir == temp_dir:
+			# don't remove the user his folder
+			empty_folder(self.temp_dir)
+		else:
+			shutil.rmtree(self.temp_dir)
 		
 	@property
 	def closed(self):

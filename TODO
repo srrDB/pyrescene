@@ -7,7 +7,6 @@ pyReScene
  - new block for empty directories?
  - do not create SRR based on empty SFV files (but do so when .mkv in there)
  - show SRR differences -> use rescene.php
- - an option to just verify an extracted release is valid
  - "Defently pysrr still dosnt work correctly when path is too long when 
    I'm missing about 100 samples"
    It created an srr, and stored all the files in, but didnt list any rar files

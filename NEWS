@@ -1,4 +1,4 @@
-pyReScene 0.4 (2013-02-)
+pyReScene 0.4 (2013-02-28)
 =============
 
  * pyReScene Auto: Fixing.Frank.2002.DVDRip.XviD-EXViD srr could not create
@@ -10,7 +10,8 @@ pyReScene 0.4 (2013-02-)
  * ReSample: Die.Simpsons.S04E02.....iNTERNAL-UTOPiA
    main AVI file with multiple audio tracks: the sample could not rebuild
  * ReSample: ASAP MP4 sample failed reconstruction
- * ReScene: Initial reconstruction support for compressed RAR files!
+ * ReScene: Reconstruction support for compressed RAR files!
+ * ReScene: -t switch to choose your own (empty) temporary directory
  
 pyReScene 0.3 (2013-02-07)
 =============

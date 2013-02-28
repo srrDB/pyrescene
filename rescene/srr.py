@@ -207,7 +207,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths, 
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
-			                    options.rar_executable_dir)
+			                    options.rar_executable_dir, options.temp_dir)
 		except (FileNotFound, comprrar.RarNotFound):
 			mthread.done = True
 			mthread.join()
@@ -340,11 +340,14 @@ def main(argv=None):
 					"names for extracted files.  ex: srr example.srr -h "
 					"orginal.mkv:renamed.mkv;original.nfo:renamed.nfo",
 					metavar="HINTS", dest="hints")
-	recon.add_option("-z", "--rar-folder", dest="rar_executable_dir", 
+	recon.add_option("-z", "--rar-dir", dest="rar_executable_dir", 
 					metavar="DIRECTORY",
 					help="Directory with preprocessed RAR executables created"
 					" by the preprardir.py script. This is necessary to "
 					"reconstruct compressed archives.")
+	recon.add_option("-t", "--temp-dir", dest="temp_dir", 
+					metavar="DIRECTORY", help="Specify empty directory "
+					"for temp files while reconstructing compressed RARs.")
 	
 #	creation.set_description("These options are used for creating an SRR file.")
 	edit.add_option("-x", "--extract",

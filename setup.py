@@ -62,10 +62,10 @@ if 'py2exe' in sys.argv:
 	config_dict["zipfile"] = None
 	# targets to build
 	config_dict["console"] = config_dict["scripts"]
-	config_dict["windows"] = [{
-	    'script': config_dict["scripts"][2],
-	    'icon_resources': [(1,'images/icon.ico')]
-	}]
+#	config_dict["windows"] = [{
+#	    'script': config_dict["scripts"][2],
+#	    'icon_resources': [(1,'images/icon.ico')]
+#	}]
 	#TODO: http://stackoverflow.com/questions/525329/embedding-icon-in-exe-with-py2exe-visible-in-vista
 	#http://stackoverflow.com/questions/9649727/changing-the-icon-of-the-produced-exe-py2exe
 
