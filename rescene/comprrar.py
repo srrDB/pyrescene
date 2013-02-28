@@ -191,7 +191,6 @@ class RarArguments(object):
 			self.solid, self.solid_namesort, self.threads,
 			self.old_style, "-o+",
 			self.rar_archive]) + self.store_files
-#		print " ".join(args)
 		return args
 	
 	def set_solid(self, is_set):
@@ -294,12 +293,13 @@ class CompressedRarFile(io.IOBase):
 		
 		print("Compressing %s..." % os.path.basename(src))
 		self.good_rar.args.store_files = self.source_files
-		compress = custom_popen(self.good_rar.full())
+#		compress = custom_popen(self.good_rar.full())
+		compress = subprocess.Popen(self.good_rar.full())
 		stdout, stderr = compress.communicate()
 		
 		if compress.returncode != 0:
-			print(stdout)
-			print(stderr)
+#			print(stdout)
+#			print(stderr)
 			print("Something went wrong executing Rar.exe:")
 			print(RETURNCODE[compress.returncode])
 			
@@ -353,13 +353,18 @@ class CompressedRarFile(io.IOBase):
 				print(RETURNCODE[proc.returncode])
 		
 			# check compressed size
-			for lego in RarReader(out):
+			rarblocks = RarReader(out)
+			for lego in rarblocks:
 				if lego.rawtype == BlockType.RarPackedFile:
 					size = lego.packed_size
 					break
+			rarblocks.close()
+			os.unlink(out)
+			
 			if size >= size_min:
 				break
 		assert os.path.isfile(piece)
+		assert not os.path.isfile(out)
 			
 		def try_rar_executable(rar, args):
 			compress = custom_popen([rar.path()] + args.arglist())
@@ -383,14 +388,16 @@ class CompressedRarFile(io.IOBase):
 					crc = -1
 				elif start == rs.length():
 					# RAR already calculated crc for us
-					for bl in RarReader(out):
+					rr = RarReader(out)
+					for bl in rr:
 						if bl.rawtype == BlockType.RarPackedFile:
 							crc = bl.file_crc
 							break
+					rr.close()
 				else:
 					# we do the crc calculation ourselves
 					assert rs.length() > start
-
+	
 					bufsize = 8*1024
 					while start > 0:
 						if start - bufsize > 0:
@@ -400,33 +407,28 @@ class CompressedRarFile(io.IOBase):
 							readsize = start
 							start = 0
 						crc = zlib.crc32(rs.read(readsize), crc)
-
+			
 			os.remove(out)
 			
 			if crc & 0xFFFFFFFF == block.file_crc:
 				return True
 			return False
 		
-		rar_multiple_threads = []
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			print("Trying %s." % rar)
-			
 			if rar.supports_setting_threads():
-				rar_multiple_threads.append(rar)
-
-			if try_rar_executable(rar, args):
+				for thread_param in range(1, multiprocessing.cpu_count() + 1):
+					args.threads = "-mt%d" % thread_param
+					if try_rar_executable(rar, args):
+						found = True
+						break
+			else:
+				found = try_rar_executable(rar, args)
+			if found:
 				rar.args = args
+				print(" ".join(args.arglist()))
 				return rar
-		
-		# try again with those versions that can set the amount of threads
-		for rar in rar_multiple_threads:
-			print("Trying %s with multiple threads." % rar)
-			for thread_param in range(1, multiprocessing.cpu_count() + 1):
-				args.threads = "-mt%d" % thread_param
-				if try_rar_executable(rar, args):
-					rar.args = args
-					return rar
-
+			args.threads = ""
 		os.remove(piece)
 	
 	def set_new(self, source_file, block):

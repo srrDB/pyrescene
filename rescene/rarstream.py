@@ -41,7 +41,10 @@ def _check(first_rar):
 	       AttributeError (not the first rar archive is given).
 	Returns True if all is OK.
 	Returns False when we have an empty archive."""
-	for block in rar.RarReader(first_rar):
+	rar_reader = rar.RarReader(first_rar)
+	blocks = rar_reader.read_all()
+	rar_reader.close()
+	for block in blocks:
 		if block.rawtype == rar.BlockType.RarPackedFile:
 			if block.flags & rar.RarPackedFileBlock.SPLIT_BEFORE:
 				raise AttributeError(
@@ -114,6 +117,7 @@ class RarStream(io.IOBase):
 					
 					self._rar_volumes.append(cvol)
 					self._packed_file_length += block.packed_size
+		reader.close()
 		self.packed_file_name = packed_file_name
 
 	def length(self):
@@ -268,6 +272,10 @@ class RarStream(io.IOBase):
 	def list_files(self):
 		"""Returns a list of files stored in the RAR archive set."""
 		return rar.RarReader(self._rar_volumes[0].archive_path).list_files()
+	
+	def __exit__(self, *args, **kwargs):
+		#http://effbot.org/zone/python-with-statement.htm
+		self.close()
 
 	class _RarVolume(object):
 		"""Represents a RAR archive/file.

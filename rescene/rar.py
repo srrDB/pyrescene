@@ -1554,3 +1554,5 @@ class RarReader(object):
 	def __iter__(self):
 		return self
 
+	def close(self):
+		self._rarstream.close()
