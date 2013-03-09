@@ -429,6 +429,7 @@ class CompressedRarFile(io.IOBase):
 		
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			print("Trying %s." % rar)
+			found = False
 			if rar.supports_setting_threads():
 				for thread_param in range(1, multiprocessing.cpu_count() + 1):
 					args.threads = "-mt%d" % thread_param
