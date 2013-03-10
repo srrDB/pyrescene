@@ -193,7 +193,7 @@ class RarArguments(object):
 		self.store_files = store_files
 		
 		self.set_solid(block.flags & block.SOLID)
-		self.set_solid_namesort(True)
+		self.set_solid_namesort(False)
 		self.threads = ""
 	
 	def arglist(self):
@@ -340,46 +340,57 @@ class CompressedRarFile(io.IOBase):
 		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
 		
-		# we assume that newer versions always compress better
-		rarexe = repository.get_most_recent_version()
+		# Rar 2.0x version don't have a CRC stored, only at the end
+		# do the complete file
+		if block.file_crc == 0xFFFFFFFF:
+			args = RarArguments(block, out, [self.source_files[0]])
+			old = True
+		else:
+			old = False
+			args = RarArguments(block, out, [piece])
 		
-		window_size = block.get_dict_size()
-		args = RarArguments(block, out, [piece])
-		amount = 0
-		for i in list(range(2, 100, 2)): # start with 2% increase of the ratio
-			increase = (float(size_full) / size_compr) + (i / 100.0)
-			amount = min(size_full, int(size_min * increase) + window_size)
+			print("Grabbing large enough data piece size for testing.")
+			# we assume that newer versions always compress better
+			rarexe = repository.get_most_recent_version()
 			
-			# copy bytes from source to destination
-			copy_data(self.source_files[0], piece, amount)
-			
-			if amount == size_full:
-				break
-			
-			proc = custom_popen([rarexe.path()] + args.arglist())
-			proc.wait()
-			
-			if proc.returncode != 0:
-				print(proc.stdout.read())
-				print(proc.stderr.read())
-				print("Something went wrong executing Rar.exe:")
-				print(RETURNCODE[proc.returncode])
-		
-			# check compressed size
-			rarblocks = RarReader(out)
-			for lego in rarblocks:
-				if lego.rawtype == BlockType.RarPackedFile:
-					size = lego.packed_size
+			window_size = block.get_dict_size()
+			amount = 0
+			# start with 2% increase of the ratio
+			for i in list(range(2, 100, 5)):
+				increase = (float(size_full) / size_compr) + (i / 100.0)
+				amount = min(size_full, int(size_min * increase) + window_size)
+				print("Size: %d" % amount)
+				
+				# copy bytes from source to destination
+				copy_data(self.source_files[0], piece, amount)
+				
+				if amount == size_full:
 					break
-			rarblocks.close()
-			os.unlink(out)
+				
+				proc = custom_popen([rarexe.path()] + args.arglist())
+				proc.wait()
+				
+				if proc.returncode != 0:
+					print(proc.stdout.read())
+					print(proc.stderr.read())
+					print("Something went wrong executing Rar.exe:")
+					print(RETURNCODE[proc.returncode])
 			
-			if size >= size_min:
-				break
-		assert os.path.isfile(piece)
-		assert not os.path.isfile(out)
+				# check compressed size
+				rarblocks = RarReader(out)
+				for lego in rarblocks:
+					if lego.rawtype == BlockType.RarPackedFile:
+						size = lego.packed_size
+						break
+				rarblocks.close()
+				os.unlink(out)
+				
+				if size >= size_min:
+					break
+			assert os.path.isfile(piece)
+			assert not os.path.isfile(out)
 			
-		def try_rar_executable(rar, args):
+		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
 			stdout, stderr = compress.communicate()
 			
@@ -391,8 +402,10 @@ class CompressedRarFile(io.IOBase):
 
 			# check if this is a good RAR version
 			start = size_min
-			crc = 0
+			ps = crc = 0
 			with RarStream(out, compressed=True) as rs:
+				if old:
+					start = rs.length()
 #				print("Compressed: %d" % rs.length())
 #				print("Expected: %d" % start)
 				if start > rs.length():
@@ -402,10 +415,18 @@ class CompressedRarFile(io.IOBase):
 				elif start == rs.length():
 					# RAR already calculated crc for us
 					rr = RarReader(out)
-					for bl in rr:
-						if bl.rawtype == BlockType.RarPackedFile:
-							crc = bl.file_crc
-							break
+					if old:
+						for bl in rr:
+							if (bl.rawtype == BlockType.RarPackedFile
+							and 0xFFFFFFFF != bl.file_crc):
+								crc = bl.file_crc
+								ps = bl.packed_size # works because one big RAR
+								break
+					else:
+						for bl in rr:
+							if bl.rawtype == BlockType.RarPackedFile:
+								crc = bl.file_crc
+								break
 					rr.close()
 				else:
 					# we do the crc calculation ourselves
@@ -425,6 +446,14 @@ class CompressedRarFile(io.IOBase):
 			
 			if crc & 0xFFFFFFFF == block.file_crc:
 				return True
+			if block.file_crc == 0xFFFFFFFF: # old RAR versions
+				# CRC of file is stored in the last block
+				for bl in blocks:
+					if (bl.rawtype == BlockType.RarPackedFile
+						and bl.file_name == block.file_name 
+						and crc & 0xFFFFFFFF == bl.file_crc
+						and size_compr == ps):
+						return True
 			return False
 		
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
@@ -433,11 +462,11 @@ class CompressedRarFile(io.IOBase):
 			if rar.supports_setting_threads():
 				for thread_param in range(1, multiprocessing.cpu_count() + 1):
 					args.threads = "-mt%d" % thread_param
-					if try_rar_executable(rar, args):
+					if try_rar_executable(rar, args, old):
 						found = True
 						break
 			else:
-				found = try_rar_executable(rar, args)
+				found = try_rar_executable(rar, args, old)
 			if found:
 				rar.args = args
 				print(" ".join(args.arglist()))
@@ -579,6 +608,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
+	print(cmd)
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	

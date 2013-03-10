@@ -1052,19 +1052,19 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		Returns Rar.exe dictionary size parameter
 		md<size>   Dictionary size in KB (64,128,256,512,1024,2048,4096 or A-G)
 		"""
-		if self.flags & self.DICT4096:
+		if self.flags & self.DICT4096 == self.DICT4096:
 			return "-mdG"
-		if self.flags & self.DICT2048:
+		if self.flags & self.DICT2048 == self.DICT2048:
 			return "-mdF"
-		if self.flags & self.DICT1024:
+		if self.flags & self.DICT1024 == self.DICT1024:
 			return "-mdE"
-		if self.flags & self.DICT512:
+		if self.flags & self.DICT512 == self.DICT512:
 			return "-mdD"
-		if self.flags & self.DICT256:
+		if self.flags & self.DICT256 == self.DICT256:
 			return "-mdC"
-		if self.flags & self.DICT128:
+		if self.flags & self.DICT128 == self.DICT128:
 			return "-mdB"
-		if self.flags & self.DICT64:
+		if self.flags & self.DICT64 == self.DICT64:
 			return "-mdA"
 	
 	def get_os(self):
