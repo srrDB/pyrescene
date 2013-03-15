@@ -1054,17 +1054,17 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		"""
 		if self.flags & self.DICT4096 == self.DICT4096:
 			return "-mdG"
-		if self.flags & self.DICT2048 == self.DICT2048:
+		elif self.flags & self.DICT2048 == self.DICT2048:
 			return "-mdF"
-		if self.flags & self.DICT1024 == self.DICT1024:
+		elif self.flags & self.DICT1024 == self.DICT1024:
 			return "-mdE"
-		if self.flags & self.DICT512 == self.DICT512:
+		elif self.flags & self.DICT512 == self.DICT512:
 			return "-mdD"
-		if self.flags & self.DICT256 == self.DICT256:
+		elif self.flags & self.DICT256 == self.DICT256:
 			return "-mdC"
-		if self.flags & self.DICT128 == self.DICT128:
+		elif self.flags & self.DICT128 == self.DICT128:
 			return "-mdB"
-		if self.flags & self.DICT64 == self.DICT64:
+		elif self.flags & self.DICT64 == self.DICT64:
 			return "-mdA"
 	
 	def get_os(self):
@@ -1074,20 +1074,20 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		return DICTIONARY_NAME[(self.flags & 0x00e0) >> 5]
 	
 	def get_dict_size(self):
-		if self.flags & self.DICT64:
-			return 64*1024
-		elif self.flags & self.DICT128:
-			return 128*1024
-		elif self.flags & self.DICT256:
-			return 256*1024
-		elif self.flags & self.DICT512:
-			return 512*1024
-		elif self.flags & self.DICT1024:
-			return 1024*1024
-		elif self.flags & self.DICT2048:
-			return 2048*1024
-		else:
+		if self.flags & self.DICT4096 == self.DICT4096:
 			return 4096*1024
+		elif self.flags & self.DICT2048 == self.DICT2048:
+			return 2048*1024
+		elif self.flags & self.DICT1024 == self.DICT1024:
+			return 1024*1024
+		elif self.flags & self.DICT512 == self.DICT512:
+			return 512*1024
+		elif self.flags & self.DICT256 == self.DICT256:
+			return 256*1024
+		elif self.flags & self.DICT128 == self.DICT128:
+			return 128*1024
+		elif self.flags & self.DICT64 == self.DICT64:
+			return 64*1024
 
 	def get_version(self):
 		return "Version %d.%d is needed to extract." %  \

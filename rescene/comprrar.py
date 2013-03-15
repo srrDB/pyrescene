@@ -65,7 +65,7 @@ def get_temp_directory():
 		if not len(os.listdir(temp_dir)):
 			return temp_dir
 		else:
-			print("Temporary directory not empty.")
+			print("Temporary directory is not empty: using other directory.")
 	return mkdtemp("_pyReScene")
 	
 def get_rar_data_object(block, blocks, src):
@@ -193,14 +193,14 @@ class RarArguments(object):
 		self.store_files = store_files
 		
 		self.set_solid(block.flags & block.SOLID)
-		self.set_solid_namesort(False)
+		self.set_solid_namesort(True)
 		self.threads = ""
 	
 	def arglist(self):
 		args = filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
-			self.old_style, "-o+",
+			self.old_style, "-o+", "-ep",
 			self.rar_archive]) + self.store_files
 		return args
 	
@@ -359,7 +359,6 @@ class CompressedRarFile(io.IOBase):
 			for i in list(range(2, 100, 5)):
 				increase = (float(size_full) / size_compr) + (i / 100.0)
 				amount = min(size_full, int(size_min * increase) + window_size)
-				print("Size: %d" % amount)
 				
 				# copy bytes from source to destination
 				copy_data(self.source_files[0], piece, amount)
@@ -481,10 +480,12 @@ class CompressedRarFile(io.IOBase):
 		
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		
-		print("Compressing...")
+		print("Compressing %s:" % os.path.basename(self.source_files[-1]))
 		self.good_rar.args.source_files = self.source_files
 		self.good_rar.args.set_solid(block.flags & block.SOLID)
-		compress = custom_popen(self.good_rar.full())
+#		compress = custom_popen(self.good_rar.full())
+		print self.good_rar.full()
+		compress = subprocess.Popen(self.good_rar.full())
 		stdout, stderr = compress.communicate()
 		
 		if compress.returncode != 0:
@@ -493,6 +494,7 @@ class CompressedRarFile(io.IOBase):
 			print("Something went wrong executing Rar.exe:")
 			print(RETURNCODE[compress.returncode])
 
+		print os.path.basename(self.source_files[-1])
 		self.rarstream = RarStream(out, compressed=True,
 				packed_file_name=os.path.basename(self.source_files[-1]))
 		
