@@ -1,9 +1,10 @@
 pyReScene 0.5 (2013-03-)
 =============
 
- * ReScene: initialization bug fixed
+ * ReScene: initialization bug fixed (compressed RARs issue)
  * ReScene: choosing correct dictionary size while reconstructing
  * ReScene: able to reconstruct RAR 2.0x archives
+ * ReScene: solid archives fix (threading issue)
 
 pyReScene 0.4 (2013-02-28)
 =============

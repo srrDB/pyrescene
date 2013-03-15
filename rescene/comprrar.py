@@ -195,6 +195,17 @@ class RarArguments(object):
 		self.set_solid(block.flags & block.SOLID)
 		self.set_solid_namesort(True)
 		self.threads = ""
+		
+	def increase_thread_count(self):
+		if self.threads == "":
+			self.threads = "-mt1"
+			return True
+		else:
+			current_count = int(self.threads[3:])
+			if current_count < multiprocessing.cpu_count():
+				self.threads = "-mt%d" % (current_count + 1)
+				return True
+		return False
 	
 	def arglist(self):
 		args = filter(lambda x: x != '', 
@@ -459,8 +470,7 @@ class CompressedRarFile(io.IOBase):
 			print("Trying %s." % rar)
 			found = False
 			if rar.supports_setting_threads():
-				for thread_param in range(1, multiprocessing.cpu_count() + 1):
-					args.threads = "-mt%d" % thread_param
+				while(args.increase_thread_count()):
 					if try_rar_executable(rar, args, old):
 						found = True
 						break
@@ -483,25 +493,33 @@ class CompressedRarFile(io.IOBase):
 		print("Compressing %s:" % os.path.basename(self.source_files[-1]))
 		self.good_rar.args.source_files = self.source_files
 		self.good_rar.args.set_solid(block.flags & block.SOLID)
-#		compress = custom_popen(self.good_rar.full())
-		print self.good_rar.full()
-		compress = subprocess.Popen(self.good_rar.full())
-		stdout, stderr = compress.communicate()
 		
-		if compress.returncode != 0:
-			print(stdout)
-			print(stderr)
-			print("Something went wrong executing Rar.exe:")
-			print(RETURNCODE[compress.returncode])
-
-		print os.path.basename(self.source_files[-1])
-		self.rarstream = RarStream(out, compressed=True,
+		def compress():
+			compress = subprocess.Popen(self.good_rar.full())
+			stdout, stderr = compress.communicate()
+			
+			if compress.returncode != 0:
+				print(stdout)
+				print(stderr)
+				print("Something went wrong executing Rar.exe:")
+				print(RETURNCODE[compress.returncode])
+	
+			self.rarstream = RarStream(out, compressed=True,
 				packed_file_name=os.path.basename(self.source_files[-1]))
+		compress()
 		
+		# this happens with solid archives when the first file is small
+		# an .idx file is detected as having -mt1, but the .sub file can
+		# need 4 threads
 		if self.rarstream.length() != block.packed_size:
-			raise ValueError("Something isn't good yet.")
-#			self.good_rar = self.search_matching_rar_executable(block, self.blocks)
-		
+			print("Solid archive recompression.")
+			while(self.rarstream.length() != block.packed_size and
+				self.good_rar.args.increase_thread_count()):
+				compress()
+			
+		if self.rarstream.length() != block.packed_size:
+			raise ValueError("Something isn't right yet.")
+
 	def get_most_recent_date(self):
 		most_recent_date = "1970-01-01"
 		for block in self.blocks:
