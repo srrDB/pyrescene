@@ -411,7 +411,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		# SFV file in one of the interesting subdirs?
 		interesting_dirs = []
 		for dirname in dirnames:
-			if re.match("^(CD|DISK)\d$", dirname, re.IGNORECASE):
+			if re.match("^(CD|DISK|DVD)\d$", dirname, re.IGNORECASE):
 				interesting_dirs.append(dirname)
 		
 		for idir in interesting_dirs:
@@ -422,7 +422,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			if release:
 				break
 
-	rel_folders = ("^((CD|DISK)\d|(Vob)?Samples?|Covers?|Proofs?|"
+	rel_folders = ("^((CD|DISK|DVD)\d|(Vob)?Samples?|Covers?|Proofs?|"
 	               "Subs?(pack)?|(vob)?subs?)$")
 	if release and not re.match(rel_folders, os.path.basename(dirpath), re.I):
 		release = True

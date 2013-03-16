@@ -5,6 +5,7 @@ pyReScene 0.5 (2013-03-)
  * ReScene: choosing correct dictionary size while reconstructing
  * ReScene: able to reconstruct RAR 2.0x archives
  * ReScene: solid archives fix (threading issue)
+ * pyReScene Auto: DVD1 subfolders
 
 pyReScene 0.4 (2013-02-28)
 =============
