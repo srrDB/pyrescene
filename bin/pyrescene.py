@@ -411,7 +411,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		# SFV file in one of the interesting subdirs?
 		interesting_dirs = []
 		for dirname in dirnames:
-			if re.match("^(CD|DISK|DVD)\d$", dirname, re.IGNORECASE):
+			if re.match("^(CD|DISK|DVD|DISC)\d$", dirname, re.IGNORECASE):
 				interesting_dirs.append(dirname)
 		
 		for idir in interesting_dirs:
@@ -421,8 +421,9 @@ def is_release(dirpath, dirnames=None, filenames=None):
 					break
 			if release:
 				break
-
-	rel_folders = ("^((CD|DISK|DVD)\d|(Vob)?Samples?|Covers?|Proofs?|"
+	
+	# X3.Gold.Edition-Unleashed has DISC
+	rel_folders = ("^((CD|DISK|DVD|DISC)\d|(Vob)?Samples?|Covers?|Proofs?|"
 	               "Subs?(pack)?|(vob)?subs?)$")
 	if release and not re.match(rel_folders, os.path.basename(dirpath), re.I):
 		release = True
