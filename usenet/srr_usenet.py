@@ -113,6 +113,8 @@ Changelog version 1.4 (2012-10-24)
  - version number will be added to SRR files
  - no renamed RARs from kere.ws + fix for detection
   
+Changelog version 1.5 (2013-03-17)
+ - no separate 'srr_compressed_rars' output dir anymore
 
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
@@ -172,7 +174,7 @@ import rescene
 from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
 
-__version_info__ = ('1', '4')
+__version_info__ = ('1', '5')
 __version__ = '.'.join(__version_info__)
 
 EXTRA_SERVERS = [ # now in srr_usenet.cfg
@@ -1278,10 +1280,10 @@ STAT last segment of lg-le.de.le.2.r00"""
 				srr_info = rescene.info(srrf)
 				
 				# TODO: change priorities of the output dirs in the future
-				if srr_info['compression']:
-					SUBDIR = "srr_compressed_rars"
-				elif NO_SFV:
+				if NO_SFV:
 					SUBDIR = "srr_no_sfv"
+#				if srr_info['compression']:
+#					SUBDIR = "srr_compressed_rars"
 				
 				if SUBDIR: # move SRR to a subdirectory 
 					try:
