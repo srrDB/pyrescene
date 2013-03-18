@@ -6,6 +6,7 @@ pyReScene 0.5 (2013-03-)
  * ReScene: able to reconstruct RAR 2.0x archives
  * ReScene: solid archives fix (threading issue)
  * pyReScene Auto: DVDx and DISCx subfolders added
+ * preprardir.py: bug with copying license file on Linux fixed
 
 pyReScene 0.4 (2013-02-28)
 =============

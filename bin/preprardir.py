@@ -97,10 +97,13 @@ def copy_license_file(output_dir):
 			shutil.copy(licfile, output_dir)
 			return True
 	# %APPDATA%\WinRAR folder
-	licfile = os.path.join(os.environ["appdata"], "WinRAR", "RarReg.key")
-	if os.path.isfile(licfile):
-		shutil.copy(licfile, output_dir)
-		return True
+	try:
+		licfile = os.path.join(os.environ["appdata"], "WinRAR", "RarReg.key")
+		if os.path.isfile(licfile):
+			shutil.copy(licfile, output_dir)
+			return True
+	except KeyError:
+		pass # KeyError: 'appdata' on Linux
 	if os.name == "posix":
 		locations = ["~", "/etc", "/usr/lib", 
 					"/usr/local/lib", "/usr/local/etc"]
