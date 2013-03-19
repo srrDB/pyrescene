@@ -229,7 +229,7 @@ def generate_srr(reldir, working_dir, options):
 	mthread = MessageThread()
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
 	mthread.set_messages(msgs)
-	mthread.start()
+	mthread.start() # TODO: http://pastebin.com/7MDk6Ds8
 	
 	print(reldir)
 	if options.srr_in_reldir:
