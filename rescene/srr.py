@@ -36,7 +36,6 @@ from threading import Thread
 import rescene
 from rescene.main import MsgCode, FileNotFound 
 from rescene.utility import show_spinner, remove_spinner
-from rescene import comprrar
 
 # make it work with Python 3 too
 #if sys.hexversion >= 0x3000000:
