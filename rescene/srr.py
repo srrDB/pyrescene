@@ -34,7 +34,7 @@ import zlib
 from threading import Thread
 
 import rescene
-from rescene.main import MsgCode, FileNotFound 
+from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
 from rescene.utility import show_spinner, remove_spinner
 
 # make it work with Python 3 too
@@ -207,12 +207,12 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir)
-		except (FileNotFound, comprrar.RarNotFound):
+		except (FileNotFound, RarNotFound):
 			mthread.done = True
 			mthread.join()
 			print(sys.exc_info()[1])
 			return 1
-		except comprrar.EmptyRepository:
+		except EmptyRepository:
 			mthread.done = True
 			mthread.join()
 			print("=> Failure trying to reconstruct compressed RAR archives.")
