@@ -1442,6 +1442,7 @@ class RarReader(object):
 			if flags & RarBlock.LONG_BLOCK or  \
 			btype == BlockType.RarPackedFile or  \
 			btype == BlockType.RarNewSub else 0
+		# RAR files larger than 4GB are possible: skip this data later
 
 		# Check to see if this is a recovery record.  
 		# * Old-style recovery records are stored in block type 0x78.
@@ -1490,8 +1491,17 @@ class RarReader(object):
 		# for releases such as Haven.S02E05.HDTV.XviD-P0W4:
 		# except for the header size field, everything in the rar
 		# archive end block are null bytes -> still create RarBlock
-		return BTYPES_CLASSES.get(btype, RarBlock)(block_buffer, 
+		rar_block = BTYPES_CLASSES.get(btype, RarBlock)(block_buffer, 
 				block_start_position, self._rarstream.name)
+		
+		# for very large RAR files, skipping add_size isn't enough
+		if (btype == BlockType.RarPackedFile and 
+			rar_block.flags & RarPackedFileBlock.LARGE_FILE and
+			self._readmode in (self.RAR, self.SFX)):
+			self._rarstream.seek(block_start_position + hsize)
+			self._rarstream.seek(rar_block.packed_size, os.SEEK_CUR)
+		
+		return rar_block
 	
 	def read_all(self):
 		""" Parse the whole rar/srr file. The results are cached.

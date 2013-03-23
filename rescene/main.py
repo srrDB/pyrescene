@@ -1128,7 +1128,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 										   hints, auto_locate_renamed)
 						if block.compression_method != COMPR_STORING:
 							_fire(MsgCode.MSG,
-								message="Trying to rebuild compressed file.")
+								message="Trying to rebuild compressed file %s."
+								% block.file_name)
 							srcfs = get_rar_data_object(block, blocks, src,
 										in_folder, hints, auto_locate_renamed)
 						else: # uncompressed file
@@ -1594,7 +1595,11 @@ class RarArguments(object):
 			return True
 		else:
 			current_count = int(self.threads[3:])
-			if current_count < multiprocessing.cpu_count():
+			# <threads> parameter can take values from 0 to 16.
+			max_threads = multiprocessing.cpu_count()
+			if max_threads > 16:
+				max_threads = 16
+			if current_count < max_threads:
 				self.threads = "-mt%d" % (current_count + 1)
 				return True
 		return False
@@ -1603,7 +1608,10 @@ class RarArguments(object):
 		args = filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
-			self.old_style, "-o+", "-ep",
+			self.old_style,
+			"-o+", # Overwrite all
+			"-ep", # Exclude paths from names.
+			"-idcd", # Disable messages: copyright string, "Done" string
 			self.rar_archive]) + self.store_files
 		return args
 	
@@ -1724,6 +1732,8 @@ class CompressedRarFile(io.IOBase):
 			self.solid = True
 		
 		self.temp_dir = get_temp_directory()
+#		global temp_dir
+#		self.temp_dir = temp_dir
 		
 		# make sure there is a RarRepository
 		global repository
@@ -1767,7 +1777,11 @@ class CompressedRarFile(io.IOBase):
 
 	def search_matching_rar_executable(self, block, blocks):
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
-		piece = os.path.join(self.temp_dir, "pyReScene_data_piece.bin")
+		if len(block.file_name) > 2:
+			piece = os.path.join(self.temp_dir, "pyReScene_data_piece." + 
+							block.file_name[-3:])
+		else:
+			piece = os.path.join(self.temp_dir, "pyReScene_data_piece.bin")
 		
 		def get_full_packed_size():
 			result_size = 0
@@ -2072,6 +2086,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
+	print(cmd)
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
