@@ -40,7 +40,7 @@ except ImportError:
 	
 import rescene
 from rescene.rar import RarReader
-from rescene.comprrar import RETURNCODE 
+from rescene.main import RETURNCODE 
 
 def main(options, args):
 	for element in args:

@@ -1391,7 +1391,7 @@ class RarReader(object):
 		#   otherwise you would get this error:
 		#   error: unpack requires a string argument of length 7
 		if block_start_position + HEADER_LENGTH > self._file_length:
-			raise EnvironmentError("Can not read basic block header.")
+			raise EnvironmentError("Cannot read basic block header.")
 
 		""" The block header is always 7 bytes: (see struct BaseBlock unrar)
 		  - 2 for crc,                  H  unsigned short

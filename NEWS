@@ -5,6 +5,8 @@ pyReScene 0.5 (2013-03-)
  * ReScene: choosing correct dictionary size while reconstructing
  * ReScene: able to reconstruct RAR 2.0x archives
  * ReScene: solid archives fix (threading issue)
+ * ReScene: fix for archives larger than 4GB
+ * ReSample: fixed KeyError on sample reconstruction
  * pyReScene Auto: DVDx and DISCx subfolders added
  * preprardir.py: bug with copying license file on Linux fixed
 

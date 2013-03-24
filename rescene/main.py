@@ -1596,9 +1596,11 @@ class RarArguments(object):
 		else:
 			current_count = int(self.threads[3:])
 			# <threads> parameter can take values from 0 to 16.
+			# 4.20: Now the allowed <threads> value for -mt<threads> switch is
+			# 1 - 32, not 0 - 16 as before.
 			max_threads = multiprocessing.cpu_count()
-			if max_threads > 16:
-				max_threads = 16
+			if max_threads > 32:
+				max_threads = 32
 			if current_count < max_threads:
 				self.threads = "-mt%d" % (current_count + 1)
 				return True
@@ -2086,7 +2088,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-	print(cmd)
+#	print(cmd)
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
