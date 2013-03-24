@@ -2128,8 +2128,13 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	er = EbmlReader(RiffReadMode.SRS, path=srs)
 	
 	for track in tracks.values():
-		#TODO: track_file can not be initialized here
-		track.track_file.seek(0)
+		if track.track_file:
+			track.track_file.seek(0)
+		# fixes The.Butterfly.Effect.3.Revelations.2009.STV
+		# .FRENCH.720p.BluRay.x264-ROUGH reconstruction bug
+		# It gives an error in ReSample .NET 1.2:
+		#   Unexpected Error:
+		#   System.NullReferenceException
 	
 	sample_file = os.path.join(out_folder, srs_data.name)
 	with open(sample_file, "wb") as sample:

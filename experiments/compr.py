@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 import pprint
-import rescene.comprrar as rb
+import rescene.main as rb
 
 dict_size = {
 	64 : "-mda",
