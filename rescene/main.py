@@ -1588,6 +1588,7 @@ class RarArguments(object):
 		self.set_solid(block.flags & block.SOLID)
 		self.set_solid_namesort(False)
 		self.threads = ""
+		self.split = ""
 		
 	def increase_thread_count(self):
 		if self.threads == "":
@@ -1614,6 +1615,8 @@ class RarArguments(object):
 			"-o+", # Overwrite all
 			"-ep", # Exclude paths from names.
 			"-idcd", # Disable messages: copyright string, "Done" string
+			"-vn", # old style volume naming scheme
+			self.split,
 			self.rar_archive]) + self.store_files
 		return args
 	
@@ -1626,6 +1629,12 @@ class RarArguments(object):
 			self.solid = "-s"
 		else:
 			self.solid = "-s-"
+	
+	def set_split(self, size=None):
+		if not size:
+			self.split = ""
+		else:
+			self.split = "-v%db" % size
 			
 	def set_solid_namesort(self, is_set): #TODO: use while generating
 		"""
@@ -1716,6 +1725,15 @@ def get_set(srr_rar_block):
 	else:
 		return n
 
+def get_full_packed_size(block, blocks):
+	result_size = 0
+	for lego in blocks:
+		if lego.file_name == block.file_name:
+			result_size += lego.packed_size
+		elif result_size:
+			break
+	return result_size
+
 class CompressedRarFile(io.IOBase):
 	"""Represents compressed RAR data."""
 	def __init__(self, first_block, blocks, src, 
@@ -1756,11 +1774,20 @@ class CompressedRarFile(io.IOBase):
 		_fire(MsgCode.MSG, message=
 			"Good RAR version detected: %s" % self.good_rar)
 		
+		# determine volume size
+		# volumes are needed when there is compression failure
+		# e.g. Max.Payne.3-RELOADED
+		# WinRAR prevents this if it's only one archive, but not with volumes
+		packed_size = get_full_packed_size(first_block, blocks)
+		if (first_block.unpacked_size < packed_size):
+			x = int(packed_size / 2 * 1.1)
+			if x > 4000000000: # FAT32 support
+				x = 2000000000
+			self.good_rar.args.set_split(x)
+		# TODO: what about the detection code? works for example though
+		
 		self.good_rar.args.store_files = self.source_files
 		self.good_rar.args.set_solid(self.solid)
-#		if next_block:
-#			self.good_rar.args.store_files += [next_src]
-#			self.good_rar.args.set_solid(True)
 		_fire(MsgCode.MSG, message=self.good_rar.full())
 		_fire(MsgCode.MSG, message="Compressing %s..." % os.path.basename(src))
 		time.sleep(0.5)
@@ -1776,6 +1803,14 @@ class CompressedRarFile(io.IOBase):
 			
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		self.rarstream = RarStream(out, compressed=True)
+		
+		self.rarstream.seek(0, os.SEEK_END)
+		size = self.rarstream.tell()
+		self.rarstream.seek(0, os.SEEK_SET)
+		
+		if size != get_full_packed_size(first_block, blocks):
+			self.close()
+			raise ValueError("Still not fine :(.")
 
 	def search_matching_rar_executable(self, block, blocks):
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
@@ -1785,19 +1820,10 @@ class CompressedRarFile(io.IOBase):
 		else:
 			piece = os.path.join(self.temp_dir, "pyReScene_data_piece.bin")
 		
-		def get_full_packed_size():
-			result_size = 0
-			for lego in blocks:
-				if lego.file_name == block.file_name:
-					result_size += lego.packed_size
-				elif result_size:
-					break
-			return result_size
-		
 		# only compress enough data that is compressed 
 		# larger than the amount we need
 		# we need the size of the whole file compressed
-		size_compr = get_full_packed_size()
+		size_compr = get_full_packed_size(block, blocks)
 		size_full = block.unpacked_size
 #		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
@@ -1939,7 +1965,7 @@ class CompressedRarFile(io.IOBase):
 		os.remove(piece)
 	
 	def set_new(self, source_file, block, followup_src=None):
-		"""TODO: when solid, it can occur that the first file needs the second
+		"""when solid, it can occur that the first file needs the second
 		too (last bit can be different)"""
 		# rar filters out same ones
 		self.source_files.append(source_file)
@@ -2088,7 +2114,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-#	print(cmd)
+	print(cmd)
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	

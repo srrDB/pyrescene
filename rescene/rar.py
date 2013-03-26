@@ -947,7 +947,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		self._p += 25
 		# If large file flag is set, next are 4 bytes each
 		# for high order bits of file sizes.
-		if self.flags & self.LARGE_FILE:
+		if self.flags & self.LARGE_FILE == self.LARGE_FILE:
 			self.high_pack_size = struct.unpack("<I", 
 			                        self._rawdata[self._p:self._p+4])[0]
 			self.high_unpack_size = struct.unpack("<I", 
@@ -1496,7 +1496,8 @@ class RarReader(object):
 		
 		# for very large RAR files, skipping add_size isn't enough
 		if (btype == BlockType.RarPackedFile and 
-			rar_block.flags & RarPackedFileBlock.LARGE_FILE and
+			rar_block.flags & RarPackedFileBlock.LARGE_FILE ==
+			RarPackedFileBlock.LARGE_FILE and
 			self._readmode in (self.RAR, self.SFX)):
 			self._rarstream.seek(block_start_position + hsize)
 			self._rarstream.seek(rar_block.packed_size, os.SEEK_CUR)
