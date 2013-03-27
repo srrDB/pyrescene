@@ -1452,11 +1452,7 @@ class RarNotFound(Exception):
 def get_temp_directory():
 	global temp_dir
 	if temp_dir and os.path.isdir(temp_dir):
-		if not len(os.listdir(temp_dir)):
-			return temp_dir
-		else:
-			_fire(MsgCode.MSG, message=
-				"Temporary directory is not empty: using other directory.")
+		return mkdtemp("_pyReScene", dir=temp_dir)
 	return mkdtemp("_pyReScene")
 	
 def get_rar_data_object(block, blocks, src,
@@ -1765,9 +1761,7 @@ class CompressedRarFile(io.IOBase):
 		if not self.good_rar:
 			assert len(os.listdir(self.temp_dir)) == 0
 			try:
-				# don't remove users' temp dir
-				if self.temp_dir != temp_dir:
-					os.rmdir(self.temp_dir)
+				os.rmdir(self.temp_dir)
 			except:
 				print("Failure to remove temp dir: %s" % self.temp_dir)
 			raise RarNotFound("No good RAR version found.")
@@ -2048,12 +2042,7 @@ class CompressedRarFile(io.IOBase):
 		As a convenience, it is allowed to call this method more than once; 
 		only the first call, however, will have an effect."""
 		self.rarstream.close()
-		global temp_dir
-		if self.temp_dir == temp_dir:
-			# don't remove the user his folder
-			empty_folder(self.temp_dir)
-		else:
-			shutil.rmtree(self.temp_dir)
+		shutil.rmtree(self.temp_dir)
 		
 	@property
 	def closed(self):
@@ -2114,7 +2103,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-	print(cmd)
+#	print(cmd)
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	

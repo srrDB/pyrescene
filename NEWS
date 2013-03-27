@@ -8,7 +8,9 @@ pyReScene 0.5 (2013-03-)
  * ReScene: fix for archives larger than 4GB
  * ReScene: support for compression failure from RELOADED
             (larger packed size than unpacked size)
+ * ReScene: provided -t folder does not need to be empty
  * ReSample: fixed KeyError on sample reconstruction
+ * ReSample: -m option added to prevent using stored match offsets
  * pyReScene Auto: DVDx and DISCx subfolders added
  * preprardir.py: bug with copying license file on Linux fixed
 
