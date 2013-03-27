@@ -106,6 +106,9 @@ def main(argv=None, no_exit=False):
 				help="Specify output file or directory path for .srs file. "
 				"If path is a directory, "
 				"the --d and --dd flags will work as normal.")
+	output.add_option("-m", dest="no_stored_match_offset",
+				action="store_true", default=False,
+				help="Ignore stored match offset against main movie file.")
 	
 	if argv is None:
 		argv = sys.argv[1:]
@@ -289,7 +292,7 @@ def main(argv=None, no_exit=False):
 					break
 				
 			# 2) Find the sample streams in the main movie file
-			if not skip_location:
+			if not skip_location or options.no_stored_match_offset:
 				tracks = movi.find_sample_streams(tracks, movie)
 				
 				t1 = time.clock()
