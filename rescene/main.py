@@ -1585,6 +1585,7 @@ class RarArguments(object):
 		self.set_solid_namesort(False)
 		self.threads = ""
 		self.split = ""
+		self.extra_files_before = []
 		
 	def increase_thread_count(self):
 		if self.threads == "":
@@ -1595,7 +1596,7 @@ class RarArguments(object):
 			# <threads> parameter can take values from 0 to 16.
 			# 4.20: Now the allowed <threads> value for -mt<threads> switch is
 			# 1 - 32, not 0 - 16 as before.
-			max_threads = multiprocessing.cpu_count()
+			max_threads = multiprocessing.cpu_count() * 2
 			if max_threads > 32:
 				max_threads = 32
 			if current_count < max_threads:
@@ -1604,7 +1605,7 @@ class RarArguments(object):
 		return False
 	
 	def arglist(self):
-		args = filter(lambda x: x != '', 
+		args = (filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
 			self.old_style,
@@ -1613,7 +1614,9 @@ class RarArguments(object):
 			"-idcd", # Disable messages: copyright string, "Done" string
 			"-vn", # old style volume naming scheme
 			self.split,
-			self.rar_archive]) + self.store_files
+			self.rar_archive]) 
+		+ self.extra_files_before
+		+ self.store_files)
 		return args
 	
 	def set_solid(self, is_set):
@@ -1640,6 +1643,12 @@ class RarArguments(object):
 			self.solid_namesort = ""
 		else:
 			self.solid_namesort = "-ds"
+	
+	def reset_extra_files(self):
+		self.extra_files_before = []
+		
+	def set_extra_files(self, file_list):
+		self.extra_files_before = file_list
 	
 def compressed_rar_file_factory(block, blocks, src,
 	                            in_folder, hints, auto_locate_renamed):
@@ -1782,7 +1791,7 @@ class CompressedRarFile(io.IOBase):
 		
 		self.good_rar.args.store_files = self.source_files
 		self.good_rar.args.set_solid(self.solid)
-		_fire(MsgCode.MSG, message=self.good_rar.full())
+		_fire(MsgCode.MSG, message=" ".join(self.good_rar.full()))
 		_fire(MsgCode.MSG, message="Compressing %s..." % os.path.basename(src))
 		time.sleep(0.5)
 		compress = subprocess.Popen(self.good_rar.full())
@@ -1796,13 +1805,16 @@ class CompressedRarFile(io.IOBase):
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
 			
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
-		self.rarstream = RarStream(out, compressed=True)
+		self.rarstream = RarStream(out, compressed=True, 
+			packed_file_name=os.path.basename(first_block.file_name))
 		
 		self.rarstream.seek(0, os.SEEK_END)
 		size = self.rarstream.tell()
 		self.rarstream.seek(0, os.SEEK_SET)
 		
 		if size != get_full_packed_size(first_block, blocks):
+			print(size)
+			print(get_full_packed_size(first_block, blocks))
 			self.close()
 			raise ValueError("Still not fine :(.")
 
@@ -1821,6 +1833,14 @@ class CompressedRarFile(io.IOBase):
 		size_full = block.unpacked_size
 #		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
+		
+		def get_previous_block():
+			previous = None
+			for lego in blocks:
+				if lego == block:
+					return previous
+				previous = lego
+			return None
 		
 		# Rar 2.0x version don't have a CRC stored, only at the end
 		# do the complete file
@@ -1887,7 +1907,8 @@ class CompressedRarFile(io.IOBase):
 			# check if this is a good RAR version
 			start = size_min
 			ps = crc = 0
-			with RarStream(out, compressed=True) as rs:
+			with RarStream(out, compressed=True,
+						packed_file_name=os.path.basename(piece)) as rs:
 				if old:
 					start = rs.length()
 #				print("Compressed: %d" % rs.length())
@@ -1929,6 +1950,10 @@ class CompressedRarFile(io.IOBase):
 						crc = zlib.crc32(rs.read(readsize), crc)
 			
 			os.remove(out)
+			try:
+				os.remove(out[:-4] + ".r00")
+			except:
+				pass
 			
 			if crc & 0xFFFFFFFF == block.file_crc:
 				return True
@@ -1942,6 +1967,10 @@ class CompressedRarFile(io.IOBase):
 						return True
 			return False
 		
+		# do not split when WinRAR didn't do it either
+		if os.path.getsize(piece) != size_full:
+			args.set_split(int(os.path.getsize(piece) * 0.6))
+			
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			_fire(MsgCode.MSG, message="Trying %s." % rar)
 			found = False
@@ -1955,6 +1984,29 @@ class CompressedRarFile(io.IOBase):
 			if found:
 				rar.args = args
 				return rar
+			args.threads = ""
+			
+			# we've done files before
+			if len(archived_files) > 1:
+				# try compressing with the previous rar file before it
+				prev = get_previous_block()
+				assert prev
+				prev_file = archived_files[prev.file_name]
+				
+				args.set_extra_files([prev_file.source_files[-1]])
+				
+				if rar.supports_setting_threads():
+					while(args.increase_thread_count()):
+						if try_rar_executable(rar, args, old):
+							found = True
+							break
+				else:
+					found = try_rar_executable(rar, args, old)
+				if found:
+					rar.args = args
+					return rar
+			
+			args.reset_extra_files()			
 			args.threads = ""
 		os.remove(piece)
 	
@@ -2103,7 +2155,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-#	print(cmd)
+#	print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
