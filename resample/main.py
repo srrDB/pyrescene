@@ -1914,7 +1914,13 @@ def mkv_extract_sample_streams(tracks, movie):
 	return tracks, attachments
 
 def _mkv_block_extract(tracks, er, done):
-	track = tracks[er.current_element.track_number]
+	try:
+		track = tracks[er.current_element.track_number]
+	except KeyError:
+		# 2001.A.Space.Odyssey.1968.1080p.MULTI.BluRay.x264-1080 sample
+		# System.Collections.Generic.KeyNotFoundException on .NET version
+		er.skip_contents()
+		return tracks, done	
 	
 	if (er.current_element.element_start_pos + 
 		len(er.current_element.raw_header) + 

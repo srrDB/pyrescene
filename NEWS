@@ -6,11 +6,16 @@ pyReScene 0.5 (2013-03-)
  * ReScene: able to reconstruct RAR 2.0x archives
  * ReScene: solid archives fix (threading issue)
  * ReScene: fix for archives larger than 4GB
- * ReScene: support for compression failure from RELOADED
+ * ReScene: support for compression failures
             (larger packed size than unpacked size)
  * ReScene: provided -t folder does not need to be empty
- * ReSample: fixed KeyError on sample reconstruction
  * ReSample: -m option added to prevent using stored match offsets
+ * ReSample: fixed KeyError on sample reconstruction
+   The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH
+             (NullReferenceException error in .NET version)
+ * ReSample: fixed KeyError on sample reconstruction
+             2001.A.Space.Odyssey.1968.1080p.MULTI.BluRay.x264-1080
+             (KeyNotFoundException error in .NET version)
  * pyReScene Auto: DVDx and DISCx subfolders added
  * preprardir.py: bug with copying license file on Linux fixed
 

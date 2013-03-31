@@ -48,17 +48,18 @@ config_dict = {
 pyReScene is a port of ReScene .NET to the Python programming language.
 ReScene is a mechanism for backing up and restoring the metadata from "scene" 
 released RAR files. RAR archive volumes are rebuild using the stored metadata 
-in the SRR file and the extracted files from the RAR archive. Thus far this
-process only works on RAR files created with "Store" mode (otherwise known as 
--m0 or No Compression). pyReScene consists of multiple related tools. 
+in the SRR file and the extracted files from the RAR archive. 
+pyReScene consists of multiple related tools. 
 """
 }
 
 # for creating Windows EXE files
 if 'py2exe' in sys.argv:
 	import py2exe
-	config_dict["options"] = {'py2exe': {'bundle_files': 1, 
-	                                     'compressed': True}}
+	config_dict["options"] = {
+		'py2exe': {'bundle_files': 1,
+	               'optimize': 2,
+	               'compressed': True}}
 	config_dict["zipfile"] = None
 	# targets to build
 	config_dict["console"] = config_dict["scripts"]
