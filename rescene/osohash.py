@@ -24,7 +24,7 @@
 # THE SOFTWARE.
 
 import struct
-from rarstream import RarStream
+from rescene.rarstream import RarStream
 
 def compute_hash(mfile):
 	"""Hash code is based on Media Player Classic. (Gabest)
