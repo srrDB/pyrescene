@@ -32,6 +32,7 @@ import re
 import subprocess
 import shutil
 import tarfile
+from contextlib import closing # used for tarfile on Python 2.6
 
 try:
 	import _preamble
@@ -133,7 +134,7 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 			if tarfile.is_tarfile(archive_name):
 				new_name = date + "_rar%s" % tag
 				print("Extracting %s..." % new_name),
-				with tarfile.open(archive_name) as tf:
+				with closing(tarfile.open(archive_name)) as tf:
 					exe = tf.getmember("rar/rar")
 					tf.extract(exe, path=dest)
 					try:
@@ -183,7 +184,7 @@ def get_rar_date_name(file_name):
 			except Exception:
 				pass
 	elif tarfile.is_tarfile(file_name):
-		with tarfile.open(file_name) as tf:
+		with closing(tarfile.open(file_name)) as tf:
 			mtime = tf.getmember("rar/rar").mtime
 			return (datetime.fromtimestamp(mtime).strftime("%Y-%m-%d"), 
 			        "rar/rar")

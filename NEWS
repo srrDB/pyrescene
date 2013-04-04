@@ -18,6 +18,7 @@ pyReScene 0.5 (2013-03-)
              (KeyNotFoundException error in .NET version)
  * pyReScene Auto: DVDx and DISCx subfolders added
  * preprardir.py: bug with copying license file on Linux fixed
+ * preprardir.py: Python 2.6 support
 
 pyReScene 0.4 (2013-02-28)
 =============
