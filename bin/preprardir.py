@@ -58,12 +58,12 @@ def locate_unrar():
 	"""locating installed unrar"""
 	if(os.name == "nt"):
 		try:
-			unrar = os.environ["ProgramW6432"] + "\WinRAR\UnRAR.exe"
+			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
 			if not os.path.exists(unrar):
 				raise KeyError
 		except KeyError:
 			try:
-				unrar = os.environ["ProgramFiles(x86)"] + "\WinRAR\UnRAR.exe"
+				unrar = os.environ["ProgramFiles(x86)"] + "\\WinRAR\\UnRAR.exe"
 				if not os.path.exists(unrar):
 					raise KeyError
 			except KeyError:
