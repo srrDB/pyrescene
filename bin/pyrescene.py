@@ -61,6 +61,8 @@ from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
 from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder
+from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
+from resample.main import get_file_type, sample_class_factory
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -106,6 +108,9 @@ def get_sample_files(reldir):
 		    os.path.exists(sample[:-4] + ".sfv")):
 			result.append(sample)
 	return result
+
+def get_music_files(reldir):
+	return get_files(reldir, "*.mp3") + get_files(reldir, "*.flac")
 
 def get_proof_files(reldir):
 	"""
@@ -173,16 +178,16 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		if "fix" in pardir and not "fix" in release_dir.lower():
 			continue
 		
-		wanted = True
-		# not wanted if SFV contains .mp3 or .flac files
-		for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
-			if (sfvf.file_name.endswith(".mp3") or 
-				sfvf.file_name.endswith(".flac")):
-				wanted = False
-				break
-		
-		if wanted:		
-			wanted_sfvs.append(sfv)
+#		wanted = True
+#		# not wanted if SFV contains .mp3 or .flac files
+#		for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
+#			if (sfvf.file_name.endswith(".mp3") or 
+#				sfvf.file_name.endswith(".flac")):
+#				wanted = False
+#				break
+#		
+#		if wanted:		
+		wanted_sfvs.append(sfv)
 	return wanted_sfvs
 
 def get_start_rar_files(sfv_list):
@@ -223,6 +228,13 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 
 	return dest_file
 
+def key_sort_music_files(name):
+	# nfo files at the top
+	if name[-4:].lower() == ".nfo":
+		return "-"
+	else:
+		return name 
+	
 def generate_srr(reldir, working_dir, options):
 	assert os.listdir(working_dir) == []
 	
@@ -242,6 +254,7 @@ def generate_srr(reldir, working_dir, options):
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
 	
+	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
 			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
@@ -279,8 +292,12 @@ def generate_srr(reldir, working_dir, options):
 	
 	# copy all files to store to the working dir + their paths
 	copied_files = []
+	is_music = False
 	for nfo in get_files(reldir, "*.nfo"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, nfo))
+
+	for m3u in get_files(reldir, "*.m3u"):
+		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))		
 		
 	for proof in get_proof_files(reldir):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))	
@@ -290,8 +307,10 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 
 	# Create SRS files
-	for sample in get_sample_files(reldir):
+	for sample in get_sample_files(reldir) + get_music_files(reldir):
 		current_sample = copy_to_working_dir(working_dir, reldir, sample)
+		is_music = (current_sample.endswith(".mp3") or
+		            current_sample.endswith(".flac"))
 		
 		# copying the sample file to the temp directory failed
 		# temp path too long? nope! rights issue still possible
@@ -303,7 +322,7 @@ def generate_srr(reldir, working_dir, options):
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
 		found = False
-		if options.sample_verify:
+		if options.sample_verify and not is_music:
 			print("Checking against the following main files:")
 			for mrar in main_rars:
 				print("\t%s" % mrar)
@@ -328,13 +347,28 @@ def generate_srr(reldir, working_dir, options):
 			try:
 				srsmain([current_sample, "-y", "-o", 
 				         os.path.dirname(current_sample)], True)
-				copied_files.append(current_sample[:-4] + ".srs")
+				if current_sample[-4:].lower() == "flac":
+					copied_files.append(current_sample[:-5] + ".srs")
+				else:
+					copied_files.append(current_sample[:-4] + ".srs")
 			except ValueError:
 				keep_txt = True
 				copied_files.append(txt_error_file)
 				logging.info("%s: Could not create SRS file for %s." %
 				             (reldir, os.path.basename(current_sample)))
 				
+				# fpcalc executable isn't found
+				if str(sys.exc_info()[1]).endswith(MSG_NOTFOUND):
+					# do cleanup
+					sys.stderr.close()
+					os.unlink(txt_error_file)
+					sys.stderr = original_stderr
+					os.unlink(current_sample)
+					os.unlink(srr)
+					empty_folder(working_dir)
+					raise ExecutableNotFound("Please put the fpcalc "
+						"executable in your path.")
+					
 			sys.stderr.close()
 			if not keep_txt:
 				os.unlink(txt_error_file)
@@ -360,7 +394,29 @@ def generate_srr(reldir, working_dir, options):
 			copied_files.append(copied_sfvs[sfvs.index(sfv)])
 	for sfv in rarsfv:
 		copied_files.append(sfv)
-	
+		
+	if is_music:
+		# sort files on filename, but nfo file first
+		copied_files.sort(key=key_sort_music_files)
+		
+		# don't add files that fail sfv
+		crclist = {}
+		for sfv in sfvs:
+			for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
+				crclist[sfvf.file_name] = sfvf.crc32
+		
+		to_remove = []
+		for stored_file in copied_files:
+			if stored_file[-4:].lower() == ".srs":
+				sample = sample_class_factory(get_file_type(stored_file))
+				srs_data, _tracks = sample.load_srs(stored_file)
+				if srs_data.crc32 != int(crclist.get(srs_data.name), 16):
+					to_remove.append(stored_file)
+					logging.critical("%s: SFV verification failed for %s." % 
+					                (reldir, srs_data.name))
+		for removed_file in to_remove:
+			copied_files.remove(removed_file)
+			
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
@@ -452,35 +508,38 @@ def main(argv=None):
 	version="%prog " + rescene.__version__) # --help, --version
 	
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
-					  action="store_true",
-					  help="assume Yes for all prompts")
+					action="store_true",
+					help="assume Yes for all prompts")
 	parser.add_option("-n", "--always-no", dest="always_no", default=False,
-					  action="store_true",
-					  help="assume No for all prompts")
+					action="store_true",
+					help="assume No for all prompts")
 	
 	parser.add_option("-r", "--recursive", dest="recursive", default=False,
-					  action="store_true",
-					  help="recursively create SRR files")
+					action="store_true",
+					help="recursively create SRR files")
 	parser.add_option("-c", "--compressed",
-					 action="store_true", dest="compressed",
-					 help="allow SRR creation for compressed RAR files")
+					action="store_true", dest="compressed",
+					help="allow SRR creation for compressed RAR files")
 	parser.add_option("-s", "--sample-verify",
-					 action="store_true", dest="sample_verify",
-					 help="verifies sample agains main movie files")
+					action="store_true", dest="sample_verify",
+					help="verifies sample agains main movie files")
 	parser.add_option("-o", "--output", dest="output_dir", metavar="DIR",
 					default=".",
 					help="<path>: Specify output file or directory path. "
 					"The default output path is the current directory.")
 	parser.add_option("-d", "--srr-in-reldir",
-					 action="store_true", dest="srr_in_reldir",
-					 help="overrides -o parameter")
+					action="store_true", dest="srr_in_reldir",
+					help="overrides -o parameter")
 	parser.add_option("-e", "--eject",
-					 action="store_true", dest="eject",
-					 help="eject DVD drive after processing")
+					action="store_true", dest="eject",
+					help="eject DVD drive after processing")
 	parser.add_option("-l", "--report",
 					action="store_true", dest="report",
 					help="reports which samples had issues")
-	
+	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
+					metavar="DIRECTORY", help="Specify temporary directory. "
+					"Music files and samples will be written to this dir.")
+		
 	if argv is None:
 		argv = sys.argv[1:]
 		
@@ -531,7 +590,11 @@ def main(argv=None):
 		                    format="%(levelname)s:%(message)s")
 		
 	# create temporary working dir
-	working_dir = mkdtemp(".pyReScene")
+	if options.temp_dir and len(options.temp_dir):
+		options.temp_dir = os.path.abspath(options.temp_dir)
+	else:
+		options.temp_dir = None
+	working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
 	
 	drive_letters = []
 	aborted = False
@@ -557,6 +620,14 @@ def main(argv=None):
 			drive_letters.append(reldir[:2])
 	except KeyboardInterrupt:
 		print("Process aborted.")
+		aborted = True
+	except ExecutableNotFound:
+		print("----------------------------------------------------")
+		print("Please put the fpcalc executable in your path.")
+		print("It can be downloaded from ")
+		print("https://bitbucket.org/acoustid/chromaprint/downloads")
+		print("It is necessary for the creation of music SRS files.")
+		print("----------------------------------------------------")
 		aborted = True
 	if len(missing):
 		print("")
@@ -587,6 +658,9 @@ def main(argv=None):
 		subprocess.call(["eject"])
 		print("\a")
 		
+	# test the errorlevel with:
+	# echo %errorlevel%
+	# echo $?
 	if aborted or len(missing):
 		return 1
 	else:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2013 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -41,7 +41,7 @@ def main(options, args):
 			if sfile[-4:].lower() == ".srs":
 				f = os.path.join(dirpath, sfile)
 				sample = sample_class_factory(get_file_type(f))
-				srs_data = sample.srs_info(f)
+				srs_data, _tracks = sample.load_srs(f)
 				if srs_data.size > int(options.size):
 					print(f)
 					print(sep(srs_data.size))
@@ -50,7 +50,9 @@ if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog directory -s size'\n"
 		"This tool will list SRS files greater than a certain size.",
-		version="%prog 0.1 (2012-10-27)") # --help, --version
+		version="%prog 0.2 (2013-04-20)") # --help, --version
+	# 0.1 (2012-10-27)
+	# 0.2 (2013-04-20)
 	
 	parser.add_option("-s", dest="size", 
 					help="minimum size of the original sample")

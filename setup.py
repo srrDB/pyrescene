@@ -13,6 +13,7 @@ import sys
 # http://docs.python.org/library/pydoc.html
 
 # http://www.pyinstaller.org/
+# http://sourceforge.net/projects/cx-freeze/
 
 # http://docs.python.org/2/distutils/sourcedist.html
 # build the package:

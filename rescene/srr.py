@@ -345,7 +345,7 @@ def main(argv=None):
 					" by the preprardir.py script. This is necessary to "
 					"reconstruct compressed archives.")
 	recon.add_option("-t", "--temp-dir", dest="temp_dir", 
-					metavar="DIRECTORY", help="Specify empty directory "
+					metavar="DIRECTORY", help="Specify directory "
 					"for temp files while reconstructing compressed RARs.")
 	
 #	creation.set_description("These options are used for creating an SRR file.")

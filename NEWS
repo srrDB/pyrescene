@@ -1,4 +1,4 @@
-pyReScene 0.5 (2013-03-)
+pyReScene 0.5 (2013-04-)
 =============
 
  * ReScene: initialization bug fixed (compressed RARs issue)
@@ -9,6 +9,8 @@ pyReScene 0.5 (2013-03-)
  * ReScene: support for compression failures
             (larger packed size than unpacked size)
  * ReScene: provided -t folder does not need to be empty
+ * ReSample: FLAC and MP3 support: backing up meta data to SRS file
+             + AcoustID fingerprint creation 
  * ReSample: -m option added to prevent using stored match offsets
  * ReSample: fixed KeyError on sample reconstruction
    The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH

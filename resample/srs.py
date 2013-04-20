@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2013 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,6 +34,8 @@ import traceback
 
 import resample
 from rescene.utility import sep
+from resample.main import FileType
+from resample import fpcalc
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
 
@@ -145,7 +147,8 @@ def main(argv=None, no_exit=False):
 				# check if we already have the type of the first argument
 				ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
 				if ftype == resample.FileType.Unknown:
-					msg = ("Could not locate MKV, AVI, MP4 or WMV data "
+					msg = ("Could not locate MKV, AVI, MP4, WMV, "
+					       "FLAC or MP3 data "
 					       "in file: %s\n" % os.path.basename(ifile))
 					msg += ("File size: %s bytes\n" % 
 					        sep(os.path.getsize(ifile)))
@@ -157,7 +160,11 @@ def main(argv=None, no_exit=False):
 				pexit(1, msg)
 				
 		sample = resample.sample_class_factory(ftype_arg0)
-	
+		if ftype_arg0 == FileType.FLAC:
+			ext = "srs"
+		else:
+			ext = ".srs"
+			
 		t0 = time.clock()
 		
 		# showing info media file or creating SRS file
@@ -189,13 +196,13 @@ def main(argv=None, no_exit=False):
 			if not srs_name: 
 				if options.directory: # --d
 					d = os.path.dirname(sample_file).rsplit(os.sep, 1)[1]
-					srs_name = os.path.join(out_folder, d + ".srs")
+					srs_name = os.path.join(out_folder, d + ext)
 				elif options.parent_directory: # --dd
 					dd = os.path.dirname(sample_file).rsplit(os.sep, 2)[1]
-					srs_name = os.path.join(out_folder, dd + ".srs")
+					srs_name = os.path.join(out_folder, dd + ext)
 				else:
 					samp = os.path.basename(sample_file)[:-4]
-					srs_name = os.path.join(out_folder, samp + ".srs")
+					srs_name = os.path.join(out_folder, samp + ext)
 			srsdir = os.path.dirname(srs_name)
 			if not os.path.exists(srsdir):
 				pexit(1, "Output directory does not exist: %s\n" % srsdir)
@@ -224,7 +231,11 @@ def main(argv=None, no_exit=False):
 				tracks = sample.find_sample_streams(tracks, options.check)
 				
 				for track in tracks.values():
-					if track.signature_bytes and track.match_offset == 0:
+					if ((track.signature_bytes and track.match_offset == 0 and
+						ftype_arg0 != FileType.MP3) or 
+						(ftype_arg0 == FileType.MP3 and 
+						track.match_offset == -1)):
+						# 0 is a legal match offset for MP3
 						msg = ("\nUnable to locate track signature for"
 						       " track %s. Aborting.\n" % track.track_number)
 						pexit(3, msg)
@@ -258,6 +269,10 @@ def main(argv=None, no_exit=False):
 				print("Track %d: %s bytes %s" % (track.track_number,
 				                                 sep(track.data_length),
 				                                 offset))
+				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
+					print("Duration: %d" % track.duration)
+					print("AcoustID fingerprint: %s" % track.fingerprint)
+			
 		# reconstructing sample
 		elif len(args) == 2 and args[0][-4:].lower() == ".srs":
 			# reconstruct sample
@@ -292,7 +307,9 @@ def main(argv=None, no_exit=False):
 					break
 				
 			# 2) Find the sample streams in the main movie file
-			if not skip_location or options.no_stored_match_offset:
+			# always do this search for music files
+			if (not skip_location or options.no_stored_match_offset or
+				ftype_arg0 in (FileType.FLAC, FileType.MP3)):
 				tracks = movi.find_sample_streams(tracks, movie)
 				
 				t1 = time.clock()
@@ -301,7 +318,11 @@ def main(argv=None, no_exit=False):
 				      "Elapsed Time: {0:.2f}s".format(total))
 				
 				for track in tracks.values():
-					if track.signature_bytes and track.match_offset == 0:
+					if ((track.signature_bytes and track.match_offset == 0 and
+						ftype_arg0 != FileType.MP3) or 
+						(ftype_arg0 == FileType.MP3 and 
+						track.match_offset == -1)):
+						# 0 is a legal match offset for MP3
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
 						pexit(3, msg)
@@ -366,6 +387,8 @@ def main(argv=None, no_exit=False):
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
 				sys.exc_info()[1])
+	except fpcalc.ExecutableNotFound:
+		pexit(3, str(sys.exc_info()[1]))
 	except Exception:
 		traceback.print_exc()
 		

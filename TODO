@@ -25,6 +25,8 @@ pyReScene
    on site, create srr for them, download srr packages from srrdb and re-sample
    those rls which have missing Sample
  - Never.on.Sunday.1960.DVDRip.XviD-AEN
+ - fail on empty sfv
+ - automatically check for rar executables in srr.exe dir
  
 pyReSample
 ==========

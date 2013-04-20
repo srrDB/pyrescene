@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2013 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -52,6 +52,9 @@ from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT,
 						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT,
 						GUID_SRS_FILE, GUID_SRS_TRACK, AsfDataPacket,
 						asf_data_get_packet, GUID_SRS_PADDING)
+from resample.fpcalc import fingerprint
+from resample.flac import FlacReader
+from resample.mp3 import Mp3Reader
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -65,6 +68,7 @@ http://forum.doom9.org/showthread.php?s=&threadid=62723
 http://sourceforge.net/projects/pymedia/files/pymedia/
 https://code.google.com/p/mutagen/
 
+http://jampal.sourceforge.net/tagbkup.html
 """
 
 S_LONGLONG = Struct('<Q') # unsigned long long: 8 bytes
@@ -72,6 +76,7 @@ S_LONG = Struct('<L') # unsigned long: 4 bytes
 S_SHORT = Struct('<H') # unsigned short: 2 bytes
 S_BYTE = Struct('<B') # unsigned char: 1 byte
 
+BE_SHORT = Struct('>H')
 BE_LONG = Struct('>L')
 BE_LONGLONG = Struct('>Q')
 
@@ -82,8 +87,8 @@ class IncompleteSample(Exception):
 
 # srs.cs ----------------------------------------------------------------------
 class FileType(object):
-	MKV, AVI, MP4, WMV, MP3, FLAC, M2TS, VOB, Unknown =  \
-		("MKV", "AVI", "MP4", "WMV", "MP3", "FLAC", "M2TS", "VOB", "Unknown")
+	MKV, AVI, MP4, WMV, FLAC, MP3, M2TS, VOB, Unknown =  \
+		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "M2TS", "VOB", "Unknown")
 
 def get_file_type(ifile):
 	"""Decide the type of file based on the magic marker"""
@@ -93,7 +98,8 @@ def get_file_type(ifile):
 	MARKER_MP4 = b"\x66\x74\x79\x70" # ....ftyp
 	MARKER_MP4_3GP = b"\x33\x67\x70\x35" # 3gp5
 	MARKER_WMV = b"\x30\x26\xB2\x75"
-	MARKER_MP3 = b"\x49\x44\x33" # ID3 (different for an EOS mp3)
+	MARKER_FLAC = b"\x66\x4C\x61\x43" # fLaC
+	MARKER_MP3 = b"\x49\x44\x33" # ID3 (MP3 file with an ID3v2 container) 
 	
 	with open(ifile, 'rb') as ofile:
 		marker = ofile.read(14)
@@ -114,9 +120,16 @@ def get_file_type(ifile):
 		return FileType.MP4
 	elif marker.startswith(MARKER_WMV):
 		return FileType.WMV
+	elif marker.startswith(MARKER_FLAC):
+		return FileType.FLAC
 	elif marker.startswith(MARKER_MP3):
-		return FileType.Unknown
+		return FileType.MP3
+	elif marker.startswith("SRSF"):
+		return FileType.MP3
 	else:
+		(sync,) = BE_SHORT.unpack(marker[0:2])
+		if sync & 0xFFE0 == 0xFFE0:
+			return FileType.MP3
 		return FileType.Unknown
 
 # SampleAttachmentInfo.cs -----------------------------------------------------
@@ -220,6 +233,20 @@ class FileData(object):
 		asf_object += S_LONGLONG.pack(len(data) + 16 + 8)
 		asf_object += data
 		return asf_object
+	
+	def serialize_as_flac(self):
+		data = self.serialize()
+		flack_block = "s" # 0x73
+		flack_block += struct.pack(">L", len(data))[1:]
+		flack_block += data
+		return flack_block
+	
+	def serialize_as_mp3(self):
+		data = self.serialize()
+		mp3_block = "SRSF"
+		mp3_block += S_LONG.pack(len(data) + 4 + 4)
+		mp3_block += data
+		return mp3_block
 	
 # SampleTrackInfo.cs ----------------------------------------------------------					
 class TrackData(object):
@@ -338,6 +365,44 @@ class TrackData(object):
 		asf_object += data
 		return asf_object
 	
+	def serialize_as_flac(self):
+		data = self.serialize()
+		flac_block = "t" # 0x74
+		flac_block += struct.pack(">L", len(data))[1:]
+		flac_block += data
+		try:
+			fp_block = "u" # 0x75
+			fp_block += struct.pack(">L", 4 + 4 + len(self.fingerprint))[1:]
+			fp_block += S_LONG.pack(int(self.duration))
+			fp_block += S_LONG.pack(len(self.fingerprint))
+			fp_block += self.fingerprint
+			return flac_block + fp_block
+		except:
+			print("No finger printing data stored!!!")
+			return flac_block
+	
+	def serialize_as_mp3(self):
+		data = self.serialize()
+		mp3_block = "SRST"
+		mp3_block += S_LONG.pack(8 + len(data))
+		mp3_block += data
+		try:
+			fp_block = "SRSP"
+			fp_block += S_LONG.pack(4 + 4 + len(self.fingerprint))
+			fp_block += S_LONG.pack(int(self.duration))
+			fp_block += S_LONG.pack(len(self.fingerprint))
+			fp_block += self.fingerprint
+			return mp3_block + fp_block
+		except:
+			print("No finger printing data stored!!!")
+			return mp3_block
+		
+def read_fingerprint_data(track, data):
+	(track.duration,) = S_LONG.unpack(data[:4])
+	(fp_length,) = S_LONG.unpack(data[4:8])
+	track.fingerprint = data[8:8+fp_length]
+	return track
+
 class ReSample(object):
 	pass
 
@@ -351,6 +416,10 @@ def sample_class_factory(file_type):
 		return Mp4ReSample()
 	elif file_type == FileType.WMV:
 		return WmvReSample()
+	elif file_type == FileType.FLAC:
+		return FlacReSample()
+	elif file_type == FileType.MP3:
+		return Mp3ReSample()
 	
 # AviReSample.cs --------------------------------------------------------------	
 class AviReSample(ReSample):
@@ -417,6 +486,38 @@ class WmvReSample(ReSample):
 		return wmv_extract_sample_streams(*args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
 		return wmv_rebuild_sample(*args, **kwargs)
+
+class FlacReSample(ReSample):
+	file_type = FileType.FLAC
+	
+	def profile_sample(self, *args, **kwargs):
+		return flac_profile_sample(*args, **kwargs)
+	def create_srs(self, *args, **kwargs):
+		return flac_create_srs(*args, **kwargs)
+	def load_srs(self, *args, **kwargs):
+		return flac_load_srs(*args, **kwargs)
+	def find_sample_streams(self, *args, **kwargs):
+		return flac_find_sample_streams(*args, **kwargs)
+	def extract_sample_streams(self, *args, **kwargs):
+		return flac_extract_sample_streams(*args, **kwargs)
+	def rebuild_sample(self, *args, **kwargs):
+		return flac_rebuild_sample(*args, **kwargs)
+	
+class Mp3ReSample(ReSample):
+	file_type = FileType.MP3
+	
+	def profile_sample(self, *args, **kwargs):
+		return mp3_profile_sample(*args, **kwargs)
+	def create_srs(self, *args, **kwargs):
+		return mp3_create_srs(*args, **kwargs)
+	def load_srs(self, *args, **kwargs):
+		return mp3_load_srs(*args, **kwargs)
+	def find_sample_streams(self, *args, **kwargs):
+		return mp3_find_sample_streams(*args, **kwargs)
+	def extract_sample_streams(self, *args, **kwargs):
+		return mp3_extract_sample_streams(*args, **kwargs)
+	def rebuild_sample(self, *args, **kwargs):
+		return mp3_rebuild_sample(*args, **kwargs)
 	
 def avi_load_srs(infile):
 	tracks = {}
@@ -499,6 +600,40 @@ def wmv_load_srs(infile):
 		else:
 			ar.skip_contents()	
 	ar.close()
+	return srs_data, tracks
+
+def flac_load_srs(infile):
+	tracks = {}
+	fr = FlacReader(infile)
+	while(fr.read()):
+		if fr.block_type == ord("s"):
+			srs_data = FileData(fr.read_contents())
+		elif fr.block_type == ord("t"):
+			track = TrackData(fr.read_contents())
+			tracks[track.track_number] = track
+		elif fr.block_type == ord("u"):	
+			tracks[1] = read_fingerprint_data(tracks[1], fr.read_contents())
+		else:
+			fr.skip_contents()
+		# mandatory STREAMINFO metadata block or 
+		# when Last-metadata-block flag is set
+		if fr.block_type == 0 or fr.block_type == 0x10:
+			break
+	fr.close()
+	return srs_data, tracks
+
+def mp3_load_srs(infile):
+	tracks = {}
+	mr = Mp3Reader(infile)
+	for block in mr.read():
+		if block.type == "SRSF":
+			srs_data = FileData(mr.read_contents()[8:])
+		elif block.type == "SRST":
+			track = TrackData(mr.read_contents()[8:])
+			tracks[track.track_number] = track
+		elif block.type == "SRSP":
+			tracks[1] = read_fingerprint_data(tracks[1], mr.read_contents()[8:])
+	mr.close()
 	return srs_data, tracks
 
 def avi_profile_sample(avi_data): # FileData object
@@ -1106,6 +1241,154 @@ def wmv_profile_sample(wmv_data):
 	
 	return tracks, {} #attachments
 
+def flac_profile_sample(flac_data): # FileData object
+	tracks = {}
+	flac_data.crc32 = 0x0 # start value crc
+	meta_length = 0
+	
+	fr = FlacReader(flac_data.name)
+	while fr.read():
+		assert not fr.read_done
+		e = fr.current_block
+		
+		meta_length += len(e.raw_header)
+		flac_data.crc32 = crc32(e.raw_header, flac_data.crc32)
+		
+		if fr.block_type == "fLaC":
+			fr.skip_contents()
+		else:
+			read = 0
+			to_read = 65536
+			while read < e.size:
+				if read + to_read > e.size:
+					to_read = e.size - read
+				data = fr.read_part(to_read, read)
+				flac_data.crc32 = crc32(data, flac_data.crc32)
+				read += to_read
+			if e.is_frame_data():
+				# do track stuff
+				track = TrackData()
+				track.track_number = 1
+				track.data_length = e.size
+				
+				# in profile mode, we want to build track signatures
+				if SIG_SIZE < e.size:
+					track.signature_bytes = fr.read_part(SIG_SIZE)
+				else:
+					track.signature_bytes = fr.read_part(e.size)
+				
+				tracks[1] = track
+			else:
+				meta_length += e.size
+			fr.skip_contents()
+	
+		assert fr.read_done
+	fr.close()
+
+	total_size = meta_length
+	
+	print("File Details:   Size           CRC")
+	print("                -------------  --------")
+	print("                {0:>13}  {1:08X}\n".format(sep(flac_data.size), 
+	                                           flac_data.crc32 & 0xFFFFFFFF))
+	
+	print()
+	print("Stream Details: Stream  Length")
+	print("                ------  -------------")
+	for _, track in tracks.items():
+		print("                {0:6n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
+		total_size += track.data_length
+		
+	print()
+	print("Parse Details:   Metadata     Stream Data    Total")
+	print("                 -----------  -------------  -------------")
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+	                        sep(meta_length), 
+	                        sep(total_size - meta_length), sep(total_size)))
+	
+	# this error will never be shown
+	if flac_data.size != total_size:
+		msg = ("Error: Parsed size does not equal file size.\n"
+		       "       The file is likely corrupted or incomplete.") 
+		raise IncompleteSample(msg)
+	
+	# create a finger print of the file
+	duration, fp = fingerprint(flac_data.name)
+	
+	tracks[1].duration = duration
+	tracks[1].fingerprint = fp
+	return tracks, {}
+
+def mp3_profile_sample(mp3_data): # FileData object
+	tracks = {}
+	mp3_data.crc32 = 0x0 # start value crc
+	meta_length = 0
+	
+	mr = Mp3Reader(mp3_data.name)
+	for block in mr.read():
+		if block.type == "ID3" or block.type == "TAG":
+			meta_length += block.size
+			mp3_data.crc32 = crc32(mr.read_contents(), mp3_data.crc32)
+		else: # main MP3 data
+			read = 0
+			to_read = 65536
+			while read < block.size:
+				if read + to_read > block.size:
+					to_read = block.size - read
+				data = mr.read_part(to_read, read)
+				mp3_data.crc32 = crc32(data, mp3_data.crc32)
+				read += to_read
+		
+			# do track stuff
+			track = TrackData()
+			track.track_number = 1
+			track.data_length = block.size
+			
+			# in profile mode, we want to build track signatures
+			if SIG_SIZE < block.size:
+				track.signature_bytes = mr.read_part(SIG_SIZE)
+			else:
+				track.signature_bytes = mr.read_part(block.size)
+			
+			tracks[1] = track
+	mr.close()
+
+	total_size = meta_length
+	
+	print("File Details:   Size           CRC")
+	print("                -------------  --------")
+	print("                {0:>13}  {1:08X}\n".format(sep(mp3_data.size), 
+	                                           mp3_data.crc32 & 0xFFFFFFFF))
+	
+	print()
+	print("Stream Details: Stream  Length")
+	print("                ------  -------------")
+	for _, track in tracks.items():
+		print("                {0:6n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
+		total_size += track.data_length
+		
+	print()
+	print("Parse Details:   Metadata     Stream Data    Total")
+	print("                 -----------  -------------  -------------")
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+	                        sep(meta_length), 
+	                        sep(total_size - meta_length), sep(total_size)))
+	
+	# this error will never be shown
+	if mp3_data.size != total_size:
+		msg = ("Error: Parsed size does not equal file size.\n"
+		       "       The file is likely corrupted or incomplete.") 
+		raise IncompleteSample(msg)
+	
+	# create a finger print of the file
+	duration, fp = fingerprint(mp3_data.name)
+	
+	tracks[1].duration = duration
+	tracks[1].fingerprint = fp
+	return tracks, {}
+
 def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		rr = RiffReader(RiffReadMode.AVI, sample)
@@ -1281,6 +1564,52 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 				# do copy everything else
 				srsf.write(ar.read_contents())
 		ar.close()
+
+def flac_create_srs(tracks, sample_data, sample, srs, big_file):
+	with open(srs, "wb") as flacf:
+		fr = FlacReader(sample)
+		while(fr.read()):
+			block = fr.current_block
+			
+			flacf.write(block.raw_header)
+			
+			if fr.block_type == "fLaC":
+				# in store mode, create and write our custom blocks 
+				file_block = sample_data.serialize_as_flac()
+				flacf.write(file_block)
+				
+				for track in tracks.values():
+					if big_file:
+						track.flags |= TrackData.BIG_FILE
+					track_block = track.serialize_as_flac()
+					flacf.write(track_block)
+
+			if block.is_frame_data():
+				# don't copy stream data
+				fr.skip_contents()
+			else:
+				# do copy everything else
+				flacf.write(fr.read_contents())
+		fr.close()
+		
+def mp3_create_srs(tracks, sample_data, sample, srs, big_file):
+	with open(srs, "wb") as mp3f:
+		mr = Mp3Reader(sample)
+		for block in mr.read():
+			if block.type == "MP3":
+				# in store mode, create and write our custom blocks 
+				file_block = sample_data.serialize_as_mp3()
+				mp3f.write(file_block)
+				
+				for track in tracks.values():
+					if big_file:
+						track.flags |= TrackData.BIG_FILE
+					track_block = track.serialize_as_mp3()
+					mp3f.write(track_block)
+			else: # "ID3", "TAG"
+				# do copy everything else
+				mp3f.write(mr.read_contents())
+		mr.close()
 		
 def avi_find_sample_streams(tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file)
@@ -1787,6 +2116,62 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 	
 	return tracks
 
+def flac_find_sample_streams(tracks, main_flac_file):
+	fr = FlacReader(main_flac_file)
+	while fr.read():
+		assert not fr.read_done
+		if fr.current_block.is_frame_data():
+			track = tracks[1]
+			sig_size = len(track.signature_bytes)
+			read_size = sig_size
+			if fr.current_block.size < sig_size:
+				read_size = fr.current_block.size
+			
+			# no more data in memory than necessary
+			data = fr.read_part(read_size)
+			if track.signature_bytes == data:
+				# this is the right FLAC file
+				track.check_bytes = track.signature_bytes
+				track.match_offset = fr.current_block.start_pos
+				track.match_length = min(track.data_length, 
+					                     fr.current_block.size)
+				tracks[1] = track
+				break
+			# no support for FLAC samples
+			# it must be the same complete FLAC file
+		fr.skip_contents()
+		assert fr.read_done
+	fr.close()
+
+	return tracks
+
+def mp3_find_sample_streams(tracks, main_mp3_file):
+	mr = Mp3Reader(main_mp3_file)
+	for block in mr.read():
+		if block.type == "MP3":
+			track = tracks[1]
+			sig_size = len(track.signature_bytes)
+			read_size = sig_size
+			if block.size < sig_size:
+				read_size = block.size
+
+			data = mr.read_part(read_size)
+			if track.signature_bytes == data:
+				# this is the right MP3 file
+				track.check_bytes = track.signature_bytes
+				track.match_offset = block.start_pos
+				track.match_length = min(track.data_length, 
+					                     block.size)
+				tracks[1] = track
+				break
+			else: # this isn't the right MP3 file
+				track.match_offset = -1
+				tracks[1] = track
+			# no support for MP3 samples
+			# it must be the same complete MP3 file
+	mr.close()
+
+	return tracks
 
 def avi_extract_sample_streams(tracks, movie):
 	rr = RiffReader(RiffReadMode.AVI, movie)
@@ -2071,6 +2456,31 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 	
 	return tracks, {} #attachments
 	
+def flac_extract_sample_streams(tracks, main_flac_file):
+	fr = FlacReader(main_flac_file)
+	while fr.read():
+		if fr.current_block.is_frame_data():
+			track = tracks[1]
+			track.track_file = tempfile.TemporaryFile()
+			track.track_file.write(fr.read_contents())
+			tracks[1] = track
+		fr.skip_contents()
+	fr.close()
+
+	return tracks, {}
+
+def mp3_extract_sample_streams(tracks, main_mp3_file):
+	mr = Mp3Reader(main_mp3_file)
+	for block in mr.read():
+		if block.type == "MP3":
+			track = tracks[1]
+			track.track_file = tempfile.TemporaryFile()
+			track.track_file.write(mr.read_contents())
+			tracks[1] = track
+			break
+	mr.close()
+
+	return tracks, {}
 	
 def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	crc = 0 # Crc32.StartValue
@@ -2422,6 +2832,78 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	remove_spinner()	
 	
 	ofile = FileData(file_name=sample_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
+
+def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+	crc = 0 # Crc32.StartValue
+	fr = FlacReader(path=srs)
+	
+	# set cursor for temp files back at the beginning
+	for track in tracks.values():
+		track.track_file.seek(0)
+	
+	good_flac_file = os.path.join(out_folder, srs_data.name)
+	with open(good_flac_file, "wb") as flac:
+		srs_flac_blocks = 0
+		while fr.read():
+			assert not fr.read_done
+			
+			if fr.block_type == "fLaC":
+				flac.write("fLaC")
+				crc = crc32("fLaC", crc)
+				fr.skip_contents()
+			elif ((fr.block_type == ord("s") or 
+				  fr.block_type == ord("t") or
+				  fr.block_type == ord("u")) and 
+					srs_flac_blocks <= 3):
+				srs_flac_blocks += 1
+				fr.skip_contents()
+			else:
+				crc = crc32(fr.current_block.raw_header, crc)
+				flac.write(fr.current_block.raw_header)
+				data = fr.read_contents()
+				crc = crc32(data, crc)
+				flac.write(data)
+				
+			assert fr.read_done
+			
+		track = tracks[1]
+		crc = crc32(track.track_file.read(), crc)
+		track.track_file.seek(0)
+		flac.write(track.track_file.read())
+	fr.close()
+	
+	ofile = FileData(file_name=good_flac_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
+
+def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+	crc = 0 # Crc32.StartValue
+	mr = Mp3Reader(path=srs)
+	
+	# set cursor for temp files back at the beginning
+	for track in tracks.values():
+		track.track_file.seek(0)
+	
+	main_data_written = False
+	good_mp3_file = os.path.join(out_folder, srs_data.name)
+	with open(good_mp3_file, "wb") as mp3:
+		for block in mr.read():
+			if block.type in ("ID3", "TAG"):
+				data = mr.read_contents()
+				mp3.write(data)
+				crc = crc32(data, crc)
+			elif not main_data_written:
+				# we are on an SRS block and no sound data is written yet
+				track = tracks[1]
+				crc = crc32(track.track_file.read(), crc)
+				track.track_file.seek(0)
+				mp3.write(track.track_file.read())
+				main_data_written = True
+	mr.close()
+	
+	ofile = FileData(file_name=good_mp3_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
