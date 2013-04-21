@@ -92,11 +92,6 @@ def find_fpcalc_executable():
 	else:
 		raise ExecutableNotFound(MSG_NOTFOUND)
 
-#	fprint = custom_popen(["fpcalc"])
-#	stdout, _stderr = fprint.communicate()
-#	if stdout.startswith("usage: "):
-#		return "fpcalc"
-
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
 	

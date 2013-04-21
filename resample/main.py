@@ -388,7 +388,7 @@ class TrackData(object):
 		mp3_block += data
 		try:
 			fp_block = "SRSP"
-			fp_block += S_LONG.pack(4 + 4 + len(self.fingerprint))
+			fp_block += S_LONG.pack(8 + 4 + 4 + len(self.fingerprint))
 			fp_block += S_LONG.pack(int(self.duration))
 			fp_block += S_LONG.pack(len(self.fingerprint))
 			fp_block += self.fingerprint
@@ -990,8 +990,7 @@ def stsc(samples_chunk):
 	index = 1
 	prev_samples_per_chunk = None
 	prev_sample_description_index = None
-	for (first_chunk, samples_per_chunk, 
-		sample_description_index) in old:
+	for (first_chunk, samples_per_chunk, sample_description_index) in old:
 		if first_chunk > index:
 			# fill between chunks
 			for i in range(index, first_chunk):
@@ -1327,10 +1326,7 @@ def mp3_profile_sample(mp3_data): # FileData object
 	
 	mr = Mp3Reader(mp3_data.name)
 	for block in mr.read():
-		if block.type == "ID3" or block.type == "TAG":
-			meta_length += block.size
-			mp3_data.crc32 = crc32(mr.read_contents(), mp3_data.crc32)
-		else: # main MP3 data
+		if block.type in ("MP3", "fLaC"): # main MP3 data
 			read = 0
 			to_read = 65536
 			while read < block.size:
@@ -1352,6 +1348,9 @@ def mp3_profile_sample(mp3_data): # FileData object
 				track.signature_bytes = mr.read_part(block.size)
 			
 			tracks[1] = track
+		else:
+			meta_length += block.size
+			mp3_data.crc32 = crc32(mr.read_contents(), mp3_data.crc32)
 	mr.close()
 
 	total_size = meta_length
@@ -1596,7 +1595,7 @@ def mp3_create_srs(tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as mp3f:
 		mr = Mp3Reader(sample)
 		for block in mr.read():
-			if block.type == "MP3":
+			if block.type in ("MP3", "fLaC"):
 				# in store mode, create and write our custom blocks 
 				file_block = sample_data.serialize_as_mp3()
 				mp3f.write(file_block)
@@ -1606,7 +1605,7 @@ def mp3_create_srs(tracks, sample_data, sample, srs, big_file):
 						track.flags |= TrackData.BIG_FILE
 					track_block = track.serialize_as_mp3()
 					mp3f.write(track_block)
-			else: # "ID3", "TAG"
+			else: # "ID3", "TAG",...
 				# do copy everything else
 				mp3f.write(mr.read_contents())
 		mr.close()
@@ -2148,7 +2147,7 @@ def flac_find_sample_streams(tracks, main_flac_file):
 def mp3_find_sample_streams(tracks, main_mp3_file):
 	mr = Mp3Reader(main_mp3_file)
 	for block in mr.read():
-		if block.type == "MP3":
+		if block.type in ("MP3", "fLaC"):
 			track = tracks[1]
 			sig_size = len(track.signature_bytes)
 			read_size = sig_size
@@ -2472,7 +2471,7 @@ def flac_extract_sample_streams(tracks, main_flac_file):
 def mp3_extract_sample_streams(tracks, main_mp3_file):
 	mr = Mp3Reader(main_mp3_file)
 	for block in mr.read():
-		if block.type == "MP3":
+		if block.type  in ("MP3", "fLaC"):
 			track = tracks[1]
 			track.track_file = tempfile.TemporaryFile()
 			track.track_file.write(mr.read_contents())
@@ -2890,17 +2889,18 @@ def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	good_mp3_file = os.path.join(out_folder, srs_data.name)
 	with open(good_mp3_file, "wb") as mp3:
 		for block in mr.read():
-			if block.type in ("ID3", "TAG"):
+			if block.type in ("SRSF", "SRST", "SRSP"):
+				if not main_data_written:
+					# we are on an SRS block and no sound data is written yet
+					track = tracks[1]
+					crc = crc32(track.track_file.read(), crc)
+					track.track_file.seek(0)
+					mp3.write(track.track_file.read())
+					main_data_written = True
+			else:
 				data = mr.read_contents()
 				mp3.write(data)
 				crc = crc32(data, crc)
-			elif not main_data_written:
-				# we are on an SRS block and no sound data is written yet
-				track = tracks[1]
-				crc = crc32(track.track_file.read(), crc)
-				track.track_file.seek(0)
-				mp3.write(track.track_file.read())
-				main_data_written = True
 	mr.close()
 	
 	ofile = FileData(file_name=good_mp3_file)

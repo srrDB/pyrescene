@@ -9,8 +9,9 @@ pyReScene 0.5 (2013-04-)
  * ReScene: support for compression failures
             (larger packed size than unpacked size)
  * ReScene: provided -t folder does not need to be empty
- * ReSample: FLAC and MP3 support: backing up meta data to SRS file
-             + AcoustID fingerprint creation 
+ * ReSample: FLAC and MP3 support: backing up tags to SRS file
+             + AcoustID fingerprint and duration
+          	 MP3 tags: ID3v1, ID3v2, Lyrics3v1, Lyrics3v2, APEv1, APEv2
  * ReSample: -m option added to prevent using stored match offsets
  * ReSample: fixed KeyError on sample reconstruction
    The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH
