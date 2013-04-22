@@ -410,7 +410,9 @@ def generate_srr(reldir, working_dir, options):
 			if stored_file[-4:].lower() == ".srs":
 				sample = sample_class_factory(get_file_type(stored_file))
 				srs_data, _tracks = sample.load_srs(stored_file)
-				if srs_data.crc32 != int(crclist.get(srs_data.name), 16):
+				# accept SRS if it isn't in the SFV
+				crc = int(crclist.get(srs_data.name, "-1"), 16)
+				if srs_data.crc32 != crc and crc != -1:
 					to_remove.append(stored_file)
 					logging.critical("%s: SFV verification failed for %s." % 
 					                (reldir, srs_data.name))
