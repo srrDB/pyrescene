@@ -403,7 +403,7 @@ def generate_srr(reldir, working_dir, options):
 		crclist = {}
 		for sfv in sfvs:
 			for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
-				crclist[sfvf.file_name] = sfvf.crc32
+				crclist[sfvf.file_name.lower()] = sfvf.crc32
 		
 		to_remove = []
 		for stored_file in copied_files:
@@ -411,7 +411,7 @@ def generate_srr(reldir, working_dir, options):
 				sample = sample_class_factory(get_file_type(stored_file))
 				srs_data, _tracks = sample.load_srs(stored_file)
 				# accept SRS if it isn't in the SFV
-				crc = int(crclist.get(srs_data.name, "-1"), 16)
+				crc = int(crclist.get(srs_data.name.lower(), "-1"), 16)
 				if srs_data.crc32 != crc and crc != -1:
 					to_remove.append(stored_file)
 					logging.critical("%s: SFV verification failed for %s." % 

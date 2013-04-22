@@ -2471,7 +2471,7 @@ def flac_extract_sample_streams(tracks, main_flac_file):
 def mp3_extract_sample_streams(tracks, main_mp3_file):
 	mr = Mp3Reader(main_mp3_file)
 	for block in mr.read():
-		if block.type  in ("MP3", "fLaC"):
+		if block.type in ("MP3", "fLaC"):
 			track = tracks[1]
 			track.track_file = tempfile.TemporaryFile()
 			track.track_file.write(mr.read_contents())

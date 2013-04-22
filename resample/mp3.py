@@ -159,8 +159,6 @@ class Mp3Reader(object):
 			self.blocks.append(apev2_block)
 			end_meta_data_offset -= apev2_block.size
 			
-		self._mp3_stream.seek(0, os.SEEK_SET)
-		
 		# in between is SRS or MP3 data
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
 		(sync,) = BE_SHORT.unpack(self._mp3_stream.read(2))
