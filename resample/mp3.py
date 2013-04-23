@@ -192,6 +192,7 @@ class Mp3Reader(object):
 	def read(self):
 		for block in self.blocks:
 			self.current_block = block
+			#print(block)
 			yield block
 	
 	def read_contents(self):

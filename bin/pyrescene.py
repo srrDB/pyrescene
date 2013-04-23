@@ -87,9 +87,7 @@ def get_files(release_dir, extention):
 	try:
 		for dirpath, _dirnames, filenames in os.walk(release_dir):
 			for filename in filenames:
-				if fnmatch.fnmatchcase(filename, extention.lower()):
-					matches.append(os.path.join(dirpath, filename))
-				if fnmatch.fnmatchcase(filename, extention.upper()):
+				if fnmatch.fnmatchcase(filename.lower(), extention.lower()):
 					matches.append(os.path.join(dirpath, filename))
 		return matches
 	except TypeError:
@@ -128,7 +126,10 @@ def get_proof_files(reldir):
 			result.append(proof)
 		else:
 			# proof file in root dir without the word proof somewhere
-			if os.path.getsize(proof) > 100000:
+			# no spaces: skip personal covers added to mp3 releases
+			if (os.path.getsize(proof) > 100000 and 
+				" " not in os.path.basename(proof)):
+				#TODO: must be named like nfo/rars or start with 00?
 				result.append(proof)
 	for proof in rar_files:
 		if "proof" in proof.lower():
@@ -469,7 +470,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		# SFV file in one of the interesting subdirs?
 		interesting_dirs = []
 		for dirname in dirnames:
-			if re.match("^(CD|DISK|DVD|DISC)\d$", dirname, re.IGNORECASE):
+			# Disc_1 and Disc_2 in mp3 rlz
+			if re.match("^(CD|DISK|DVD|DISC)_?\d$", dirname, re.IGNORECASE):
 				interesting_dirs.append(dirname)
 		
 		for idir in interesting_dirs:
@@ -481,7 +483,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 				break
 	
 	# X3.Gold.Edition-Unleashed has DISC
-	rel_folders = ("^((CD|DISK|DVD|DISC)\d|(Vob)?Samples?|Covers?|Proofs?|"
+	rel_folders = ("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|Covers?|Proofs?|"
 	               "Subs?(pack)?|(vob)?subs?)$")
 	if release and not re.match(rel_folders, os.path.basename(dirpath), re.I):
 		release = True
@@ -498,6 +500,13 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			if not is_release(os.path.join(dirpath, reldir)):
 				release = True
 				break
+	
+	# a release name doesn't have spaces in its folder name
+	(head, tail) = os.path.split(dirpath)
+	if not tail:
+		(_head, tail) = os.path.split(head)
+	if " " in tail: 
+		release = False
 				
 	return release 
 
