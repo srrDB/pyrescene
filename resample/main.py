@@ -615,9 +615,9 @@ def flac_load_srs(infile):
 			tracks[1] = read_fingerprint_data(tracks[1], fr.read_contents())
 		else:
 			fr.skip_contents()
-		# mandatory STREAMINFO metadata block or 
-		# when Last-metadata-block flag is set
-		if fr.block_type == 0 or fr.block_type == 0x10:
+		# mandatory STREAMINFO metadata block (blocks we need are before that)
+		# or when Last-metadata-block flag is set
+		if fr.block_type == 0: # or fr.block_type == 0x10:
 			break
 	fr.close()
 	return srs_data, tracks

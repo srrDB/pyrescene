@@ -41,6 +41,7 @@ Sorting isn't how we want it in this case:
 
 from optparse import OptionParser
 from tempfile import mkdtemp
+from datetime import datetime
 import sys
 import os
 import re
@@ -48,7 +49,6 @@ import shutil
 import fnmatch
 import time
 import logging
-import datetime
 
 try:
 	import _preamble
@@ -447,6 +447,10 @@ def get_release_directories(path):
 			last_release = dirpath
 			yield last_release
 			
+DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC)_?\d$", re.IGNORECASE)
+RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|"
+	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
+			
 def is_release(dirpath, dirnames=None, filenames=None):
 	if dirnames == None:
 		l = lambda x: not os.path.isfile(os.path.join(dirpath, x))
@@ -471,7 +475,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		interesting_dirs = []
 		for dirname in dirnames:
 			# Disc_1 and Disc_2 in mp3 rlz
-			if re.match("^(CD|DISK|DVD|DISC)_?\d$", dirname, re.IGNORECASE):
+			if DISK_FOLDERS.match(dirname):
 				interesting_dirs.append(dirname)
 		
 		for idir in interesting_dirs:
@@ -483,9 +487,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 				break
 	
 	# X3.Gold.Edition-Unleashed has DISC
-	rel_folders = ("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|Covers?|Proofs?|"
-	               "Subs?(pack)?|(vob)?subs?)$")
-	if release and not re.match(rel_folders, os.path.basename(dirpath), re.I):
+	if release and not RELEASE_FOLDERS.match(os.path.basename(dirpath)):
 		release = True
 	else:
 		return False
@@ -511,6 +513,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	return release 
 
 def main(argv=None):
+	start_time = datetime.now()
 	parser = OptionParser(
 	usage=("Usage: %prog [directories] [options]\n"
 	"This tool can automatically create a complete SRR file for a "
@@ -668,6 +671,8 @@ def main(argv=None):
 		
 		subprocess.call(["eject"])
 		print("\a")
+		
+	print(datetime.now()-start_time)
 		
 	# test the errorlevel with:
 	# echo %errorlevel%

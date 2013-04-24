@@ -270,8 +270,11 @@ def main(argv=None, no_exit=False):
 				                                 sep(track.data_length),
 				                                 offset))
 				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
-					print("Duration: %d" % track.duration)
-					print("AcoustID fingerprint: %s" % track.fingerprint)
+					try:
+						print("Duration: %d" % track.duration)
+						print("AcoustID fingerprint: %s" % track.fingerprint)
+					except AttributeError:
+						pass # SRS without fingerprint information
 			
 		# reconstructing sample
 		elif len(args) == 2 and args[0][-4:].lower() == ".srs":
