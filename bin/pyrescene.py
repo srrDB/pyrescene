@@ -243,13 +243,17 @@ def generate_srr(reldir, working_dir, options):
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
 	mthread.set_messages(msgs)
 	mthread.start() # TODO: http://pastebin.com/7MDk6Ds8
-	
+
 	print(reldir)
 	if options.srr_in_reldir:
 		srr_directory = reldir
 	else:
 		srr_directory = options.output_dir
 	srr = os.path.join(srr_directory, os.path.split(reldir)[1] + ".srr")
+		
+	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
+	if options.always_no and os.path.exists(srr):
+		return False
 	
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
