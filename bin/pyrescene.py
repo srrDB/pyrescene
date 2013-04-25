@@ -304,6 +304,7 @@ def generate_srr(reldir, working_dir, options):
 
 	# Create SRS files
 	for sample in get_sample_files(reldir) + get_music_files(reldir):
+		#TODO: avoid copying samples
 		current_sample = copy_to_working_dir(working_dir, reldir, sample)
 		is_music = (current_sample.endswith(".mp3") or
 		            current_sample.endswith(".flac"))
@@ -591,7 +592,7 @@ def main(argv=None):
 	rescene.main.can_overwrite = can_overwrite
 			
 	if options.report:
-		now = datetime.datetime.now()
+		now = datetime.now()
 		fn = os.path.join(options.output_dir, 
 						"pyReScene_report_%s.txt" % now.strftime("%Y-%m-%d"))
 		# log will append by default
