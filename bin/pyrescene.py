@@ -238,12 +238,6 @@ def key_sort_music_files(name):
 	
 def generate_srr(reldir, working_dir, options):
 	assert os.listdir(working_dir) == []
-	
-	mthread = MessageThread()
-	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
-	mthread.set_messages(msgs)
-	mthread.start() # TODO: http://pastebin.com/7MDk6Ds8
-
 	print(reldir)
 	if options.srr_in_reldir:
 		srr_directory = reldir
@@ -264,9 +258,6 @@ def generate_srr(reldir, working_dir, options):
 		try:
 			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
 			                   options.compressed)
-			mthread.done = True
-			mthread.join()
-			
 			# when the user decides not to overwrite an existing SRR
 			if not result:
 				return False
@@ -618,6 +609,11 @@ def main(argv=None):
 	aborted = False
 	missing = []
 	try:
+		mthread = MessageThread()
+		msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
+		mthread.set_messages(msgs)
+		mthread.start()
+
 		for reldir in indirs:
 			reldir = os.path.abspath(reldir)
 			if not options.recursive:
@@ -647,6 +643,12 @@ def main(argv=None):
 		print("It is necessary for the creation of music SRS files.")
 		print("----------------------------------------------------")
 		aborted = True
+	finally:
+		try:
+			mthread.done = True
+			mthread.join()
+		except:
+			print("Failure stopping the MessageThread.")
 	if len(missing):
 		print("")
 		print("------------------------------------")
