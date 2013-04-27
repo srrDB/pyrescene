@@ -296,25 +296,33 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))		
 		
 	for proof in get_proof_files(reldir):
-		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))	
+		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
+		
+	for log in get_files(reldir, "*.log"):
+		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
+		
+	for cue in get_files(reldir, "*.cue"):
+		copied_files.append(copy_to_working_dir(working_dir, reldir, cue))
 		
 	# when stored SRS file instead of a sample file
+	# or both, but only one SRS will be added later
 	for srs in get_files(reldir, "*.srs"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 
 	# Create SRS files
 	for sample in get_sample_files(reldir) + get_music_files(reldir):
-		#TODO: avoid copying samples
-		current_sample = copy_to_working_dir(working_dir, reldir, sample)
-		is_music = (current_sample.endswith(".mp3") or
-		            current_sample.endswith(".flac"))
+		# avoid copying samples
+		path = os.path.relpath(sample, reldir)
+		dest_dir = os.path.dirname(os.path.join(working_dir, path))
 		
-		# copying the sample file to the temp directory failed
-		# temp path too long? nope! rights issue still possible
-		if not os.path.exists(current_sample):
-			print("!!! Skipping this sample file.")
-			logging.critical("Copying sample file failed: %s" % current_sample)
-			continue
+		# make in between dirs
+		try:
+			os.makedirs(dest_dir)
+		except:
+			pass
+
+		is_music = (sample.lower().endswith(".mp3") or
+		            sample.lower().endswith(".flac"))
 		
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
@@ -325,42 +333,41 @@ def generate_srr(reldir, working_dir, options):
 				print("\t%s" % mrar)
 			for main in main_rars:
 				try:
-					srsmain([current_sample, "-y", "-o", 
-					         os.path.dirname(current_sample),
-					         "-c", main], True)
-					copied_files.append(current_sample[:-4] + ".srs")
+					srsmain([sample, "-y", "-o", dest_dir, "-c", main], True)
+					copied_files.append(os.path.join(dest_dir, 
+						os.path.basename(sample))[:-4] + ".srs")
 					found = True
 					break
 				except ValueError:
 					print("Sample not found in %s." % main)	
 			if not found:
 				logging.info("%s: Sample failed to verify against main files: "
-				             "%s" % (reldir, os.path.basename(current_sample)))
+				             "%s" % (reldir, os.path.basename(sample)))
 		if not found:
 			original_stderr = sys.stderr
-			txt_error_file = current_sample + ".txt"
+			txt_error_file = os.path.join(dest_dir, 
+				os.path.basename(sample)) + ".txt"
 			sys.stderr = open(txt_error_file, "wb")
 			keep_txt = False
 			try:
-				srsmain([current_sample, "-y", "-o", 
-				         os.path.dirname(current_sample)], True)
-				if current_sample[-4:].lower() == "flac":
-					copied_files.append(current_sample[:-5] + ".srs")
+				srsmain([sample, "-y", "-o", dest_dir], True)
+				if sample[-4:].lower() == "flac":
+					copied_files.append(os.path.join(dest_dir, 
+						os.path.basename(sample))[:-5] + ".srs")
 				else:
-					copied_files.append(current_sample[:-4] + ".srs")
+					copied_files.append(os.path.join(dest_dir, 
+						os.path.basename(sample))[:-4] + ".srs")
 			except ValueError:
 				keep_txt = True
 				copied_files.append(txt_error_file)
 				logging.info("%s: Could not create SRS file for %s." %
-				             (reldir, os.path.basename(current_sample)))
+				             (reldir, os.path.basename(sample)))
 				
 				# fpcalc executable isn't found
 				if str(sys.exc_info()[1]).endswith(MSG_NOTFOUND):
 					# do cleanup
 					sys.stderr.close()
-					os.unlink(txt_error_file)
 					sys.stderr = original_stderr
-					os.unlink(current_sample)
 					os.unlink(srr)
 					empty_folder(working_dir)
 					raise ExecutableNotFound("Please put the fpcalc "
@@ -371,7 +378,6 @@ def generate_srr(reldir, working_dir, options):
 				os.unlink(txt_error_file)
 				
 			sys.stderr = original_stderr
-		os.unlink(current_sample)
 		
 	#TODO: TXT files for m2ts with crc?
 		
@@ -391,6 +397,9 @@ def generate_srr(reldir, working_dir, options):
 			copied_files.append(copied_sfvs[sfvs.index(sfv)])
 	for sfv in rarsfv:
 		copied_files.append(sfv)
+	
+	# remove possible duplicate SRS files
+	copied_files = list(set(copied_files))
 		
 	if is_music:
 		# sort files on filename, but nfo file first
