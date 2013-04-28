@@ -50,7 +50,10 @@ class Block(object):
 		
 	def is_last_block(self):
 		"""Last block before the frame data."""
-		return self.type & 0x10
+		try:
+			return self.type & 0x80
+		except TypeError:
+			return ord(self.type[0]) & 0x80
 	
 	def is_frame_data(self):
 		"""It isn't actually a block."""
@@ -107,9 +110,35 @@ class FlacReader(object):
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			return True
 		
+		# ID3v2
+		if self._block_header[:3] == "ID3":
+			self.block_type = "ID3"
+			self._flac_stream.seek(block_start_position, os.SEEK_SET)
+			raw_header = self._flac_stream.read(10)
+			size = reduce(lambda x, y: x*128 + y, (ord(i)
+			              for i in raw_header[6:10]))
+			self.current_block = Block(size, self.block_type)
+			self.current_block.raw_header = raw_header
+			self.current_block.start_pos = block_start_position
+			self._flac_stream.seek(block_start_position, os.SEEK_SET)
+			return True
+		
+		# ID3v1
+		if self._block_header[:3] == "TAG":
+			self.block_type = "TAG"
+			self.current_block = Block(128, self.block_type)
+			self.current_block.raw_header = ""
+			self.current_block.start_pos = block_start_position
+			self._flac_stream.seek(block_start_position, os.SEEK_SET)
+			return True
+
 		(self.block_type,) = BE_BYTE.unpack(self._block_header[0])
 		if self.block_type & 0xFF == 0xFF: # frame data
 			block_length = self._file_length - block_start_position
+			# check for ID3v1 tag
+			self._flac_stream.seek(self._file_length - 128)
+			if self._flac_stream.read(3) == "TAG":
+				block_length -= 128
 			self._block_header = ""
 		else:
 			(block_length,) = BE_LONG.unpack("\x00" + self._block_header[1:])

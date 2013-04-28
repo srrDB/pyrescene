@@ -99,7 +99,7 @@ def get_file_type(ifile):
 	MARKER_MP4_3GP = b"\x33\x67\x70\x35" # 3gp5
 	MARKER_WMV = b"\x30\x26\xB2\x75"
 	MARKER_FLAC = b"\x66\x4C\x61\x43" # fLaC
-	MARKER_MP3 = b"\x49\x44\x33" # ID3 (MP3 file with an ID3v2 container) 
+	MARKER_ID3 = b"\x49\x44\x33" # ID3 (MP3/FLAC file with an ID3v2 container) 
 	
 	with open(ifile, 'rb') as ofile:
 		marker = ofile.read(14)
@@ -122,7 +122,13 @@ def get_file_type(ifile):
 		return FileType.WMV
 	elif marker.startswith(MARKER_FLAC):
 		return FileType.FLAC
-	elif marker.startswith(MARKER_MP3):
+	elif marker.startswith(MARKER_ID3):
+		# can be MP3 or FLAC
+		size = reduce(lambda x, y: x*128 + y, (ord(i) for i in marker[6:10]))
+		with open(ifile, 'rb') as ofile:
+			ofile.seek(10 + size)
+			if ofile.read(4) == "fLaC":
+				return FileType.FLAC
 		return FileType.MP3
 	elif marker.startswith("SRSF"):
 		return FileType.MP3
@@ -617,7 +623,7 @@ def flac_load_srs(infile):
 			fr.skip_contents()
 		# mandatory STREAMINFO metadata block (blocks we need are before that)
 		# or when Last-metadata-block flag is set
-		if fr.block_type == 0: # or fr.block_type == 0x10:
+		if fr.block_type == 0 or fr.current_block.is_last_block():
 			break
 	fr.close()
 	return srs_data, tracks
@@ -2864,13 +2870,13 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				data = fr.read_contents()
 				crc = crc32(data, crc)
 				flac.write(data)
+				if fr.current_block.is_last_block():
+					track = tracks[1]
+					crc = crc32(track.track_file.read(), crc)
+					track.track_file.seek(0)
+					flac.write(track.track_file.read())
 				
 			assert fr.read_done
-			
-		track = tracks[1]
-		crc = crc32(track.track_file.read(), crc)
-		track.track_file.seek(0)
-		flac.write(track.track_file.read())
 	fr.close()
 	
 	ofile = FileData(file_name=good_flac_file)
