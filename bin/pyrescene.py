@@ -128,7 +128,8 @@ def get_proof_files(reldir):
 			# proof file in root dir without the word proof somewhere
 			# no spaces: skip personal covers added to mp3 releases
 			if (os.path.getsize(proof) > 100000 and 
-				" " not in os.path.basename(proof)):
+				" " not in os.path.basename(proof) and
+				"folder.jpg" not in proof.lower()):
 				#TODO: must be named like nfo/rars or start with 00?
 				result.append(proof)
 	for proof in rar_files:
