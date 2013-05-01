@@ -127,11 +127,29 @@ def get_proof_files(reldir):
 		else:
 			# proof file in root dir without the word proof somewhere
 			# no spaces: skip personal covers added to mp3 releases
+			# NOT: desktop.ini, AlbumArtSmall.jpg, 
+			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg 
+			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Small.jpg 
 			if (os.path.getsize(proof) > 100000 and 
 				" " not in os.path.basename(proof) and
-				"folder.jpg" not in proof.lower()):
-				#TODO: must be named like nfo/rars or start with 00?
-				result.append(proof)
+				not proof.lower()[:-4].endswith("folder") and
+				"albumartsmall" not in proof.lower() and
+				not os.path.basename(proof).lower().startswith("albumart_{")):
+				# must be named like nfo/rars or start with 00
+				if os.path.basename(proof).lower().startswith("00"):
+					# this way for mp3 releases
+					result.append(proof)
+					continue
+				# idea is to not have covers that are added later
+				s = 10
+				for nfo in get_files(reldir, "*.nfo"):
+					if os.path.basename(nfo)[:-4][:s] == proof[:-4][:s]:
+						result.append(proof)
+						continue
+				for rar in rar_files:
+					if os.path.basename(rar)[:-4][:s] == proof[:-4][:s]:
+						result.append(proof)
+						continue	
 	for proof in rar_files:
 		if "proof" in proof.lower():
 			# RAR file must contain image file
