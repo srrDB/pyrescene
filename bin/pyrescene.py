@@ -198,15 +198,6 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		if "fix" in pardir and not "fix" in release_dir.lower():
 			continue
 		
-#		wanted = True
-#		# not wanted if SFV contains .mp3 or .flac files
-#		for sfvf in rescene.utility.parse_sfv_file(sfv)[0]:
-#			if (sfvf.file_name.endswith(".mp3") or 
-#				sfvf.file_name.endswith(".flac")):
-#				wanted = False
-#				break
-#		
-#		if wanted:		
 		wanted_sfvs.append(sfv)
 	return wanted_sfvs
 
@@ -309,6 +300,8 @@ def generate_srr(reldir, working_dir, options):
 	copied_files = []
 	is_music = False
 	for nfo in get_files(reldir, "*.nfo"):
+		if nfo.lower() in ("imdb.nfo"):
+			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, nfo))
 
 	for m3u in get_files(reldir, "*.m3u"):
@@ -318,6 +311,8 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
+		if log.lower() in ("rushchk.log", ".upchk.log"):
+			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
 		
 	for cue in get_files(reldir, "*.cue"):
@@ -491,8 +486,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		
 	release = False
 	# A folder is considered being an original scene release directory when
-	# there is an .nfo file or an .sfv file
-	# or an .sfv file in a CDx/DiskX subdir (when nfo file is missing)
+	# there is a .nfo file or a .sfv file
+	# or a .sfv file in a CDx/DiskX subdir (when nfo file is missing)
 	for filename in filenames:
 		if (filename[-4:].lower() in (".nfo", ".sfv") and
 			filename not in ("motechnetfiles.nfo", "movie.nfo", "imdb.nfo",
