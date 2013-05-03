@@ -26,6 +26,11 @@ sample, and then use that blueprint (the .srs file) with the full video file
 to recreate that sample. It contains backups of all parts of the sample file 
 that are not the actual track data as well as a signature that helps ReSample 
 locate the missing track data from the full video file.
+  Also MP3 and FLAC music files are supported. The tags with all the meta data
+are copied to the SRS file. This can be restored at another time. fpcalc
+must be available in your path to use this feature. It can be downloaded from
+https://bitbucket.org/acoustid/chromaprint/downloads. This tool creates
+AcoustID music fingerprints. http://acoustid.org/chromaprint
 
   pyReScene Auto makes it all a bit easier. One command to create an SRR file.
 It does not require write access to the release directories and it can create
@@ -44,9 +49,9 @@ Dependencies
 ============
 
 pyReScene requires Python 2.6 or 2.7 to run. There are some executables
-made available for Windows users. There are currently no required
-external dependencies. However, if you want to reconstruct compressed RAR
-volumes, you will need to obtain a couple of the shareware (Win)RAR packages.
+made available for Windows users. fpcalc is necessary for creating 
+music SRS files. If you want to reconstruct compressed RAR volumes, 
+you will need to obtain a couple of the shareware (Win)RAR packages.
 These files will need to be preprocessed by the bin/preprardir.py script.
 This script extracts the RAR executables from the archives and renames them
 for further usage. The new folder with RAR executables will need to be passed
@@ -57,6 +62,9 @@ Installation instructions
 =========================
 
 python setup.py install
+Install chromaprint from your repository or put the fpcalc executable
+somewhere in your path. It will also work if you put it in the ./bin or
+./resample directory. On Windows, pyReScene will also look under C:\ and D:\.
 
 Windows installation instructions
 =================================
@@ -71,4 +79,24 @@ Edit the .bat files to reflect the path where Python and the script source code
 is located: e.g. C:\Python27\python.exe C:\pyReScene\bin\srr %*
 
 Now you will be able to call 'pysrr' from any directory.
+
+Tutorials
+=========
+
+Do tool_name --help to see all the available options.
+
+A one stop solution to create SRR files is the following command:
+
+	python pyrescene.py -r -s -c /root/directory/to/check
+
+This command will recursively check /root/directory/to/check for scene
+releases. Sample files are checked against the main movie files and SRR
+files for compressed RARs are also created.
+
+http://rescene.wikidot.com/tutorials has some more tutorials.
+
+What's new?
+===========
+
+Read NEWS.
 
