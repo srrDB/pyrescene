@@ -1726,7 +1726,7 @@ def compressed_rar_file_factory(block, blocks, src,
 	
 		return CompressedRarFile(block, blocks, src,
 							 nblock, followup_src, solid=False)
-	except RarNotFound:
+	except (RarNotFound, ValueError):
 		# we have found good RAR versions before
 		if len(archived_files):
 			regular_method_failed = CompressedRarFileAll(
