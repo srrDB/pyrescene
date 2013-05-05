@@ -1727,6 +1727,7 @@ def compressed_rar_file_factory(block, blocks, src,
 		return CompressedRarFile(block, blocks, src,
 							 nblock, followup_src, solid=False)
 	except (RarNotFound, ValueError):
+		print(sys.exc_info()[1])
 		# we have found good RAR versions before
 		if len(archived_files):
 			regular_method_failed = CompressedRarFileAll(
@@ -2426,7 +2427,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-	#print(" ".join(cmd))
+	print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
