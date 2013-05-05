@@ -1165,6 +1165,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		rarfs.close()
 	if srcfs:
 		srcfs.close()
+		
+	temp_folder_cleanup()
 
 def _write_recovery_record(block, rarfs):
 	"""block: original rar recovery block from SRR
@@ -1442,6 +1444,8 @@ RETURNCODE = {
 archived_files = {}
 repository = None
 temp_dir = None
+working_temp_dir = None
+regular_method_failed = False
 
 class EmptyRepository(Exception):
 	"""The RAR repository is empty."""
@@ -1454,6 +1458,12 @@ def get_temp_directory():
 	if temp_dir and os.path.isdir(temp_dir):
 		return mkdtemp("_pyReScene", dir=temp_dir)
 	return mkdtemp("_pyReScene")
+
+def temp_folder_cleanup():
+	"""Temp directory cleanup op the second compressed reconstruction
+	method."""
+	if os.path.isdir(working_temp_dir):
+		shutil.rmtree(working_temp_dir)
 	
 def get_rar_data_object(block, blocks, src,
 	                    in_folder, hints, auto_locate_renamed):
@@ -1574,18 +1584,19 @@ class RarArguments(object):
 	def __init__(self, block, rar_archive, store_files):
 		self.compr_level = block.get_compression_parameter()
 		self.dict_size = block.get_dictionary_size_parameter()
-		self.old_style = "-vn"
 		
 		self.rar_archive = rar_archive
 		if type(store_files) != type([]):
 			raise ValueError("Expects a list of files to store.")
 		self.store_files = store_files
+		self.extra_files_before = []
+		self.extra_files_after = []
+		self.store_all_files = []
 		
 		self.set_solid(block.flags & block.SOLID)
 		self.set_solid_namesort(False)
 		self.threads = ""
 		self.split = ""
-		self.extra_files_before = []
 		
 	def increase_thread_count(self):
 		if self.threads == "":
@@ -1604,21 +1615,35 @@ class RarArguments(object):
 				return True
 		return False
 	
+	def thread_count(self):
+		return int(self.threads[3:])
+	
 	def arglist(self):
-		args = (filter(lambda x: x != '', 
+		args = filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
-			self.old_style,
+			"-vn", # old style rar naming
 			"-o+", # Overwrite all
 			"-ep", # Exclude paths from names.
 			"-idcd", # Disable messages: copyright string, "Done" string
 			"-vn", # old style volume naming scheme
 			self.split,
-			self.rar_archive]) 
-		+ self.extra_files_before
-		+ self.store_files)
+			self.rar_archive])
+		if len(self.store_all_files):
+#			global working_temp_dir
+#			out = os.path.abspath(os.path.join(working_temp_dir, "all_files.txt"))
+#			args += ["-n@%s" % out]
+#			with open(out, 'w') as all_files:
+#				for afile in self.store_all_files:
+#					all_files.write(afile + os.linesep)
+			for afile in self.store_all_files:
+				args.append(afile)
+		else:
+			args += (self.extra_files_before
+					+ self.store_files
+					+ self.extra_files_after)
 		return args
-	
+		
 	def set_solid(self, is_set):
 		"""
 		s[<N>,v[-],e] Create solid archive
@@ -1634,7 +1659,7 @@ class RarArguments(object):
 			self.split = ""
 		else:
 			self.split = "-v%db" % size
-			
+				
 	def set_solid_namesort(self, is_set): #TODO: use while generating
 		"""
 		ds            Disable name sort for solid archive
@@ -1646,38 +1671,70 @@ class RarArguments(object):
 	
 	def reset_extra_files(self):
 		self.extra_files_before = []
+		self.extra_files_after = []
 		
-	def set_extra_files(self, file_list):
+	def set_extra_files_before(self, file_list):
 		self.extra_files_before = file_list
+		
+	def set_extra_files_after(self, file_list):
+		self.extra_files_after = file_list
 	
 def compressed_rar_file_factory(block, blocks, src,
 	                            in_folder, hints, auto_locate_renamed):
-	blocks = get_archived_file_blocks(blocks, block)
-	followup = followed_by_solid_block(block, blocks)
-	# first block solid archive
-	if followup and not block.flags & block.SOLID:
-		#TODO: compress all at once and reuse first block
+	global regular_method_failed
+	if regular_method_failed:
+		regular_method_failed.set_file(block)
+		return regular_method_failed
+	
+	global working_temp_dir
+	working_temp_dir = get_temp_directory()
+	try:
+		blocks_all = blocks
+		blocks = get_archived_file_blocks(blocks, block)
+		followup = followed_by_solid_block(block, blocks)
+		# first block solid archive
+		if followup and not block.flags & block.SOLID:
+			#TODO: compress all at once and reuse first block
+			
+			# try to locate the file to archive too
+			followup_src = _locate_file(followup, 
+			               in_folder, hints, auto_locate_renamed)
+			return CompressedRarFile(block, blocks, src, 
+									followup, followup_src, solid=True)
+		if block.flags & block.SOLID:
+			# get first file from archive
+			if block != blocks[0]:
+				if not followup:
+					# reuse CompressedRarFile because of the solid archive
+					rar = archived_files[blocks[0].file_name]
+					rar.set_new(src, block)
+					return rar
+				else:
+					followup_src = _locate_file(followup, 
+			               in_folder, hints, auto_locate_renamed)
+					# reuse CompressedRarFile because of the solid archive
+					rar = archived_files[blocks[0].file_name]
+					rar.set_new(src, block, followup_src)
+					return rar
 		
-		# try to locate the file to archive too
-		followup_src = _locate_file(followup, 
-		               in_folder, hints, auto_locate_renamed)
-		return CompressedRarFile(block, blocks, src, followup, followup_src)
-	if block.flags & block.SOLID:
-		# get first file from archive
-		if block != blocks[0]:
-			if not followup:
-				# reuse CompressedRarFile because of the solid archive
-				rar = archived_files[blocks[0].file_name]
-				rar.set_new(src, block)
-				return rar
-			else:
-				followup_src = _locate_file(followup, 
-		               in_folder, hints, auto_locate_renamed)
-				# reuse CompressedRarFile because of the solid archive
-				rar = archived_files[blocks[0].file_name]
-				rar.set_new(src, block, followup_src)
-				return rar
-	return CompressedRarFile(block, blocks, src)
+		nblock = next_block(block, blocks)
+		if nblock:
+			followup_src = _locate_file(nblock, 
+			                            in_folder, hints, auto_locate_renamed)
+		else:
+			followup_src = "" 
+	
+		return CompressedRarFile(block, blocks, src,
+							 nblock, followup_src, solid=False)
+	except RarNotFound:
+		# we have found good RAR versions before
+		if len(archived_files):
+			regular_method_failed = CompressedRarFileAll(
+				blocks, block, blocks_all,
+				(in_folder, hints, auto_locate_renamed))
+			return regular_method_failed
+		else:
+			raise
 
 def followed_by_solid_block(block, blocks):
 	start = False
@@ -1691,6 +1748,24 @@ def followed_by_solid_block(block, blocks):
 			else:
 				break
 	return False
+
+def next_block(block, blocks):
+	start = False
+	for bl in blocks:
+		if bl == block:
+			start = True
+			continue
+		if start:
+			return bl
+	return None
+
+def previous_block(block, blocks):
+	start = None
+	for bl in blocks:
+		if bl == block:
+			return start
+		start = bl
+	return block 
 	
 def get_archived_file_blocks(blocks, current_block):
 	"""
@@ -1742,23 +1817,20 @@ def get_full_packed_size(block, blocks):
 class CompressedRarFile(io.IOBase):
 	"""Represents compressed RAR data."""
 	def __init__(self, first_block, blocks, src, 
-				next_block=None, next_src=None):
-		"""blocks are only RarPackedFile blocks from the current set"""
+				next_block=None, next_src=None, solid=False):
+		"""blocks are only RarPackedFile blocks from the current set
+		solid: if it's a solid archive. (the first block isn't solid)"""
 		self.current_block = first_block
 		self.blocks = blocks
 		self.source_files = [src]
-		if next_src:
+		if solid:
 			self.source_files.append(next_src)
 		self.date = self.get_most_recent_date()
 		self.COMPRESSED_NAME = "pyReScene_compressed.rar"
+		self.solid = solid 
 		
-		self.solid = first_block.flags & first_block.SOLID
-		if next_block:
-			self.solid = True
-		
-		self.temp_dir = get_temp_directory()
-#		global temp_dir
-#		self.temp_dir = temp_dir
+		global working_temp_dir
+		self.temp_dir = working_temp_dir
 		
 		# make sure there is a RarRepository
 		global repository
@@ -1767,6 +1839,17 @@ class CompressedRarFile(io.IOBase):
 		
 		# search the correct RAR executable
 		self.good_rar = self.search_matching_rar_executable(first_block, blocks)
+		
+		# try again with the next (previous) files added too
+		if not self.good_rar and next_block and not solid:
+			self.source_files.append(next_src)
+			self.good_rar = self.search_matching_rar_executable(first_block, 
+				blocks, more_files=True)
+			
+		#TODO: to reconstruct succesfully, it probably needs to have the
+		# next 'window size' of file data
+		# link 'blocks' objects
+		
 		if not self.good_rar:
 			assert len(os.listdir(self.temp_dir)) == 0
 			try:
@@ -1818,7 +1901,7 @@ class CompressedRarFile(io.IOBase):
 			self.close()
 			raise ValueError("Still not fine :(.")
 
-	def search_matching_rar_executable(self, block, blocks):
+	def search_matching_rar_executable(self, block, blocks, more_files=False):
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		if len(block.file_name) > 2:
 			piece = os.path.join(self.temp_dir, "pyReScene_data_piece." + 
@@ -1892,6 +1975,10 @@ class CompressedRarFile(io.IOBase):
 					break
 			assert os.path.isfile(piece)
 			assert not os.path.isfile(out)
+		
+		if more_files:
+			#TODO: only use 4MiB here
+			args.set_extra_files_after([self.source_files[1]])
 			
 		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
@@ -1987,13 +2074,14 @@ class CompressedRarFile(io.IOBase):
 			args.threads = ""
 			
 			# we've done files before
-			if len(archived_files) > 1:
+			if len(archived_files) >= 1:
+				print("Testing with previous file")
 				# try compressing with the previous rar file before it
 				prev = get_previous_block()
 				assert prev
 				prev_file = archived_files[prev.file_name]
 				
-				args.set_extra_files([prev_file.source_files[-1]])
+				args.set_extra_files_before([prev_file.source_files[-1]])
 				
 				if rar.supports_setting_threads():
 					while(args.increase_thread_count()):
@@ -2005,7 +2093,7 @@ class CompressedRarFile(io.IOBase):
 				if found:
 					rar.args = args
 					return rar
-			
+
 			args.reset_extra_files()			
 			args.threads = ""
 		os.remove(piece)
@@ -2144,8 +2232,191 @@ class CompressedRarFile(io.IOBase):
 			the number of bytes read. If the object is in non-blocking mode 
 			and no bytes are available, None is returned.
 		"""
-		return self.readinto(byte_array)
+		return self.rarstream.readinto(byte_array)
 	
+def calculate_size_volume(blocks):
+	"""Calculates the size of the first volume."""
+	size = 0
+	for block in blocks:
+		if (block.rawtype == BlockType.RarMin and size != 0):
+			return size # when there is no archive end block
+		elif block.rawtype == BlockType.RarMax:
+			size += block.header_size
+			return size
+		elif block.rawtype in (BlockType.SrrHeader, BlockType.SrrStoredFile,
+							BlockType.SrrRarFile, BlockType.SrrOsoHash):
+			continue
+		else:
+			size += block.header_size
+			size += block.add_size
+	return size
+
+class CompressedRarFileAll(io.IOBase):
+	"""Represents compressed RAR data of all the files."""
+	
+	def __init__(self, blocks, block, all_blocks, search_options):
+		"""blocks: all the file blocks for this RAR set
+		block: the current file that has to be read
+		all_blocks: all the blocks of the SRR"""
+		self.blocks = blocks
+		self.current_block = block
+		self.COMPRESSED_NAME = "pyReScene_method2.rar"
+		self.rarstream = None
+		
+		global working_temp_dir
+		working_temp_dir = get_temp_directory()
+		self.temp_dir = working_temp_dir
+		
+		# try grabbing the volume size from blocks
+		volume = calculate_size_volume(all_blocks)
+		
+		# create archive with all the files based on last found good version
+		good_version = previous_block(block, blocks)
+		rar_settings = archived_files[good_version.file_name].good_rar
+		# pick one of the files with the highest thread count
+		for _key, value in archived_files.items():
+			if (value.good_rar.args.thread_count() > 
+				rar_settings.args.thread_count()):
+				rar_settings = value.good_rar
+		
+		rar_settings.args.set_split(volume)
+		rar_settings.args.rar_archive = os.path.join(self.temp_dir, 
+		                                             self.COMPRESSED_NAME)
+		for block in blocks:
+			if block.packed_size != 0: # files and no directories
+				rar_settings.args.store_all_files.append(
+					_locate_file(block, *search_options))
+		self.good_rar = rar_settings
+		
+		self.compress_files()
+		
+		self.set_file(self.current_block)
+		
+	def compress_files(self):
+		_fire(MsgCode.MSG, message=" ".join(self.good_rar.full()))
+		_fire(MsgCode.MSG, message="Compressing ALL files.")
+		time.sleep(0.5)
+		compress = subprocess.Popen(self.good_rar.full())
+		stdout, stderr = compress.communicate()
+		
+		if compress.returncode != 0:
+			print(stdout)
+			print(stderr)
+			_fire(MsgCode.MSG, 
+				message="Something went wrong executing Rar.exe:")
+			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
+	
+	def set_file(self, block):
+		"""Sets the current file that must be served to the algorithm."""
+		self.current_block = block
+		try:
+			self.rarstream.close()
+		except:
+			pass
+		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
+		# otherwise AttributeError: File not found in the archive.
+		if not (block.flags & RarPackedFileBlock.DIRECTORY 
+		    == RarPackedFileBlock.DIRECTORY):
+			self.rarstream = RarStream(out, compressed=True, 
+				packed_file_name=os.path.basename(block.file_name))
+			self.rarstream.seek(0, os.SEEK_END)
+			# test if file size match, otherwise try compressing again
+			if get_full_packed_size(block, 
+				self.blocks) != self.rarstream.tell():
+				self.try_again(block)
+			else:
+				self.rarstream.seek(0, os.SEEK_SET)
+		else:
+			self.rarstream = FakeFile(block.packed_size)
+		
+	def try_again(self, block):
+		# keep trying again with higher thread count
+		if self.good_rar.args.increase_thread_count():
+			empty_folder(self.temp_dir)
+			self.compress_files()
+			self.set_file(block)
+		else:
+			shutil.rmtree(self.temp_dir)
+			raise RarNotFound("Our options are exhausted.")
+
+	def length(self):
+		"""Length of the packed file being accessed."""
+		return self.rarstream.length()
+	
+	def tell(self):
+		"""Return the current stream position."""
+		return self.rarstream.tell()
+	
+	def readable(self):
+		"""Return True if the stream can be read from. 
+		If False, read() will raise IOError."""
+		return not self.rarstream.closed()
+	def seekable(self):
+		"""Return True if the stream supports random access. 
+		If False, seek(), tell() and truncate() will raise IOError."""
+		return not self.rarstream.closed()
+	
+	def close(self):
+		"""Flush and close this stream. Disable all I/O operations. 
+		This method has no effect if the file is already closed. 
+		Once the file is closed, any operation on the file 
+		(e.g. reading or writing) will raise a ValueError.
+
+		As a convenience, it is allowed to call this method more than once; 
+		only the first call, however, will have an effect."""
+		self.rarstream.close()
+		# cleanup of temp dir in separate function
+		
+	@property
+	def closed(self):
+		"""closed: bool.  True iff the file has been closed.
+
+		For backwards compatibility, this is a property, not a predicate.
+		"""
+		return self.rarstream.closed()
+	
+	def seek(self, offset, origin=0):
+		"""
+		Change the stream position to the given byte offset. offset is 
+		interpreted relative to the position indicated by origin. 
+		Values for whence are:
+	
+			* SEEK_SET or 0 - start of the stream (the default); 
+							  offset should be zero or positive
+			* SEEK_CUR or 1 - current stream position; offset may be negative
+			* SEEK_END or 2 - end of the stream; offset is usually negative
+	
+		Return the new absolute position.
+		"""
+		self.rarstream.seek(offset, origin)
+	
+	def read(self, size=-1):
+		"""
+		read([size]) 
+			-> read at most size bytes, returned as a string.
+			If the size argument is negative, read until EOF is reached.
+			Return an empty string at EOF.
+			
+		size > self.length(): EOFError
+		"""
+		return self.rarstream.read(size)
+	
+	def readinto(self, byte_array):
+		"""
+		 |  readinto(...)
+		 |	  readinto(bytearray) -> int.  Read up to len(b) bytes into b.
+		 |	  
+		 |	  Returns number of bytes read (0 for EOF), or None if the object
+		 |	  is set not to block as has no data to read.
+		 class io.RawIOBase
+		 
+		 readinto(b)
+			Read up to len(b) bytes into bytearray b and return 
+			the number of bytes read. If the object is in non-blocking mode 
+			and no bytes are available, None is returned.
+		"""
+		return self.rarstream.readinto(byte_array)
+		
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
 	
@@ -2155,7 +2426,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-#	print(" ".join(cmd))
+	#print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
