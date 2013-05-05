@@ -182,11 +182,13 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
 			"subtitles" == pardir or "sub" == pardir or "subpack" == pardir or
 			"vobsubs-full" == pardir or "vobsubs-light" == pardir or
-			"codec" == pardir or "codecs" == pardir):
+			"codec" == pardir or "codecs" == pardir or "cover" == pardir or
+			"covers" == pardir):
 			# X-Files.1x00.Pilot.DVDRip.XviD-SDG\Subtitles
 			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
 			# Play.Misty.For.Me.1971.DVDRip.XviD.INTERNAL-FaRM/Vobsubs-Full/
 			# Kellys.Heroes.1970.iNTERNAL.DVDRip.XviD-BELiAL/Codec/
+			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
 			continue
 		
 		# subpack inside release dir
