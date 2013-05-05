@@ -320,10 +320,10 @@ def generate_srr(reldir, working_dir, options):
 	for cue in get_files(reldir, "*.cue"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, cue))
 		
-	# when stored SRS file instead of a sample file
-	# or both, but only one SRS will be added later
-	for srs in get_files(reldir, "*.srs"):
-		copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
+#	# when stored SRS file instead of a sample file
+#	# or both, but only one SRS will be added later
+#	for srs in get_files(reldir, "*.srs"):
+#		copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 
 	# Create SRS files
 	for sample in get_sample_files(reldir) + get_music_files(reldir):
@@ -414,10 +414,10 @@ def generate_srr(reldir, working_dir, options):
 	for sfv in rarsfv:
 		copied_files.append(sfv)
 	
-	# remove possible duplicate SRS files
-	copied_files = list(set(copied_files))
-		
 	if is_music:
+#		# remove possible duplicate SRS files
+#		copied_files = list(set(copied_files))
+		
 		# sort files on filename, but nfo file first
 		copied_files.sort(key=key_sort_music_files)
 		
