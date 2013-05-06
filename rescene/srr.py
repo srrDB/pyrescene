@@ -35,7 +35,7 @@ from threading import Thread
 
 import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
-from rescene.utility import show_spinner, remove_spinner
+from rescene.utility import show_spinner, remove_spinner, sep
 
 # make it work with Python 3 too
 #if sys.hexversion >= 0x3000000:
@@ -102,7 +102,7 @@ def display_info(srr_file):
 	if len(info["stored_files"]):
 		print("Stored files:")
 		for sfile in info["stored_files"].values():
-			print("\t%s %d" % (sfile.file_name, sfile.file_size))
+			print("\t%9s  %s" % (sep(sfile.file_size), sfile.file_name))
 		print("")
 		
 	if len(info["rar_files"]):
