@@ -319,11 +319,6 @@ def generate_srr(reldir, working_dir, options):
 		
 	for cue in get_files(reldir, "*.cue"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, cue))
-		
-#	# when stored SRS file instead of a sample file
-#	# or both, but only one SRS will be added later
-#	for srs in get_files(reldir, "*.srs"):
-#		copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 
 	# Create SRS files
 	for sample in get_sample_files(reldir) + get_music_files(reldir):
@@ -395,6 +390,17 @@ def generate_srr(reldir, working_dir, options):
 				
 			sys.stderr = original_stderr
 		
+	# when stored SRS file instead of a sample file
+	# or both, but only one SRS will be added 
+	for srs in get_files(reldir, "*.srs"):
+		path = os.path.relpath(srs, reldir)
+		dest_file = os.path.join(working_dir, path)
+		if dest_file not in copied_files: # there wasn't a sample
+			copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
+		else:
+			# TODO: pick the best SRS file (checked against main movie file)
+			pass 
+
 	#TODO: TXT files for m2ts with crc?
 		
 	copied_sfvs = [] # SFVs in the working dir
@@ -415,9 +421,6 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(sfv)
 	
 	if is_music:
-#		# remove possible duplicate SRS files
-#		copied_files = list(set(copied_files))
-		
 		# sort files on filename, but nfo file first
 		copied_files.sort(key=key_sort_music_files)
 		
