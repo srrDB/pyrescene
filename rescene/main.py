@@ -1462,8 +1462,11 @@ def get_temp_directory():
 def temp_folder_cleanup():
 	"""Temp directory cleanup op the second compressed reconstruction
 	method."""
-	if os.path.isdir(working_temp_dir):
-		shutil.rmtree(working_temp_dir)
+	try:
+		if os.path.isdir(working_temp_dir):
+			shutil.rmtree(working_temp_dir)
+	except TypeError:
+		pass
 	
 def get_rar_data_object(block, blocks, src,
 	                    in_folder, hints, auto_locate_renamed):
