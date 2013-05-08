@@ -477,7 +477,8 @@ def get_release_directories(path):
 	else:
 		try:
 			# so it can work with longer directories
-			path = win32api.GetShortPathName(path)
+			if not is_release(path):
+				path = win32api.GetShortPathName(path)
 		except:
 			pass
 		
@@ -492,7 +493,7 @@ def get_release_directories(path):
 		if is_release(dirpath, dirnames, filenames):
 			last_release = dirpath
 			try:
-				# so we don't take a short release name
+				# so we don't take a short release name as SRR name
 				head, tail = os.path.split(last_release)
 				yield os.path.join(win32api.GetShortPathName(head), tail)
 			except:
