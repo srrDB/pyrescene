@@ -53,9 +53,9 @@ from tempfile import mkdtemp
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
-	RarPackedFileBlock, _DEBUG, SrrOsoHashBlock)
+	RarPackedFileBlock, SrrOsoHashBlock)
 from rescene.rarstream import RarStream, FakeFile
-from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, 
+from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.osohash import osohash_from
 
@@ -1767,7 +1767,10 @@ def previous_block(block, blocks):
 	start = None
 	for bl in blocks:
 		if bl == block:
-			return start
+			if start is None:
+				return block
+			else:
+				return start
 		start = bl
 	return block 
 	
@@ -2430,7 +2433,7 @@ def custom_popen(cmd):
 		creationflags = 0x08000000 # CREATE_NO_WINDOW
 
 	# run command
-	print(" ".join(cmd))
+	if _DEBUG: print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
 							creationflags=creationflags)	
