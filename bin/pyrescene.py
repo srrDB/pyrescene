@@ -51,6 +51,11 @@ import time
 import logging
 
 try:
+	import win32api
+except ImportError:
+	sys.exc_clear()
+
+try:
 	import _preamble
 except ImportError:
 	sys.exc_clear()
@@ -60,7 +65,7 @@ from resample.srs import main as srsmain
 from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
 from rescene.rar import RarReader, BlockType
-from rescene.utility import empty_folder
+from rescene.utility import empty_folder, _DEBUG
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 
@@ -149,7 +154,8 @@ def get_proof_files(reldir):
 				for rar in rar_files:
 					if os.path.basename(rar)[:-4][:s] == proof[:-4][:s]:
 						result.append(proof)
-						continue	
+						continue
+			# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small jpg image file)
 	for proof in rar_files:
 		if "proof" in proof.lower():
 			# RAR file must contain image file
@@ -468,14 +474,27 @@ def get_release_directories(path):
 		while not len(os.listdir(path)):
 			print("Waiting 5 seconds for mount.")
 			time.sleep(5)
+	else:
+		try:
+			# so it can work with longer directories
+			path = win32api.GetShortPathName(path)
+		except:
+			pass
 		
 	for dirpath, dirnames, filenames in os.walk(path):
+		if _DEBUG:
+			print(dirpath)
+			print(dirnames)
+			print(filenames)
 		if last_release in dirpath and last_release:
 			continue # subfolders of a found release
 		
 		if is_release(dirpath, dirnames, filenames):
 			last_release = dirpath
-			yield last_release
+			try:
+				yield win32api.GetShortPathName(last_release)
+			except:
+				yield last_release
 			
 DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC)_?\d$", re.IGNORECASE)
 RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|"
