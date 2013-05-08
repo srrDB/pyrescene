@@ -492,7 +492,9 @@ def get_release_directories(path):
 		if is_release(dirpath, dirnames, filenames):
 			last_release = dirpath
 			try:
-				yield win32api.GetShortPathName(last_release)
+				# so we don't take a short release name
+				head, tail = os.path.split(last_release)
+				yield os.path.join(win32api.GetShortPathName(head), tail)
 			except:
 				yield last_release
 			
