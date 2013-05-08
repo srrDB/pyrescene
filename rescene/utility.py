@@ -42,6 +42,8 @@ import locale
 import os
 import shutil
 
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
 	as deprecated. It will result in a warning being emmitted

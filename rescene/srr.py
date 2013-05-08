@@ -329,7 +329,7 @@ def main(argv=None):
 					 "(must have the same extension)", default=False)
 	recon.add_option("-f", "--fake-file", 
 					 action="store_true", dest="fake", default=False,
-					 help="fills RAR with fake data when the archived file"
+					 help="fills RAR with fake data when the archived file "
 					 "isn't found (e.g. no extras) "
 					 "this option implies --no-autocrc")
 	recon.add_option("-u", "--no-autocrc", 
