@@ -605,6 +605,13 @@ def main(argv=None):
 	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
 					metavar="DIRECTORY", help="Specify temporary directory. "
 					"Music files and samples will be written to this dir.")
+	
+	parser.add_option("--list-releases", dest="list_releases", 
+					action="store_true", help="Only list the release names "
+					"the script will encounter.")
+	parser.add_option("--list-releases-dirs", dest="list_releases_dirs", 
+					action="store_true", help="Only list the directories of "
+					"the release names the script will encounter.")
 		
 	if argv is None:
 		argv = sys.argv[1:]
@@ -616,6 +623,21 @@ def main(argv=None):
 		return 0
 	
 	(options, indirs) = parser.parse_args(args=argv)
+	
+	if options.list_releases:
+		for procdir in indirs:
+			procdir = os.path.abspath(procdir)
+			for release_dir in get_release_directories(procdir):
+				_head, tail = os.path.split(release_dir)
+				print(tail)
+		return 0
+	
+	if options.list_releases_dirs:
+		for procdir in indirs:
+			procdir = os.path.abspath(procdir)
+			for release_dir in get_release_directories(procdir):
+				print(release_dir)
+		return 0
 	
 	if options.always_yes and options.always_no:
 		print("Is it 'always yes' (-y) or 'always no' (-n)?")

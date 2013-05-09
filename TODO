@@ -32,8 +32,6 @@ pyReScene
    except when the release new files 
    compared to the ones stored in the existing srr release folder, 
    contains new files. new in the sense of addition e.g. proof jpg
- - parameter that only lists the release names
- - parameter that only lists the release names + paths
  - add a switch (like -z) for a single executable
     
 pyReSample
