@@ -1732,7 +1732,7 @@ def compressed_rar_file_factory(block, blocks, src,
 	except (RarNotFound, ValueError):
 		print(sys.exc_info()[1])
 		# we have found good RAR versions before
-		if len(archived_files):
+		if len(archived_files) != 0:
 			regular_method_failed = CompressedRarFileAll(
 				blocks, block, blocks_all,
 				(in_folder, hints, auto_locate_renamed))
@@ -2277,9 +2277,16 @@ class CompressedRarFileAll(io.IOBase):
 		# try grabbing the volume size from blocks
 		volume = calculate_size_volume(all_blocks)
 		
+		assert len(archived_files) != 0
+		
 		# create archive with all the files based on last found good version
 		good_version = previous_block(block, blocks)
-		rar_settings = archived_files[good_version.file_name].good_rar
+		try:
+			rar_settings = archived_files[good_version.file_name].good_rar
+		except KeyError:
+			for _key, value in archived_files.items():
+				rar_settings = value.good_rar
+				break
 		# pick one of the files with the highest thread count
 		for _key, value in archived_files.items():
 			if (value.good_rar.args.thread_count() > 
@@ -2338,7 +2345,8 @@ class CompressedRarFileAll(io.IOBase):
 		
 	def try_again(self, block):
 		# keep trying again with higher thread count
-		if self.good_rar.args.increase_thread_count():
+		if (self.good_rar.supports_setting_threads() and 
+			self.good_rar.args.increase_thread_count()):
 			empty_folder(self.temp_dir)
 			self.compress_files()
 			self.set_file(block)
