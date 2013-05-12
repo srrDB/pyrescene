@@ -392,9 +392,15 @@ def main(argv=None, no_exit=False):
 				sys.exc_info()[1])
 	except fpcalc.ExecutableNotFound:
 		pexit(3, str(sys.exc_info()[1]))
+	except AttributeError:
+		if str(sys.exc_info()[1]).startswith("Compressed RARs"):
+			# AttributeError: Compressed RARs are not supported
+			pexit(4, "Cannot verify sample against compressed RARs.")
+		else:
+			traceback.print_exc()
+			pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
 	except Exception:
 		traceback.print_exc()
-		
 		pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
 
 if __name__ == "__main__":
