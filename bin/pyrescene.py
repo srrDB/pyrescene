@@ -197,8 +197,10 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
 			continue
 		
-		# subpack inside release dir
-		if "subpack" in sfv.lower() or "subfix" in sfv.lower():
+		# subpack inside release dir not, but subpack release itself yes
+		if "subpack" in pardir and not "subpack" in release_dir.lower():
+			continue
+		if "subfix" in pardir and not "subfix" in release_dir.lower():
 			continue
 		
 		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
