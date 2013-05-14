@@ -197,6 +197,11 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
 			continue
 		
+		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
+			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
+			#	Subs/CD1/toyst.subs.cd1-iffm.sfv
+			continue
+		
 		# subpack inside release dir not, but subpack release itself yes
 		if "subpack" in pardir and not "subpack" in release_dir.lower():
 			continue

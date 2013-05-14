@@ -396,6 +396,9 @@ def main(argv=None, no_exit=False):
 		if str(sys.exc_info()[1]).startswith("Compressed RARs"):
 			# AttributeError: Compressed RARs are not supported
 			pexit(4, "Cannot verify sample against compressed RARs.")
+		elif (str(sys.exc_info()[1]) == 
+			"You must start with the first volume from a RAR set"):
+			pexit(5, str(sys.exc_info()[1]))
 		else:
 			traceback.print_exc()
 			pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
