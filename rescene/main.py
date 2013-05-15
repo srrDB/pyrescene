@@ -1843,16 +1843,26 @@ class CompressedRarFile(io.IOBase):
 		global repository
 		if not repository:
 			repository = RarRepository()
+			
+		# set a minimum thread count to start with based on previous runs
+		# should make it a little bit faster too
+		thread_count = ""
+		for _key, value in archived_files.items():
+			if value.good_rar.args.threads > thread_count:
+				thread_count = value.good_rar.args.threads 
 		
 		# search the correct RAR executable
-		self.good_rar = self.search_matching_rar_executable(first_block, blocks)
+		self.good_rar = self.search_matching_rar_executable(
+			first_block, blocks, thread_count)
+		
 		
 		# try again with the next (previous) files added too
 		if not self.good_rar and next_block and not solid:
 			self.source_files.append(next_src)
 			self.good_rar = self.search_matching_rar_executable(first_block, 
-				blocks, more_files=True)
+				blocks, thread_count, more_files=True)
 			
+		
 		#TODO: to reconstruct succesfully, it probably needs to have the
 		# next 'window size' of file data
 		# link 'blocks' objects
@@ -1908,7 +1918,8 @@ class CompressedRarFile(io.IOBase):
 			self.close()
 			raise ValueError("Still not fine :(.")
 
-	def search_matching_rar_executable(self, block, blocks, more_files=False):
+	def search_matching_rar_executable(self, block, blocks, 
+			thread_count, more_files=False):
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		if len(block.file_name) > 2:
 			piece = os.path.join(self.temp_dir, "pyReScene_data_piece." + 
@@ -1986,6 +1997,10 @@ class CompressedRarFile(io.IOBase):
 		if more_files:
 			#TODO: only use 4MiB here
 			args.set_extra_files_after([self.source_files[1]])
+		
+		#TODO: use?
+#		# based on previous runs
+#		args.threads = thread_count
 			
 		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
