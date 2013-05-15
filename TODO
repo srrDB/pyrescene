@@ -3,6 +3,7 @@ pyReScene
 
  - SRR support for RAR5 files <supportATrarlab.com>
  - SRR support for ZIP files
+ - Make SFX volumes rescenable
  - *.sfv as the first parameter
  - add, remove, rename stored files from CLI
  - new block for empty directories?

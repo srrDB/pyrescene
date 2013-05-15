@@ -1156,6 +1156,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		elif block.rawtype == BlockType.SrrOsoHash:
 			# so no warning message 'unknown block' is shown
 			pass
+		elif block.rawtype == BlockType.SrrRarPadding:
+			rarfs.write(block.block_bytes()[block.header_size:])
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
