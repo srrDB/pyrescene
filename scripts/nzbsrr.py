@@ -111,7 +111,7 @@ def main(options, args):
 						print("Writing nzb %s" % os.path.basename(f))
 						with open(f, "ab") as nzb_file:
 							nzb_file.write(newdoc.toxml("utf-8"))
-					except Exception, e:
+					except Exception as e:
 						print(e)
 
 	if options.folderjoin:
@@ -124,7 +124,7 @@ def main(options, args):
 				for path in glob.glob(nzb):
 					print("Reading %s" % os.path.basename(path))
 					read_nzb(path)
-			except Exception, e:
+			except Exception as e:
 				print("Reading NZB file(s) failed. Trying SQL.")
 				print("Reading %s" % os.path.basename(nzb))
 #				read_tvbinz(nzb)

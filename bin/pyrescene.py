@@ -235,14 +235,14 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	try:
 		# copy over file
 		shutil.copyfile(copy_file, dest_file)	
-	except IOError, e:
+	except IOError as e:
 		print("Could not copy %s." % copy_file)
 		print("Reason: %s" % e)
 		if "[Errno 2] No such file or directory" in str(e) and os.name == "nt":
 			print("Trying again!")
 			try:
 				shutil.copyfile("\\\\?\\" + copy_file, dest_file)
-			except IOError, e:
+			except IOError:
 				print("Failed again...")
 
 	return dest_file
@@ -283,7 +283,7 @@ def generate_srr(reldir, working_dir, options):
 			print("Read error. DVD disk unreadable? Try again!")
 			os.unlink(srr)
 			return False
-		except KeyboardInterrupt, e:
+		except KeyboardInterrupt as e:
 			if e.message != "DONT_DELETE":
 				os.unlink(srr)
 			raise
