@@ -120,7 +120,7 @@ on how to retrieve a part of a file.  Here's what you can find on an
 
 # fix pynzb library
 def _parse_date(date):
-	if isinstance(date, basestring):
+	if isinstance(date, pynzb.base.basestring):
 		date = int(date)
 	return datetime.datetime.fromtimestamp(date)
 pynzb.base.parse_date = _parse_date
