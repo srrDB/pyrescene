@@ -175,6 +175,7 @@ sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 import rescene
 from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
+from rescene.utility import basestring
 
 __version_info__ = ('1', '5')
 __version__ = '.'.join(__version_info__)
@@ -956,7 +957,7 @@ class NNTPFile(io.IOBase):
 	
 	def __eq__(self, other):
 		# for sorting
-		if isinstance(other, (str, unicode)):
+		if isinstance(other, basestring):
 			return self.name == other
 		try:
 			# simple check to see if we are talking about the same file

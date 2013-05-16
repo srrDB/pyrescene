@@ -589,7 +589,8 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 			self._unpack_file_name()
 		
 		# creating a srr file block
-#		elif file_name != None and isinstance(file_size, (int, long)):
+#		elif (file_name != None and
+#		isinstance(file_size, numbers.Integral)):
 		elif file_name != None and file_size != None:
 			""" store block (type 0x6A) has the 0x8000 flag set to indicate
 				there is additional data following the block.
