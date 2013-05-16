@@ -4,6 +4,7 @@
 |HEAD_CRC:   0x774A
 37 +
 """ 
+from __future__ import print_function
 import zlib, struct
 import sys
 before = "C:/Users/Me/Desktop/before.bin"
@@ -23,8 +24,8 @@ with open(after, "rb") as a:
 with open(inbetween, "rb") as n:
 	inb = n.read()
 	
-#print inb.encode('hex')
-#print len(inb)
+#print(inb.encode('hex'))
+#print(len(inb))
 #sys.exit()
 	
 def fix_file_header(file_header, date_part):
@@ -45,7 +46,7 @@ for i in range(0x37, 0x72):
 	inb = fix_file_header(inb, i)
 	crc = zlib.crc32(bef + inb + aft)
 	print("%08X - fa6f96b5" % (crc & 0xffffffff))
-	print crc, 0xfa6f96b5
+	print(crc, 0xfa6f96b5)
 	if crc == 0xfa6f96b5:
 		print("found it: %d" % i)
 		with open("C:/Users/Me/Desktop/good.bin", "wb") as good:
@@ -61,7 +62,7 @@ with open("C:/Users/Me/Desktop/good.bin", "wb") as good:
 #with open("C:/Users/Me/Desktop/rebuild/good.bin", "rb") as good:
 with open("C:/Users/Me/Desktop/modern.family.s02e11.1080p.bluray-bia.rar", "rb") as good:
 	data = good.read()
-	print "%s" % struct.pack('>I', zlib.crc32(data) & 0xffffffff).encode('hex')
-	print "%X" % zlib.crc32(data)
+	print("%s" % struct.pack('>I', zlib.crc32(data) & 0xffffffff).encode('hex'))
+	print("%X" % zlib.crc32(data))
 
-print "echt: b94d4433, output: 71325EC3"
+print("echt: b94d4433, output: 71325EC3")

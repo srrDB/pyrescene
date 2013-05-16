@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import subprocess
 import sys
@@ -40,7 +42,7 @@ def compare(raroutdir):
 	pprint.pprint(files)
 	f1 = f2 = 0
 	for i in range(len(files)):
-#		print sorted(files[i-1].items())
+#		print(sorted(files[i-1].items()))
 #		continue
 		for k, v in sorted(files[i].items()):
 			if not f1:
@@ -49,9 +51,9 @@ def compare(raroutdir):
 			f2 = v
 			if _do_cmp(os.path.join(raroutdir, f1), 
 					   os.path.join(raroutdir, f2)):
-				print "SAME:", k, f1, f2
+				print("SAME:", k, f1, f2)
 			else:
-				print "DIFF:", k, f1, f2
+				print("DIFF:", k, f1, f2)
 			f1 = f2
 
 def _do_cmp(f1, f2):

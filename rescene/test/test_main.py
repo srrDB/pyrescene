@@ -248,7 +248,7 @@ class TestRename(TmpDirSetup):
 		srr = os.path.join(self.tdir, os.path.basename(orig))
 		_copy(orig, self.tdir)
 #		fname = RarReader(srr).list_files()[0]
-#		print fname
+#		print(fname)
 		
 		rename_stored_file(srr, "store_little/store_little.srr", 
 		                   "store_little/store_little_renamed.srr")

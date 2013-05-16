@@ -25,6 +25,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 import struct
 import os
 
@@ -136,9 +138,9 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 			elif i < lace_frame_count - 1:
 				# convert UInt to SInt then add to previous
 				length, bc = GetEbmlUIntStream(stream)
-#				print "i", i
-#				print "lace frame count", lace_frame_count
-#				print "bytes consumed", bc
+#				print("i", i)
+#				print("lace frame count", lace_frame_count)
+#				print("bytes consumed", bc)
 				assert bc
 				length -= ((1 << (bc * 8 - (bc + 1))) - 1)
 				frame_sizes[i] = frame_sizes[i - 1] + length

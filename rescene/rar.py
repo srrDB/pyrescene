@@ -37,7 +37,7 @@
 # define external public interface
 # __all__ = [] # dir(rar)
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, print_function, division
 import io
 import struct
 import os
@@ -865,13 +865,13 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 
 		# TODO: look what is in the reserved places and figure it out
 		if self.reserved1 != 0 or self.reserved2 != 0:
-#			print self.reserved1, self.reserved2, self.fname
+#			print(self.reserved1, self.reserved2, self.fname)
 			pass
 			
-#		print self.reserved1, self.reserved2, self.fname
-		# print self._rawdata[7:].encode('hex')
+#		print(self.reserved1, self.reserved2, self.fname)
+		# print(self._rawdata[7:].encode('hex'))
 #		if not "000000000000" == self._rawdata[7:].encode('hex'):
-##			print self._rawdata[7:].encode('hex'), self.fname
+##			print(self._rawdata[7:].encode('hex'), self.fname)
 #			# only with solid archives?
 #			pass
 

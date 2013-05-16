@@ -148,6 +148,8 @@ and SRR could contain the RAR data multiple times.
 Bug in rare cases for version 1.1.
 """
 
+from __future__ import print_function
+
 import nntplib
 import optparse
 import sys
@@ -797,7 +799,7 @@ class NNTPFile(io.IOBase):
 						amount = end_offset // int(new_line_size) + 1
 						# but always more than 2 lines! otherwise no new data
 						amount = amount if amount > 2 else 3
-					#print lines, line_size, end_offset, amount
+					#print(lines, line_size, end_offset, amount)
 				self.grab_segment(message_id, amount)
 				
 				# try to fix one (or more) byte off yEnc (CRC) errors here
@@ -1188,7 +1190,7 @@ def create_srr(nzb_path, options):
 			continue
 		# remove small IMDb images
 		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
-			print("JPG check:"),
+			print("JPG check:", end=" ")
 			size = sum(f.bytes for f in afile.segments.values())
 			# check the resolution? -> no, IMDb raised the resolution
 			if size < 9000: # I have seen valid 10KiB images
@@ -1321,7 +1323,7 @@ STAT last segment of lg-le.de.le.2.r00"""
 				return
 			rescene.add_stored_files(srrf, to_store + sfvs, usenet=True)
 	finally:
-		print("QUIT sent to main server."),
+		print("QUIT sent to main server.", end=" ")
 		if result:
 			print("SRR file ======== CREATED ========.")
 		else:
@@ -1468,7 +1470,8 @@ def main(options, args):
 	if create_config_file:
 		config = ConfigParser()
 		if len(EXTRA_SERVERS): # write old hardcoded servers to file
-			print("Writing hard coded servers to config file..."),
+			print("Writing hard coded servers to config file...",
+				end=" ")
 			for server in EXTRA_SERVERS:
 				sname = "server_" + server[0] # second part is arbitrary
 				config.add_section(sname)
@@ -1484,7 +1487,8 @@ def main(options, args):
 				else:
 					config.set(sname, "readermode", False)
 		else: # Example template
-			print("Writing {template} in the config file..."),
+			print("Writing {template} in the config file...",
+				end=" ")
 			config = create_template(config)
 
 		with open(options.config_file, "wb") as configfile:
