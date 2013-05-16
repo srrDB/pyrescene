@@ -30,9 +30,10 @@ import sys
 import glob
 import re
 import fileinput
+import shutil #needed?
 import subprocess
 from optparse import OptionParser
-
+from subprocess import Popen
 """
 Installation guide for Linux
 ----------------------------
@@ -126,8 +127,8 @@ if(os.name == "nt"):
     path_to_srs = "pysrs"
     path_to_srr = "pysrr"
 else:
-    path_to_srs = "srs"
-    path_to_srr = "srr"
+    path_to_srs = "/usr/local/bin/srs"
+    path_to_srr = "/usr/local/bin/srr"
 path_to_unrar = "unrar"
 unrar_options = "-o+ -p-"
 
@@ -186,7 +187,7 @@ def get_files(path, cwdsolo, options):
         if folder: 
             folder += os.sep
         
-        if not re.search("\.(avi|mkv|m4v|mp4|ts|divx|ogm|mpg|mpeg|wmv|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo)$", filename, re.IGNORECASE):
+        if not re.search("\.(avi|mkv|m4v|mp4|wmv|ts|divx|ogm|mpg|mpeg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo)$", filename, re.IGNORECASE):
             if not (re.search("\.rar$", filename, re.IGNORECASE) and not re.search("\.part\d{2,3}\.rar$", filename, re.IGNORECASE)):
                 continue
             if re.search("\.part[2-9]\.rar$", filename, re.IGNORECASE):
@@ -245,7 +246,7 @@ def get_files(path, cwdsolo, options):
                 cont = False
                 print("Files missing from " + filename + ":\n " + str(missingList)) # str(missingList) +
                 for miss in missingList:
-                    if re.search("\.(avi|divx|mkv|m4v|mp4|ts|ogm|mpg|mpeg|wmv)$", miss, re.IGNORECASE):
+                    if re.search("\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mpg|mpeg)$", miss, re.IGNORECASE):
                         print("SFV contains missing video file.  Skipping instead of quitting.")
                         cont = True
                         break
@@ -342,7 +343,7 @@ def get_files(path, cwdsolo, options):
                 std = std.replace("\\r", "")
                 std = std.replace("\r", "")
                 output = std.split("\n")
-            elif len(output) == 0 and re.search("\.(avi|divx|mkv|m4v|mp4|ts|ogm|mpg|mpeg|wmv)\.00[0-1]$", main_file, re.IGNORECASE):
+            elif len(output) == 0 and re.search("\.(avi|divx|mkv|m4v|mp4|ts|ogm|mpg|mpeg|)\.00[0-1]$", main_file, re.IGNORECASE):
                 #if os.path.exists(folder + main_file.split(".001",1)[0] + ".000"):
                 #    main_file = main_file.split(".001",1)[0] + ".000"
                 print("%s is a joined file." % main_file)
@@ -365,7 +366,7 @@ def get_files(path, cwdsolo, options):
             for s in output: # could be multiple files in the rar
                 if not s:
                     continue  # for blanks at the end from splitting \r\n or \n
-                if re.search("\.(avi|divx|mkv|m4v|mp4|ts|ogm|mka|dts|ac3|mpg|mpeg|mp3|ogg)$", s, re.IGNORECASE):
+                if re.search("\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mka|dts|ac3|mpg|mpeg|mp3|ogg)$", s, re.IGNORECASE):
                     typ = "Video"
                     if not folder:
                         sets_in_main += 1  # i.e. not in CD[1-9], so may need to move
@@ -398,7 +399,7 @@ def get_files(path, cwdsolo, options):
         
         # Check for Video files NOT in RAR files
         # i.e. samples or previously extracted video
-        elif re.search("\.(avi|mkv|m4v|mp4|ts|vob|m2ts|mpg|mpeg)$", main_file, re.IGNORECASE):
+        elif re.search("\.(avi|mkv|m4v|mp4|wmv|ts|vob|m2ts|mpg|mpeg)$", main_file, re.IGNORECASE):
             
             if re.search("extra", folder + main_file, re.IGNORECASE):
                 subtyp = "Extras"
@@ -469,11 +470,11 @@ def is_sample(video, subtyp):
     if re.search("\.(mkv|m4v|mp4|ts)$", video, re.IGNORECASE):
         max_size = 250000000
     
-    if re.search("^.*?([\.\-_\w]?sa?mp).*?\.(?:avi|mkv|m4v|mp4|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE):
+    if re.search("^.*?([\.\-_\w]?sa?mp).*?\.(?:avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE):
         if os.path.getsize(video) < max_size: return True
     # TODO: add check to make sure not extras before doing this
     else: # no s?mp in filename - reduce filesize limits manually
-        if subtyp != "Extras" and re.search("\.(avi|mkv|m4v|mp4|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE) and os.path.getsize(video) < max_size / 2:
+        if subtyp != "Extras" and re.search("\.(avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE) and os.path.getsize(video) < max_size / 2:
             return True
     
     return False
@@ -1270,7 +1271,7 @@ if __name__ == '__main__':
                 if current in root:
                     continue
                 for mfile in files:
-                    if re.search("\.(rar|00[0-1]|avi|mkv|m4v|mp4|ts|ogm|divx|mpg|mpeg)$", mfile):
+                    if re.search("\.(rar|00[0-1]|avi|mkv|m4v|mp4|wmv|ts|ogm|divx|mpg|mpeg)$", mfile):
                         found = True
                         break
                 if not found:
