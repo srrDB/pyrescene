@@ -25,6 +25,8 @@ will be thrown:
 	http://search.cpan.org/~mirod/XML-Twig-3.39/
 """
 
+from __future__ import print_function
+
 from xml.dom.minidom import parse, Document
 import optparse
 import sys
@@ -204,7 +206,7 @@ def renameSrr(dir, file, releaseName):
 	old = os.path.join(dir, file)
 	new = os.path.join(dir, "renamed", releaseName + ".srr")
 	try:
-		print(("Renaming %s to %s..." % (old, new))),
+		print("Renaming %s to %s..." % (old, new), end=" ")
 		try:
 			os.renames(old, new)
 			print("done!")

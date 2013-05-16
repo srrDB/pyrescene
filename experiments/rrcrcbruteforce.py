@@ -10,7 +10,7 @@ emp = dir + "empty.rar"
 
 # get unknown CRC
 for block in rar.RarReader(emp).read_all():
-    print block.explain()
+    print(block.explain())
     if block.rawtype == rar.BlockType.RarNewSub:
         rr = block.file_crc
         rrblock = block
@@ -69,12 +69,12 @@ def bruteforce():
     pass
 
 def calc_prev_crc():
-    print rrblock.block_position
-    print rrblock.block_position+rrblock.header_size
-    print rrblock.block_position+rrblock.header_size+rrblock.add_size
+    print(rrblock.block_position)
+    print(rrblock.block_position+rrblock.header_size)
+    print(rrblock.block_position+rrblock.header_size+rrblock.add_size)
     d = bytes[rrblock.block_position+rrblock.header_size:
               rrblock.block_position+rrblock.header_size+rrblock.add_size]
-    print len(d)
+    print(len(d))
     assert zlib.crc32(d) == zlib.crc32(d, ~0xffffffff)
     crc = zlib.crc32(d, ~0x0fffffff)
     print("Calculated: %x" % (crc & 0xffffffff))

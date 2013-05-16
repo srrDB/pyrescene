@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 from optparse import OptionParser
 from datetime import datetime
 import sys
@@ -133,7 +135,7 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 		if date and name:
 			if tarfile.is_tarfile(archive_name):
 				new_name = date + "_rar%s" % tag
-				print("Extracting %s..." % new_name),
+				print("Extracting %s..." % new_name, end=" ")
 				with closing(tarfile.open(archive_name)) as tf:
 					exe = tf.getmember("rar/rar")
 					tf.extract(exe, path=dest)
@@ -151,7 +153,7 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 				if ".sfx" in fname:
 					# no extension for Linux executables
 					new_name = new_name[:-4]
-				print("Extracting %s..." % new_name),
+				print("Extracting %s..." % new_name, end=" ")
 				args = [unrar, "e", archive_name, name, dest]
 				extract = custom_popen(args)
 				if extract.wait() == 0:

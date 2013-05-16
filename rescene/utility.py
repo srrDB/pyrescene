@@ -248,7 +248,7 @@ def diff_lists(one, two):
 #	for line in two:
 #		twoclean.append(line.encode('ascii', 'replace'))
 #	#a = d.compare(oneclean, twoclean)
-#	print "\n".join(list(a))
+#	print("\n".join(list(a)))
 #	
 
 	#TODO: remove empty lines?
@@ -266,7 +266,7 @@ def diff_lists(one, two):
 		else: # ? or space
 			no += 1
 			res.append(" ")
-	#print res
+	#print(res)
 	return pos, neg, no
 
 def cleanlines(line):

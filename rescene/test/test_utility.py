@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 import unittest
 import os
 import io
@@ -190,7 +192,7 @@ class TestUtility(unittest.TestCase):
 		"""
 		a, b = (a,), (b,)
 		
-		#print diff_lists(a, b)
+		#print(diff_lists(a, b))
 		
 #	def test_nfo_diff(self):
 #		txtdir = os.path.join(os.pardir, "test_files", "txt")
@@ -210,7 +212,7 @@ class TestUtility(unittest.TestCase):
 #			else:
 #				r = diff_lists(old[1].splitlines(), v.splitlines())
 #				self.assertTrue(r)
-#				print r, old[0], k
+#				print(r, old[0], k)
 #				old = (k, v)
 #				
 #		self.assertFalse(diff_lists(("one",), ("one", "two")))
@@ -221,7 +223,7 @@ class TestUtility(unittest.TestCase):
 #				break
 #			r = diff_lists(contents.[i].splitlines(), 
 #						   contents[i+1].splitlines())
-#			print r, contents[i]
+#			print(r, contents[i])
 
 	def test_sep(self):
 		try:
