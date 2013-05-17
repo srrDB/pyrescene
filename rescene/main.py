@@ -58,6 +58,7 @@ from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.osohash import osohash_from
+from rescene.utility import basestring
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -135,7 +136,7 @@ def can_overwrite(file_path):
 	return not os.path.isfile(file_path)
 
 def change_rescene_name_version(new_name):
-	if not isinstance(new_name, str):
+	if not isinstance(new_name, basestring):
 		raise AttributeError("ReScene name must be a string.")
 	if len(new_name) > 0xFFF6:
 		raise AttributeError("Application name too long.")

@@ -39,6 +39,8 @@ Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
+from __future__ import unicode_literals
+
 from optparse import OptionParser
 from tempfile import mkdtemp
 from datetime import datetime
@@ -746,9 +748,9 @@ def main(argv=None):
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
-				u"open %s type cdaudio alias ddrive" % drive, None, 0, None)
+				"open %s type cdaudio alias ddrive" % drive, None, 0, None)
 			ctypes.windll.WINMM.mciSendStringW(
-				u"set ddrive door open", None, 0, None)
+				"set ddrive door open", None, 0, None)
 		
 		winsound.Beep(1000, 500)
 	elif options.eject and not aborted:
