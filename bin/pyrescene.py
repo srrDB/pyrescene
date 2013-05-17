@@ -503,12 +503,14 @@ RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|"
 	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
 			
 def is_release(dirpath, dirnames=None, filenames=None):
-	if dirnames == None:
-		l = lambda x: not os.path.isfile(os.path.join(dirpath, x))
-		dirnames = filter(l, os.listdir(dirpath))
-	if filenames == None:
-		l = lambda x: os.path.isfile(os.path.join(dirpath, x))
-		filenames = filter(l, os.listdir(dirpath))
+	if dirnames is None or filenames is None:
+		dirnames = list()
+		filenames = list()
+		for x in os.listdir(dirpath):
+			if os.path.isfile(os.path.join(dirpath, x)):
+				filenames.append(x)
+			else:
+				dirnames.append(x)
 		
 	release = False
 	# A folder is considered being an original scene release directory when
