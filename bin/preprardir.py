@@ -52,7 +52,11 @@ def main(options, args):
 	input_dir = args[0]
 	output_dir = args[1]
 	
-	extract_rarbin(input_dir, output_dir)
+	try:
+		extract_rarbin(input_dir, output_dir)
+	except OSError:
+		print("Could not find installed UnRAR version.")
+		return 1
 	copy_license_file(output_dir)
 
 def locate_unrar():
@@ -61,14 +65,22 @@ def locate_unrar():
 		try:
 			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
 			if not os.path.exists(unrar):
-				raise KeyError
+				unrar = os.environ["ProgramW6432"] + "\\Unrar\\UnRAR.exe"
+				if not os.path.exists(unrar):
+					raise KeyError
 		except KeyError:
 			try:
 				unrar = os.environ["ProgramFiles(x86)"] + "\\WinRAR\\UnRAR.exe"
 				if not os.path.exists(unrar):
-					raise KeyError
+					unrar = os.environ["ProgramFiles(x86)"] + "\\Unrar\\UnRAR.exe"
+					if not os.path.exists(unrar):
+						raise KeyError
 			except KeyError:
+				print("-----------------------------------------------")
 				print("Install WinRAR to use all the functionalities.")
+				print("Freeware 'UnRAR for Windows' is already enough.")
+				print("http://www.rarlab.com/rar_add.htm")
+				print("-----------------------------------------------")
 				unrar = "UnRAR.exe" 
 				
 		# define your own path to a program to unrar: (uncomment)
