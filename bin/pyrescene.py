@@ -65,7 +65,7 @@ from resample.srs import main as srsmain
 from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
 from rescene.rar import RarReader, BlockType
-from rescene.utility import empty_folder, _DEBUG
+from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 
@@ -259,7 +259,19 @@ def key_sort_music_files(name):
 	if name[-4:].lower() == ".nfo":
 		return "-"
 	else:
-		return name 
+		return name
+	
+def is_storable_fix(release_name):
+	"""Tests if we can store the main RAR file of this release."""
+	#Rules.of.Engagement.S02E03.Mr.Fix.It.DVDRip.XviD-SAiNTS
+	#Ron.White.You.Cant.Fix.Stupid.XviD-LMG
+	#not: Rar|sub|audio|sample|
+	return (re.match(
+			".*(SFV|PPF|sync|proof?|dir|nfo|Interleaving|Trackorder).?"
+			"(Fix|Patch).*", release_name, re.IGNORECASE) or 
+			re.match(".*\.(FiX|FIX)(\.|-).*", release_name) or
+			re.match(".*\.DVDR.Fix-.*", release_name) or
+			re.match(".*\.DVDR.REPACK.Fix-.*", release_name))
 	
 def generate_srr(reldir, working_dir, options):
 	assert os.listdir(working_dir) == []
@@ -412,7 +424,14 @@ def generate_srr(reldir, working_dir, options):
 			copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 		else:
 			# TODO: pick the best SRS file (checked against main movie file)
-			pass 
+			pass
+
+	# stores the main RARs of DVDR fixes
+	if (is_storable_fix(os.path.split(reldir)[1]) and 
+		len(main_sfvs) == 1 and len(main_rars) == 1 and 
+		len(parse_sfv_file(main_sfvs[0])[0]) == 1):
+		copied_files.append(copy_to_working_dir(
+			working_dir, reldir, main_rars[0]))
 
 	#TODO: TXT files for m2ts with crc?
 		
