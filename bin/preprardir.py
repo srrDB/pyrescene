@@ -44,13 +44,21 @@ from rescene.rar import RarReader
 from rescene.main import RETURNCODE 
 
 def main(options, args):
-	for element in args:
-		if not os.path.isdir(element):
-			print("One of the arguments isn't a folder.")
-			return 1
-		
 	input_dir = args[0]
 	output_dir = args[1]
+	
+	if not os.path.isdir(input_dir):
+		print("The input argument must be a directory.")
+		return 1
+	
+	if not os.path.isdir(output_dir):
+		try:
+			os.makedirs(output_dir)
+		except OSError:
+			pass
+		if not os.path.isdir(output_dir):
+			print("The output argument must be a directory.")
+			return 1
 	
 	try:
 		extract_rarbin(input_dir, output_dir)
