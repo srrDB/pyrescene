@@ -1510,7 +1510,8 @@ class RarRepository(object):
 				after.append(rarexec)
 		#if elements in archived_files, try those versions first!
 		if len(archived_files):
-			previous = [archived_files.values()[-1].good_rar]
+			previous = next(iter(archived_files.values()))
+			previous = [previous.good_rar]
 		before.reverse()
 		if len(after):
 			# one from after first because of betas that can be in use
