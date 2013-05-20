@@ -61,7 +61,7 @@ def main(options, args):
 
 def locate_unrar():
 	"""locating installed unrar"""
-	if(os.name == "nt"):
+	if(os.name == "nt" and False):
 		try:
 			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
 			if not os.path.exists(unrar):
@@ -76,6 +76,8 @@ def locate_unrar():
 					if not os.path.exists(unrar):
 						raise KeyError
 			except KeyError:
+				#TODO: try grabbing location from the registry
+				#http://rescene.wikidot.com/forum/t-653887/preprardir-py-bug
 				print("-----------------------------------------------")
 				print("Install WinRAR to use all the functionalities.")
 				print("Freeware 'UnRAR for Windows' is already enough.")
@@ -86,7 +88,11 @@ def locate_unrar():
 		# define your own path to a program to unrar: (uncomment)
 		#unrar = "C:\Program Files\7z.exe"
 	else:
-		unrar = "/usr/bin/env unrar"
+		process = subprocess.Popen("which unrar", shell=True, bufsize=0,
+								stdout=subprocess.PIPE,
+								stdin=subprocess.PIPE,
+								stderr=subprocess.STDOUT)
+		unrar = process.communicate()[0]
 		
 	return unrar
 
