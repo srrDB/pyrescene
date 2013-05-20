@@ -230,7 +230,7 @@ def main(argv=None, no_exit=False):
 					pexit(1, "Sample and -c file not the same format.\n")
 				tracks = sample.find_sample_streams(tracks, options.check)
 				
-				for track in tracks.values():
+				for track in list(tracks.values()):
 					if ((track.signature_bytes and track.match_offset == 0 and
 						ftype_arg0 != FileType.MP3) or 
 						(ftype_arg0 == FileType.MP3 and 

@@ -1118,7 +1118,7 @@ def create_srr(nzb_path, options):
 				sfvs.append(nfile)
 				
 	# fail if one of the RAR files doesn't have the first segment
-	for nfile in nntp_files.itervalues():
+	for nfile in nntp_files.values():
 		if is_rar(nfile.name) and not nfile.has_first_segment():
 			server.quit()
 			print("Incomplete RAR file found: %s" % nfile.name)
@@ -1189,7 +1189,7 @@ def create_srr(nzb_path, options):
 		# remove small IMDb images
 		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
 			print("JPG check:"),
-			size = sum([f.bytes for f in afile.segments.itervalues()])
+			size = sum(f.bytes for f in afile.segments.values())
 			# check the resolution? -> no, IMDb raised the resolution
 			if size < 9000: # I have seen valid 10KiB images
 				print("image not added.")
