@@ -1110,6 +1110,8 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			return "-mdB"
 		elif self.flags & self.DICT64 == self.DICT64:
 			return "-mdA"
+		else: # self.DIRECTORY
+			return ""
 	
 	def get_os(self):
 		return "%s used to create this file block." % OS_NAME[self.os]
