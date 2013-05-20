@@ -6,6 +6,7 @@ import zlib
 import struct
 import rescene
 import os
+from binascii import hexlify
 
 #filenb = 12 # r11
 
@@ -213,8 +214,8 @@ def calculate_recovery_record():
 	+Protect+
 	"""
 #	print("Changes in the Recovery Record headers:")
-#	print(r09bytes.encode('hex'))
-#	print(r10bytes.encode('hex'))
+#	print(hexlify(r09bytes).decode('ascii'))
+#	print(hexlify(r10bytes).decode('ascii'))
 #	print(r10bytes.encode('utf8'))
 	
 	# beforerr: all data, fixed, before the Recovery Record
@@ -306,7 +307,7 @@ def calculate_recovery_record():
 		gen.seek(size)
 		gen.write(bytes)
 		
-	print(bytes[:block.header_size].encode('hex'))
+	print(hexlify(bytes[:block.header_size]).decode('ascii'))
 
 		
 def create_result():

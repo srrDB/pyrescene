@@ -169,6 +169,8 @@ import yenc
 import nzb_utils
 from os.path import abspath, join, dirname, basename,realpath
 
+#from binascii import hexlify
+
 # for running the script directly from command line
 sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
@@ -837,8 +839,8 @@ class NNTPFile(io.IOBase):
 					number += 7
 				if flags & rar.RarEndArchiveBlock.VOLNUMBER:
 					number += 2
-#				print(self.data[spart_nb][-7-6:].encode('hex'))
-#				if self.data[spart_nb][-7-6:].encode('hex') == "00" * 13:
+#				print(hexlify(self.data[spart_nb][-7-6:]).decode('ascii'))
+#				if self.data[spart_nb].endswith(bytearray(7 + 6)):
 #					# for some old RARs (7 + 6 exra bytes are zeros)
 #					print("Trying to fix some RARE case.")
 #					number += 6
@@ -880,7 +882,7 @@ class NNTPFile(io.IOBase):
 		# will never be used because rarreader reads the 3rd byte fist?
 		if (is_rar(self.name) and self._current_position == 0):
 #			print("Is RAR and reading from the start!")
-#			print(self.data[1][0:6].encode('hex'))
+#			print(hexlify(self.data[1][0:6]).decode('ascii'))
 			size_before_magic = len(self.data[1])
 			if self.data[1][0:6] == "6172211a0700".decode('hex'):
 				# only part of the magic marker is detected
@@ -927,7 +929,7 @@ class NNTPFile(io.IOBase):
 		dsize = len(data_begin)
 		if dsize > size:
 			self._current_position += size
-#			print(data_begin[:size].encode('hex'))
+#			print(hexlify(data_begin[:size]).decode('ascii'))
 			return data_begin[:size]
 		else:
 			self._current_position += dsize
@@ -952,7 +954,7 @@ class NNTPFile(io.IOBase):
 		assert self._current_position <= self._file_size
 		
 		self._inactive = False
-#		print((data_begin + data).encode('hex'))
+#		print(hexlify(data_begin + data).decode('ascii'))
 		return data_begin + data
 	
 	def __eq__(self, other):

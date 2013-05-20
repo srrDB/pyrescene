@@ -24,9 +24,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-# Enable Unicode string literals by default because Python 3.2 does not
-# support the u"" syntax. However the "struct" module does not support
-# Unicode format strings until Python 3, so they are wrapped in str() calls.
+# Enable Unicode string literals by default because non-ASCII strings are
+# used and Python 3.2 does not support the u"" syntax. Also, Python 2.6's
+# bytearray.fromhex() only accepts Unicode strings. However the "struct"
+# module does not support Unicode format strings until Python 3, so they have
+# to be wrapped in str() calls.
 from __future__ import unicode_literals
 
 import unittest
@@ -248,11 +250,11 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		self.assertEqual(sfb.file_name,
 			"Κείμενο στην ελληνική γλώσσα.txt")
 		# tests full block (including the previous test)
-		data = ("6A 6A 6A 00 80 46 00 41 00 00 00 39 00 CE 9A CE B5 CE AF"
+		data = bytearray.fromhex("6A 6A 6A 00 80 46 00 41 00 00 00 39 00 CE 9A CE B5 CE AF"
 		" CE BC CE B5 CE BD CE BF 20 CF 83 CF 84 CE B7 CE BD 20 CE B5 CE"
 		" BB CE BB CE B7 CE BD CE B9 CE BA CE AE 20 CE B3 CE BB CF 8E CF"
-		" 83 CF 83 CE B1 2E 74 78 74").replace(" ", "").lower()
-		self.assertEqual(sfb.block_bytes().encode('hex'), data)
+		" 83 CF 83 CE B1 2E 74 78 74")
+		self.assertEqual(sfb.block_bytes(), data)
 		
 		rfile = io.BytesIO()
 		rfile.write(b"\x69\x69\x69\x00\x00\x07\x00") # minimal header
@@ -292,12 +294,14 @@ class TestRarBlocks(unittest.TestCase):
 	
 	def test_srr_rar_file_read(self): #0x71
 		# from store_empty.srr
-		data = ("71 71 71 01 00 18 00"
+		# Before Python 3, there is no bytes.fromhex(), and the
+		# "struct" module does not unpack from bytearray() objects
+		data = bytes(bytearray.fromhex("71 71 71 01 00 18 00"
 		"0F 00 73 74 6F 72 65 5F 65 6D 70 74 79 2E 72 61 72 52 61 72 21"
 		"1A 07 00 CF 90 73 00 00 0D 00 00 00 00 00 00 00 07 47 74 20 80"
 		"2E 00 00 00 00 00 00 00 00 00 03 00 00 00 00 26 7B 66 3E 14 30"
 		"0E 00 A4 81 00 00 65 6D 70 74 79 5F 66 69 6C 65 2E 74 78 74 C4"
-		"3D 7B 00 40 07 00").replace(" ", "").lower().decode('hex')
+		"3D 7B 00 40 07 00"))
 		srrrfb = SrrRarFileBlock(data, 0)
 		self.assertEqual(srrrfb.crc, 0x7171)
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
