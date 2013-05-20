@@ -43,6 +43,7 @@ import struct
 import os
 import sys
 import tempfile
+from binascii import hexlify
 
 from rescene import utility 
 
@@ -394,7 +395,8 @@ class RarBlock(object):
 		bname = BLOCK_NAME.get(self.rawtype, "UNKNOWN BLOCK! NUKE IT!")
 		out = "Block: %s; offset: %s\n" % (bname, 
 			self.explain_size(self.block_position))
-		out += "|Header bytes: %s\n" % self._rawdata.encode('hex')
+		hex = hexlify(self._rawdata).decode('ascii')
+		out += "|Header bytes: %s\n" % hex
 		if self.rawtype == BlockType.RarMin:
 			out += "|Rar marker block is always 'Rar!1A0700' (magic number)\n"
 		out += "|HEAD_CRC:   0x%X\n" % self.crc
@@ -870,9 +872,10 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 			pass
 			
 #		print(self.reserved1, self.reserved2, self.fname)
-		# print(self._rawdata[7:].encode('hex'))
-#		if not "000000000000" == self._rawdata[7:].encode('hex'):
-##			print(self._rawdata[7:].encode('hex'), self.fname)
+		# hex = hexlify(self._rawdata[7:]).decode('ascii')
+		# print(hex)
+#		if not bytearray(6) == self._rawdata[7:]:
+##			print(hex, self.fname)
 #			# only with solid archives?
 #			pass
 
@@ -1426,7 +1429,7 @@ class RarReader(object):
 		if (hsize < HEADER_LENGTH or 
 			block_start_position + hsize > self._file_length):
 			#XXX: ValueError would be better, no?
-#			print("Header buffer: %s" % header_buffer.encode('hex'))
+#			print("Header buffer: %s" % hexlify(header_buffer).decode('ascii'))
 			raise EnvironmentError("Invalid RAR block length (" + str(hsize) +\
 					") at offset {0:#x}".format(self._rarstream.tell() - 2))
 		elif hsize == HEADER_LENGTH: # Marker block

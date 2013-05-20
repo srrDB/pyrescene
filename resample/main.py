@@ -1830,9 +1830,10 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	mtrack.trackstream.stream = open_main(main_mp4_file)
 	
 	data = mtrack.trackstream.read(len(track.signature_bytes))
-#	print(data[:].encode('hex'))
+#	from binascii import hexlify
+#	print(hexlify(data).decode('ascii'))
 #	print(mtrack.trackstream.current_offset())
-#	print(track.signature_bytes[:].encode('hex'))
+#	print(hexlify(track.signature_bytes).decode('ascii'))
 	if data == track.signature_bytes:
 		track.match_offset = mtrack.trackstream.current_offset()
 	next_chunk = True

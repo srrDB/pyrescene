@@ -24,7 +24,8 @@ with open(after, "rb") as a:
 with open(inbetween, "rb") as n:
 	inb = n.read()
 	
-#print(inb.encode('hex'))
+#from binascii import hexlify
+#print(hexlify(inb).decode('ascii'))
 #print(len(inb))
 #sys.exit()
 	
@@ -62,7 +63,7 @@ with open("C:/Users/Me/Desktop/good.bin", "wb") as good:
 #with open("C:/Users/Me/Desktop/rebuild/good.bin", "rb") as good:
 with open("C:/Users/Me/Desktop/modern.family.s02e11.1080p.bluray-bia.rar", "rb") as good:
 	data = good.read()
-	print("%s" % struct.pack('>I', zlib.crc32(data) & 0xffffffff).encode('hex'))
+	print(format(zlib.crc32(data) & 0xffffffff, "08x"))
 	print("%X" % zlib.crc32(data))
 
 print("echt: b94d4433, output: 71325EC3")
