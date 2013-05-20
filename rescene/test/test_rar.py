@@ -85,7 +85,7 @@ class TestRarReader(unittest.TestCase):
 		
 		# set the length field to a bigger value
 		stream.seek(12) # 0x0D 0x00
-		stream.write(str("\x0E\x00"))
+		stream.write(b"\x0E\x00")
 		stream.seek(0)
 
 		rr = RarReader(stream)
@@ -102,7 +102,7 @@ class TestRarReader(unittest.TestCase):
 	def test_error_bad_data(self):
 		""" The file is not a valid rar archive or srr file. """
 		stream = io.BytesIO()
-		stream.write(str("".join(["\x00" for _ in range(20)])))
+		stream.write(bytearray(20))
 		stream.seek(0)
 		self.assertRaises(ValueError, RarReader, stream)
 		
@@ -139,9 +139,9 @@ class TestRarReader(unittest.TestCase):
 
 class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 	def test_srr_header_read(self):
-		data = str("\x69\x69\x69\x01\x00\x1d\x00"
-			"\x14\x00\x52\x65\x53\x63\x65\x6e\x65\x20\x2e"
-			"\x4e\x45\x54\x20\x42\x65\x74\x61\x20\x31\x31")
+		data = (b"\x69\x69\x69\x01\x00\x1d\x00"
+			b"\x14\x00\x52\x65\x53\x63\x65\x6e\x65\x20\x2e"
+			b"\x4e\x45\x54\x20\x42\x65\x74\x61\x20\x31\x31")
 		srrh = SrrHeaderBlock(data)
 		self.assertEqual(srrh.crc, struct.unpack_from(str("<H"), data, 0)[0])
 		self.assertEqual(srrh.rawtype, struct.unpack_from(str("<B"), data, 2)[0])
@@ -151,7 +151,7 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 		
 		# old C implementation causes issues because of minimal header
 		# //char name[] = "rescene_0.4_c";
-		data = str("\x69\x69\x69\x00\x00\x07\x00")
+		data = b"\x69\x69\x69\x00\x00\x07\x00"
 		srrh = SrrHeaderBlock(data)
 		self.assertFalse(srrh.flags & SrrHeaderBlock.SRR_APP_NAME_PRESENT)
 		self.assertFalse(srrh.flags & SrrHeaderBlock.LONG_BLOCK)
@@ -171,9 +171,9 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 		self.assertEqual(mhblock.block_bytes(), data)
 		
 	def test_srr_header_write(self):
-		data = "\x69\x69\x69\x01\x00\x1d\x00" +  \
-			"\x14\x00\x52\x65\x53\x63\x65\x6e\x65\x20\x2e" +  \
-			"\x4e\x45\x54\x20\x42\x65\x74\x61\x20\x31\x31"
+		data = (b"\x69\x69\x69\x01\x00\x1d\x00"
+			b"\x14\x00\x52\x65\x53\x63\x65\x6e\x65\x20\x2e"
+			b"\x4e\x45\x54\x20\x42\x65\x74\x61\x20\x31\x31")
 		srrh = SrrHeaderBlock(appname="ReScene .NET Beta 11")
 		self.assertEqual(srrh.block_bytes(), data)
 		
@@ -228,10 +228,10 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 	def test_srr_stored_file_write(self):
 		# data from store_split_folder.srr SrrStoredFileBlock
 		# 7 byte header, size, filename length, filename
-		data = ("\x6a\x6a\x6a\x00\x80\x23\x00"
-				"\x74\x01\x00\x00" + "\x16\x00"
-				"\x73\x74\x6f\x72\x65\x5f\x73\x70\x6c\x69\x74"
-				"\x5f\x66\x6f\x6c\x64\x65\x72\x2e\x73\x66\x76")
+		data = (b"\x6a\x6a\x6a\x00\x80\x23\x00"
+				b"\x74\x01\x00\x00" + b"\x16\x00"
+				b"\x73\x74\x6f\x72\x65\x5f\x73\x70\x6c\x69\x74"
+				b"\x5f\x66\x6f\x6c\x64\x65\x72\x2e\x73\x66\x76")
 		sfb = SrrStoredFileBlock(file_name="store_split_folder.sfv", 
 								 file_size=372)
 		self.assertEqual(sfb.block_bytes(), data)
@@ -256,10 +256,10 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		self.assertEqual(sfb.block_bytes().encode('hex'), data)
 		
 		rfile = io.BytesIO()
-		rfile.write(str("\x69\x69\x69\x00\x00\x07\x00")) # minimal header
+		rfile.write(b"\x69\x69\x69\x00\x00\x07\x00") # minimal header
 		sfb = SrrStoredFileBlock(file_name="file name.ext", file_size=100)
 		rfile.write(sfb.block_bytes())
-		rfile.write("\x00" * 100) # 100 bytes null file
+		rfile.write(bytearray(100)) # 100 bytes null file
 		rfile.seek(0)
 		rfile.name = "bogus file name to make RarReader work with a stream"
 		RarReader(rfile).read_all() # it doens't give an error
@@ -289,7 +289,7 @@ class TestRarBlocks(unittest.TestCase):
 	""" For testing all RAR block classes. """
 	
 	# first volume flag set, nothing else. Archive header ( MAIN_HEAD )
-	FIRST_VOLUME = bytes("\xF1\xFB\x73\x01\x00\x0D\x00\x00\x00\x00\x00\x00\x00", "utf-8")
+	FIRST_VOLUME = b"\xF1\xFB\x73\x01\x00\x0D\x00\x00\x00\x00\x00\x00\x00"
 	
 	def test_srr_rar_file_read(self): #0x71
 		# from store_empty.srr
@@ -302,18 +302,18 @@ class TestRarBlocks(unittest.TestCase):
 		srrrfb = SrrRarFileBlock(data, 0)
 		self.assertEqual(srrrfb.crc, 0x7171)
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
-		self.assertEqual(srrrfb.flags, struct.unpack("<H", "\x01\x00")[0])
+		self.assertEqual(srrrfb.flags, struct.unpack("<H", b"\x01\x00")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty.rar")
 	
 	def test_srr_rar_file_write(self): #0x71
 		srrrfb = SrrRarFileBlock(file_name="store_empty.rar")
 		self.assertEqual(srrrfb.crc, 0x7171)
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
-		self.assertEqual(srrrfb.flags, struct.unpack("<H", "\x01\x00")[0])
+		self.assertEqual(srrrfb.flags, struct.unpack("<H", b"\x01\x00")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty.rar")
-		self.assertEqual(srrrfb.block_bytes(), "\x71\x71\x71\x01\x00" +
-						 "\x18\x00\x0F\x00\x73\x74\x6F\x72\x65\x5F\x65" + 
-						 "\x6D\x70\x74\x79\x2E\x72\x61\x72")
+		self.assertEqual(srrrfb.block_bytes(), b"\x71\x71\x71\x01\x00"
+						 b"\x18\x00\x0F\x00\x73\x74\x6F\x72\x65\x5F\x65"
+						 b"\x6D\x70\x74\x79\x2E\x72\x61\x72")
 
 	def test_rar_volume_header(self): # 0x73
 		stream = io.BytesIO()

@@ -48,26 +48,26 @@ class TestHelperFunctions(unittest.TestCase):
 	
 	def test_get_ebml_element_id(self):
 		stream = io.BytesIO()
-		stream.write("\x20")
-		stream.write("\xBA\xBE\x00\x00")
+		stream.write(b"\x20")
+		stream.write(b"\xBA\xBE\x00\x00")
 		stream.seek(0, os.SEEK_SET)
-		self.assertEqual("\x20\xBA\xBE", GetEbmlElementID(stream))
-		stream.write("\xAA")
+		self.assertEqual(b"\x20\xBA\xBE", GetEbmlElementID(stream))
+		stream.write(b"\xAA")
 		stream.seek(0, os.SEEK_SET)
-		self.assertEqual("\x20\xBA\xBE", GetEbmlElementID(stream))
+		self.assertEqual(b"\x20\xBA\xBE", GetEbmlElementID(stream))
 		stream.seek(0, os.SEEK_SET)
-		stream.write("\x1F\xBA\xBE\xAA\x00\x11\x11\x11\x11")
+		stream.write(b"\x1F\xBA\xBE\xAA\x00\x11\x11\x11\x11")
 		stream.seek(0, os.SEEK_SET)
-		self.assertEqual("\x1F\xBA\xBE\xAA", GetEbmlElementID(stream))
+		self.assertEqual(b"\x1F\xBA\xBE\xAA", GetEbmlElementID(stream))
 	
 	def test_get_ebml_uint(self):	
-		buff = "\xBA\xBE\x32\xC6\x54\xBA\xBE"
+		buff = b"\xBA\xBE\x32\xC6\x54\xBA\xBE"
 		self.assertEqual(1230420, GetEbmlUInt(buff, 2, 3))
 		
 	def test_get_ebml_uint_stream(self):
 		stream = io.BytesIO()
-		stream.write("\x32") # 3 bytes
-		stream.write("\xC6\x54")
+		stream.write(b"\x32") # 3 bytes
+		stream.write(b"\xC6\x54")
 		stream.seek(0, os.SEEK_SET)
 		self.assertEqual((1230420,3), GetEbmlUIntStream(stream))
 

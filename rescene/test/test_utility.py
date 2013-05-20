@@ -35,9 +35,6 @@ if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
-	# py2.6 has broken bytes()
-	def bytes(foo, enc): #@ReservedAssignment
-		return str(foo) # XXX: not used?
 else:
 	unicode = str #@ReservedAssignment
 

@@ -80,7 +80,7 @@ class Mp3Reader(object):
 		#(representing up to 256MB) are used in the size description to avoid
 		#the introduction of 'false syncsignals'.
 		first = self._mp3_stream.read(3)
-		if first == "ID3":
+		if first == b"ID3":
 			self._mp3_stream.seek(3, os.SEEK_CUR)
 			sbytes = self._mp3_stream.read(4)
 			# "This size is encoded using 28 bits rather than a multiple of 8, 
@@ -103,7 +103,7 @@ class Mp3Reader(object):
 		self._mp3_stream.seek(-128, os.SEEK_END)
 		idv1_start_offset = self._mp3_stream.tell()
 		first = self._mp3_stream.read(3)
-		if first == "TAG":
+		if first == b"TAG":
 			idv1_block = Block(128, "TAG", idv1_start_offset)
 			self.blocks.append(idv1_block)
 			end_meta_data_offset = idv1_start_offset
@@ -117,7 +117,7 @@ class Mp3Reader(object):
 		# descriptor and the trailing "LYRICS200" string.
 		self._mp3_stream.seek(end_meta_data_offset - 6 - 9, os.SEEK_SET)
 		lyrics_footer = self._mp3_stream.read(6 + 9)
-		if lyrics_footer[6:] == "LYRICS200":
+		if lyrics_footer[6:] == b"LYRICS200":
 			lyrics_size = int(lyrics_footer[:6]) # only header + body
 			lyrics3v2_block = Block(lyrics_size + 6 + 9, "LYRICS200",
 			                     end_meta_data_offset - (lyrics_size + 6 + 9))
@@ -126,10 +126,10 @@ class Mp3Reader(object):
 		
 		# 4) check for http://id3.org/Lyrics3
 		self._mp3_stream.seek(end_meta_data_offset - 9, os.SEEK_SET)
-		if "LYRICSEND" == self._mp3_stream.read(9):
+		if b"LYRICSEND" == self._mp3_stream.read(9):
 			self._mp3_stream.seek(end_meta_data_offset - 5100, os.SEEK_SET)
 			lyrics_data = self._mp3_stream.read(5100)
-			index = lyrics_data.find("LYRICSBEGIN")
+			index = lyrics_data.find(b"LYRICSBEGIN")
 			if index == -1:
 				raise InvalidDataException(
 						"Unable to find start of LyricsV1 block")
@@ -146,7 +146,7 @@ class Mp3Reader(object):
 		# tags may never be used at the beginning of a file 
 		# (unlike APEv2 tags)."
 		self._mp3_stream.seek(end_meta_data_offset - 32, os.SEEK_SET)
-		if "APETAGEX" == self._mp3_stream.read(8):
+		if b"APETAGEX" == self._mp3_stream.read(8):
 			(version,) = S_LONG.unpack(self._mp3_stream.read(4))
 			if version == 2000:
 				header = 32
@@ -174,7 +174,7 @@ class Mp3Reader(object):
 				try:
 					marker = self._mp3_stream.read(4)
 					# size includes the 8 bytes header
-					if marker == "fLaC": # FLAC with ID3 tags
+					if marker == b"fLaC": # FLAC with ID3 tags
 						size = end_meta_data_offset - cur_pos
 					else:
 						(size,) = S_LONG.unpack(self._mp3_stream.read(4))

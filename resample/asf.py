@@ -34,15 +34,15 @@ from rescene.utility import is_rar
 from rescene.rarstream import RarStream
 import copy
 
-GUID_HEADER_OBJECT = "\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
-GUID_DATA_OBJECT = "\x36\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
-GUID_STREAM_OBJECT = "\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
-GUID_FILE_OBJECT = "\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
+GUID_HEADER_OBJECT = b"\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+GUID_DATA_OBJECT = b"\x36\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+GUID_STREAM_OBJECT = b"\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
+GUID_FILE_OBJECT = b"\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
 
 # http://www.famkruithof.net/guid-uuid-make.html
-GUID_SRS_FILE = "SRSFSRSFSRSFSRSF"
-GUID_SRS_TRACK = "SRSTSRSTSRSTSRST"
-GUID_SRS_PADDING = "PADDINGBYTESDATA"
+GUID_SRS_FILE = b"SRSFSRSFSRSFSRSF"
+GUID_SRS_TRACK = b"SRSTSRSTSRSTSRST"
+GUID_SRS_PADDING = b"PADDINGBYTESDATA"
 
 S_LONGLONG = struct.Struct('<Q') # unsigned long long: 8 bytes
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
@@ -62,7 +62,7 @@ class Object(object):
 	def __init__(self, size, object_guid):
 		self.size = size
 		self.type = object_guid
-		self.raw_header = ""
+		self.raw_header = b""
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):

@@ -17,7 +17,7 @@ SAMPLE_NZB = """<?xml version="1.0" encoding="iso-8859-1" ?>
      <segment bytes="4501" number="2">987654321fedbca@news.newzbin.com</segment>
    </segments>
  </file>
-</nzb>"""
+</nzb>""".encode("iso-8859-1")
 
 def test_parse_date():
     parser = BaseNZBParser()

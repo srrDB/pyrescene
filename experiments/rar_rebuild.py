@@ -71,7 +71,7 @@ def get_headers_r10():
 	RAR Archive end e4e1ac 20"""
 
 	index = 1
-	before = after = ""
+	before = after = b""
 	for block in rar.RarReader(r10).read_all():
 		# first 3 blocks
 		if index in range(1, 4):
@@ -127,7 +127,7 @@ def fix_file_header():
 #	print 0x034e3c88
 #	assert hex(crc) == 0x034e3c88 #FAILS!
 	
-	fixed_data = ""
+	fixed_data = b""
 	rr = rar.RarReader(hbefore)
 	block = rr.next()
 	while block.rawtype != rar.BlockType.RarPackedFile:

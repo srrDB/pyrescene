@@ -53,7 +53,7 @@ class TestRarStream(unittest.TestCase):
 			self.assertEqual(rs.length(), txt_file.tell())
 			self.assertEqual(rs.readable(), True)
 			self.assertEqual(rs.seekable(), True)
-			self.assertEqual(rs.read(), "")
+			self.assertEqual(rs.read(), b"")
 			self.assertRaises(EOFError, rs.read, 999999)
 			rs.seek(0, os.SEEK_SET)
 			rs.read(2)
@@ -106,7 +106,7 @@ class TestRarStream(unittest.TestCase):
 	def test_read_nothing(self):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		rs = RarStream(rar_file)
-		self.assertEquals("", rs.read(0))
+		self.assertEquals(b"", rs.read(0))
 		
 	def test_not_first_rar(self):
 		# AttributeError: You must start with the first volume from a RAR set
@@ -138,8 +138,8 @@ class TestRarStream(unittest.TestCase):
 	def test__check_function(self):
 		# http://superuser.com/questions/325643/how-do-i-create-a-null-rar/
 		small_rar = io.BytesIO()
-		small_rar.write("Rar!\x1a\x07\x00")
-		small_rar.write("\xF1\xFB\x73\x01\x00\x0D\x00\x00\x00\x00\x00\x00\x00")
+		small_rar.write(b"Rar!\x1a\x07\x00")
+		small_rar.write(b"\xF1\xFB\x73\x01\x00\x0D\x00\x00\x00\x00\x00\x00\x00")
 		small_rar.seek(0)
 		small_rar.name = "name"
 		# AttributeError: Archive without stored files.
@@ -161,10 +161,10 @@ class TestFakeFile(unittest.TestCase):
 		self.assertTrue(ff.seekable(), "The file isn't seekable.")
 		data = ff.read(50)
 		self.assertEqual(ff.tell(), 50)
-		self.assertEqual(data, "\x00" * 50)
+		self.assertEqual(data, bytearray(50))
 		data = ff.read(51)
 		self.assertEqual(ff.tell(), 100)
-		self.assertEqual(data, "\x00" * 50)
+		self.assertEqual(data, bytearray(50))
 		ff.seek(-5, os.SEEK_END)
 		self.assertEqual(ff.tell(), 95)
 		data = ff.read()

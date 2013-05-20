@@ -72,13 +72,10 @@ _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behavior
 	range = xrange #@ReservedAssignment @UndefinedVariable
-	# py2.6 has broken bytes()
-	def bytes(foo, enc=None): #@ReservedAssignment
-		return str(foo)
 
 # internal byte constants
-RAR_MARKER_BLOCK = bytes("Rar!\x1a\x07\x00", 'ascii')
-ZERO = bytes("\0", 'ascii')
+RAR_MARKER_BLOCK = b"Rar!\x1a\x07\x00"
+ZERO = b"\0"
 
 # default fallback charset
 DEFAULT_CHARSET = "windows-1252"
@@ -372,7 +369,7 @@ class RarBlock(object):
 			
 	def _write_header(self, header_size):
 		"""Write 7 byte header."""
-		self._rawdata = ""
+		self._rawdata = b""
 		self._rawdata += struct.pack("<H", self.crc) # 2 bytes
 		self._rawdata += struct.pack("<B", self.rawtype) # 1 byte: uchar
 		self._rawdata += struct.pack("<H", self.flags) # unsigned short
@@ -1450,7 +1447,7 @@ class RarReader(object):
 				( btype == BlockType.RarNewSub and
 				  hsize > 34 and
 				  struct.unpack_from("<H", block_buffer, 26)[0] == 2 and
-				  block_buffer.startswith("RR", 32) )
+				  block_buffer.startswith(b"RR", 32) )
 				
 		# What if we have a very old SRR with the actual RR stored?
 		if self._readmode == self.SRR:

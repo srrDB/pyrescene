@@ -250,12 +250,12 @@ def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
 		line_amount = 0
 		while line_amount < max_nb_lines:
 			line = self.getline()
-			if line == '.':
+			if line == b'.':
 				break
-			if line.startswith('..'):
+			if line.startswith(b'..'):
 				line = line[1:]
 			if ofile:
-				ofile.write(line + "\n")
+				ofile.write(line + b"\n")
 			else:
 				data_list.append(line)
 			line_amount += 1
@@ -649,7 +649,7 @@ class NNTPFile(io.IOBase):
 		elif self._inactive: # grab the first few bytes
 			self._first_inactive_grab()
 		if self._current_position == self._file_size:
-			return ""
+			return b""
 		
 		def is_not_edge_segment(segment_nb):
 			return segment_nb != 1 and segment_nb != self.nb_segments
@@ -933,7 +933,7 @@ class NNTPFile(io.IOBase):
 		
 		# 2) handle the following segments to get data from
 		next_segment = spart_nb + 1
-		data = ""
+		data = b""
 		while size > 0:
 			# the (theoretical) decoded segment size; the expected size
 			segment_size = self.segments[next_segment].decoded_size

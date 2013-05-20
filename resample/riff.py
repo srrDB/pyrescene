@@ -48,9 +48,9 @@ class RiffChunkType(object):
 	List, Movi, SrsFile, SrsTrack, Unknown = list(range(5))
 
 class RiffChunk(object):
-	fourcc = ""
+	fourcc = b""
 	length = 0
-	raw_header = ""
+	raw_header = b""
 	chunk_start_pos = 0
 	
 class MoviChunk(RiffChunk):
@@ -59,7 +59,7 @@ class MoviChunk(RiffChunk):
 class RiffList(RiffChunk):
 	list_type = 0
 
-fourCCValidator = re.compile("^[ 0-9A-Za-z]{4}$")
+fourCCValidator = re.compile(b"^[ 0-9A-Za-z]{4}$")
 
 class RiffReader(object):
 	"""Implements a simple Reader class that reads through AVI 
@@ -116,13 +116,13 @@ class RiffReader(object):
 		# This is only applied on samples,
 		# since a partial movie might still be useful.
 		endOffset = chunk_start_position + 8 + chunk_length
-		if (self.mode == RiffReadMode.Sample and fourcc != "RIFF" and 
-			endOffset > self._file_length):
+		if (self.mode == RiffReadMode.Sample and
+			fourcc != b"RIFF" and endOffset > self._file_length):
 			raise InvalidDataException("Invalid chunk length at 0x%08X" % 
 			                           (chunk_start_position + 4))
 		
 		# Lists
-		if fourcc == "RIFF" or fourcc == "LIST":
+		if fourcc == b"RIFF" or fourcc == b"LIST":
 			# if the fourcc indicates a list type (RIFF or LIST), 
 			# there is another fourcc code in the next 4 bytes
 			listType = fourcc

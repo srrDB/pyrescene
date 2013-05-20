@@ -86,8 +86,8 @@ def fix_file_header(file_header, part_crc, timedate_32bit):
 	return fixed_crc_header
 		
 def fix_end_header(end_header, crc_all, file_number):
-	if end_header == "":
-		return ""
+	if not end_header:
+		return b""
 	before = end_header[:7]
 	after = end_header[7+4+2:]
 	

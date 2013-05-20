@@ -63,9 +63,6 @@ from rescene.osohash import osohash_from
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behavior
 	range = xrange #@ReservedAssignment
-	# py2.6 has broken bytes()
-	def bytes(foo, enc): #@ReservedAssignment
-		return str(foo)
 
 callbacks = []
 
@@ -1413,7 +1410,7 @@ class FileInfo(object):
 		self.crc = ""
 		# usable Unicode name (files in rar archive)
 		self.unicode_filename = ""
-		self.orig_filename = ""
+		self.orig_filename = b""
 		# use the same sorting used for the sfv entries
 		self.__lt__ = SfvEntry.__lt__
 	def __repr__(self): # if possible evaluable representation of an object
