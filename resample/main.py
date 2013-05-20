@@ -1839,7 +1839,7 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	
 	# walk through the stream one sample at the time
 	while(data != track.signature_bytes and next_chunk):
-		next_chunk = mtrack.trackstream.next()
+		next_chunk = next(mtrack.trackstream)
 		data = mtrack.trackstream.read(len(track.signature_bytes))
 		if data == track.signature_bytes:
 			# this indicates that we have the track found
@@ -1934,7 +1934,7 @@ class TrackStream(object):
 				firstb += bytes_read
 			return firstb
 	
-	def next(self):
+	def __next__(self):
 		# are there still samples left in the chunk?
 		if self._current_sample + 1 < self._current_chunk.samples_in_chunk:
 			self._current_sample += 1
@@ -1949,6 +1949,7 @@ class TrackStream(object):
 			else:
 				return False
 		return True
+	next = __next__  # Python < 3 compatibility
 
 class TrackChunk(object):
 	"""MP4 data block that consists of samples."""

@@ -129,10 +129,10 @@ def fix_file_header():
 	
 	fixed_data = b""
 	rr = rar.RarReader(hbefore)
-	block = rr.next()
+	block = next(rr)
 	while block.rawtype != rar.BlockType.RarPackedFile:
 		fixed_data += block.bytes()
-		block = rr.next()
+		block = next(rr)
 	
 	# the block to fix
 	data = block.bytes()

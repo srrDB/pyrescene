@@ -52,8 +52,8 @@ class TestRarReader(unittest.TestCase):
 		self.assertEqual(rr._file_length, len(RAR_MARKER_BLOCK) +
 						 len(TestRarBlocks.FIRST_VOLUME))
 		
-		rr.next()
-		rr.next()
+		next(rr)
+		next(rr)
 		self.assertFalse(rr._read())
 
 		self.assertTrue(len(rr.read_all()) == 2)
@@ -76,9 +76,9 @@ class TestRarReader(unittest.TestCase):
 		stream.seek(0)
 
 		rr = RarReader(stream)
-		rr.next()
-		rr.next()
-		self.assertRaises(EnvironmentError, rr.next)
+		next(rr)
+		next(rr)
+		self.assertRaises(EnvironmentError, next, rr)
 		
 	def test_error_bad_length_header(self):
 		""" The length flag of the header is not the same 
@@ -94,8 +94,8 @@ class TestRarReader(unittest.TestCase):
 		stream.seek(0)
 
 		rr = RarReader(stream)
-		rr.next() # Marker block OK
-		self.assertRaises(EnvironmentError, rr.next)
+		next(rr) # Marker block OK
+		self.assertRaises(EnvironmentError, next, rr)
 		
 	def test_error_bad_size(self):
 		""" The file is too small. The minimum RAR size is 20 bytes. """
@@ -321,8 +321,8 @@ class TestRarBlocks(unittest.TestCase):
 		stream.seek(0)
 		stream.name = "test"
 		rr = RarReader(stream)
-		rr.next()
-		vh = rr.next()
+		next(rr)
+		vh = next(rr)
 		self.assertEqual(vh.header_size, len(self.FIRST_VOLUME))
 		self.assertEqual(vh.rawtype, BlockType.RarVolumeHeader)
 		

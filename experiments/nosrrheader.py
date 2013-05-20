@@ -12,7 +12,7 @@ def main(options, args):
             for ifile in files:
                 if ifile[-4:].lower() == ".srr":
                     fpath = os.path.join(root, ifile)
-                    srrhblock = rar.RarReader(fpath).next()
+                    srrhblock = next(rar.RarReader(fpath))
                     #print(ifile[:-4])
                     #print(srrhblock.appname)
                     try:
