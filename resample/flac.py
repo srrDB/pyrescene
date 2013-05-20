@@ -32,6 +32,7 @@ import struct
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
+from .mp3 import decode_id3_size
 
 # All numbers are big-endian coded.
 # All numbers are unsigned unless otherwise specified.
@@ -115,8 +116,7 @@ class FlacReader(object):
 			self.block_type = "ID3"
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			raw_header = self._flac_stream.read(10)
-			size = reduce(lambda x, y: x*128 + y, (ord(i)
-			              for i in raw_header[6:10]))
+			size = decode_id3_size(raw_header[6:10])
 			self.current_block = Block(size, self.block_type)
 			self.current_block.raw_header = raw_header
 			self.current_block.start_pos = block_start_position
