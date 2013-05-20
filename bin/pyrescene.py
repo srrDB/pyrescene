@@ -68,6 +68,7 @@ from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
+from rescene.utility import raw_input
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -78,7 +79,6 @@ def can_create(always_yes, path):
 	retvalue = True 
 	if not always_yes and os.path.isfile(path):
 		print("Warning: %s does not exist. Create it? " % path)
-		# http://www.python.org/dev/peps/pep-3111/
 		char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		while char not in ('y', 'n'):
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -661,7 +661,6 @@ def main(argv=None):
 			if options.always_no:
 				return False
 			print("Warning: File %s already exists." % file_path)
-			# http://www.python.org/dev/peps/pep-3111/
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
