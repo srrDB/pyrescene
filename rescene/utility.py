@@ -61,6 +61,11 @@ if sys.hexversion < 0x3000000:
 else:
 	unicode = str #@ReservedAssignment
 
+try:  # Python < 3
+	raw_input = raw_input
+except NameError:  # Python 3
+	raw_input = input
+
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""
 	def __init__(self, file_name, crc32="00000000"):

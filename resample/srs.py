@@ -36,6 +36,7 @@ import resample
 from rescene.utility import sep
 from resample.main import FileType
 from resample import fpcalc
+from rescene.utility import raw_input
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 

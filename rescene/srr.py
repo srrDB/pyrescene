@@ -36,10 +36,7 @@ from threading import Thread
 import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
 from rescene.utility import show_spinner, remove_spinner, sep
-
-# make it work with Python 3 too
-#if sys.hexversion >= 0x3000000:
-#	raw_input = input #@ReservedAssignment
+from rescene.utility import raw_input
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -374,7 +371,6 @@ def main(argv=None):
 			time.sleep(MessageThread.sleeptime)
 			
 			print("Warning: File %s already exists." % file_path)
-			# http://www.python.org/dev/peps/pep-3111/
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
