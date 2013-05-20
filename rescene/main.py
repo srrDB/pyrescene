@@ -1215,7 +1215,7 @@ def _write_recovery_record(block, rarfs):
 
 		# update the recovery sector parity data for this slice
 		for i in range(512):
-			rs[rs_slice][i] ^= ord(sector[i])
+			rs[rs_slice][i] ^= ord(sector[i:i + 1])
 		rs_slice = rs_slice + 1 if (rs_slice + 1) % recovery_sectors else 0
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows

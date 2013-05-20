@@ -44,6 +44,7 @@ class InvalidDataException(ValueError):
 	
 class Block(object):
 	def __init__(self, size, block_type):
+		"""Block type is either an ASCII text string or an integer"""
 		self.size = size
 		self.type = block_type
 		self.raw_header = b""
@@ -51,10 +52,8 @@ class Block(object):
 		
 	def is_last_block(self):
 		"""Last block before the frame data."""
-		try:
-			return self.type & 0x80
-		except TypeError:
-			return ord(self.type[0]) & 0x80
+		# Never last block when self.type is a decoded string
+		return not isinstance(self.type, str) and self.type & 0x80
 	
 	def is_frame_data(self):
 		"""It isn't actually a block."""

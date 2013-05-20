@@ -45,7 +45,8 @@ def decode_id3_size(sbytes):
 	# it might. To avoid that possibility, the size is encoded using
 	# only the bottom seven bits of each byte, with the top bit always
 	# zero."
-	return reduce(lambda x, y: x*128 + y, (ord(i) for i in sbytes))
+	return reduce(lambda x, y: x*128 + y,
+	              (ord(sbytes[i:i + 1]) for i in range(4)))
 
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 BE_SHORT = struct.Struct('>H')
