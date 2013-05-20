@@ -55,6 +55,7 @@ from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT,
 from resample.fpcalc import fingerprint
 from resample.flac import FlacReader
 from resample.mp3 import Mp3Reader
+from resample.mp3 import decode_id3_size
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -124,7 +125,7 @@ def get_file_type(ifile):
 		return FileType.FLAC
 	elif marker.startswith(MARKER_ID3):
 		# can be MP3 or FLAC
-		size = reduce(lambda x, y: x*128 + y, (ord(i) for i in marker[6:10]))
+		size = decode_id3_size(marker[6:10])
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(10 + size)
 			if ofile.read(4) == b"fLaC":
