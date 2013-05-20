@@ -48,7 +48,7 @@ View srr_spec.txt and http://rescene.wikidot.com/ for more info.
 Dependencies
 ============
 
-pyReScene requires Python 2.6 or 2.7 to run. There are some executables
+pyReScene requires Python 2.6, 2.7, or 3 to run. There are some executables
 made available for Windows users. fpcalc is necessary for creating 
 music SRS files. If you want to reconstruct compressed RAR volumes, 
 you will need to obtain a couple of the shareware (Win)RAR packages.
@@ -69,14 +69,14 @@ somewhere in your path. It will also work if you put it in the ./bin or
 Windows installation instructions
 =================================
 
-Install Python 2.7. Download it from http://www.activestate.com/activepython
-Install it to C:\Python27\ for example.
+Install Python 3.3. Download it from http://www.activestate.com/activepython
+Install it to C:\Python33\ for example.
 
 Place the source somewhere on your hard disk. e.g. C:\pyReScene\
 Copy pysrr.bat and pysrs.bat to a folder that is in your PATH.
 e.g. C:\Windows\System32\
 Edit the .bat files to reflect the path where Python and the script source code
-is located: e.g. C:\Python27\python.exe C:\pyReScene\bin\srr %*
+is located: e.g. C:\Python33\python.exe C:\pyReScene\bin\srr %*
 
 Now you will be able to call 'pysrr' from any directory.
 
