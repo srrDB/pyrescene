@@ -682,7 +682,7 @@ def main(argv=None):
 					if len(sample_dirs):
 						sdir = os.path.join(release_dir, sample_dirs[0])
 						for sfile in os.listdir(sdir):
-							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts)",
+							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts|mpg)",
 									sfile, re.IGNORECASE):
 								found = True
 								break
