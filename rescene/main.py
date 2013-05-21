@@ -2102,21 +2102,21 @@ class CompressedRarFile(io.IOBase):
 				print("Testing with previous file")
 				# try compressing with the previous rar file before it
 				prev = get_previous_block()
-				assert prev
-				prev_file = archived_files[prev.file_name]
-				
-				args.set_extra_files_before([prev_file.source_files[-1]])
-				
-				if rar.supports_setting_threads():
-					while(args.increase_thread_count()):
-						if try_rar_executable(rar, args, old):
-							found = True
-							break
-				else:
-					found = try_rar_executable(rar, args, old)
-				if found:
-					rar.args = args
-					return rar
+				if prev:
+					prev_file = archived_files[prev.file_name]
+					
+					args.set_extra_files_before([prev_file.source_files[-1]])
+					
+					if rar.supports_setting_threads():
+						while(args.increase_thread_count()):
+							if try_rar_executable(rar, args, old):
+								found = True
+								break
+					else:
+						found = try_rar_executable(rar, args, old)
+					if found:
+						rar.args = args
+						return rar
 
 			args.reset_extra_files()			
 			args.threads = ""
