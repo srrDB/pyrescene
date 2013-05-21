@@ -39,7 +39,7 @@ Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 from tempfile import mkdtemp
 from datetime import datetime
 import sys
@@ -629,16 +629,24 @@ def main(argv=None):
 					action="store_true", dest="report",
 					help="reports which samples had issues")
 	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
-					metavar="DIRECTORY", help="Specify temporary directory. "
-					"Music files and samples will be written to this dir.")
+					metavar="DIRECTORY", help="Specify temporary directory.")
 	
-	parser.add_option("--list-releases", dest="list_releases", 
-					action="store_true", help="Only list the release names "
+	listoptions = OptionGroup(parser, "List options")
+	parser.add_option_group(listoptions)
+	
+	listoptions.add_option("--show-paths", dest="show_paths", 
+					action="store_true", help="Shows the complete path. "
+					"To be used with the following parameters:")
+	listoptions.add_option("--list-releases", dest="list_releases", 
+					action="store_true", help="Lists the release names "
 					"the script will encounter.")
-	parser.add_option("--list-releases-dirs", dest="list_releases_dirs", 
-					action="store_true", help="Only list the directories of "
-					"the release names the script will encounter.")
-		
+	listoptions.add_option("--missing-nfos", dest="missing_nfos", 
+					action="store_true", 
+					help="Lists releases with no nfo file.")
+	listoptions.add_option("--missing-samples", dest="missing_samples", 
+					action="store_true", 
+					help="Lists releases with no sample file.")
+	
 	if argv is None:
 		argv = sys.argv[1:]
 		
@@ -650,19 +658,36 @@ def main(argv=None):
 	
 	(options, indirs) = parser.parse_args(args=argv)
 	
-	if options.list_releases:
-		for procdir in indirs:
-			procdir = os.path.abspath(procdir)
-			for release_dir in get_release_directories(procdir):
+	if (options.list_releases or options.missing_nfos or 
+		options.missing_samples):
+		def print_release(release_dir):
+			if options.show_paths:
+				print(release_dir)
+			else:
 				_head, tail = os.path.split(release_dir)
 				print(tail)
-		return 0
-	
-	if options.list_releases_dirs:
 		for procdir in indirs:
 			procdir = os.path.abspath(procdir)
 			for release_dir in get_release_directories(procdir):
-				print(release_dir)
+				if options.list_releases:
+					print_release(release_dir)
+				if options.missing_nfos:
+					if not len(filter(lambda f: f[-4:].lower() == ".nfo",
+					                  os.listdir(release_dir))):
+						print_release(release_dir)
+				if options.missing_samples:
+					sample_dirs = filter(lambda d: d.lower() == "sample",
+					                     os.listdir(release_dir))
+					found = False
+					if len(sample_dirs):
+						sdir = os.path.join(release_dir, sample_dirs[0])
+						for sfile in os.listdir(sdir):
+							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts)",
+									sfile, re.IGNORECASE):
+								found = True
+								break
+					if not found:
+						print_release(release_dir)
 		return 0
 	
 	if options.always_yes and options.always_no:
