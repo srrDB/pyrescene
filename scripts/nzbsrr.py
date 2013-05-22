@@ -49,7 +49,7 @@ def folder_join_mapping(folder):
 		srr_files = []
 		releasename = os.path.split(dirpath)[1]
 		for file in filenames:
-			if file[-4:] == ".srr":
+			if file.endswith(".srr"):
 				srr_files.append(os.path.join(releasename, file))
 		if len(srr_files):
 			return_mapping[releasename] = srr_files
@@ -98,7 +98,8 @@ def main(options, args):
 					print(srr)
 					
 				# create new nzb files to download samples/srrs/...
-				if options.separate and relname[0:4] != "Con.":
+				if (options.separate and
+				not relname.startswith("Con.")):
 					# Con.Artist, Con.Air folders are not possible in Windows
 					newdoc = Document()
 					top_element = doc.createElementNS(

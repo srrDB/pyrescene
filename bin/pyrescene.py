@@ -161,7 +161,7 @@ def get_proof_files(reldir):
 			# RAR file must contain image file
 			for block in RarReader(proof):
 				if block.rawtype == BlockType.RarPackedFile:
-					if (block.file_name[-4:] in 
+					if block.file_name.endswith(
 						(".jpg", "jpeg", ".png", ".bmp", ".gif")):
 						result.append(proof)
 						break
@@ -338,8 +338,7 @@ def generate_srr(reldir, working_dir, options):
 		except:
 			pass
 
-		is_music = (sample.lower().endswith(".mp3") or
-		            sample.lower().endswith(".flac"))
+		is_music = sample.lower().endswith((".mp3", ".flac"))
 		
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added

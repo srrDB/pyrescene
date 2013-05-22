@@ -413,7 +413,7 @@ def main(argv=None):
 		if options.input_base: # -i
 			infolder = options.input_base
 			
-		if infiles[0][-4:] == ".srr":
+		if infiles[0].endswith(".srr"):
 			parser.exit(manage_srr(options, infolder, infiles, working_dir))
 		else:
 			parser.exit(create_srr(options, infolder, infiles, working_dir))

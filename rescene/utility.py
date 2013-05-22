@@ -196,12 +196,12 @@ def first_rars(file_list):
 		if (re.match(".*\.rar$", rar, re.IGNORECASE) and 
 		    not re.match(".*part\d+\.rar$", rar, re.IGNORECASE)):
 			return True
-		if rar[-4:] == ".000" or rar[-4:] == ".001":
+		if rar.endswith((".000", ".001")):
 			return True
 		return False
 	firsts = list(filter(isfirst, file_list))
 	# .000? then no .001
-	for first in filter(lambda x: x[-4:] == ".000", firsts):
+	for first in filter(lambda x: x.endswith(".000"), firsts):
 		firsts.remove(first[:-1] + "1")
 	return firsts
 

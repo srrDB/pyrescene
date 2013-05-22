@@ -1664,7 +1664,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 					                                  len(track.check_bytes)]
 					
 					# track found!
-					if track.signature_bytes[:len(check_bytes)] == check_bytes:
+					if track.signature_bytes.startswith(check_bytes):
 						track.check_bytes = check_bytes
 					else:
 						# It was only a partial match. Start over.
@@ -1689,7 +1689,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 						check_bytes = chunk_bytes[found_pos:found_pos+lcb]
 						
 						# track found!
-						if track.signature_bytes[:len(check_bytes)] == check_bytes:
+						if track.signature_bytes.startswith(check_bytes):
 							track.check_bytes = check_bytes
 							track.match_offset = (
 							                rr.current_chunk.chunk_start_pos
@@ -1773,7 +1773,7 @@ def _mkv_block_find(tracks, er, done):
 				check_bytes = track.check_bytes
 				check_bytes += buff[offset:offset+lcb-len(track.check_bytes)]
 				
-				if track.signature_bytes[:len(check_bytes)] == check_bytes:
+				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 				else:
 					# It was only a partial match. Start over.
@@ -1790,7 +1790,7 @@ def _mkv_block_find(tracks, er, done):
 				              er.current_element.frame_lengths[i])
 				check_bytes = buff[offset:offset+lcb] 
 				
-				if track.signature_bytes[:len(check_bytes)] == check_bytes:
+				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 					track.match_offset = (er.current_element.element_start_pos
 					                      + len(er.current_element.raw_header) 
@@ -2051,8 +2051,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 								                        len(track.check_bytes)]
 								
 								# track found!
-								if (track.signature_bytes[:len(check_bytes)] 
-								    == check_bytes):
+								if track.signature_bytes.startswith(
+								    check_bytes):
 									track.check_bytes = check_bytes
 								else:
 									# It was only a partial match. Start over.
@@ -2078,8 +2078,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 								                          found_pos+lcb]
 								
 								# track found!
-								if (track.signature_bytes[:len(check_bytes)] 
-								    == check_bytes):
+								if track.signature_bytes.startswith(
+								    check_bytes):
 									track.check_bytes = check_bytes
 									track.match_offset = (
 									    packet.data_file_offset +

@@ -252,7 +252,7 @@ def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
 			line = self.getline()
 			if line == '.':
 				break
-			if line[:2] == '..':
+			if line.startswith('..'):
 				line = line[1:]
 			if ofile:
 				ofile.write(line + "\n")
@@ -1003,7 +1003,7 @@ class NNTPFile(io.IOBase):
 			try:
 				(resp, _nr, _id) = self.server.stat("<%s>" % 
 			                   self.segments[self.nb_segments].message_id)
-				success = "223 " == resp[:4]
+				success = resp.startswith("223 ")
 			except nntplib.NNTPTemporaryError:
 				success = False
 			if not success:
@@ -1024,7 +1024,8 @@ class NNTPFile(io.IOBase):
 							
 							(resp, _nr, _id) = self.server.stat("<%s>" % 
 								self.segments[self.nb_segments].message_id)
-							if "223 " == resp[:4]:
+							if resp.startswith(
+							"223 "):
 								s.quit()
 								return True
 							break
@@ -1178,14 +1179,14 @@ def create_srr(nzb_path, options):
 	
 	for afile in to_store:
 		# remove automated sample screen shots: _s.jpg
-		if afile.name[-6:] == "_s.jpg":
+		if afile.name.endswith("_s.jpg"):
 			print("_s.jpg image removed.")
 			continue
 		if afile.name == "UsenetSpaceCowboys.nfo":
 			print("UsenetSpaceCowboys.nfo file removed!")
 			continue
 		# remove small IMDb images
-		if afile.name[-4:] in (".jpg",) and "proof" not in afile.name.lower():
+		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
 			print("JPG check:"),
 			size = sum([f.bytes for f in afile.segments.itervalues()])
 			# check the resolution? -> no, IMDb raised the resolution
@@ -1203,14 +1204,14 @@ def create_srr(nzb_path, options):
 			if "_s.jpg" in afile.name:
 				print("_s.jpg file removed.")
 				continue
-		if afile.name[-4:] in (".png",):
+		if afile.name.endswith((".png",)):
 			print("Checking PNG files.")
 			if afile.file_size() == 592451:
 				print("Discarding PNG file. Greetings to kere.ws!")
 				continue
 			else:
 				print(".png file with size %d kept." % afile.file_size())
-		if afile.name[-4:] == ".nfo":
+		if afile.name.endswith(".nfo"):
 			nfos.append(afile)
 		else:
 			storefiles.append(afile)
@@ -1517,7 +1518,7 @@ def main(options, args):
 	
 	amount = 0
 	for element in args:
-		if os.path.isfile(element) and element[-4:] == ".nzb":
+		if os.path.isfile(element) and element.endswith(".nzb"):
 			amount += 1
 			create_srr_nzbmove(element)
 		elif os.path.isdir(element):

@@ -34,12 +34,12 @@ def list_srr(sfile):
 def main(options, args):
 	for element in args:
 		element = os.path.abspath(element)
-		if os.path.isfile(element) and element[-4:] == ".srr":
+		if os.path.isfile(element) and element.endswith(".srr"):
 			list_srr(element)
 		elif os.path.isdir(element):
 			for dirpath, _dirnames, filenames in os.walk(element):
 				for sfile in filenames:
-					if sfile[-4:] == ".srr":
+					if sfile.endswith(".srr"):
 						list_srr(os.path.join(dirpath, sfile))
 		else:
 			print("WTF are you supplying me?")

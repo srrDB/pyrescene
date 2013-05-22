@@ -111,7 +111,7 @@ class FlacReader(object):
 			return True
 		
 		# ID3v2
-		if self._block_header[:3] == "ID3":
+		if self._block_header.startswith("ID3"):
 			self.block_type = "ID3"
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			raw_header = self._flac_stream.read(10)
@@ -124,7 +124,7 @@ class FlacReader(object):
 			return True
 		
 		# ID3v1
-		if self._block_header[:3] == "TAG":
+		if self._block_header.startswith("TAG"):
 			self.block_type = "TAG"
 			self.current_block = Block(128, self.block_type)
 			self.current_block.raw_header = ""

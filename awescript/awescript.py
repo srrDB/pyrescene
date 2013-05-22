@@ -189,7 +189,7 @@ def get_files(path, cwdsolo):
             missingList = []
             for line in fileinput.input([folder + filename]):
                 line = line.strip()
-                if not len(line) < 10 and not line[0:1] == ";":
+                if not len(line) < 10 and not line.startswith(";"):
                     f = line[:-9]
 
                     if not os.path.exists(folder + f):

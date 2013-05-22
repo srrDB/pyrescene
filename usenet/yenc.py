@@ -223,7 +223,7 @@ def strip(data):
 	# when a line is sent - and to detect a double dot (and remove one of them)
 	# when receiving a line.
 	for i in range(len(data)):
-		if data[i][:2] == '..':
+		if data[i].startswith('..'):
 			data[i] = data[i][1:]
 	return data
 

@@ -1453,8 +1453,7 @@ class RarReader(object):
 				( btype == BlockType.RarNewSub and
 				  hsize > 34 and
 				  struct.unpack_from("<H", block_buffer, 26)[0] == 2 and
-				  block_buffer[32] == "R" and
-				  block_buffer[33] == "R" )
+				  block_buffer.startswith("RR", 32) )
 				
 		# What if we have a very old SRR with the actual RR stored?
 		if self._readmode == self.SRR:

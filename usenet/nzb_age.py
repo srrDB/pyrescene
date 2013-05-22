@@ -34,7 +34,7 @@ def main(options, args):
 		print("Moving NZB files to %s" % options.output_dir)
 
 	for nzbfile in os.listdir(process_dir):
-		if nzbfile[-4:] != ".nzb":
+		if not nzbfile.endswith(".nzb"):
 			continue
 		date = None
 		# not parsing the whole file, just what we need

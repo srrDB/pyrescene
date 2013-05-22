@@ -1372,7 +1372,8 @@ def _search(files, folder=""):
 
 	for file_name in files:
 		# use path relative to folder if the path isn't relative or absolute 
-		if os.path.isabs(file_name) or file_name[:2] == os.pardir:
+		if (os.path.isabs(file_name) or
+		file_name.startswith(os.pardir)):
 			search_name = file_name
 		else:
 			search_name = os.path.join(folder, file_name)

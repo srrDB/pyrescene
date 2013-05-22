@@ -200,7 +200,7 @@ class TestUtility(unittest.TestCase):
 #		# _read all nfo files that start with ansi/unicode in memory
 #		contents = {}
 #		for file in os.listdir(txtdir):
-#			if file[:4] in ("ansi",): # "unic"):
+#			if file.startswith(("ansi",)): # "unic")):
 #				path = os.path.join(txtdir, file)
 #				with open(path, "rt") as f:
 #					contents[file] = f._read()
