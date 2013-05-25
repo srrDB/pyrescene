@@ -1214,12 +1214,15 @@ def _write_recovery_record(block, rarfs):
 	assert rar_length != 0 # you can't calculate stuff on nothing
 	rarfs.seek(0)
 	
-	while rarfs.tell() < rar_length:
+	count = 0
+	while count < rar_length:
+		count += 512
+		
 		# Read data one sector at a time.  Pad the last sector with 0's.
 		sector = rarfs.read(512)
 		if len(sector) != 512:
 			sector += str(bytearray(512 - len(sector)))
-		assert len(sector) == 512
+		# assert len(sector) == 512
 
 		# calculate the crc32 for the sector and store the 2 low-order bytes
 		sector_crc = ~zlib.crc32(sector) # Bitwise Inversion
