@@ -1870,7 +1870,11 @@ class CompressedRarFile(io.IOBase):
 		# link 'blocks' objects
 		
 		if not self.good_rar:
-			assert len(os.listdir(self.temp_dir)) == 0
+			try:
+				assert len(os.listdir(self.temp_dir)) == 0
+			except AssertionError:
+				print(os.listdir(self.temp_dir))
+				assert False
 			try:
 				os.rmdir(self.temp_dir)
 			except:
@@ -2327,6 +2331,7 @@ class CompressedRarFileAll(io.IOBase):
 		_fire(MsgCode.MSG, message=" ".join(self.good_rar.full()))
 		_fire(MsgCode.MSG, message="Compressing ALL files.")
 		time.sleep(0.5)
+		print("Command length: %d" % len(self.good_rar.full()))
 		compress = subprocess.Popen(self.good_rar.full())
 		stdout, stderr = compress.communicate()
 		

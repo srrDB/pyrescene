@@ -26,7 +26,6 @@ pyReScene
    maybe an app which scans all your drives , checks which rls dont have srr 
    on site, create srr for them, download srr packages from srrdb and re-sample
    those rls which have missing Sample
- - Never.on.Sunday.1960.DVDRip.XviD-AEN
  - fail on empty sfv
  - automatically check for rar executables in srr.exe dir
  - new parameter: it must behave like -n (faster than recreating everything), 
@@ -34,6 +33,7 @@ pyReScene
    compared to the ones stored in the existing srr release folder, 
    contains new files. new in the sense of addition e.g. proof jpg
  - add a switch (like -z) for a single executable
+ - add --broken-samples parameter
     
 pyReSample
 ==========
