@@ -88,13 +88,13 @@ def can_create(always_yes, path):
 			retvalue = False
 	return retvalue
 
-def get_files(release_dir, extention):
+def get_files(release_dir, extension):
 	"""Gather all 'extension' files from the subdirs."""
 	matches = []
 	try:
 		for dirpath, _dirnames, filenames in os.walk(release_dir):
 			for filename in filenames:
-				if fnmatch.fnmatchcase(filename.lower(), extention.lower()):
+				if fnmatch.fnmatchcase(filename.lower(), extension.lower()):
 					matches.append(os.path.join(dirpath, filename))
 		return matches
 	except TypeError:

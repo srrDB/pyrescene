@@ -879,7 +879,7 @@ class NNTPFile(io.IOBase):
 				
 		#--- start file magic -------------------------------------------------
 		# handle first byte missing of RAR (never seen this yet?)
-		# will never be used because rarreader reads the 3rd byte fist?
+		# will never be used because rarreader reads the 3rd byte first?
 		if (is_rar(self.name) and self._current_position == 0):
 #			print("Is RAR and reading from the start!")
 #			print(hexlify(self.data[1][0:6]).decode('ascii'))
@@ -1073,7 +1073,7 @@ def create_srr(nzb_path, options):
 
 	nntp_files = {}	# everything
 	to_store = []	# saved in the SRR file
-	sfvs = []		# we use this to find allf the other files
+	sfvs = []		# we use this to find all the other files
 	result = False  # no SRR file is created
 	
 	read_retries = 3 * len(EXTRA_SERVERS)
