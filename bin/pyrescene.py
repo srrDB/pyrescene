@@ -246,11 +246,11 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		
 		# subs not in filename, but the folder is called subs, vobsubs,...
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
-		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
-			"subtitles" == pardir or "sub" == pardir or "subpack" == pardir or
-			"vobsubs-full" == pardir or "vobsubs-light" == pardir or
-			"codec" == pardir or "codecs" == pardir or "cover" == pardir or
-			"covers" == pardir):
+		if pardir in (
+			"subs", "vobsubs", "vobsub", "subtitles", "sub",
+			"subpack", "vobsubs-full", "vobsubs-light", "codec",
+			"codecs", "cover", "covers",
+		):
 			# X-Files.1x00.Pilot.DVDRip.XviD-SDG\Subtitles
 			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
 			# Play.Misty.For.Me.1971.DVDRip.XviD.INTERNAL-FaRM/Vobsubs-Full/
