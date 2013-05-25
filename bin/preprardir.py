@@ -37,8 +37,8 @@ from contextlib import closing # used for tarfile on Python 2.6
 try:
 	import _preamble
 except ImportError:
-	sys.exc_clear()
-	
+	pass
+
 import rescene
 from rescene.rar import RarReader
 from rescene.main import RETURNCODE 
