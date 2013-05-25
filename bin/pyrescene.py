@@ -217,8 +217,8 @@ def get_start_rar_files(sfv_list):
 	"""
 	wanted_rars = []
 	for sfv in sfv_list:
-		first = rescene.utility.first_rars([x.file_name for x in 
-				rescene.utility.parse_sfv_file(sfv)[0]])
+		first = rescene.utility.first_rars(x.file_name for x in 
+				rescene.utility.parse_sfv_file(sfv)[0])
 		if len(first):
 			sfile = os.path.join(os.path.dirname(sfv), first[0])
 			wanted_rars.append(sfile)
