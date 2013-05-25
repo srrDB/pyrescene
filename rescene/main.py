@@ -375,8 +375,8 @@ def validate_srr(srr_file):
 
 # TODO: test joining SRRs, although it works (exceptions)
 def merge_srrs(srr_files, output_file, application_name=None):
-	"""Merge the given list of srr_files together.
-	srr_files:        list of SRR files to merge (including the path)
+	"""Merge the given iterable of srr_files together.
+	srr_files:        iterable of SRR files to merge (including the path)
 	output_file:	  the merged SRR file; the result
 	application_name: if an other name is wanted for the merged file
 	                  otherwise the first non empty name is used

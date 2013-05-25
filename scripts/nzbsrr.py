@@ -229,7 +229,7 @@ def joinSrr(dir, release, files):
 	except: pass # Path already exists
 	
 	try:
-		merge_srrs([os.path.join(dir, f) for f in files], 
+		merge_srrs((os.path.join(dir, f) for f in files),
 					os.path.join(dir, "joined", release + ".srr"),
 					"pyReScene Merge Script")
 		# move original unjoined files

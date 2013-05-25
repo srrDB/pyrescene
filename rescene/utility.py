@@ -195,8 +195,9 @@ def is_rar(file_name):
 	"""
 	return bool(re.match(".*\.(rar|[r-v]\d{2}|\d{3})$", file_name, re.I))
 
-def first_rars(file_list):
+def first_rars(file_iter):
 	"""Tries to pick the first RAR file based on file name."""
+	
 	def isfirst(rar):
 		if re.match(".*(\.part0*1\.rar|(?<!\d)\.rar)$", rar, re.IGNORECASE):
 			return True
@@ -207,7 +208,7 @@ def first_rars(file_list):
 		if rar.endswith((".000", ".001")):
 			return True
 		return False
-	firsts = list(filter(isfirst, file_list))
+	firsts = list(filter(isfirst, file_iter))
 	# .000? then no .001
 	for first in filter(lambda x: x.endswith(".000"), firsts):
 		firsts.remove(first[:-1] + "1")
