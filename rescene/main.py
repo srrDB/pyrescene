@@ -1195,7 +1195,6 @@ def _write_recovery_record(block, rarfs):
 		based on the recovery sector count. (512 bytes * recovery sector count)
 	Each slice will get one parity sector created by xor-ing the 
 	corresponding bytes from all other sectors in the slice."""
-	#TODO: this function is way too slow
 	recovery_sectors = block.recovery_sectors
 	protected_sectors = block.data_sectors
 	_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
@@ -1204,7 +1203,7 @@ def _write_recovery_record(block, rarfs):
 
 	rs_slice = 0
 	current_sector = 0	
-	crc = bytearray(protected_sectors * 2)
+	crc = [0] * (protected_sectors * 2)
 	rs = [0] * recovery_sectors # [0, 0, ..., 0]
 	for i in range(recovery_sectors):
 		rs[i] = bytearray(512)
@@ -1225,9 +1224,9 @@ def _write_recovery_record(block, rarfs):
 		# assert len(sector) == 512
 
 		# calculate the crc32 for the sector and store the 2 low-order bytes
-		sector_crc = ~zlib.crc32(sector) # Bitwise Inversion
+		sector_crc = ~zlib.crc32(sector) & 0xffff # Bitwise Inversion
 		crc[current_sector*2] = sector_crc & 0xff
-		crc[current_sector*2+1] = (sector_crc >> 8) & 0xff
+		crc[current_sector*2+1] = sector_crc >> 8
 		current_sector += 1
 
 		# update the recovery sector parity data for this slice
@@ -1240,8 +1239,8 @@ def _write_recovery_record(block, rarfs):
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows
 	
-	rarfs.write(block.block_bytes()) # write the backed-up block header,
-	rarfs.write(crc)                  # CRC data and
+	rarfs.write(block.block_bytes())  # write the backed-up block header,
+	rarfs.write(bytearray(crc))	      # CRC data and
 	for sector in rs:                 # recovery sectors
 		rarfs.write(sector)
 
