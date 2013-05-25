@@ -49,8 +49,17 @@ import shutil
 import subprocess
 import multiprocessing
 from tempfile import mkdtemp
-from numpy import bitwise_xor
 
+try:
+	from numpy import bitwise_xor
+	have_numpy = True
+except ImportError:
+	have_numpy = False
+	if not "PyPy" in sys.version:
+		# PyPy is already as fast or faster than CPython with NumPy
+		print("NOTE: install NumPy to speed up the reconstruction of RARs")
+		print("      with a Recovery Record.")
+	
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
@@ -1219,7 +1228,11 @@ def _write_recovery_record(block, rarfs):
 		current_sector += 1
 
 		# update the recovery sector parity data for this slice
-		rs[rs_slice] = bitwise_xor(rs[rs_slice],bytearray(sector))
+		if have_numpy:
+			rs[rs_slice] = bitwise_xor(rs[rs_slice], bytearray(sector))
+		else:
+			for i in range(512):
+				rs[rs_slice][i] ^= ord(sector[i])
 		rs_slice = rs_slice + 1 if (rs_slice + 1) % recovery_sectors else 0
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows
