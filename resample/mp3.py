@@ -174,8 +174,7 @@ class Mp3Reader(object):
 				return True
 			(sync,) = BE_SHORT.unpack(marker[:2])
 			if (sync & 0xFFE0 != 0xFFE0 and 
-			    marker != b"RIFF" and
-			    marker != b"SRSF"):
+			    marker not in (b"RIFF", b"SRSF")):
 				return True
 					
 		# in between is SRS or MP3 data

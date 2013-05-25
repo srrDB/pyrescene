@@ -2528,8 +2528,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 		while rr.read():
 			# skip over our custom chunks in rebuild mode 
 			# (only read it in load mode)
-			if (rr.current_chunk.fourcc == b"SRSF" or 
-			    rr.current_chunk.fourcc == b"SRST"):
+			if rr.current_chunk.fourcc in (b"SRSF", b"SRST"):
 				rr.skip_contents()
 				continue
 			
@@ -2885,9 +2884,7 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				flac.write(b"fLaC")
 				crc = crc32(b"fLaC", crc)
 				fr.skip_contents()
-			elif ((fr.block_type == ord("s") or 
-				  fr.block_type == ord("t") or
-				  fr.block_type == ord("u")) and 
+			elif (fr.block_type in bytearray(b"stu") and
 					srs_flac_blocks <= 3):
 				srs_flac_blocks += 1
 				fr.skip_contents()
