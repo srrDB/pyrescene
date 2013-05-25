@@ -1,0 +1,17 @@
+	Block Type: 0x69
+	Block Size: 25
+SRR file created with ReScene .NET 1.2
+	Block Type: 0x71
+	Block Size: 31
+Re-creating RAR file: store_utf8_comment.rar
+	Block Type: 0x72
+	Block Size: 7
+	Block Type: 0x73
+	Block Size: 13
+	Block Type: 0x7a
+	Block Size: 59
+	Block Type: 0x74
+	Block Size: 89
+		Packed Data Size: 65
+		File Name: �������������� �������� ���������������� ������������.txt
+Could not locate data file: /home/jef/workspace/pyMove/python-rescene/src/test_files/�������������� �������� ���������������� ������������.txt

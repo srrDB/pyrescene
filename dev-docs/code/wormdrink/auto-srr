@@ -1,0 +1,339 @@
+#!/bin/bash
+
+LOCATION=`dirname -- ${0}` #shpp delete_line
+
+source "${LOCATION}/utils.lib.sh" #shpp replace_line "utils.lib.sh"
+
+while getopts "t:f:l:" OPTION
+do
+	case $OPTION in
+	t)
+		trash="${OPTARG}"
+		;;
+	f)
+		fails="${OPTARG}"
+		;;
+	l)
+		logs="${OPTARG}"
+		;;
+	*)
+		echo "ERROR"
+		exit 1
+		;;
+	esac
+done
+
+if [ ! -d "${trash}" ]
+then
+	echo "No trash folder : ${trash}"
+	exit 1;
+fi
+
+if [ ! -d "${logs}" ]
+then
+	echo "No logs folder : ${logs}"
+	exit 1;
+fi
+
+if [ -z "${fails}" ]
+then
+	echo "no -f"
+	exit 1;
+fi
+
+shift `expr $OPTIND - 1`
+
+VERBOSE=1
+IFS=$(echo -en "\n\b")
+
+par2_files=(  )
+sfv_files=(  )
+rar_files=(  )
+srr_files=(  )
+srrrar_files=(  )
+
+collect-par2()
+{
+	par2_files=( `ls *.par2 2>/dev/null | sed 's/\.vol[^.]*\.par2$/.par2/g' | sort | uniq` )
+	echo "par2_files=[${#par2_files[@]}]=[${par2_files[@]}]"
+	for par2_file in "${par2_files[@]}"
+	do
+		echo "par2_file=[${par2_file}]"
+	done
+	return 0;
+}
+
+collect-sfv()
+{
+	sfv_files=( `ls *.sfv 2>/dev/null | grep -v -i -e '\Wsubs\W' -e '\Wproof\W'` )
+	echo "sfv_files=[${#sfv_files[@]}]=[${sfv_files[@]}]"
+	for sfv_file in "${sfv_files[@]}"
+	do
+		echo "sfv_file=[${sfv_file}]"
+	done
+	return 0;
+}
+
+collect-rar()
+{
+	#egrep --color '\.part[0-9]+.rar'
+	rar_files=( `ls *.rar 2>/dev/null | egrep -v '\.part[0-9]+.rar$'; ls *.rar 2>/dev/null | egrep '\.part0*1\.rar$'` )
+	echo "rar_files=[${#rar_files[@]}]=[${rar_files[@]}]"
+	for rar_file in "${rar_files[@]}"
+	do
+		echo "rar_file=[${rar_file}]"
+	done
+	return 0;
+}
+
+collect-srr()
+{
+	srr_files=( `ls *.srr 2>/dev/null` )
+	echo "srr_files=[${#srr_files[@]}]=[${srr_files[@]}]"
+	for srr_file in "${srr_files[@]}"
+	do
+		echo "srr_file=[${srr_file}]"
+	done
+	return 0;
+}
+
+collect-srrrar()
+{
+	srrrar_files=( `ls *.srr 2>/dev/null | xargs -I {} srr {} -l | sed -n '/^RAR Files:/,/^[^[:blank:]]/p' | sed -n 's/^[[:blank:]]\+//gp' | sort | uniq` )
+	echo "srrrar_files=[${#srrrar_files[@]}]=[${srrrar_files[@]}]"
+	for srrrar_file in "${srrrar_files[@]}"
+	do
+		echo "srrrar_file=[${srrrar_file}]"
+	done
+	return 0;
+}
+
+collect-srrrarsets()
+{
+	srrrarsets_files=( `( ls *.srr 2>/dev/null | xargs -I {} srr {} -l | sed -n '/^RAR Files:/,/^[^[:blank:]]/p' | sed -n 's/^[[:blank:]]\+//gp' | grep '\.rar$' | egrep -v '\.part[0-9]+.rar$'; ls *.srr 2>/dev/null | xargs -I {} srr {} -l | sed -n '/^RAR Files:/,/^[^[:blank:]]/p' | sed -n 's/^[[:blank:]]\+//gp' | egrep '\.part0*1\.rar$'; ) | sort | uniq` )
+	echo "srrrarsets_files=[${#srrrarsets_files[@]}]=[${srrrarsets_files[@]}]"
+	for srrrarsets_file in "${srrrarsets_files[@]}"
+	do
+		echo "srrrarsets_file=[${srrrarsets_file}]"
+	done
+	return 0;
+}
+
+verify-par2_o()
+{
+	#local PAR2_FILES
+	local PAR2_FILES=`ls *.par2 2>/dev/null | sed 's/\.vol[^.]*\.par2$/.par2/g' | sort | uniq`
+	if [ -n "${PAR2_FILES}" ]
+	then
+		for PAR2_FILE in ${PAR2_FILES}
+		do
+			par2verify "${PAR2_FILE}"
+			RC="${?}"
+			if [ "${RC}" != "0" ]
+			then
+				eecho "par2verify : ${PAR2_FILE} : FAIL"
+				return ${RC}
+			else
+				echo "par2verify : ${PAR2_FILE} : OK"
+			fi
+		done
+		RC="${?}"
+		return ${RC}
+	else
+		eecho "No .par2 files found - skipping"
+		return 0;
+	fi
+}
+
+verify-sfv_o()
+{
+	local SFV_FILES=`ls *.sfv 2>/dev/null`
+	if [ -n "${SFV_FILES}" ]
+	then
+		pure-sfv
+		RC="${?}"
+		return ${RC}
+	else
+		eecho "No .sfv files found"
+		return 0;
+	fi
+}
+
+verify-sfv()
+{
+	if [ "${#sfv_files[@]}" -gt 0 ]
+	then
+		RC=1
+		for sfv_file in "${sfv_files[@]}"
+		do
+			echo "TEST : sfv_file=[${sfv_file}]"
+			#if [ -e "${sfv_file}.pass" ]
+			#then
+				pure-sfv -t -i "${sfv_file}"
+				RC="${?}"
+				if [ "${RC}" != "0" ]
+				then
+					eecho "TEST : sfv_file=[${sfv_file}] : FAIL"
+					return ${RC}
+				else
+					echo "TEST : sfv_file=[${sfv_file}] : PASS"
+					touch "${sfv_file}.pass"
+				fi
+			#else
+			#	echo "TEST : sfv_file=[${sfv_file}] : FPASS"
+			#fi
+		done
+		return "${RC}"
+	else
+		eecho "No .sfv files found"
+		return 0;
+	fi
+}
+
+verify-par2()
+{
+	if [ "${#par2_files[@]}" -gt 0 ]
+	then
+		RC=1
+		for par2_file in "${par2_files[@]}"
+		do
+			echo "TEST : par2_file=[${par2_file}]"
+			par2verify "${par2_file}"
+			RC="${?}"
+			if [ "${RC}" != "0" ]
+			then
+				eecho "TEST : par2_file=[${par2_file}] : FAIL"
+				return ${RC}
+			else
+				echo "TEST : par2_file=[${par2_file}] : PASS"
+			fi
+		done
+		return "${RC}"
+	else
+		eecho "No .par2 files found"
+		return 0;
+	fi
+}
+
+create-srr()
+{
+	rassert_xs "0" "FAILED : srr" srr "${sfv_files[@]}" -s '*.nfo' -d || return "${?}"
+	return 0;
+}
+
+extract-srrrarsets()
+{
+	if [ "${#srrrarsets_files[@]}" -gt 0 ]
+	then
+		RC=1
+		for srrrarsets_file in "${srrrarsets_files[@]}"
+		do
+			echo "EXTRACT : srrrarsets_file=[${srrrarsets_file}]"
+			unrar x -o+ "${srrrarsets_file}"
+			RC="${?}"
+			if [ "${RC}" != "0" ]
+			then
+				eecho "EXTRACT : srrrarsets_file=[${srrrarsets_file}] : FAIL"
+				return ${RC}
+			else
+				echo "EXTRACT : srrrarsets_file=[${srrrarsets_file}] : PASS"
+			fi
+		done
+		return "${RC}"
+	else
+		eecho "No .srrrarsets files found"
+		return 1;
+	fi
+}
+
+backup-srrrar()
+{
+	if [ "${#srrrar_files[@]}" -gt 0 ]
+	then
+		#RC=1
+		for srrrar_file in "${srrrar_files[@]}"
+		do
+			echo "CHECKNOTEXIST : srrrar_file=[${trash}/${xwd}/${srrrar_file}]"
+			if [ -e "${trash}/${xwd}/${srrrar_file}" ]
+			then
+				eecho "CHECKNOTEXIST : srrrar_file=[${trash}/${xwd}/${srrrar_file}] : FAIL"
+				return 1
+			else
+				echo "CHECKNOTEXIST : srrrar_file=[${trash}/${xwd}/${srrrar_file}] : PASS"
+			fi
+		done
+		mv "--target-directory=${trash}/${xwd}" "${srrrar_files[@]}"
+		RC="${?}"
+		return "${RC}"
+		return 0; 
+	else
+		echo "No .srrrar files found"
+		return 1;
+	fi
+}
+
+srr-dir()
+{
+	local directory="${1}"
+	rassert_xs "0" "Could not change to directory [${directory}]" cd "${directory}" || return ${?}
+	local xwd="`pwd`"
+	dirlogfile="${logs}/${xwd//\//_slash_}.log"
+	exec >>"${dirlogfile}" 2>&1
+	echo "srr-dir : ${directory} [${xwd}]"
+	debug_vars directory xwd
+	rassert '-d "${xwd}"' "xwd[${xwd}] is not a directory" || return "${?}"
+	collect-par2
+	collect-sfv
+	collect-rar
+	rassert '"${#rar_files[@]}" -gt 0' "SKIPPING : No rar files" || return ${?}
+	#rassert '"${#sfv_files[@]}" -gt 0 -o "${#par2_files[@]}" -gt 0' "SKIPPING : No verification files" || return ${?}
+	rassert '"${#sfv_files[@]}" -gt 0' "SKIPPING : No verification files" || return ${?}
+	rassert_xs "0" "Could not verify sfv for [${directory}]" verify-sfv || return ${?}
+	rassert_xs "0" "Could not verify par2 for [${directory}]" verify-par2 || return ${?}
+	rassert_xs "0" "Could not create srr" create-srr || return ${?}
+	collect-srr
+	rassert '"${#srr_files[@]}" -gt 0' "SKIPPING : No srr files" || return ${?}
+	collect-srrrar
+	rassert '"${#srrrar_files[@]}" -gt 0' "SKIPPING : No srrrar files" || return ${?}
+	collect-srrrarsets
+	rassert '"${#srrrarsets_files[@]}" -gt 0' "SKIPPING : No srrrarsets files" || return ${?}
+	rassert_xs "0" "Could not extract-srrrarsets [${srrrarsets_files[*]}]" extract-srrrarsets || return "${?}" 
+	rassert_xs "0" "Could not create trash directory [${trash}/${xwd}]" mkdir -p "${trash}/${xwd}" || return ${?}
+	#rassert_xs "0" "Could not backup srrd files" mv "--target-directory=${trash}/${directory}/" "${srrrarsets_files[@]}"
+	rassert_xs "0" "Could not backup srrrar files" backup-srrrar || return "${?}"
+	return 0;
+}
+
+cwd="`pwd`"
+dirlogfile=
+
+while [ "${#}" -ge "1" ]
+do
+	this="${1}"
+	cd "${cwd}"
+	echo "srr-dir [${this}]"
+	
+	exec 6>&1
+	exec 7>&2
+
+	srr-dir "${this}"
+	RC="${?}"
+
+	exec 1>&6 6>&-
+	exec 2>&7 7>&-
+
+	if [ "${RC}" != "0" ]
+	then
+		echo "srr-dir [${this}] : FAIL"
+		echo "srr-dir [${this}] : FAIL"
+		tail -10 "${dirlogfile}" | sed 's/.*/\t&/g'
+		echo "srr-dir [${this}] : FAIL"
+		echo "srr-dir [${this}] : FAIL"
+		echo "${this}:${dirlogfile}" >> ${fails}
+	else
+		echo "srr-dir [${this}] : PASS"
+	fi
+
+	shift 1
+done
+
