@@ -53,13 +53,13 @@ import logging
 try:
 	import win32api
 except ImportError:
-	sys.exc_clear()
+	pass
 
 try:
 	import _preamble
 except ImportError:
-	sys.exc_clear()
-	
+	pass
+
 import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
