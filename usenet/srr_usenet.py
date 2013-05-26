@@ -413,19 +413,19 @@ class NNTPFile(io.IOBase):
 										continue
 									except KeyboardInterrupt:
 										raise
-									except nntplib.NNTPTemporaryError:
-										print(sys.exc_info()[1])
+									except nntplib.NNTPTemporaryError as error:
+										print(error)
 							# closes socket
 							return s.body_little(article_id, nb_lines)
 						except KeyboardInterrupt:
 							raise
-						except:
-							print(sys.exc_info()[1])
+						except BaseException as error:
+							print(error)
 							print("Small article not on '%s'." % server[0])
 					except KeyboardInterrupt:
 						raise
-					except nntplib.NNTPError:
-						print(sys.exc_info()[1])
+					except nntplib.NNTPError as error:
+						print(error)
 						print("Connecting to '%s' failed." % server[0])
 			else:
 				return server.body(article_id)
@@ -450,15 +450,15 @@ class NNTPFile(io.IOBase):
 				try:
 					self.server.group(group)
 					break
-				except nntplib.NNTPTemporaryError:
+				except nntplib.NNTPTemporaryError as error:
 					# too many messages for some servers
-					#print(sys.exc_info()[1])
+					#print(error)
 					#traceback.print_exc()
 					pass
-				except nntplib.NNTPPermanentError:
+				except nntplib.NNTPPermanentError as error:
 					# NNTPPermanentError: 501 newsgroup
 					# NNTPPermanentError: 502 Authentication Failed
-					print(sys.exc_info()[1])
+					print(error)
 					pass
 		
 		ydata = None
@@ -469,8 +469,8 @@ class NNTPFile(io.IOBase):
 			# id is the message id (enclosed in '<' and '>').)
 			dpart = decode_yenc_body(ydata[3])
 			# Exception: ('CRC32 checksum failed', 2821898260L, 1224983450)
-		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError):
-			print("Main server: " + str(sys.exc_info()[1]))
+		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError) as error:
+			print("Main server: " + str(error))
 			
 			# try to get the part on one of the other servers
 			for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
@@ -487,23 +487,24 @@ class NNTPFile(io.IOBase):
 								try:
 									s.group(group)
 									continue
-								except nntplib.NNTPTemporaryError:
+								except nntplib.NNTPTemporaryError as error:
 									pass
-									# print(sys.exc_info()[1])
+									# print(error)
 						ydata = receive_body(s, "<%s>" % message_id)
 						dpart = decode_yenc_body(ydata[3])
 						break
 					except (yenc.YencException, yenc.CrcError):
 						ydata = None
 						print("Problem with article on '%s' too." % server[0])
-					except nntplib.NNTPError:
-						print(sys.exc_info()[1])
+					except nntplib.NNTPError as error:
+						print(error)
 						print("Article not found on '%s' either." % server[0])
 						
 					s.quit()
-				except (nntplib.NNTPError, socket.error):
+				except (nntplib.NNTPError, socket.error) as \
+				error:
 					# what causes socket.error here?
-					print(sys.exc_info()[1])
+					print(error)
 					print("Connecting to '%s' failed." % server[0])
 			if not ydata:
 				print("Grab failed for <%s> (%s)" % (message_id, self.name))
@@ -1021,9 +1022,9 @@ class NNTPFile(io.IOBase):
 									try:
 										self.server.group(group)
 										continue
-									except nntplib.NNTPTemporaryError:
+									except nntplib.NNTPTemporaryError as error:
 										pass
-										# print(sys.exc_info()[1])
+										# print(error)
 							
 							(resp, _nr, _id) = self.server.stat("<%s>" % 
 								self.segments[self.nb_segments].message_id)
@@ -1040,8 +1041,9 @@ class NNTPFile(io.IOBase):
 					except KeyboardInterrupt:
 						raise
 					except (nntplib.NNTPPermanentError,
-					        nntplib.NNTPTemporaryError):
-						print(sys.exc_info()[1])
+					        nntplib.NNTPTemporaryError) \
+					        as error:
+						print(error)
 						print("Connecting to '%s' failed." % server[0])
 					
 				print("%s has no last segment." % self.name)
@@ -1080,10 +1082,10 @@ def create_srr(nzb_path, options):
 	server = connect_server()
 #	try:
 #		server = connect_server()
-#	except socket.error:
+#	except socket.error as error:
 #		# (<class 'socket.error'>, error(10061, '
 #		# first always fails with an ipv6 server, unless -d 1 is used
-#		print(sys.exc_info())
+#		print(error)
 #		#options.nntp_debug_level = 1 # results in a more spammy console
 #		options.nntp_debug_level = 0
 #		server = connect_server()
@@ -1160,8 +1162,8 @@ def create_srr(nzb_path, options):
 					uniqfile[index] = sfile
 			except KeyboardInterrupt:
 				raise
-			except:
-				print(sys.exc_info())
+			except BaseException as error:
+				print(error)
 				traceback.print_exc()
 	sfvs = uniqfile
 	#TODO: do the same for other files? (no duplicate nfos ect.)
@@ -1259,8 +1261,8 @@ STAT last segment of lg-le.de.le.2.r00"""
 					result = True
 				except Repack:
 					raise
-				except ValueError:
-					print(sys.exc_info()[1])
+				except ValueError as error:
+					print(error)
 					result = False # SRR creation failed
 				except RuntimeError: pass
 			except Repack:
@@ -1359,27 +1361,26 @@ def create_srr_nzbmove(nzb_file):
 	except AssertionError:
 		traceback.print_exc()
 		sys.exit(1)
-	except (IncompleteNzb, rescene.FileNotFound):
-		print(sys.exc_info()[1])
+	except (IncompleteNzb, rescene.FileNotFound) as error:
+		print(error)
 		#if not options.dry_run:
 		new = join(dirname(nzb_file), "bad", basename(nzb_file))
 		os.renames(nzb_file, new)
 	except Repack:
 		new = join(dirname(nzb_file), "repacks", basename(nzb_file))
 		os.renames(nzb_file, new)
-	except nntplib.NNTPPermanentError:
+	except nntplib.NNTPPermanentError as error:
 		# for when you reached the download limit
 		# you might want to try these nzbs again
-		print(sys.exc_info()[1])
+		print(error)
 		faildir = "5xxerror"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
 			os.renames(nzb_file, new)
-	except (nntplib.NNTPError, yenc.YencException):
+	except (nntplib.NNTPError, yenc.YencException) as error:
 		# the problem was the news server
 		print("%s failed." % nzb_file)
-		print(sys.exc_info()[1])
-		error = sys.exc_info()[1]
+		print(error)
 #		traceback.print_exc()
 		
 		faildir = "failure"
@@ -1394,7 +1395,6 @@ def create_srr_nzbmove(nzb_file):
 			os.renames(nzb_file, new)
 	except Exception:
 		print("Unknown failure")
-		error = sys.exc_info()[1]
 		traceback.print_exc()
 		
 		faildir = "unknownerror"

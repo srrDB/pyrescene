@@ -25,8 +25,8 @@ for srr in os.listdir(path):
         print(srr_hash + ";" + release)
     except KeyboardInterrupt:
         sys.exit()
-    except:
-        print(sys.exc_info())
+    except BaseException as err:
+        print(err)
         
 # 3.On.Stage.Rest.Of.Pinkpop.2011.DUTCH.WS.PDTV.XviD-iFH
 # (<type 'exceptions.EnvironmentError'>, EnvironmentError('Invalid RAR block length (20) at offset 0x1c528',), <traceback object at 0x032E5AA8>)
