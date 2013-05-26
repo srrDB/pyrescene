@@ -182,9 +182,10 @@ class FileData(object):
 			# crc: uint32
 			(self.flags,) = S_SHORT.unpack_from(buff, 0)
 			(applength,) = S_SHORT.unpack_from(buff, 2)
-			self.appname = buff[4:4+applength]
+			self.appname = buff[4:4+applength].decode()
 			(namelength,) = S_SHORT.unpack_from(buff, 4+applength)
 			self.sample_name = buff[4+applength+2:4+applength+2+namelength]
+			self.sample_name = self.sample_name.decode()
 			self.name = self.sample_name
 			offset = 4+applength+2+namelength
 			(self.size,) = S_LONGLONG.unpack_from(buff, offset)
@@ -193,9 +194,8 @@ class FileData(object):
 			raise AttributeError("Buffer or file expected.")
 		
 	def serialize(self):
-		#"".encode("utf-8")
-		app_name = resample.APPNAME
-		file_name = basename(self.sample_name)
+		app_name = resample.APPNAME.encode()
+		file_name = basename(self.sample_name).encode()
 		data_length = 18 + len(app_name) + len(file_name)
 	
 		buff = io.BytesIO()
@@ -897,7 +897,7 @@ def profile_mp4(mp4_data): # FileData object
 	while mr.read():
 		a = mr.current_atom
 		atype = mr.atom_type
-#		print(atype)
+#		print(repr(atype))
 		
 		# 1) doing header
 		meta_length += len(a.raw_header)
@@ -1493,7 +1493,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 		while(mr.read()):
 			atom = mr.current_atom
 			
-			if atom.type == "mdat":
+			if atom.type == b"mdat":
 				# in store mode, create and write our custom atoms
 				# as atom child in the root
 				file_atom = sample_data.serialize_as_mov()
@@ -1507,7 +1507,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 					
 			movf.write(atom.raw_header)
 			
-			if atom.type == "mdat":
+			if atom.type == b"mdat":
 				# don't copy stream data
 				mr.skip_contents()
 			else:

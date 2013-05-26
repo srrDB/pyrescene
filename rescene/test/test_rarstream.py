@@ -71,7 +71,7 @@ class TestRarStream(unittest.TestCase):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		txt_file = os.path.join(self.path, "txt", "little_file.txt")
 		rs = RarStream(rar_file)
-		with open(txt_file) as tfile:
+		with open(txt_file, "rb") as tfile:
 			self.assertEqual(rs.read(), tfile.read())
 			
 		rar_file = os.path.join(self.path, 
@@ -96,7 +96,7 @@ class TestRarStream(unittest.TestCase):
 	
 		txt_file = os.path.join(self.path, "txt", "unicode_mac.nfo")
 		rs = RarStream(rar_file, "unicode_mac.nfo")
-		with open(txt_file) as tfile:
+		with open(txt_file, "rb") as tfile:
 			tfile.seek(3000)
 			tfile.read()
 			tfile.seek(333)

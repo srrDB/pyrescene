@@ -34,7 +34,7 @@ def fix_file_header(file_header, date_part):
 	assert struct.unpack_from("<H", file_header)[0] == zlib.crc32(file_header[2:]) & 0xFFFF
 	before = file_header[:7+9+4]
 	after = file_header[7+9+4+1:]
-	fixed_crc_header = before + struct.pack("c", chr(date_part)) + after
+	fixed_crc_header = before + struct.pack("B", date_part) + after
 	header_crc = zlib.crc32(fixed_crc_header[2:]) & 0xFFFF
 	fixed_crc_header = struct.pack("<H", header_crc) + fixed_crc_header[2:]
 	

@@ -46,7 +46,7 @@ def read_nzb(nzb_file):
 		# http://www.powergrep.com/manual/xmpxmlfixentities.html
 		XML_AMP_FIX = b"&(?!(?:[a-z]+|#[0-9]+|#x[0-9a-f]+);)"
 		fixed_nzb = io.BytesIO()
-		for line in open(nzb_file, "r").readlines():
+		for line in open(nzb_file, "rb").readlines():
 			line = re.sub(XML_AMP_FIX, b"&amp;", line)
 			line = re.sub(b"&ouml;", "ö".encode("latin-1"), line)
 			# invalid XML characters from NewsLeecher

@@ -878,8 +878,8 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 
 	def explain(self):
 		out = super(RarVolumeHeaderBlock, self).explain()
-		out += "+RESERVED1: 2 bytes: " + bytes(self.reserved1) + "\n"
-		out += "+RESERVED2: 4 bytes: " + bytes(self.reserved2) + "\n"
+		out += "+RESERVED1: 2 bytes: " + str(self.reserved1) + "\n"
+		out += "+RESERVED2: 4 bytes: " + str(self.reserved2) + "\n"
 		return out
 		
 class RarPackedFileBlock(RarBlock): # 0x74
