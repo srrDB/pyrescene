@@ -363,7 +363,7 @@ def generate_srr(reldir, working_dir, options):
 			original_stderr = sys.stderr
 			txt_error_file = os.path.join(dest_dir, 
 				os.path.basename(sample)) + ".txt"
-			sys.stderr = open(txt_error_file, "wb")
+			sys.stderr = open(txt_error_file, "wt")
 			keep_txt = False
 			try:
 				srsmain([sample, "-y", "-o", dest_dir], True)

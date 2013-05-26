@@ -84,7 +84,7 @@ def main(options, args):
 			if srr == None: 
 				unknown.append(subject)
 				if options.unknowns:
-					print(subject.encode('utf-8'))
+					print(subject)
 			else:
 				relname = relname.strip()
 				relFileMapping.setdefault(relname,

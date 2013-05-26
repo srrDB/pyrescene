@@ -184,7 +184,8 @@ class Mp3Reader(object):
 						(size,) = S_LONG.unpack(self._mp3_stream.read(4))
 				except:
 					raise InvalidDataException("Not enough SRS data")
-				srs_block = Block(size, marker, cur_pos)
+				srs_block = Block(size, marker.decode(),
+					cur_pos)
 				self.blocks.append(srs_block)
 				cur_pos += size
 				if size == 0:

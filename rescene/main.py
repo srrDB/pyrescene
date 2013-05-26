@@ -1201,7 +1201,10 @@ def _write_recovery_record(block, rarfs):
 		# Read data one sector at a time.  Pad the last sector with 0's.
 		sector = rarfs.read(512)
 		if len(sector) != 512:
-			sector += str(bytearray(512 - len(sector)))
+			# Before Python 3, crc32() does not accept a
+			# bytearray(), and bytes(int) does not make a string
+			# of zeros
+			sector += bytes(bytearray(512 - len(sector)))
 		assert len(sector) == 512
 
 		# calculate the crc32 for the sector and store the 2 low-order bytes

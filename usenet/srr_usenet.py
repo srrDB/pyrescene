@@ -239,7 +239,7 @@ def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
 	try:
 		# If a string was passed then open a file with that name
 		if isinstance(ofile, str):
-			openedFile = ofile = open(ofile, "w")
+			openedFile = ofile = open(ofile, "wb")
 
 		resp = self.getresp()
 		try:
@@ -1492,7 +1492,7 @@ def main(options, args):
 				end=" ")
 			config = create_template(config)
 
-		with open(options.config_file, "wb") as configfile:
+		with open(options.config_file, "wt") as configfile:
 			config.write(configfile)
 		print("Done.")
 		sys.exit(1)

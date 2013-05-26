@@ -66,7 +66,7 @@ class Object(object):
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):
-		return "<Object type=%s size=%d start_pos=%d>" % (self.type, 
+		return "<Object type=%r size=%d start_pos=%d>" % (self.type, 
 		                                self.size, self.start_pos)
 		
 class AsfReader(object):
