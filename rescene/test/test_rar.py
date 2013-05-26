@@ -143,10 +143,10 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 			"\x14\x00\x52\x65\x53\x63\x65\x6e\x65\x20\x2e"
 			"\x4e\x45\x54\x20\x42\x65\x74\x61\x20\x31\x31")
 		srrh = SrrHeaderBlock(data)
-		self.assertEqual(srrh.crc, struct.unpack(str("<H"), data[0:2])[0])
-		self.assertEqual(srrh.rawtype, struct.unpack(str("<B"), data[2:3])[0])
-		self.assertEqual(srrh.flags, struct.unpack(str("<H"), data[3:5])[0])
-		self.assertEqual(srrh.header_size, struct.unpack("<H", data[5:7])[0])
+		self.assertEqual(srrh.crc, struct.unpack_from(str("<H"), data, 0)[0])
+		self.assertEqual(srrh.rawtype, struct.unpack_from(str("<B"), data, 2)[0])
+		self.assertEqual(srrh.flags, struct.unpack_from(str("<H"), data, 3)[0])
+		self.assertEqual(srrh.header_size, struct.unpack_from("<H", data, 5)[0])
 		self.assertEqual(srrh.appname, "ReScene .NET Beta 11")
 		
 		# old C implementation causes issues because of minimal header
@@ -155,10 +155,10 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 		srrh = SrrHeaderBlock(data)
 		self.assertFalse(srrh.flags & SrrHeaderBlock.SRR_APP_NAME_PRESENT)
 		self.assertFalse(srrh.flags & SrrHeaderBlock.LONG_BLOCK)
-		self.assertEqual(srrh.crc, struct.unpack(str("<H"), data[0:2])[0])
-		self.assertEqual(srrh.rawtype, struct.unpack(str("<B"), data[2:3])[0])
-		self.assertEqual(srrh.flags, struct.unpack(str("<H"), data[3:5])[0])
-		self.assertEqual(srrh.header_size, struct.unpack("<H", data[5:7])[0])
+		self.assertEqual(srrh.crc, struct.unpack_from(str("<H"), data, 0)[0])
+		self.assertEqual(srrh.rawtype, struct.unpack_from(str("<B"), data, 2)[0])
+		self.assertEqual(srrh.flags, struct.unpack_from(str("<H"), data, 3)[0])
+		self.assertEqual(srrh.header_size, struct.unpack_from("<H", data, 5)[0])
 		self.assertEqual(srrh.appname, "")
 		
 		hblock = SrrHeaderBlock(appname="Application Name")

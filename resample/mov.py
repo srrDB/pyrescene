@@ -95,7 +95,7 @@ class MovReader(object):
 		
 		self._atom_header = self._mov_stream.read(8)
 		# 4 bytes for atom length, 4 bytes for atom type
-		(atom_length,) = BE_LONG.unpack(self._atom_header[:4])
+		(atom_length,) = BE_LONG.unpack_from(self._atom_header)
 		self.atom_type = self._atom_header[4:]
 		
 		# special sizes

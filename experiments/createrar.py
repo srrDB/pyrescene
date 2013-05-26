@@ -44,7 +44,7 @@ def calc_crc(new_data, previous_crc=None):
 def fix_archive_flags(header, first_volume=False):
 	""" necessary because we start from .rar or need .rar 
 	first_volume is true if we need to create the .rar file """
-	(flags, ) = struct.unpack("<H", header[3:5])
+	(flags, ) = struct.unpack_from("<H", header, 3)
 	if first_volume and not flags & 0x0100:
 		flags += 0x0100 # fist volume flag
 	elif not first_volume and flags & 0x0100: # the flag is actually set
@@ -56,7 +56,7 @@ def fix_archive_flags(header, first_volume=False):
 def fix_file_flags(header, first_volume=False):
 	""" necessary because we start from .rar or need .rar 
 	first_volume is true if we need to create the .rar file """
-	(flags, ) = struct.unpack("<H", header[3:5])
+	(flags, ) = struct.unpack_from("<H", header, 3)
 	if first_volume and flags & 0x0001:
 		flags -= 0x0001 # file continued from previous volume
 	elif not first_volume and not flags & 0x0001:

@@ -64,9 +64,9 @@ def GetEbmlUInt(buff, offset, count):
 	offset: offset start integer in buffer
 	count: Length Descriptor byte"""
 	# length descriptor bytes not wanted: remove those from the first byte
-	size = S_BYTE.unpack(buff[offset:offset+1])[0] & (0xFF >> count) # 255, 127, ...
+	size = S_BYTE.unpack_from(buff, offset)[0] & (0xFF >> count) # 255, 127, ...
 	for i in range(1, count):
-		size = (size << 8) + S_BYTE.unpack(buff[offset+i:offset+i+1])[0]
+		size = (size << 8) + S_BYTE.unpack_from(buff, offset+i)[0]
 
 	return size # integer size
 
@@ -347,13 +347,13 @@ class EbmlReader(object):
 
 			# read in time code (2 bytes) and flags (1 byte)
 			blockHeader += self._ebml_stream.read(3)
-			timecode = ((S_BYTE.unpack(blockHeader[
-			                               len(blockHeader) - 3])[0] << 8) + 
-			            S_BYTE.unpack(blockHeader[len(blockHeader) - 2])[0])
+			timecode = ((S_BYTE.unpack_from(blockHeader,
+			                               len(blockHeader) - 3)[0] << 8) + 
+			            S_BYTE.unpack_from(blockHeader, len(blockHeader) - 2)[0])
 
 			# need to grab the flags (last byte of the header) 
 			# to check for lacing
-			lace_type = (S_BYTE.unpack(blockHeader[len(blockHeader) - 1])[0] & 
+			lace_type = (S_BYTE.unpack_from(blockHeader, len(blockHeader) - 1)[0] & 
 					EbmlLaceType.EBML)
 
 			data_length = element_length - len(blockHeader)

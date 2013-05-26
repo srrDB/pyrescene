@@ -361,12 +361,12 @@ class RarBlock(object):
 		self.fname = fname
 		
 		(self.crc, self.rawtype, self.flags, self.header_size) =  \
-						struct.unpack("<HBHH", self._rawdata[:7])
+						struct.unpack_from("<HBHH", self._rawdata)
 		self._p = HEADER_LENGTH # pointer to ease reading
 		
 		# Outcast BiA releases don't set this flag for BlockType.RarPackedFile 
 		if self.flags & RarBlock.LONG_BLOCK:
-			self.add_size = struct.unpack("<I", self._rawdata[7:7+4])[0]
+			self.add_size = struct.unpack_from("<I", self._rawdata, 7)[0]
 		else:
 			self.add_size = 0
 			
@@ -467,8 +467,8 @@ class SrrHeaderBlock(RarBlock):
 			# If the SRR_APP_NAME_PRESENT flag is set, the header contains
 			# 2 bytes for application name length, followed by the name.
 			if self.flags & self.SRR_APP_NAME_PRESENT:
-				appname_length = struct.unpack("<H",
-								self._rawdata[self._p:self._p+2])
+				appname_length = struct.unpack_from("<H",
+								self._rawdata, self._p)
 				self.appname = self._rawdata[self._p+2:self._p+2+
 											appname_length[0]] # tuple
 				self._p += 2 + appname_length[0]
@@ -554,8 +554,8 @@ class SrrStoredFileBlock(RarBlock):
 			
 			# 4 bytes for file length (unsigned int) (add_size field)
 			# 2 bytes for name length, then the name (unsigned short)
-			(self.file_size, length) = struct.unpack("<IH",
-			                           self._rawdata[self._p:self._p+6])
+			(self.file_size, length) = struct.unpack_from("<IH",
+			                           self._rawdata, self._p)
 			self.file_name = self._rawdata[self._p+6:self._p+6+length]
 			self._p += 6 + length
 			
@@ -680,8 +680,8 @@ class SrrRarFileBlock(RarBlock):
 			super(SrrRarFileBlock, self).__init__(bbytes, filepos, fname)
 			
 			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack("<H",
-			                            self._rawdata[self._p:self._p+2])[0]
+			name_length = struct.unpack_from("<H",
+			                            self._rawdata, self._p)[0]
 			self.file_name = self._rawdata[self._p+2:self._p+2+name_length]
 			self._p += 2 + name_length
 		else:
@@ -743,16 +743,16 @@ class SrrOsoHashBlock(RarBlock):
 			super(SrrOsoHashBlock, self).__init__(bbytes, filepos, fname)
 			
 			# 8 bytes for the file size
-			self.file_size = struct.unpack("<Q", 
-				self._rawdata[self._p:self._p+8])[0]
+			self.file_size = struct.unpack_from("<Q", 
+				self._rawdata, self._p)[0]
 			
 			# 8 bytes for the OSO hash
-			self.oso_hash = "%016x" % struct.unpack("<Q", 
-				self._rawdata[self._p+8:self._p+16])[0]
+			self.oso_hash = "%016x" % struct.unpack_from("<Q", 
+				self._rawdata, self._p+8)[0]
 				
 			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack("<H",
-				self._rawdata[self._p+16:self._p+16+2])[0]
+			name_length = struct.unpack_from("<H",
+				self._rawdata, self._p+16)[0]
 			self.file_name = self._rawdata[self._p+18:self._p+18+name_length]
 			self._p += 18 + name_length
 		elif file_size != None and file_name != None and oso_hash != None:
@@ -848,8 +848,8 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 	def __init__(self, bbytes, filepos, fname):
 		super(RarVolumeHeaderBlock, self).__init__(bbytes, filepos, fname)
 		# 2 bytes + 4 bytes
-		(self.reserved1, self.reserved2) = struct.unpack("<HL",
-								self._rawdata[self._p:self._p+6]) 
+		(self.reserved1, self.reserved2) = struct.unpack_from("<HL",
+								self._rawdata, self._p) 
 		self._p += 6
 
 		# TODO: look what is in the reserved places and figure it out
@@ -942,15 +942,15 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		(self.packed_size, self.unpacked_size, self.os, self.file_crc,
 		 self.file_datetime, self.rar_version, self.compression_method,
 		 filename_length, self.file_attributes) =  \
-		 struct.unpack("<IIBIIBBHI", self._rawdata[self._p:self._p+25])
+		 struct.unpack_from("<IIBIIBBHI", self._rawdata, self._p)
 		self._p += 25
 		# If large file flag is set, next are 4 bytes each
 		# for high order bits of file sizes.
 		if self.flags & self.LARGE_FILE == self.LARGE_FILE:
-			self.high_pack_size = struct.unpack("<I", 
-			                        self._rawdata[self._p:self._p+4])[0]
-			self.high_unpack_size = struct.unpack("<I", 
-			                          self._rawdata[self._p+4:self._p+4+4])[0]
+			self.high_pack_size = struct.unpack_from("<I", 
+			                        self._rawdata, self._p)[0]
+			self.high_unpack_size = struct.unpack_from("<I", 
+			                          self._rawdata, self._p+4)[0]
 			self.packed_size += self.high_pack_size * 0x100000000
 			self.unpacked_size += self.high_unpack_size * 0x100000000
 			self._p += 8
@@ -1146,7 +1146,7 @@ class RarNewSubBlock(RarPackedFileBlock): # 0x7A
 			# skip 8 bytes for 'Protect+' (also part of the header)
 			# 4 bytes for recovery sector count, 8 bytes for data sector count
 			(self.recovery_sectors, self.data_sectors) =  \
-				struct.unpack("<IQ", self._rawdata[self._p+8:self._p+8+12])
+				struct.unpack_from("<IQ", self._rawdata, self._p+8)
 			self.is_recovery = True
 			self._p += 8 + 4 + 8
 		else:
@@ -1175,8 +1175,8 @@ class RarOldRecoveryBlock(RarBlock): # 0x78
 		# 2 bytes for recovery sector count
 		# 4 bytes for data sector count
 		(self.packed_size, self.rar_version, self.recovery_sectors,
-		 self.data_sectors) = struct.unpack("<IBHI", 
-		                                    self._rawdata[self._p:self._p+11])
+		 self.data_sectors) = struct.unpack_from("<IBHI", 
+		                                    self._rawdata, self._p)
 		# next 8 bytes for 'Protect!'
 		self._p += 11 + 8
 		# Protect! is part of the header (last field before the recovery data)
@@ -1222,13 +1222,13 @@ class RarEndArchiveBlock(RarBlock):
 		# see if there are fields we can read
 		if self.flags & RarEndArchiveBlock.DATACRC:
 			# // store CRC32 of RAR archive (now used only in volumes)
-			self.rarcrc = struct.unpack("<I",
-			                         self._rawdata[self._p:self._p+4])
+			self.rarcrc = struct.unpack_from("<I",
+			                         self._rawdata, self._p)
 			self._p += 4
 		if self.flags & RarEndArchiveBlock.VOLNUMBER:
 			# // store a number of current volume
-			self.volume_number = struct.unpack("<H",
-			                         self._rawdata[self._p:self._p+2])
+			self.volume_number = struct.unpack_from("<H",
+			                         self._rawdata, self._p)
 			self._p += 2
 #		if self.flags & RarEndArchiveBlock.REVSPACE:
 #			# // reserve space for end of REV file 7 byte record
@@ -1437,7 +1437,7 @@ class RarReader(object):
 		# Or if this is a File or NewSub block. -> e.g. BiA Outcasts releases
 		# (always additional length, but flag not always set (e.g. CMT))
 		# The next 4 bytes are additional data size.
-		add_size = struct.unpack("<I", block_buffer[7:7+4])[0]  \
+		add_size = struct.unpack_from("<I", block_buffer, 7)[0]  \
 			if flags & RarBlock.LONG_BLOCK or  \
 			btype == BlockType.RarPackedFile or  \
 			btype == BlockType.RarNewSub else 0
@@ -1452,7 +1452,7 @@ class RarReader(object):
 		is_recovery = btype == BlockType.RarOldRecovery or  \
 				( btype == BlockType.RarNewSub and
 				  hsize > 34 and
-				  struct.unpack("<H", block_buffer[26:26+2])[0] == 2 and
+				  struct.unpack_from("<H", block_buffer, 26)[0] == 2 and
 				  block_buffer[32] == "R" and
 				  block_buffer[33] == "R" )
 				

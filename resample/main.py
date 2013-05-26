@@ -133,7 +133,7 @@ def get_file_type(ifile):
 	elif marker.startswith("SRSF"):
 		return FileType.MP3
 	else:
-		(sync,) = BE_SHORT.unpack(marker[0:2])
+		(sync,) = BE_SHORT.unpack_from(marker, 0)
 		if sync & 0xFFE0 == 0xFFE0:
 			return FileType.MP3
 		return FileType.Unknown
@@ -270,13 +270,15 @@ class TrackData(object):
 	
 	def __init__(self, buff=None):
 		if buff:
-			(self.flags,) = struct.unpack("<H", buff[0:2])
+			(self.flags,) = struct.unpack_from("<H", buff, 0)
 			
 			if self.flags & self.BIG_TACK_NUMBER:
-				(self.track_number,) = S_LONG.unpack(buff[2:6])
+				(self.track_number,) = S_LONG.unpack_from(
+					buff, 2)
 				e = 2 # extra because of the larger file
 			else:
-				(self.track_number,) = S_SHORT.unpack(buff[2:4])
+				(self.track_number,) = S_SHORT.unpack_from(
+					buff, 2)
 				e = 0
 			
 			if self.flags & self.BIG_FILE:
@@ -287,8 +289,8 @@ class TrackData(object):
 				add = 4
 				
 			(self.data_length, self.match_offset, sig_length) =  \
-				struct.unpack("<%sQH" % struct_string,
-				              buff[e+4:e+4+add+10])
+				struct.unpack_from("<%sQH" % struct_string,
+				              buff, e+4)
 			self.signature_bytes = buff[(e+14+add):(e+14+add+sig_length)]
 		else:
 			self.flags = self.NO_FLAGS
@@ -404,8 +406,8 @@ class TrackData(object):
 			return mp3_block
 		
 def read_fingerprint_data(track, data):
-	(track.duration,) = S_LONG.unpack(data[:4])
-	(fp_length,) = S_LONG.unpack(data[4:8])
+	(track.duration,) = S_LONG.unpack_from(data)
+	(fp_length,) = S_LONG.unpack_from(data, 4)
 	track.fingerprint = data[8:8+fp_length]
 	return track
 
@@ -914,7 +916,7 @@ def profile_mp4(mp4_data): # FileData object
 		
 		if atype in ("tkhd",):
 			# grab track id 
-			(track_id,) = BE_LONG.unpack(data[12:16])
+			(track_id,) = BE_LONG.unpack_from(data, 12)
 			assert not tracks.has_key(track_id)
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
@@ -930,7 +932,7 @@ def profile_mp4(mp4_data): # FileData object
 		elif atype in ("stco", "co64"):
 			# exactly one variant must be present
 			assert current_track != None
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			if atype == "stco":
 				size = 4
 				structunp = BE_LONG
@@ -939,18 +941,18 @@ def profile_mp4(mp4_data): # FileData object
 				structunp = BE_LONGLONG
 			for i in range(entry_count):
 				j = 8 + i * size
-				(offset,) = structunp.unpack(data[j:j+size])
+				(offset,) = structunp.unpack_from(data, j)
 				current_track.chunk_offsets.append(offset)	
 #			print(current_track.chunk_offsets)
 				
 		elif atype == "stsc": # Sample To Chunk Box
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			for i in range(entry_count):
 				j = 8 + i * 12
 				# first_chunk
 				# samples_per_chunk
 				# sample_description_index
-				result_tuple = struct.unpack(">LLL", data[j:j+12])
+				result_tuple = struct.unpack_from(">LLL", data, j)
 				current_track.chunk_lengths.append(result_tuple)
 				
 			# enlarge compactly coded tables
@@ -959,12 +961,12 @@ def profile_mp4(mp4_data): # FileData object
 #			print(current_track.chunk_lengths)
 				
 		elif atype in ("stsz", "stz2"): # Sample Size Boxes
-			(sample_size,) = BE_LONG.unpack(data[4:8])
-			(sample_count,) = BE_LONG.unpack(data[8:12])
+			(sample_size,) = BE_LONG.unpack_from(data, 4)
+			(sample_count,) = BE_LONG.unpack_from(data, 8)
 			if sample_size == 0:
 				for i in range(sample_count):
 					j = 12 + i * 4
-					(out,) = BE_LONG.unpack(data[j:j+4])
+					(out,) = BE_LONG.unpack_from(data, j)
 					current_track.sample_lengths.append(out)
 			else:
 				for i in range(sample_count):
@@ -1110,7 +1112,7 @@ def profile_wmv(wmv_data): # FileData object
 			padding_amount = 0
 			padding_bytes = ""
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -1182,7 +1184,7 @@ def profile_wmv(wmv_data): # FileData object
 		if oguid == GUID_STREAM_OBJECT:
 			# grab track id 
 			i = 16 + 16 + 8 + 4 + 4
-			(flags,) = S_SHORT.unpack(data[i:i+2])
+			(flags,) = S_SHORT.unpack_from(data, i)
 			track_id = flags & 0xF
 			assert not tracks.has_key(track_id)
 			tracks[track_id] = TrackData()
@@ -1191,7 +1193,7 @@ def profile_wmv(wmv_data): # FileData object
 		if oguid == GUID_FILE_OBJECT:
 			# exact size is stored in one of the header objects
 			i = 16
-			(file_size,) = S_LONGLONG.unpack(data[i:i+8])
+			(file_size,) = S_LONGLONG.unpack_from(data, i)
 			if (file_size != wmv_data.size):
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected: %s" % sep(file_size),
@@ -1522,7 +1524,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 			
 			if o.type == GUID_DATA_OBJECT:
 				i = 16 + 8 + 16
-				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
 				psize = (o.size - len(o.raw_header)) / total_data_packets
 				start = o.start_pos + len(o.raw_header)
@@ -2006,7 +2008,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 		
 		if o.type == GUID_DATA_OBJECT:
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(
+				o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -2386,7 +2389,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 		
 		if oguid == GUID_DATA_OBJECT:
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -2693,7 +2696,7 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		
 		if atype in ("tkhd",):
 			# grab track id 
-			(track_id,) = BE_LONG.unpack(data[12:16])
+			(track_id,) = BE_LONG.unpack_from(data, 12)
 			current_track = tracks[track_id]
 			
 			# initialization
@@ -2704,7 +2707,7 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		elif atype in ("stco", "co64"):
 			# exactly one variant must be present
 			assert current_track != None
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			if atype == "stco":
 				size = 4
 				structunp = BE_LONG
@@ -2713,27 +2716,27 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 				structunp = BE_LONGLONG
 			for i in range(entry_count):
 				j = 8 + i * size
-				(offset,) = structunp.unpack(data[j:j+size])
+				(offset,) = structunp.unpack_from(data, j)
 				current_track.chunk_offsets.append(offset)	
 		elif atype == "stsc": # Sample To Chunk Box
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			for i in range(entry_count):
 				j = 8 + i * 12
 				# first_chunk
 				# samples_per_chunk
 				# sample_description_index
-				result_tuple = struct.unpack(">LLL", data[j:j+12])
+				result_tuple = struct.unpack_from(">LLL", data, j)
 				current_track.chunk_lengths.append(result_tuple)
 				
 			# enlarge compactly coded tables
 			current_track.chunk_lengths = stsc(current_track.chunk_lengths)
 		elif atype in ("stsz", "stz2"): # Sample Size Boxes
-			(sample_size,) = BE_LONG.unpack(data[4:8])
-			(sample_count,) = BE_LONG.unpack(data[8:12])
+			(sample_size,) = BE_LONG.unpack_from(data, 4)
+			(sample_count,) = BE_LONG.unpack_from(data, 8)
 			if sample_size == 0:
 				for i in range(sample_count):
 					j = 12 + i * 4
-					(out,) = BE_LONG.unpack(data[j:j+4])
+					(out,) = BE_LONG.unpack_from(data, j)
 					current_track.sample_lengths.append(out)
 			else:
 				for i in range(sample_count):
@@ -2779,7 +2782,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			# 2) body
 			if oguid == GUID_DATA_OBJECT:
 				i = 16 + 8 + 16
-				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
 				psize = (o.osize - len(o.raw_header)) / total_data_packets
 				rp_offsets = 0

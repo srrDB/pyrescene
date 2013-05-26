@@ -103,7 +103,7 @@ class RiffReader(object):
 		chunk_header = self._riff_stream.read(8)
 		# 4 bytes for fourcc, 4 for chunk length
 		fourcc = chunk_header[:4]
-		(chunk_length,) = S_LONG.unpack(chunk_header[4:])
+		(chunk_length,) = S_LONG.unpack_from(chunk_header, 4)
 		
 		# might not keep this check
 		# the length check should catch corruption on its own...

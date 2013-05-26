@@ -30,14 +30,14 @@ with open(inbetween, "rb") as n:
 def fix_file_header(file_header, date_part):
 	""" fix the headers before the data """
 	# check if the provided file_headers integrity is correct
-	assert struct.unpack("<H", file_header[:2])[0] == zlib.crc32(file_header[2:]) & 0xFFFF
+	assert struct.unpack_from("<H", file_header)[0] == zlib.crc32(file_header[2:]) & 0xFFFF
 	before = file_header[:7+9+4]
 	after = file_header[7+9+4+1:]
 	fixed_crc_header = before + struct.pack("c", chr(date_part)) + after
 	header_crc = zlib.crc32(fixed_crc_header[2:]) & 0xFFFF
 	fixed_crc_header = struct.pack("<H", header_crc) + fixed_crc_header[2:]
 	
-	assert struct.unpack("<H", fixed_crc_header[:2])[0] == zlib.crc32(fixed_crc_header[2:]) & 0xFFFF
+	assert struct.unpack_from("<H", fixed_crc_header)[0] == zlib.crc32(fixed_crc_header[2:]) & 0xFFFF
 	return fixed_crc_header
 	
 for i in range(0x37, 0x72):
