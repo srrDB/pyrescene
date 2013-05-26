@@ -1144,7 +1144,7 @@ if __name__ == '__main__':
     for path in args:
         # file = open(r"E:\DOWNLOAD\xvid.txt", 'a')
         # file.write(path + '\n')
-        # file.write(str(options.unrar_dir) + '\n')
+        # file.write(options.unrar_dir + '\n')
         # file.write('\n')
         # file.close()
 

@@ -701,13 +701,13 @@ class NNTPFile(io.IOBase):
 			shead = get_basic_header(offset)
 			if len(shead) != 7:
 				return 0xFF # not a block type
-			return struct.unpack(str("<HBHH"), shead)[1]
+			return struct.unpack("<HBHH", shead)[1]
 		def get_flags_basic_header(offset):
 			shead = get_basic_header(offset)
 			if len(shead) != 7:
 				# not a header
 				return 0x0
-			return struct.unpack(str("<HBHH"), shead)[2]
+			return struct.unpack("<HBHH", shead)[2]
 		def is_rar_block(block_type):
 			# will fail for P0W4 0x00 RAR end blocks
 			return block_type in range(0x72, 0x7B + 1)

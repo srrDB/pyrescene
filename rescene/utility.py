@@ -29,10 +29,6 @@
 #   RarFileNameComparer.cs, RarFileNameFinder.cs, SfvReader.cs
 # Everything else: MIT license
 
-# from __future__ import unicode_literals
-# http://www.rmi.net/~lutz/strings30.html
-# works with 3.2 and 2.6+
-
 import re
 import sys
 import difflib
@@ -101,7 +97,7 @@ class SfvEntry(object):
 		return self.file_name < other.file_name
 		
 	def __repr__(self):
-		return self.file_name + " " + str(self.crc32)
+		return self.file_name + " " + self.crc32
 	
 	def __eq__(self, other) : 
 		return self.__dict__ == other.__dict__

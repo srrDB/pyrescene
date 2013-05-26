@@ -947,7 +947,7 @@ def info(srr_file):
 		elif block.rawtype == BlockType.RarOldAuthenticity76 or  \
 			 block.rawtype == BlockType.RarOldAuthenticity79:
 			msg = "Old Authenticity block found. (%s)"  \
-				% str(hex(block.rawtype))
+				% hex(block.rawtype)
 			if _DEBUG: print(msg)
 			_fire(MsgCode.AUTHENTCITY, message=msg)
 			
@@ -1419,8 +1419,8 @@ class FileInfo(object):
 		# use the same sorting used for the sfv entries
 		self.__lt__ = SfvEntry.__lt__
 	def __repr__(self): # if possible evaluable representation of an object
-		return (str(self.file_name) + " " + str(self.file_size)
-				+ " " + str(self.crc))
+		return (self.file_name + " " + str(self.file_size)
+				+ " " + self.crc)
 
 ### Compressed RAR stuff ######################################################
 

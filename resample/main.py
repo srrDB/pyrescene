@@ -169,7 +169,7 @@ class FileData(object):
 			if utility.is_rar(file_name):
 				rs = rarstream.RarStream(file_name)
 				self.size = rs.seek(0, os.SEEK_END)
-				self.sample_name = str(rs.packed_file_name)
+				self.sample_name = rs.packed_file_name
 				rs.close()
 			else:
 				self.sample_name = file_name
@@ -287,7 +287,7 @@ class TrackData(object):
 				add = 4
 				
 			(self.data_length, self.match_offset, sig_length) =  \
-				struct.unpack(str("<%sQH" % struct_string), 
+				struct.unpack("<%sQH" % struct_string,
 				              buff[e+4:e+4+add+10])
 			self.signature_bytes = buff[(e+14+add):(e+14+add+sig_length)]
 		else:

@@ -38,7 +38,6 @@
 # __all__ = [] # dir(rar)
 
 from __future__ import absolute_import
-#from __future__ import unicode_literals # either textual or bytes data
 import io
 import struct
 import os
@@ -362,22 +361,22 @@ class RarBlock(object):
 		self.fname = fname
 		
 		(self.crc, self.rawtype, self.flags, self.header_size) =  \
-						struct.unpack(str("<HBHH"), self._rawdata[:7])
+						struct.unpack("<HBHH", self._rawdata[:7])
 		self._p = HEADER_LENGTH # pointer to ease reading
 		
 		# Outcast BiA releases don't set this flag for BlockType.RarPackedFile 
 		if self.flags & RarBlock.LONG_BLOCK:
-			self.add_size = struct.unpack(str("<I"), self._rawdata[7:7+4])[0]
+			self.add_size = struct.unpack("<I", self._rawdata[7:7+4])[0]
 		else:
 			self.add_size = 0
 			
 	def _write_header(self, header_size):
 		"""Write 7 byte header."""
 		self._rawdata = ""
-		self._rawdata += str(struct.pack(str("<H"), self.crc)) # 2 bytes
-		self._rawdata += str(struct.pack(str("<B"), self.rawtype)) # 1 byte: uchar
-		self._rawdata += str(struct.pack(str("<H"), self.flags)) # unsigned short
-		self._rawdata += str(struct.pack(str("<H"), header_size)) # 2 bytes
+		self._rawdata += struct.pack("<H", self.crc) # 2 bytes
+		self._rawdata += struct.pack("<B", self.rawtype) # 1 byte: uchar
+		self._rawdata += struct.pack("<H", self.flags) # unsigned short
+		self._rawdata += struct.pack("<H", header_size) # 2 bytes
 		self._p = HEADER_LENGTH
 
 	def block_bytes(self):
@@ -468,7 +467,7 @@ class SrrHeaderBlock(RarBlock):
 			# If the SRR_APP_NAME_PRESENT flag is set, the header contains
 			# 2 bytes for application name length, followed by the name.
 			if self.flags & self.SRR_APP_NAME_PRESENT:
-				appname_length = struct.unpack(str("<H"), 
+				appname_length = struct.unpack("<H",
 								self._rawdata[self._p:self._p+2])
 				self.appname = self._rawdata[self._p+2:self._p+2+
 											appname_length[0]] # tuple
@@ -491,7 +490,7 @@ class SrrHeaderBlock(RarBlock):
 			if len(self.appname):
 				self.flags = self.SRR_APP_NAME_PRESENT
 				self._write_header(HEADER_LENGTH + 2 + len(self.appname))
-				self._rawdata += str(struct.pack(str("<H"), len(self.appname)))
+				self._rawdata += struct.pack("<H", len(self.appname))
 				self._rawdata += str(self.appname)
 			else:
 				self._write_header(HEADER_LENGTH)
@@ -555,7 +554,7 @@ class SrrStoredFileBlock(RarBlock):
 			
 			# 4 bytes for file length (unsigned int) (add_size field)
 			# 2 bytes for name length, then the name (unsigned short)
-			(self.file_size, length) = struct.unpack(str("<IH"), 
+			(self.file_size, length) = struct.unpack("<IH",
 			                           self._rawdata[self._p:self._p+6])
 			self.file_name = self._rawdata[self._p+6:self._p+6+length]
 			self._p += 6 + length
@@ -603,8 +602,8 @@ class SrrStoredFileBlock(RarBlock):
 		# the size in bytes (not the number of Unicode characters).
 		self._write_header(HEADER_LENGTH + 4 + 2 + len(self.file_name))
 		# ADD_SIZE field: unsigned integer (4 bytes)
-		self._rawdata += (struct.pack(str("<I"), file_size))
-		self._rawdata += (struct.pack(str("<H"), len(self.file_name))) # ushort 
+		self._rawdata += (struct.pack("<I", file_size))
+		self._rawdata += (struct.pack("<H", len(self.file_name))) # ushort 
 		self._rawdata += (self.file_name).encode('utf-8')
 
 	def srr_data(self):
@@ -681,7 +680,7 @@ class SrrRarFileBlock(RarBlock):
 			super(SrrRarFileBlock, self).__init__(bbytes, filepos, fname)
 			
 			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack(str("<H"), 
+			name_length = struct.unpack("<H",
 			                            self._rawdata[self._p:self._p+2])[0]
 			self.file_name = self._rawdata[self._p+2:self._p+2+name_length]
 			self._p += 2 + name_length
@@ -752,7 +751,7 @@ class SrrOsoHashBlock(RarBlock):
 				self._rawdata[self._p+8:self._p+16])[0]
 				
 			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack(str("<H"), 
+			name_length = struct.unpack("<H",
 				self._rawdata[self._p+16:self._p+16+2])[0]
 			self.file_name = self._rawdata[self._p+18:self._p+18+name_length]
 			self._p += 18 + name_length
@@ -849,7 +848,7 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 	def __init__(self, bbytes, filepos, fname):
 		super(RarVolumeHeaderBlock, self).__init__(bbytes, filepos, fname)
 		# 2 bytes + 4 bytes
-		(self.reserved1, self.reserved2) = struct.unpack(str("<HL"), 
+		(self.reserved1, self.reserved2) = struct.unpack("<HL",
 								self._rawdata[self._p:self._p+6]) 
 		self._p += 6
 
@@ -943,7 +942,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		(self.packed_size, self.unpacked_size, self.os, self.file_crc,
 		 self.file_datetime, self.rar_version, self.compression_method,
 		 filename_length, self.file_attributes) =  \
-		 struct.unpack(str("<IIBIIBBHI"), self._rawdata[self._p:self._p+25])
+		 struct.unpack("<IIBIIBBHI", self._rawdata[self._p:self._p+25])
 		self._p += 25
 		# If large file flag is set, next are 4 bytes each
 		# for high order bits of file sizes.
@@ -1223,12 +1222,12 @@ class RarEndArchiveBlock(RarBlock):
 		# see if there are fields we can read
 		if self.flags & RarEndArchiveBlock.DATACRC:
 			# // store CRC32 of RAR archive (now used only in volumes)
-			self.rarcrc = struct.unpack(str("<I"), 
+			self.rarcrc = struct.unpack("<I",
 			                         self._rawdata[self._p:self._p+4])
 			self._p += 4
 		if self.flags & RarEndArchiveBlock.VOLNUMBER:
 			# // store a number of current volume
-			self.volume_number = struct.unpack(str("<H"), 
+			self.volume_number = struct.unpack("<H",
 			                         self._rawdata[self._p:self._p+2])
 			self._p += 2
 #		if self.flags & RarEndArchiveBlock.REVSPACE:
@@ -1411,7 +1410,7 @@ class RarReader(object):
 		is considered a fixed byte.
 		"""
 		header_buffer = self._rarstream.read(HEADER_LENGTH)
-		fmt = str("<HBHH")
+		fmt = "<HBHH"
 		(_crc, btype, flags, hsize) = struct.unpack(fmt, header_buffer)
 		
 		# one more sanity check on the length before continuing
@@ -1438,7 +1437,7 @@ class RarReader(object):
 		# Or if this is a File or NewSub block. -> e.g. BiA Outcasts releases
 		# (always additional length, but flag not always set (e.g. CMT))
 		# The next 4 bytes are additional data size.
-		add_size = struct.unpack(str("<I"), block_buffer[7:7+4])[0]  \
+		add_size = struct.unpack("<I", block_buffer[7:7+4])[0]  \
 			if flags & RarBlock.LONG_BLOCK or  \
 			btype == BlockType.RarPackedFile or  \
 			btype == BlockType.RarNewSub else 0

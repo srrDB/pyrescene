@@ -110,13 +110,13 @@ class TestRarReader(unittest.TestCase):
 		rr = RarReader(os.path.join(os.pardir, os.pardir, "test_files",
 					"store_little", "store_little_srrfile_with_path.srr"))
 		self.assertEqual(rr.list_files(), 
-						 [str('store_little/store_little.srr')])
+						 ['store_little/store_little.srr'])
 		rr = RarReader(os.path.join(os.pardir, os.pardir, "test_files",
 						  "store_little", "store_little.rar"))
-		self.assertEqual(rr.list_files(), [str('little_file.txt')])
+		self.assertEqual(rr.list_files(), ['little_file.txt'])
 		rr = RarReader(os.path.join(os.pardir, os.pardir, "test_files",
 			"store_split_folder_old_srrsfv_windows", "store_split_folder.srr"))
-		self.assertEqual(rr.list_files(), [str('store_split_folder.sfv')])
+		self.assertEqual(rr.list_files(), ['store_split_folder.sfv'])
 		
 	def test_iterator(self):
 		rr = RarReader(os.path.join(os.pardir, os.pardir, "test_files",
@@ -198,7 +198,7 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		sfb = [s for s in rr.read_all() 
 			   if isinstance(s, SrrStoredFileBlock)][0]
 		self.assertEqual(sfb.file_size, 372)
-		self.assertEqual(sfb.file_name, str("store_split_folder.sfv"))
+		self.assertEqual(sfb.file_name, "store_split_folder.sfv")
 		self.assertEqual(len(sfb.file_name), 22)
 		self.assertEqual(sfb.block_position + sfb.header_size, 0x3C)
 		self.assertEqual(sfb.header_size, sfb.header_size)
@@ -223,8 +223,7 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 						 "ce9aceb5ceafcebcceb5cebdce" +
 						 "bf20cf83cf84ceb7cebd20ceb5cebbcebbceb7cebdce" +
 						 "b9cebaceae20ceb3cebbcf8ecf83cf83ceb12e747874")
-		self.assertEqual(str(sfb.file_name), 
-						 "Κείμενο στην ελληνική γλώσσα.txt")
+		self.assertEqual(sfb.file_name, "Κείμενο στην ελληνική γλώσσα.txt")
 
 	def test_srr_stored_file_write(self):
 		# data from store_split_folder.srr SrrStoredFileBlock
@@ -235,7 +234,7 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 				"\x5f\x66\x6f\x6c\x64\x65\x72\x2e\x73\x66\x76")
 		sfb = SrrStoredFileBlock(file_name="store_split_folder.sfv", 
 								 file_size=372)
-		self.assertEqual(str(sfb.block_bytes()), str(data))
+		self.assertEqual(sfb.block_bytes(), data)
 		
 		self.assertRaises(AttributeError, SrrStoredFileBlock, 
 						  file_name="dir?/file.name", file_size=42)
