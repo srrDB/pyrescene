@@ -205,9 +205,8 @@ def _extract(block, out_file):
 		# 'store_little/store_little.srr' -> create path
 		try:
 			os.makedirs(os.path.dirname(out_file))
-		except BaseException: # WindowsError: [Error 183]
+		except BaseException as ex: # WindowsError: [Error 183]
 			# cannot create dir because folder(s) already exist
-			ex = sys.exc_info()[1]
 			if _DEBUG: print(ex)
 			_fire(MsgCode.OS_ERROR, message=ex)
 		# what error when we cannot create path? XXX: Subs vs subs
@@ -345,8 +344,8 @@ def remove_stored_files(srr_file, store_files):
 		tmpfile.close()
 		os.remove(srr_file)
 		os.rename(tmpname, srr_file)
-	except:
-		print(sys.exc_info()[1])
+	except BaseException as ex:
+		print(ex)
 		os.unlink(tmpname)
 		raise
 
@@ -565,8 +564,8 @@ def _rarreader_usenet(rarfile, read_retries=7):
 			try:
 				rr = RarReader(rarfile)
 				return rr.read_all()
-			except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError):
-				print(sys.exc_info())
+			except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError) as ex:
+				print(ex)
 				if stop <= read_retries:
 					stop += 1
 					print(stop)
@@ -629,9 +628,9 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 #				try:
 				rarfiles.extend(_handle_sfv(infile))
 					# pointer SFV has changed!
-#				except:
+#				except BaseException as ex:
 #					# NNTPTemporaryError('430 No such article',)
-#					print(sys.exc_info())
+#					print(ex)
 #					raise ValueError("SFV file can't be read.")
 			else: # .rar, .001, .exe, ...?
 				rarfiles.extend(_handle_rar(allfiles[infile], 
@@ -1369,9 +1368,9 @@ def _store_fh(open_file, stream):
 								   file_size=open_file.file_size())
 		stream.write(block.block_bytes())
 		stream.write(data)
-	except Exception:
+	except Exception as ex:
 		# reading data fails, so just skip the file
-		print(sys.exc_info())
+		print(ex)
 
 def _search(files, folder=""):
 	"""Enumerates all files to store. Yields a generator.
@@ -1761,8 +1760,8 @@ def compressed_rar_file_factory(block, blocks, src,
 	
 		return CompressedRarFile(block, blocks, src,
 							 nblock, followup_src, solid=False)
-	except (RarNotFound, ValueError):
-		print(sys.exc_info()[1])
+	except (RarNotFound, ValueError) as ex:
+		print(ex)
 		# we have found good RAR versions before
 		if len(archived_files) != 0:
 			regular_method_failed = CompressedRarFileAll(

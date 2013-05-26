@@ -241,10 +241,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir)
-		except (FileNotFound, RarNotFound):
+		except (FileNotFound, RarNotFound) as err:
 			mthread.done = True
 			mthread.join()
-			print(sys.exc_info()[1])
+			print(err)
 			return 1
 		except EmptyRepository:
 			mthread.done = True
@@ -291,7 +291,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.")
-	except (EnvironmentError, ValueError):
+	except (EnvironmentError, ValueError) as err:
 		# Can not read basic block header
 		# ValueError: compressed SRR
 		# ValueError: The file is too small.
@@ -302,7 +302,7 @@ def create_srr(options, infolder, infiles, working_dir):
 			pass
 		mthread.done = True
 		mthread.join()
-		print(sys.exc_info()[1])
+		print(err)
 		print("SRR creation failed. Aborting.")
 		return 1
 
@@ -461,9 +461,9 @@ def main(argv=None):
 		print()
 		print("Ctrl+C pressed. Aborting.")
 		parser.exit(130) # http://tldp.org/LDP/abs/html/exitcodes.html
-	except Exception:
+	except Exception as err:
 		traceback.print_exc()
-		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])
+		parser.exit(99, "Unexpected Error: %s" % err)
 	finally:
 		mthread.done = True
 		mthread.join(0.5)

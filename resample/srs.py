@@ -212,8 +212,8 @@ def main(argv=None, no_exit=False):
 			sample_file_data = resample.FileData(file_name=sample_file)
 			try:
 				tracks, attachments = sample.profile_sample(sample_file_data)
-			except resample.IncompleteSample:
-				pexit(2, str(sys.exc_info()[1]))
+			except resample.IncompleteSample as err:
+				pexit(2, str(err))
 	
 			if not len(tracks):
 				pexit(2, "No A/V data was found. "
@@ -386,26 +386,26 @@ def main(argv=None, no_exit=False):
 		
 		pexit(0)
 	
-	except (ValueError, AssertionError):
+	except (ValueError, AssertionError) as err:
 		if _DEBUG:
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-				str(sys.exc_info()[1]).strip('\n'))
-	except fpcalc.ExecutableNotFound:
-		pexit(3, str(sys.exc_info()[1]))
-	except AttributeError:
-		if str(sys.exc_info()[1]).startswith("Compressed RARs"):
+				str(err).strip('\n'))
+	except fpcalc.ExecutableNotFound as err:
+		pexit(3, str(err))
+	except AttributeError as err:
+		if str(err).startswith("Compressed RARs"):
 			# AttributeError: Compressed RARs are not supported
 			pexit(4, "Cannot verify sample against compressed RARs.")
-		elif (str(sys.exc_info()[1]) == 
+		elif (str(err) == 
 			"You must start with the first volume from a RAR set"):
-			pexit(5, str(sys.exc_info()[1]))
+			pexit(5, str(err))
 		else:
 			traceback.print_exc()
-			pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
-	except Exception:
+			pexit(99, "Unexpected Error:\n%s\n" % err)
+	except Exception as err:
 		traceback.print_exc()
-		pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
+		pexit(99, "Unexpected Error:\n%s\n" % err)
 
 if __name__ == "__main__":
 	if "--profile" in sys.argv:

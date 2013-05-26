@@ -525,18 +525,18 @@ def generate_srr(reldir, working_dir, options):
 			if e.message != "DONT_DELETE":
 				os.unlink(srr)
 			raise
-		except FileNotFound:
+		except FileNotFound as e:
 			# rescene doesn't leave a half finished file
-			print(sys.exc_info()[1])
+			print(e)
 			return False
-		except (ValueError, EnvironmentError):
+		except (ValueError, EnvironmentError) as e:
 			# e.g. 0 byte RAR file
 			# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
 			try:
 				os.unlink(srr)
 			except: # WindowsError
 				pass
-			print(sys.exc_info()[1])
+			print(e)
 			return False
 	else:
 		print("No SFV files found.")
@@ -614,14 +614,14 @@ def generate_srr(reldir, working_dir, options):
 				else:
 					copied_files.append(os.path.join(dest_dir, 
 						os.path.basename(sample))[:-4] + ".srs")
-			except ValueError:
+			except ValueError as e:
 				keep_txt = True
 				copied_files.append(txt_error_file)
 				logging.info("%s: Could not create SRS file for %s." %
 				             (reldir, os.path.basename(sample)))
 				
 				# fpcalc executable isn't found
-				if str(sys.exc_info()[1]).endswith(MSG_NOTFOUND):
+				if str(e).endswith(MSG_NOTFOUND):
 					# do cleanup
 					sys.stderr.close()
 					sys.stderr = original_stderr

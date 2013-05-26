@@ -157,10 +157,10 @@ def check(srr_file):
 			os.renames(srr_file, os.path.join(options.output_dir, srr_name))
 		if result:
 			print(os.path.basename(srr_file))
-	except (EnvironmentError, Exception):
+	except (EnvironmentError, Exception) as err:
 		# the storing of a srr_file failed -> corrupt SRR
 		print("Something wrong with reading %s" % srr_file)
-		print(sys.exc_info())
+		print(err)
 		
 def main(options, args):
 	for element in args:

@@ -1352,8 +1352,8 @@ class RarReader(object):
 		else: # file on hard drive
 			try:
 				self._rarstream = open(rfile, mode="rb")
-			except (IOError, TypeError):
-				raise ArchiveNotFoundError(sys.exc_info()[1])
+			except (IOError, TypeError) as err:
+				raise ArchiveNotFoundError(err)
 		
 		# get the length of the stream
 		self._initial_offset = self._rarstream.tell()
