@@ -1526,7 +1526,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 				i = 16 + 8 + 16
 				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
-				psize = (o.size - len(o.raw_header)) / total_data_packets
+				psize = (o.size - len(o.raw_header)) // total_data_packets
 				start = o.start_pos + len(o.raw_header)
 				for i in range(total_data_packets):
 					data = ar.read_data_part(start + i * psize, psize)
@@ -2011,7 +2011,7 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 			(total_data_packets,) = S_LONGLONG.unpack_from(
 				o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				if i % 15 == 0:

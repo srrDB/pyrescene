@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import division
+
 import optparse
 import sys
 import os
@@ -172,10 +174,10 @@ def main(options, args):
 
 	if rar_sizes:
 		print("%d bytes" % rar_sizes)
-		print("%.2f KiB" % (rar_sizes / 1024.0))
-		print("%.2f MiB" % (rar_sizes / 1024.0 / 1024.0))
-		print("%.2f GiB" % (rar_sizes / 1024.0 / 1024.0 / 1024.0))
-		print("%.2f TiB" % (rar_sizes / 1024.0 / 1024.0 / 1024.0 / 1024.0))
+		print("%.2f KiB" % (rar_sizes / 1024))
+		print("%.2f MiB" % (rar_sizes / 1024 / 1024))
+		print("%.2f GiB" % (rar_sizes / 1024 / 1024 / 1024))
+		print("%.2f TiB" % (rar_sizes / 1024 / 1024 / 1024 / 1024))
 			
 if __name__ == '__main__':
 	parser = optparse.OptionParser(

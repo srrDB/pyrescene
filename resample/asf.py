@@ -142,7 +142,7 @@ class AsfReader(object):
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			rp_offsets = 0
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):

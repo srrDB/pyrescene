@@ -603,7 +603,7 @@ class NNTPFile(io.IOBase):
 		# the offset starts somewhere in this part
 		# parts start counting from 1
 		fix = 1
-		nb_times = offset / self._segment_size_first
+		nb_times = offset // self._segment_size_first
 		
 		# exact amount of times? result one time less, except for zero
 		if (offset % self._segment_size_first) == 0 and nb_times != 0:
@@ -787,14 +787,14 @@ class NNTPFile(io.IOBase):
 							lines = int(match.group(1))
 							break
 					if lines > 10: # arbitrary number
-						line_size = (self.segments[i].bytes / lines)
+						line_size = (self.segments[i].bytes // lines)
 						# yEnc overhead (around 2%)
 						new_line_size = line_size
 						new_line_size -= new_line_size * 0.07
 						if int(new_line_size) <= 0:
-							new_line_size = (line_size if int(line_size) > 0
+							new_line_size = (line_size if line_size > 0
 							                           else 1)
-						amount = int(end_offset / int(new_line_size) + 1)
+						amount = end_offset // int(new_line_size) + 1
 						# but always more than 2 lines! otherwise no new data
 						amount = amount if amount > 2 else 3
 					#print lines, line_size, end_offset, amount
