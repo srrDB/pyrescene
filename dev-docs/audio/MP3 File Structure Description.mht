@@ -1,0 +1,889 @@
+Content-Type: multipart/related; start=<op.mhtml.1365296050052.c0d7615432118c4d@192.168.0.177>; boundary=----------aCUs3jtZdH8E8opj3J3SUZ
+Content-Location: http://www.multiweb.cz/twoinches/MP3inside.htm
+Subject: =?utf-8?Q?MP3=20File=20Structure=20Description?=
+MIME-Version: 1.0
+
+------------aCUs3jtZdH8E8opj3J3SUZ
+Content-Disposition: inline; filename=MP3inside.htm
+Content-Type: text/html; charset=windows-1250; name=MP3inside.htm
+Content-ID: <op.mhtml.1365296050052.c0d7615432118c4d@192.168.0.177>
+Content-Location: http://www.multiweb.cz/twoinches/MP3inside.htm
+Content-Transfer-Encoding: 8bit
+
+<HTML>
+<HEAD>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1250">
+<TITLE>MP3 File Structure Description</TITLE>
+</HEAD>
+
+<BODY BACKGROUND="light.gif" TEXT=white LINK="#88CCFF" VLINK="#4488BB" ALINK="#4488BB" BGCOLOR="#000000" BGPROPERTIES=FIXED>
+
+<BR><BR>
+<CENTER>
+<FONT SIZE="6" COLOR="FF0000"><B>inside</B></font>
+<FONT SIZE="9" COLOR="FF0000"><B>&nbsp;MP3&nbsp;</B></font>
+<FONT SIZE="6" COLOR="FF0000"><B>inside</B></font>
+<BR><BR><BR>
+<HR SIZE=2 COLOR=WHITE    WIDTH="50%">
+<HR SIZE=2 COLOR="AAAAAA" WIDTH="25%">
+<HR SIZE=2 COLOR="555555" WIDTH="10%">
+<BR><BR><BR>
+
+<FONT FACE="Verdana,geneva,arial" SIZE="4" COLOR=white><B>
+<a href="#MP3FileStructure">MP3 file structure</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="#CBR">Constant bitrate</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="#VBR">Variable bitrate</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="#TAG1">TAG v1</a>&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="#Tag2">TAG v2</a>&nbsp;&nbsp;&nbsp;&nbsp;
+</B></FONT>
+</CENTER>
+
+<BR>
+<HR SIZE=1 COLOR=WHITE>
+<BR><BR>
+
+<FONT FACE="Verdana,geneva,arial" SIZE="2" COLOR=white>
+
+<a name="MP3FileStructure"></a>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>MP3 File Structure</CENTER></B>
+</FONT><BR>
+
+<BR>
+can be expressed in this scheme (TAGs are optional):<BR>
+<BR>
+<B>[TAG v2] &nbsp;&nbsp;Frame1 &nbsp;&nbsp;Frame2 &nbsp;&nbsp;Frame3... &nbsp;&nbsp;[TAG v1]</B><BR>
+<BR>
+MP3 file is divided into a small blocks - frames. Each frame has constant time length 0.026 sec.<BR>
+But size of one frame (in Bytes) varies according to bitrate. Eg. for 128kbps it is (normally) 417 Bytes
+and for 192kbps 626 Bytes.<BR> 
+<BR>
+The first 4 Bytes of each frame is <B>frame header</B> and the rest is audio data.<BR>
+<BR>
+Frame header consists of information about frame (bitrate, stereo mode...) and because of that
+frames are independent items. Each of them can have its own characteristic. It is used eg. in 
+Variable Bitate files, where each frame can have different bitrate.<BR>
+<BR>
+Frame header has this structure (each letter is one bit):<BR>
+<BR>
+<FONT SIZE="4"><B>
+<a href="#FrameHeaderA">AAAAAAAA</a>&nbsp;&nbsp;
+<a href="#FrameHeaderA">AAA</a><a href="#FrameHeaderB">BB</a><a href="#FrameHeaderC">CC</a><a href="#FrameHeaderD">D</a>&nbsp;&nbsp;
+<a href="#FrameHeaderE">EEEE</a><a href="#FrameHeaderF">FF</a><a href="#FrameHeaderG">G</a><a href="#FrameHeaderH">H</a>&nbsp;&nbsp;
+<a href="#FrameHeaderI">II</a><a href="#FrameHeaderJ">JJ</a><a href="#FrameHeaderK">K</a><a href="#FrameHeaderL">L</a><a href="#FrameHeaderM">MM</a>
+</B></FONT>
+<BR><BR>
+
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt"> 
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">A<a name="#FrameHeaderA"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Frame synchronizer</B><BR>
+  All bits are set to 1. It is used for finding the beginning of frame. But these values can occur
+  many times in binary file so you should test next values from header for validity (eg. bitrate bits arent 1111,
+  sampling rate frequency isnt 11 etc.). But you can never be 100% sure if you find a header.<BR>
+  Next method is to find the first header and then go through all frames - almost exact, but time consuming.<BR>
+  Be careful with the first frame! It doesnt have to start at the first Byte in file. Either TAG v2 can be
+  included or file can contains of some crap at the beginning.<BR>
+  Anyway - to find a header is a little problem.
+  </TD>
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">B<a name="#FrameHeaderB"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>MPEG version ID</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>00</TD><TD>&nbsp;&nbsp;</TD><TD>MPEG Version 2.5 (not an official standard)</TD></TR>
+	 <TR><TD>01</TD><TD>&nbsp;&nbsp;</TD><TD>reserved</TD></TR>
+	 <TR><TD>10</TD><TD>&nbsp;&nbsp;</TD><TD>MPEG Version 2</TD></TR>
+	 <TR><TD>11</TD><TD>&nbsp;&nbsp;</TD><TD>MPEG Version 1</TD></TR>
+	</TABLE>
+	In most MP3 files these value should be 11.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">C<a name="#FrameHeaderC"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Layer</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>00</TD><TD>&nbsp;&nbsp;</TD><TD>reserved</TD></TR>
+	 <TR><TD>01</TD><TD>&nbsp;&nbsp;</TD><TD>Layer III</TD></TR>
+	 <TR><TD>10</TD><TD>&nbsp;&nbsp;</TD><TD>Layer II</TD></TR>
+	 <TR><TD>11</TD><TD>&nbsp;&nbsp;</TD><TD>Layer I</TD></TR>
+	</TABLE>
+	In most MP3 files these value should be 01 (because MP3 = MPEG 1 Layer 3).
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">D<a name="#FrameHeaderD"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>CRC Protection</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>0</TD><TD>&nbsp;&nbsp;</TD><TD>Protected by CRC</TD></TR>
+	 <TR><TD>1</TD><TD>&nbsp;&nbsp;</TD><TD>Not protected</TD></TR>
+	</TABLE>
+	 Frames may have some form of check sum - CRC check. CRC is 16 bit long and, if exists,
+	 it follows frame header. And then comes audio data.<BR>
+	 But almost all MP3 files doesnt contain CRC.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">E<a name="#FrameHeaderE"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Bitrate index</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>0000</TD><TD>&nbsp;&nbsp;</TD><TD>free</TD></TR>
+	 <TR><TD>0001</TD><TD>&nbsp;&nbsp;</TD><TD>32</TD></TR>
+	 <TR><TD>0010</TD><TD>&nbsp;&nbsp;</TD><TD>40</TD></TR>
+	 <TR><TD>0011</TD><TD>&nbsp;&nbsp;</TD><TD>48</TD></TR>
+	 <TR><TD>0100</TD><TD>&nbsp;&nbsp;</TD><TD>56</TD></TR>
+	 <TR><TD>0101</TD><TD>&nbsp;&nbsp;</TD><TD>64</TD></TR>
+	 <TR><TD>0110</TD><TD>&nbsp;&nbsp;</TD><TD>80</TD></TR>
+	 <TR><TD>0111</TD><TD>&nbsp;&nbsp;</TD><TD>96</TD></TR>
+	 <TR><TD>1000</TD><TD>&nbsp;&nbsp;</TD><TD>112</TD></TR>
+	 <TR><TD>1001</TD><TD>&nbsp;&nbsp;</TD><TD>128</TD></TR>
+	 <TR><TD>1010</TD><TD>&nbsp;&nbsp;</TD><TD>160</TD></TR>
+	 <TR><TD>1011</TD><TD>&nbsp;&nbsp;</TD><TD>192</TD></TR>
+	 <TR><TD>1100</TD><TD>&nbsp;&nbsp;</TD><TD>224</TD></TR>
+	 <TR><TD>1101</TD><TD>&nbsp;&nbsp;</TD><TD>256</TD></TR>
+	 <TR><TD>1110</TD><TD>&nbsp;&nbsp;</TD><TD>320</TD></TR>
+	 <TR><TD>1111</TD><TD>&nbsp;&nbsp;</TD><TD>bad</TD></TR>
+    </TABLE>
+	 All values are in kbps.<BR>
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">F<a name="#FrameHeaderF"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Samplig rate frequency index</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>00</TD><TD>&nbsp;&nbsp;</TD><TD>44100</TD></TR>
+	 <TR><TD>01</TD><TD>&nbsp;&nbsp;</TD><TD>48000</TD></TR> 	
+	 <TR><TD>10</TD><TD>&nbsp;&nbsp;</TD><TD>32000</TD></TR> 	
+	 <TR><TD>11</TD><TD>&nbsp;&nbsp;</TD><TD>reserved</TD></TR>
+	</TABLE>
+     All values are in Hz. In most MP3 files these value should be 00.<BR>
+	 Note: Sample frequency 44100 means that one second of audio information is hacked to
+	 44100 pieces. And each 1/44100 sec. is audio value taken and encoded into digital form.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">G<a name="#FrameHeaderG"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Padding</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>0</TD><TD>&nbsp;&nbsp;</TD><TD>Frame is not padded</TD></TR>
+	 <TR><TD>1</TD><TD>&nbsp;&nbsp;</TD><TD>Frame is padded</TD></TR>
+	</TABLE>
+	Padding is used to fit the bitrates exactly. If you use frames with length 417 Bytes (for
+	128kbps) it doesnt give exact data flow 128kbps. So you can set Padding and add one
+	extra Byte at the end of some frames to create exact 128kbps.<BR>
+	Fuck it.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">H<a name="#FrameHeaderH"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Private bit</B><BR>
+  It can be freely used for specific needs of an application, eg. it can execute some application
+  specific events.<BR>
+  No special meaning, forget it.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">I<a name="#FrameHeaderI"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Channel</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD VALIGN=top>00</TD><TD>&nbsp;&nbsp;</TD><TD VALIGN=top>Stereo</TD><TD>&nbsp;&nbsp;</TD>
+	     <TD>Similar to Dual mono, 2 channels, but bitrate can be different for each one and is coded
+		   dynamically. Eg. if channel 1 is silent, the second one will get higher bitrate.</TD></TR>
+	 <TR><TD VALIGN=top>01</TD><TD>&nbsp;&nbsp;</TD><TD VALIGN=top>Joint Stereo</TD><TD>&nbsp;&nbsp;</TD>
+	     <TD>Mostly used in MP3. One channel is common (mid) and is used mainly for common and lower
+	     tones. The second is (side) channel for encoding differences between normal channels.<BR>
+	     Note: Stereo effect is listenable properly only for higher tones because for lower ones
+		 is length of sound wave so long that you are not able to distinguish phase move.</TD></TR>
+	 <TR><TD VALIGN=top>10</TD><TD>&nbsp;&nbsp;</TD><TD VALIGN=top>Dual</TD><TD>&nbsp;&nbsp;</TD>
+	     <TD>Also known as Dual mono; 2 separate channels.</TD></TR>
+	 <TR><TD VALIGN=top>11</TD><TD>&nbsp;&nbsp;</TD><TD VALIGN=top>Mono (single channel</TD>
+	     <TD>&nbsp;&nbsp;</TD><TD VALIGN=top>Normal mono.</TD></TR>
+	</TABLE>
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">J<a name="#FrameHeaderJ"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Mode extension</B> (only if Joint Stereo is set)<BR>
+	<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD></TD><TD>&nbsp;&nbsp;</TD><TD>Intensity Stereo</TD><TD>&nbsp;&nbsp;</TD><TD>MS Stereo</TD></TR>
+	 <TR><TD>00</TD><TD></TD><TD ALIGN=center>off</TD><TD></TD><TD ALIGN=center>off</TD></TR>
+	 <TR><TD>01</TD><TD></TD><TD ALIGN=center>on</TD><TD></TD><TD ALIGN=center>off</TD></TR>
+	 <TR><TD>10</TD><TD></TD><TD ALIGN=center>off</TD><TD></TD><TD ALIGN=center>on</TD></TR>
+	 <TR><TD>11</TD><TD></TD><TD ALIGN=center>on</TD><TD></TD><TD ALIGN=center>on</TD></TR>
+	</TABLE>
+	Tells which mode for JointStereo is used.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">K<a name="#FrameHeaderK"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Copyright</B><BR>
+	<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>0</TD><TD>&nbsp;&nbsp;</TD><TD>Audio is not copyrighted</TD></TR>
+	 <TR><TD>1</TD><TD>&nbsp;&nbsp;</TD><TD>Audio is copyrighted</TD></TR>
+	</TABLE>
+    No special use.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">L<a name="#FrameHeaderL"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Original</B><BR>
+	<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>0</TD><TD>&nbsp;&nbsp;</TD><TD>Copy of original media</TD></TR>
+	 <TR><TD>1</TD><TD>&nbsp;&nbsp;</TD><TD>Original media</TD></TR>
+	</TABLE>
+    No special use.
+ </TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR>
+  <TD VALIGN=top><FONT SIZE="4">M<a name="#FrameHeaderM"></a></FONT></TD>
+  <TD>&nbsp;&nbsp;</TD>
+  <TD>
+  <B>Emphasis</B><BR>
+	<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>00</TD><TD>&nbsp;&nbsp;</TD><TD>None</TD></TR>
+	 <TR><TD>01</TD><TD>&nbsp;&nbsp;</TD><TD>50/15</TD></TR>
+	 <TR><TD>10</TD><TD>&nbsp;&nbsp;</TD><TD>reserved</TD></TR>
+	 <TR><TD>11</TD><TD>&nbsp;&nbsp;</TD><TD>CCIT J.17</TD></TR>
+	</TABLE>
+	Tells if there are emphasised frequencies above cca. 3.2 kHz.
+ </TR>
+</TABLE>
+
+<BR>
+<HR ALIGN="CENTER" SIZE=1 COLOR=WHITE>
+<BR>
+<B>Formula for counting frame length in Bytes:</B><BR>
+<BR>
+FrameLen = int((144 * BitRate / SampleRate ) + Padding);<BR>
+<BR>
+Eg. for Bitrate = 192kbps, SampleRate = 44.1kHz a Padding = Yes<BR>
+FrameLen = int((144 * 192000 / 44100) + 1) = 627 Bytes<BR>
+int() means round to bottom. FrameLen includes frame header.<BR>
+<BR><BR><BR><BR>
+
+
+<a name="CBR"></a>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>Constant Bitrate (CBR)</CENTER></B>
+</FONT><BR>
+<BR>
+Here is no problema. All frames should be the same (except of audio data).<BR>
+But only SHOULD. God damn if they vary in Padding or Emphasis. But I met CBR files
+where all frame headers were the same and frame length should be 626 Bytes. But some frames
+were 625, 627, 628... So be careful, in MP3 files you cant rely on nothing. 
+But in most cases frame length is correct.
+<BR><BR><BR><BR>
+
+
+<a name="VBR"></a>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>Variable Bitrate (VBR)</CENTER></B>
+</FONT><BR>
+<BR>
+This system was created to minimize file lengths and to preserve sound quality.<BR>
+Higher frequencies generally needs more space for encoding (thats why many codecs cut all frequencies
+above cca 16kHz) and lower tones requires less. So if some part of song doesnt consist of higher tones
+then using eg. 192kbps is wasting of space. It should be enough to use only eg. 96kbps.<BR>
+And it is the principle of VBR. Codec looks over frame and then choose bitrate suitable for its sound quality.<BR>
+<BR>
+<B>It sounds perfect but it brings some problems:</B><BR>
+If you want to jump over 2 minutes in song, it is not a problem with CBR because you are able
+simply count amount of Bytes which is necessary to skip. But it is impossible with VBR. Frame lengths
+should be arbitrary so you have to either go frame by frame and counts (time consuming and very
+unpractical) or use another mechanism for approximate count.<BR>
+If you want to cut 5 minutes from the middle of VBR file (all we know CDs where last song takes
+10 minutes but 5 minutes is a pure silence, HELL!) problems are the same.<BR>
+Result? VBR files are more difficult for controlling and adjusting. And I dont like feeling
+that sound quality changes in every moment. And AFAIK many codecs have problems with creation VBR
+in good quality.<BR>
+Personally I cant see any reason why to use VBR - I dont give a fuck if size of one CD in MP3 is
+55 MB with CBR or 51 MB with VBR. But everybody has a different taste... some people prefer VBR.<BR>
+<BR>
+<BR>
+<FONT SIZE="4"><B>
+VBR File Structure<BR>
+</B></FONT>
+<BR>
+is the same as for CBR. But the first frame doesnt contain audio data and it is used for special
+information about VBR file.<BR>
+<BR>
+<BR>
+<FONT SIZE="3"><B>
+Structure of the first frame:<BR>
+</B></FONT>
+<BR>
+<TABLE  style="font-family: Verdana,geneva,arial; font-size: 10pt"> 
+ <TR><TD><B>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</B></TD><TD>&nbsp;&nbsp;</TD><TD><B>Content</B></TD></TR>
+ <TR><TD VALIGN=top>0-3</TD><TD></TD><TD>Standard audio frame header (as descripted above). Mostly it contains values
+    FF FB 30 4C, from which you can count FrameLen = 156 Bytes. And thats exactly enough space for storing
+    VBR info.<BR>
+    This header contains some important information valid for the whole file:<BR>
+    - MPEG (MPEG1 or MPEG2)<BR>
+    - SAMPLING rate frequency index<BR>
+    - CHANNEL (JointStereo etc.)
+  </TD></TR>
+
+ <TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD VALIGN=top>4-x</TD><TD></TD><TD>Not used till string "Xing" (58 69 6E 67). This string is used as a main
+ VBR file identifier. If it is not found, file is supposed to be CBR. This string can be placed at different
+ locations according to values of MPEG and CHANNEL (ya, these from a few lines upwards):</TD></TR>
+ <TR><TD VALIGN=top><B>36-39</B></TD><TD></TD><TD><B>"Xing" for MPEG1 and CHANNEL != mono (mostly used)</B></TD></TR>
+ <TR><TD VALIGN=top>21-24</TD><TD></TD><TD>"Xing" for MPEG1 and CHANNEL == mono</TD></TR>
+ <TR><TD VALIGN=top>21-24</TD><TD></TD><TD>"Xing" for MPEG2 and CHANNEL != mono</TD></TR>
+ <TR><TD VALIGN=top>13-16</TD><TD></TD><TD>"Xing" for MPEG2 and CHANNEL == mono</TD></TR>
+
+<TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD></TD><TD></TD><TD>After "Xing" string there are placed flags, number of frames 
+ in file and a size of file in Bytes. Each of these items has 4 Bytes and it is stored as
+ 'int' number in memory. The first is the most significant Byte and the last is the least.<BR> 
+<HR ALIGN="CENTER" SIZE=1 COLOR=WHITE>
+ <B>Following schema is for MPEG1 and CHANNEL != mono:</B></TD></TR>
+ <TR><TD VALIGN=top>40-43</TD><TD></TD><TD><B>Flags</B><BR>
+   <TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+	 <TR><TD>Value</TD><TD>&nbsp;&nbsp;</TD><TD>Name</TD><TD>&nbsp;&nbsp;</TD><TD>Description</TD></TR>
+	 <TR><TD>00 00 00 01</TD><TD></TD><TD>Frames Flag</TD><TD></TD><TD>set if value for number of frames in file is stored</TD></TR>
+	 <TR><TD>00 00 00 02</TD><TD></TD><TD>Bytes Flag</TD><TD></TD><TD>set if value for filesize in Bytes is stored</TD></TR>
+	 <TR><TD>00 00 00 04</TD><TD></TD><TD>TOC Flag</TD><TD></TD><TD>set if values for TOC (see below) are stored</TD></TR>
+	 <TR><TD>00 00 00 08</TD><TD></TD><TD>VBR Scale Flag</TD><TD></TD><TD>set if values for VBR scale are stored</TD></TR>
+   </TABLE>
+   All these values can be stored simultaneously.
+ </TD></TR>
+
+<TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD VALIGN=top>44-47</TD><TD></TD><TD><B>Frames</B><BR>
+   Number of frames in file (including the first info one)
+ </TD></TR>
+
+<TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD VALIGN=top>48-51</TD><TD></TD><TD><B>Bytes</B><BR>
+   File length in Bytes
+ </TD></TR>
+
+<TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD VALIGN=top>52-151</TD><TD></TD><TD><B>TOC (Table of Contents)</B><BR>
+   Contains of 100 indexes (one Byte length) for easier lookup in file. Approximately solves
+   problem with moving inside file.<BR>
+   Each Byte has a value according this formula:<BR>
+   (TOC[i] / 256) * fileLenInBytes<BR>
+   So if song lasts eg. 240 sec. and you want to jump to 60. sec. (and file is 5 000 000 Bytes length)
+   you can use:<BR>
+   TOC[(60/240)*100] = TOC[25]<BR>
+   and corresponding Byte in file is then <B>approximately</B> at:<BR>
+   (TOC[25]/256) * 5000000<BR>
+   <BR>
+   If you want to trim VBR file you should also reconstruct Frames, Bytes and TOC properly.
+ </TD></TR>
+
+<TR><TD>&nbsp;&nbsp;</TD></TR>
+
+ <TR><TD VALIGN=top>152-155</TD><TD></TD><TD><B>VBR Scale</B><BR>
+   I dont know exactly system of storing of this values but this item probably doesnt have deeper meaning.
+ </TD></TR>
+</TABLE>
+
+<BR><BR>
+Complicated? Ya, that is.
+
+<BR><BR><BR><BR>
+<a name="Tag1"></a>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>TAGs</CENTER></B>
+</FONT><BR>
+<BR>
+TAG is name for data space in MP3 file where some text informations (song name, artist, album...) 
+can be stored.
+
+<BR><BR><BR><BR>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>TAG ver.1</CENTER></B>
+</FONT><BR>
+<BR>
+is old and simple. It takes <B>always</B> 128 Bytes at the very end of file (after the last 
+audio frame).<BR>
+<BR><BR>
+
+<FONT SIZE="4"><B>
+Structure:<BR>
+</B></FONT>
+
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>Bytes</TD><TD>&nbsp;&nbsp;</TD><TD>Length</TD><TD>&nbsp;&nbsp;</TD><TD>Content</TD></TR>
+ <TR><TD>0-2</TD><TD></TD><TD>3</TD><TD></TD><TD>Tag identifier. Must contain "TAG" string if Tag is valid.</TD></TR>
+ <TR><TD>3-32</TD><TD></TD><TD>30</TD><TD></TD><TD>Song Name</TD></TR>
+ <TR><TD>33-62</TD><TD></TD><TD>30</TD><TD></TD><TD>Artist</TD></TR>
+ <TR><TD>63-92</TD><TD></TD><TD>30</TD><TD></TD><TD>Album</TD></TR>
+ <TR><TD>93-96</TD><TD></TD><TD>4</TD><TD></TD><TD>Year</TD></TR>
+ <TR><TD>97-126</TD><TD></TD><TD>30</TD><TD></TD><TD>Comment</TD></TR>
+ <TR><TD>127</TD><TD></TD><TD>1</TD><TD></TD><TD>Genre</TD></TR>
+</TABLE>
+<BR>
+126. Byte can also be used as the number of song. Items should be padded with NULL (ASCII 0) or with
+a space (ASCII 32).<BR>
+<BR>
+Values for Genre are predefined, you can find them eg. in WinAmp. Only the most important ones:<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>22</TD><TD>&nbsp;&nbsp;</TD><TD>Death Metal</TD></TR>
+ <TR><TD>138</TD><TD></TD><TD>Black Metal</TD></TR>
+ <TR><TD>144</TD><TD></TD><TD>Thrash Metal</TD></TR>
+ <TR><TD>9</TD><TD></TD><TD>Metal</TD></TR>
+ <TR><TD>43</TD><TD></TD><TD>Punk</TD></TR>
+ <TR><TD>129</TD><TD></TD><TD>Hardcore</TD></TR>
+</TABLE>
+<BR>
+<B>Problems with TAG v1</B> are obvious: you can store only a few items (you have a bad luck for eg. country of
+an artist, used codec, author of lyric...) and there is only a limited space for items (you also have
+a bad luck if song name has more than 30 chars).<BR>
+But despite that is TAG v1 commonly used by most of "MP3 release" groups.
+
+<BR><BR><BR><BR>
+
+<a name="Tag2"></a>
+<FONT SIZE="5" COLOR=red>
+<B><CENTER>TAG ver.2</CENTER></B>
+</FONT><BR>
+<BR>
+is newer, bigger and uncut. And... much more complicated.<BR>
+Is placed at the very beginning of file (before all audio frames).<BR>
+<BR><BR>
+<FONT SIZE="4"><B>
+Structure:<BR>
+</B></FONT>
+<BR>
+TAG v2 contains of header and frames (dont mismatch it with audio frames and their headers!!!).<BR>
+<BR><BR>
+<FONT SIZE="3"><B>
+Header (10 Bytes)<BR>
+</B></FONT>
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>Bytes</TD><TD>&nbsp;&nbsp;</TD><TD>Content</TD></TR>
+ <TR><TD>0-2</TD><TD></TD><TD>TAG identifier. It contains of string "ID3"</TD></TR>
+ <TR><TD>3-4</TD><TD></TD><TD>TAG version. Can be eg. 03 00</TD></TR>
+ <TR><TD>5</TD><TD></TD><TD>Flags</TD></TR>
+ <TR><TD>6-9</TD><TD></TD><TD>Size of TAG</TD></TR>
+</TABLE>
+<BR>
+<B>Flags</B> Byte has this structure (in bits):<BR>
+abc00000<BR>
+where the first 3 bits indicate Unsynchronization, Extended header and Experimental indicator.<BR>
+Flags normally dont have special meaning, can be set to 00.<BR>
+<BR>
+<B>Size of TAG</B> is encoded into 4 Bytes. But not to be so easy, the most significant bit in each
+Byte is set to 0 and ignored. Only remaining 7 bits are used. The reason is to avoid mismatch with audio
+frame header which has the first synchro Byte FF).<BR>
+Eg. TAG len 257 is encoded as 00 00 02 01.<BR>
+Size of TAG doesnt contain header itself so total lenght of previous TAG is 257 + 10 Bytes.<BR>
+<BR><BR>
+<FONT SIZE="3"><B>
+Frames<BR>
+</B></FONT>
+<BR>
+Each frame is used for storing one information - eg. Artist or Album.<BR>
+Frame consists of header and body.<BR>
+<BR>
+<FONT SIZE="3"><B>
+Header(10 Bytes)<BR>
+</B></FONT>
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>Bytes</TD><TD>&nbsp;&nbsp;</TD><TD>Content</TD></TR>
+ <TR><TD>0-3</TD><TD></TD><TD>Frame identifier</TD></TR>
+ <TR><TD>4-7</TD><TD></TD><TD>Size</TD></TR>
+ <TR><TD>8-9</TD><TD></TD><TD>Flags</TD></TR>
+</TABLE>
+<BR>
+<B>Frame identifier</B> consist of four characters. There are many predefined values you can use.
+But eg. current version of WinAmp displays only these ones:<BR>
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>Iden.</TD><TD>&nbsp;&nbsp;</TD><TD>Description</TD></TR>
+ <TR><TD>TRCK</TD><TD></TD><TD>Track number</TD></TR>
+ <TR><TD>TENC</TD><TD></TD><TD>Encoded By</TD></TR>
+ <TR><TD>WXXX</TD><TD></TD><TD>URL</TD></TR>
+ <TR><TD>TCOP</TD><TD></TD><TD>Frame identifier</TD></TR>
+ <TR><TD>TOPE</TD><TD></TD><TD>Original Artist</TD></TR>
+ <TR><TD>TCOM</TD><TD></TD><TD>Composer</TD></TR>
+ <TR><TD>TCON</TD><TD></TD><TD>Genre</TD></TR>
+ <TR><TD>COMM</TD><TD></TD><TD>Comments</TD></TR>
+ <TR><TD>TYER</TD><TD></TD><TD>Year</TD></TR>
+ <TR><TD>TALB</TD><TD></TD><TD>Album</TD></TR>
+ <TR><TD>TPE1</TD><TD></TD><TD>Artist</TD></TR>
+ <TR><TD>TIT2</TD><TD></TD><TD>Song name</TD></TR>
+</TABLE>
+<BR>
+You can freely define you own frame, eg. with identifier "CUNT" but you cant expect thet some player
+will be able to diaplay that. Anyway you can store any information into MP3 file without limits.<BR>
+<BR>
+<B>Size</B> is stored from the most significant Byte to the least. It doesnt include frame header,
+so total length of frame is Size + 10.
+Warning: After the header always one Byte with value 00 follows and then begins frame body. Size 
+has to include this Byte.<BR>
+<BR>
+<B>Flags</B> in most cases are set to 00 00. But they have this structure (in bits):<BR>
+<BR>
+abc00000 ijk00000&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;//why they are not stored in one Byte???<BR>
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>Flag</TD><TD>&nbsp;&nbsp;</TD><TD>Description</TD></TR>
+ <TR><TD>a</TD><TD></TD><TD>TAG alter preservation</TD></TR>
+ <TR><TD>b</TD><TD></TD><TD>File alter preservation</TD></TR>
+ <TR><TD>c</TD><TD></TD><TD>Read only</TD></TR>
+ <TR><TD>i</TD><TD></TD><TD>Compression</TD></TR>
+ <TR><TD>j</TD><TD></TD><TD>Encryption</TD></TR>
+ <TR><TD>k</TD><TD></TD><TD>Grouping identity</TD></TR>
+</TABLE>
+<BR>
+Example of frame:<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>54</TD><TD>50</TD><TD>45</TD><TD>31</TD><TD>00</TD><TD>00</TD><TD>00</TD><TD>07</TD><TD>00</TD>
+ <TD>00</TD><TD>00</TD><TD>53</TD><TD>53</TD><TD>6C</TD><TD>61</TD><TD>79</TD><TD>65</TD><TD>72</TD></TR>
+ <TR><TD>T</TD><TD>P</TD><TD>E</TD><TD>1</TD><TD></TD><TD></TD><TD></TD><TD>7</TD><TD></TD>
+ <TD></TD><TD></TD><TD>S</TD><TD>l</TD><TD>a</TD><TD>y</TD><TD>e</TD><TD>r</TD></TR>
+</TABLE>
+<BR>
+To be even more complicated, some frames can have special structure. Eg. COMM (comments) aslo 
+contains language version which is not normally displayed:<BR>
+<BR>
+<TABLE style="font-family: Verdana,geneva,arial; font-size: 10pt; color: #CCCCCC"> 
+ <TR><TD>43</TD><TD>4F</TD><TD>4D</TD><TD>4D</TD><TD>00</TD><TD>00</TD><TD>00</TD><TD>0C</TD><TD>00</TD>
+ <TD>00</TD><TD>00</TD><TD>65</TD><TD>6E</TD><TD>67</TD><TD>00</TD><TD>63</TD><TD>6F</TD><TD>6D</TD>
+ <TD>6D</TD><TD>65</TD><TD>6E</TD><TD>74</TD></TR>
+ <TR><TD>C</TD><TD>O</TD><TD>M</TD><TD>M</TD><TD></TD><TD></TD><TD></TD><TD>0C</TD><TD></TD>
+ <TD></TD><TD></TD><TD>e</TD><TD>n</TD><TD>g</TD><TD></TD><TD>c</TD><TD>o</TD><TD>m</TD>
+ <TD>m</TD><TD>e</TD><TD>n</TD><TD>t</TD></TR>
+</TABLE>
+<BR>
+For TCON (genre or style) you can use predefined values as in TAG v1. Then
+frame body looks like "(144)Thrash Metal" and the number corresponds with TAG v1. Or you can simply
+write your own style and then body is "Brutal Black" and is stored like normal frame body.<BR>
+<BR>
+Complete description of TAG v2 you can find <a href="http://id3.org/id3v2.3.0.txt">here</a>.
+
+
+<BR><BR><BR>
+ <B><CENTER><a href="default.htm">Home</a></CENTER></B>
+
+</FONT>
+
+<!--foot version=0-->
+
+
+
+<style type="text/css"> 
+.etarget {border:1px solid silver; padding:2px; color: black; font-size: 10px; text-align: left; font-family: arial, verdana; } 
+.etarget A { color: red; margin:0; padding:0; !important;} 
+.etarget BR { font-size:1px;} 
+.etarget .selfpromo { margin: 0; padding-bottom: 2px; border-bottom:1px solid #dedede; font-size: 12px; width:100%; padding-right:30px} 
+.etarget td.right { text-align:right; font-size:xx-small;  !important;} 
+.etarget .title {font-size: 14px; margin:0; padding:0; border:0px solid red; } 
+.etarget .description {margin:0; padding:0; border:0px solid green;} </style>
+<div id="etdiv"><script>document.write ('<'+'script src="http://search.etargetnet.com/generic/context_ad/context_ad.php?c=2&ref=193&q=' + escape(document.location) + '"></'+'script>');</script></div>
+<script src="http://tady.cz/e/js/etfixed.js"></script>
+<div style="font-size:8pt; color: red; font-family: arial;margin-top:50px; text-align:center"><b>
+ * <a href="http://www.kurzy.cz/" Title="Kurzy měn, kurzy akcií">Kurzy</a>
+ * <a href="http://www.zajezdy.cz/last-minute/" Title="Dovolená a Zájezdy - Last moment, poznávací, pobytové, na poslední chvíli">Last minute</a>
+ * <a href="http://www.letenky1.cz/" Title="Levné letenky online. Prodej letenek Praha - kamkoliv (Londýn, Brno, letenky do USA, ...)">Letenky</a> 
+ * <a href="http://www.kurzy.cz/" Title="Kurzy měn, koruna, kurzy akcií burza, zákony">Kurzy akcie a burza</a> 
+ * <a href="http://www.bydlet.cz/nemovitosti/" Title="Reality, nemovitosti a bydlení, prodej a koupě, domy a byty Praha, Brno">Reality a bydlení</a> 
+ * <a href="http://www.akcie-2000.cz/" Title="Akcie - Kurzy akcií, Burza Praha a RM-Systém Praha">Akcie</a>
+ * <a href="http://rejstrik-firem.kurzy.cz/rejstrik-firem/" Title="Rejstřík firem">Rejstřík</a> 
+ * <a href="http://www.incoczech.com/" Title="Hotel Prague - On line accommodation in Prague hotels.">Hotel Prague</a> 
+ * </b></div>
+
+
+
+<!--/foot--></BODY>
+</HTML>
+
+------------aCUs3jtZdH8E8opj3J3SUZ
+Content-Disposition: inline; filename=light.gif
+Content-Type: image/gif; name=light.gif
+Content-Location: http://www.multiweb.cz/twoinches/light.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODdhDwKQAfcAAAAAAIAAAACAAICAAAAAgIAAgACAgICAgMDcwKbK8Co/qio/
+/ypfACpfVSpfqipf/yp/ACp/VSp/qip//yqfACqfVSqfqiqf/yq/ACq/VSq/qiq/
+/yrfACrfVSrfqirf/yr/ACr/VSr/qir//1UAAFUAVVUAqlUA/1UfAFUfVVUfqlUf
+/1U/AFU/VVU/qlU//1VfAFVfVVVfqlVf/1V/AFV/VVV/qlV//1WfAFWfVVWfqlWf
+/1W/AFW/VVW/qlW//1XfAFXfVVXfqlXf/1X/AFX/VVX/qlX//38AAH8AVX8Aqn8A
+/38fAH8fVX8fqn8f/38/AH8/VX8/qn8//39fAH9fVX9fqn9f/39/AH9/VX9/qn9/
+/3+fAH+fVX+fqn+f/3+/AH+/VX+/qn+//3/fAH/fVX/fqn/f/3//AH//VX//qn//
+/6oAAKoAVaoAqqoA/6ofAKofVaofqqof/6o/AKo/Vao/qqo//6pfAKpfVapfqqpf
+/6p/AKp/Vap/qqp//6qfAKqfVaqfqqqf/6q/AKq/Vaq/qqq//6rfAKrfVarfqqrf
+/6r/AKr/Var/qqr//9QAANQAVdQAqtQA/9QfANQfVdQfqtQf/9Q/ANQ/VdQ/qtQ/
+/9RfANRfVdRfqtRf/9R/ANR/VdR/qtR//9SfANSfVdSfqtSf/9S/ANS/VdS/qtS/
+/9TfANTfVdTfqtTf/9T/ANT/VdT/qtT///8AVf8Aqv8fAP8fVf8fqv8f//8/AP8/
+Vf8/qv8///9fAP9fVf9fqv9f//9/AP9/Vf9/qv9///+fAP+fVf+fqv+f//+/AP+/
+Vf+/qv+////fAP/fVf/fqv/f////Vf//qszM///M/zP//2b//5n//8z//wB/AAB/
+VQB/qgB//wCfAACfVQCfqgCf/wC/AAC/VQC/qgC//wDfAADfVQDfqgDf/wD/VQD/
+qioAACoAVSoAqioA/yofACofVSofqiof/yo/ACo/Vf/78KCgpICAgP8AAAD/AP//
+AAAA//8A/wD//////ywAAAAADwKQAUAI/wABCBxIsKDBgwgTKlzIsKHDhxAjSpxI
+sWLEBhYP0osnMUbCevAyihxJsmRBBg0YbGQQAyPBAwDqRaRX0KPJmzgV0szJs6fP
+nyIbCGUAYCdBoTZc0pNpVGg9lxKhAp1K1WeDkDwbtCQIT6ZCdlUzYi04lmzYs2jT
+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
+
+------------aCUs3jtZdH8E8opj3J3SUZ
+Content-Disposition: inline; filename=etfixed.js
+Content-Type: application/x-javascript; name=etfixed.js
+Content-Location: http://tady.cz/e/js/etfixed.js
+Content-Transfer-Encoding: Base64
+
+dmFyIGllID0gbmF2aWdhdG9yLnVzZXJBZ2VudC50b0xvd2VyQ2FzZSgpLmluZGV4
+T2YoIm1zaWUiKSAhPSAtMTsgDQp2YXIgZXRkaXYgPSBkb2N1bWVudC5nZXRFbGVt
+ZW50QnlJZCgnZXRkaXYnKQ0KdmFyIGV0d2lkdGggPSBldGRpdi5vZmZzZXRXaWR0
+aDsNCg0KaWYgKGllKSB7DQogIHdpbmRvdy5vbnNjcm9sbCA9IG15c2Nyb2xsOw0K
+ICB3aW5kb3cub25yZXNpemUgPSBteXNjcm9sbDsNCn07DQoNCg0KdmFyIGxtID0g
+JycrZG9jdW1lbnQubGFzdE1vZGlmaWVkDQp2YXIgZCA9IG5ldyBEYXRlKCk7IHZh
+ciBjdXJyX3llYXIgPSBkLmdldEZ1bGxZZWFyKCkNCmlmIChsbS5pbmRleE9mKCcn
+KyhjdXJyX3llYXItMSkpPDAgJiYgbG0uaW5kZXhPZignJysoY3Vycl95ZWFyKSk8
+MCAmJiBkb2N1bWVudC5ib2R5LmNsaWVudFdpZHRoPjMwMCAmJiAgZG9jdW1lbnQu
+Ym9keS5jbGllbnRIZWlnaHQ+MzAwKSB7DQogIHZhciBsb2MgPSAnJytkb2N1bWVu
+dC5sb2NhdGlvbg0KICBpZiAobG9jLmluZGV4T2YoJ3NkaHBlbGhyaW1vdicpPDAg
+KSB7DQoNCiAgLy92eWJyYW5lIHdlYnkNCg0KICBldGRpdi5vbm1vdXNlb3ZlciA9
+IGV0ZGl2b25tb3VzZW92ZXINCiAgZXRkaXYub25tb3VzZW91dCA9IGV0ZGl2b25t
+b3VzZW91dA0KICBldGRpdi5zdHlsZS5ib3R0b20gPSAnMXB4Jw0KICBldGRpdi5z
+dHlsZS5yaWdodCA9ICcxcHgnDQogIGV0ZGl2LnN0eWxlLmJhY2tncm91bmRDb2xv
+ciA9ICd3aGl0ZScNCiAgZXRkaXYuc3R5bGUuY29sb3IgPSAnYmxhY2snDQogIGV0
+ZGl2LnN0eWxlLnBhZGRpbmdMZWZ0ID0gJzVweCcNCiAgZXRkaXYuc3R5bGUud2lk
+dGggPSAnNTAwcHgnDQogIGlmIChpZSkgew0KICAgIGV0ZGl2LnN0eWxlLnBvc2l0
+aW9uID0gJ2Fic29sdXRlJw0KICAgIGV0ZGl2Lmluc2VydEFkamFjZW50SFRNTCgn
+YWZ0ZXJCZWdpbicsICc8aW1nIHN0eWxlPSJmbG9hdDpyaWdodDtjdXJzb3I6aGFu
+ZCIgc3JjPSJodHRwOi8vci5rZGUuY3ovaS9lZGl0b3IvZWRfZGVsZXRlLmdpZiIg
+Ym9yZGVyPSIwIiBvbmNsaWNrPSJyZXR1cm4gaGlkZWV0ZGl2KCkiPicpDQoNCi8v
+ICAgIGV0ZGl2Lmluc2VydEFkamFjZW50SFRNTCgnQWZ0ZXJFbmQnLCAnPGRpdiBp
+ZD0icG9tZXRkaXYiPiZuYnNwOzwvZGl2PicpDQovLyAgICB2YXIgcG9tZXRkaXYg
+PSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncG9tZXRkaXYnKQ0KLy8gICAgcG9t
+ZXRkaXYuc3R5bGUuaGVpZ2h0ID0gZXRkaXYub2Zmc2V0SGVpZ2h0DQogIH0gZWxz
+ZSB7DQogICAgZXRkaXYuc3R5bGUucG9zaXRpb24gPSAnZml4ZWQnDQoJCWV0ZGl2
+LmlubmVySFRNTCA9ICc8aW1nIHN0eWxlPSJ6LWluZGV4OjE7ZmxvYXQ6cmlnaHQ7
+Y3Vyc29yOmhhbmQiIHNyYz0iaHR0cDovL3Iua2RlLmN6L2kvZWRpdG9yL2VkX2Rl
+bGV0ZS5naWYiIGJvcmRlcj0iMCIgb25jbGljaz0icmV0dXJuIGhpZGVldGRpdigp
+Ij4nICsgZXRkaXYuaW5uZXJIVE1MDQoNCi8vICAgIGRvY3VtZW50LmJvZHkuaW5u
+ZXJIVE1MICs9ICc8ZGl2IGlkPSJwb21ldGRpdiIgc3R5bGU9ImhlaWdodDozMDAi
+PiZuYnNwOzwvZGl2Pic7DQoNCiAgfTsNCiAgZXRkaXZvbm1vdXNlb3V0KCk7DQog
+IC8vdnlicmFuZSB3ZWJ5IC1lbmQNCiAgfTsNCn07DQoNCg0KZnVuY3Rpb24gZXRk
+aXZvbm1vdXNlb3ZlcigpIHsgaWYgKGllKSBldGRpdi5zdHlsZS5maWx0ZXI9Jyc7
+IGVsc2UgZXRkaXYuc3R5bGUuTW96T3BhY2l0eT0nMSc7IH07DQpmdW5jdGlvbiBl
+dGRpdm9ubW91c2VvdXQoKSAgeyBpZiAoaWUpIGV0ZGl2LnN0eWxlLmZpbHRlcj0n
+YWxwaGEob3BhY2l0eT03MCknOyBlbHNlIGV0ZGl2LnN0eWxlLk1vek9wYWNpdHk9
+Jy43JzsgfTsNCg0KZnVuY3Rpb24gbXlzY3JvbGwoKSB7DQogIGlmIChpZSkgew0K
+ICAgIGV0ZGl2LnN0eWxlLnJpZ2h0ID0gJzFweCcNCiAgICBldGRpdi5zdHlsZS5i
+b3R0b20gPSAnYXV0bycNCiAgICBldGRpdi5zdHlsZS50b3AgPSBkb2N1bWVudC5i
+b2R5LnNjcm9sbFRvcCArIGRvY3VtZW50LmJvZHkuY2xpZW50SGVpZ2h0IC0gZXRk
+aXYub2Zmc2V0SGVpZ2h0IC0gNTsNCiAgfTsNCn0NCg0KZnVuY3Rpb24gaGlkZWV0
+ZGl2KCl7DQoJZXRkaXYuc3R5bGUudmlzaWJpbGl0eSA9ICdoaWRkZW4nDQp9DQo=
+
+------------aCUs3jtZdH8E8opj3J3SUZ--

@@ -1,0 +1,237 @@
+
+D:\Dropbox\workspace-python\pyReScene\test_files\bug_detected_as_being_different3>"C:\Program Files (x86)\PHP\php.exe" "D:\Dropbox\workspace-python\phpSrr\rescene.php" The.Closer.S04E10.Zeitbomben.German.WS.DVDRip.XviD-EXPiRED_nzbsauto.srr 
+Array
+(
+    [srrSize] => 3904
+    [appName] => pyReScene Usenet
+    [storedFiles] => Array
+        (
+            [exp-thecloserxvid-s04e10.nfo] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.nfo
+                    [fileOffset] => 66
+                    [fileSize] => 358
+                    [blockOffset] => 25
+                    [fileCrc] => A2FFD76C
+                )
+
+            [exp-thecloserxvid-s04e10.sfv] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.sfv
+                    [fileOffset] => 465
+                    [fileSize] => 741
+                    [blockOffset] => 424
+                    [fileCrc] => 9BCEB55F
+                )
+
+        )
+
+    [rarFiles] => Array
+        (
+            [exp-thecloserxvid-s04e10.rar] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.rar
+                    [fileSize] => 20000000
+                    [fileCrc] => 0430DD7A
+                    [offsetStartRar] => 1243
+                    [offsetEnd] => 1348
+                )
+
+            [exp-thecloserxvid-s04e10.r00] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r00
+                    [fileSize] => 20000000
+                    [fileCrc] => 231FA213
+                    [offsetStartRar] => 1385
+                    [offsetEnd] => 1490
+                )
+
+            [exp-thecloserxvid-s04e10.r01] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r01
+                    [fileSize] => 20000000
+                    [fileCrc] => 63DA9299
+                    [offsetStartRar] => 1527
+                    [offsetEnd] => 1632
+                )
+
+            [exp-thecloserxvid-s04e10.r02] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r02
+                    [fileSize] => 20000000
+                    [fileCrc] => BCF132DE
+                    [offsetStartRar] => 1669
+                    [offsetEnd] => 1774
+                )
+
+            [exp-thecloserxvid-s04e10.r03] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r03
+                    [fileSize] => 20000000
+                    [fileCrc] => D63CCE36
+                    [offsetStartRar] => 1811
+                    [offsetEnd] => 1916
+                )
+
+            [exp-thecloserxvid-s04e10.r04] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r04
+                    [fileSize] => 20000000
+                    [fileCrc] => F24AF233
+                    [offsetStartRar] => 1953
+                    [offsetEnd] => 2058
+                )
+
+            [exp-thecloserxvid-s04e10.r05] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r05
+                    [fileSize] => 20000000
+                    [fileCrc] => DF5BBAFE
+                    [offsetStartRar] => 2095
+                    [offsetEnd] => 2200
+                )
+
+            [exp-thecloserxvid-s04e10.r06] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r06
+                    [fileSize] => 20000000
+                    [fileCrc] => B26CCD27
+                    [offsetStartRar] => 2237
+                    [offsetEnd] => 2342
+                )
+
+            [exp-thecloserxvid-s04e10.r07] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r07
+                    [fileSize] => 20000000
+                    [fileCrc] => A19C55E2
+                    [offsetStartRar] => 2379
+                    [offsetEnd] => 2484
+                )
+
+            [exp-thecloserxvid-s04e10.r08] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r08
+                    [fileSize] => 20000000
+                    [fileCrc] => BF1D3B4A
+                    [offsetStartRar] => 2521
+                    [offsetEnd] => 2626
+                )
+
+            [exp-thecloserxvid-s04e10.r09] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r09
+                    [fileSize] => 20000000
+                    [fileCrc] => 60CC0250
+                    [offsetStartRar] => 2663
+                    [offsetEnd] => 2768
+                )
+
+            [exp-thecloserxvid-s04e10.r10] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r10
+                    [fileSize] => 20000000
+                    [fileCrc] => C6AA05EE
+                    [offsetStartRar] => 2805
+                    [offsetEnd] => 2910
+                )
+
+            [exp-thecloserxvid-s04e10.r11] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r11
+                    [fileSize] => 20000000
+                    [fileCrc] => 9D1AA227
+                    [offsetStartRar] => 2947
+                    [offsetEnd] => 3052
+                )
+
+            [exp-thecloserxvid-s04e10.r12] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r12
+                    [fileSize] => 20000000
+                    [fileCrc] => FC46CD33
+                    [offsetStartRar] => 3089
+                    [offsetEnd] => 3194
+                )
+
+            [exp-thecloserxvid-s04e10.r13] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r13
+                    [fileSize] => 20000000
+                    [fileCrc] => A4D7E64D
+                    [offsetStartRar] => 3231
+                    [offsetEnd] => 3336
+                )
+
+            [exp-thecloserxvid-s04e10.r14] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r14
+                    [fileSize] => 20000000
+                    [fileCrc] => 2987BE4D
+                    [offsetStartRar] => 3373
+                    [offsetEnd] => 3478
+                )
+
+            [exp-thecloserxvid-s04e10.r15] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r15
+                    [fileSize] => 20000000
+                    [fileCrc] => F9D309EC
+                    [offsetStartRar] => 3515
+                    [offsetEnd] => 3620
+                )
+
+            [exp-thecloserxvid-s04e10.r16] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r16
+                    [fileSize] => 20000000
+                    [fileCrc] => 3A631434
+                    [offsetStartRar] => 3657
+                    [offsetEnd] => 3762
+                )
+
+            [exp-thecloserxvid-s04e10.r17] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.r17
+                    [fileSize] => 6915531
+                    [fileCrc] => D3D5802E
+                    [offsetStartRar] => 3799
+                    [offsetEnd] => 3904
+                )
+
+        )
+
+    [archivedFiles] => Array
+        (
+            [exp-thecloserxvid-s04e10.avi] => Array
+                (
+                    [fileName] => exp-thecloserxvid-s04e10.avi
+                    [fileSize] => 366913536
+                    [fileTime] => 2009-10-05 05:34:46
+                    [compressionMethod] => 48
+                    [fileCrc] => 8753F8E6
+                )
+
+        )
+
+    [recovery] => 
+    [sfv] => Array
+        (
+            [comments] => Array
+                (
+                )
+
+            [files] => Array
+                (
+                )
+
+        )
+
+    [warnings] => Array
+        (
+        )
+
+    [compressed] => 
+)
+
+File processed in 0.047914028167725 seconds

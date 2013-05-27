@@ -1,0 +1,31 @@
+diff -ur '--exclude=*.dll' '--exclude=*.exe' '--exclude=build.sh' rescene/RarBlocks.cs rescene-drl/RarBlocks.cs
+--- rescene/RarBlocks.cs    2010-03-29 10:48:54.000000000 -0400
++++ rescene-drl/RarBlocks.cs    2011-06-23 22:55:46.000000000 -0400
+@@ -33,7 +33,7 @@
+~
+        protected BinaryReader reader;
+        protected BinaryWriter writer;
+-       protected Encoding encoding = Encoding.UTF8;
++       protected Encoding encoding = Encoding.GetEncoding(437);
+~
+        public ushort Crc { get; set; }
+        public byte RawType { get; set; }
+diff -ur '--exclude=*.dll' '--exclude=*.exe' '--exclude=build.sh' rescene/srr.cs rescene-drl/srr.cs
+--- rescene/srr.cs  2010-06-09 00:14:24.000000000 -0400
++++ rescene-drl/srr.cs  2011-06-23 22:58:16.000000000 -0400
+@@ -480,13 +480,14 @@
+                        if (fileData.PackedSize > 0)
+                        {
+                            // make sure we have the correct extracted file open.  if not, attempt to locate and open it
+-                           if (srcName != fileData.FileName)
++                           if (srcName != fileData.FileName.Replace('\\', Path.DirectorySeparatorChar))
+                            {
+                                srcName = fileData.FileName;
+                                runningCrc = Crc32.StartValue;
+                                if (srcfs != null)
+                                    srcfs.Close();
+~
++                               srcName = srcName.Replace('\\', Path.DirectorySeparatorChar);
+                                FileInfo srcInfo = new FileInfo(Path.Combine(inFolder.FullName, srcName));
+                                if (hints.ContainsKey(srcName.ToLower()))
+                                    srcInfo = new FileInfo(Path.Combine(inFolder.FullName, hints[srcName.ToLower()]));

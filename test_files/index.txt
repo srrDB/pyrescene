@@ -1,0 +1,26 @@
+rar a -m0 store_utf8_comment.rar Κείμενο\ στην\ ελληνική\ γλώσσα.txt little_file.txt empty_file.txt
+rar c m0 store_utf8_comment.rar
+Test comment.
+srr store_utf8_comment.rar 
+srr store_utf8_comment.srr -v -y > recreate.txt
+srr.exe utf8_filename_added.srr -p -s ./txt/
+\txt>srr.exe utf8_filename_added.srr -p -s ./"?e?µe?? st?? e??????? ???ssa.txt"
+Storing file: ?e?µe?? st?? e??????? ???ssa.txt
+
+rar a -m0 store_empty.rar empty_file.txt 
+srr store_empty.rar
+
+rar a -m0 store_little.rar little_file.txt 
+srr store_little.rar
+srr store_little -y -v > recreate.txt
+srr.exe store_little_srrfile_with_path.srr -p -s ./store_little/store_little.srr
+Storing file: store_little/store_little.srr
+
+rar a -m5 best_little.rar little_file.txt 
+srr best_little.rar 
+Processing file: best_little.rar
+Archive uses unsupported compression method: test_files/best_little.rar
+
+"c:\Program Files\WinRAR\Rar.exe" -m0 -v32k -vn a store_split_folder.rar ./txt/*.txt
+srr.exe store_split_folder.sfv
+
