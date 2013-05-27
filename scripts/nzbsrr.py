@@ -85,10 +85,8 @@ def main(options, args):
 					print(subject.encode('utf-8'))
 			else:
 				relname = relname.strip()
-				try:
-					relFileMapping[relname] += [srr] 
-				except:
-					relFileMapping[relname] = [srr]
+				relFileMapping.setdefault(relname,
+					[]).append(srr)
 				fileRelMapping[srr] = relname
 					
 				# show info while parsing
@@ -137,8 +135,9 @@ def main(options, args):
 		# try to rename all available files in the directory
 		# for single SRR files
 		for file in os.listdir(options.rename_dir):
-			if fileRelMapping.has_key(file):
-				bad = renameSrr(options.rename_dir, file, fileRelMapping[file])
+			releaseName = fileRelMapping.get(file)
+			if releaseName is not None:
+				bad = renameSrr(options.rename_dir, file, releaseName)
 				if bad:
 					failed.append(bad)
 			else:

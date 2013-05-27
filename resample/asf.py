@@ -49,7 +49,7 @@ S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 S_SHORT = struct.Struct('<H') # unsigned short: 2 bytes
 S_BYTE = struct.Struct('<B') # unsigned char: 1 byte
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
 class AsfReadMode(object):
 	WMV, Sample, SRS = list(range(3))

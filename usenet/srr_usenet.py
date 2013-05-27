@@ -760,9 +760,9 @@ class NNTPFile(io.IOBase):
 		# download in between segments if necessary
 		# +1: end segment needs to be grabbed too (is excluded in range())
 		for i in range(spart_nb, end_part + 1):
-			try: # do we already have it or not?
-				self.data[i]
-			except KeyError: # download the segment
+			# do we already have it or not?
+			if i not in self.data:
+				# download the segment
 				# not all the data for first segment RAR files
 				if (self.is_rar and spart_nb == 1):
 					amount = DEFAULT_LINES

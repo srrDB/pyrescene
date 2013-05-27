@@ -131,10 +131,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 			# in this case are 2 =ybegin parameters 'missing' too:
 			# =ybegin line=128 size=3566 name=k-9-vrs.sfv
 			# part= and total= (but these are optional according to the spec)
-			try:
-				ybegin['part']
-			except KeyError:
-				ybegin['part'] = 1
+			ybegin.setdefault('part', 1)
 		
 		#print(ybegin, ypart, yend)
 		# ({'line': '128', 'part': '1', 'name': 

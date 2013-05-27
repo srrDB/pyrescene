@@ -46,7 +46,7 @@ import tempfile
 
 from rescene import utility 
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
 ###############################################################################
 
@@ -1188,10 +1188,7 @@ class RarOldRecoveryBlock(RarBlock): # 0x78
 		out = super(RarOldRecoveryBlock, self).explain()
 		out += "+ADD_SIZE: " + self.explain_size(self.packed_size) +  \
 			"(the size of the packed recovery data)\n"
-		try:
-			version = RAR_VERSION[self.rar_version]
-		except KeyError:
-			version = self.rar_version
+		version = RAR_VERSION.get(self.rar_version, self.rar_version)
 		out += "+Rar version (1 byte): %s\n" % version
 		out += "+Recovery sectors: %i\n" % self.recovery_sectors
 		out += "+Data sectors: %i\n" % self.data_sectors
