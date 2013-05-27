@@ -1,3 +1,5 @@
+from __future__ import division
+
 import rar
 import os
 import zlib
@@ -61,7 +63,7 @@ def bruteforce():
     #            print("start: %d, end: %d" % (be, en))
     #            sys.exit()
     
-    #    percentage = (((begin + 1.0) / (size)) * 100)
+    #    percentage = (((begin + 1) / (size)) * 100)
     #    if round(percentage, 1) % 5 == 0:
     #        print("%d%% checked" % (round(percentage)))
     pass

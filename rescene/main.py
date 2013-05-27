@@ -28,7 +28,7 @@
 """Facade"""
 
 from __future__ import (with_statement, unicode_literals, print_function,
-	absolute_import)
+	absolute_import, division)
 
 from tempfile import mkstemp
 from glob import glob
@@ -1866,7 +1866,7 @@ class CompressedRarFile(io.IOBase):
 		# WinRAR prevents this if it's only one archive, but not with volumes
 		packed_size = get_full_packed_size(first_block, blocks)
 		if (first_block.unpacked_size < packed_size):
-			x = int(packed_size / 2 * 1.1)
+			x = int(packed_size // 2 * 1.1)
 			if x > 4000000000: # FAT32 support
 				x = 2000000000
 			self.good_rar.args.set_split(x)
@@ -1943,7 +1943,7 @@ class CompressedRarFile(io.IOBase):
 			amount = 0
 			# start with 2% increase of the ratio
 			for i in list(range(2, 100, 5)):
-				increase = (float(size_full) / size_compr) + (i / 100.0)
+				increase = (size_full / size_compr) + (i / 100)
 				amount = min(size_full, int(size_min * increase) + window_size)
 				
 				# copy bytes from source to destination

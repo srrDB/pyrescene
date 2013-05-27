@@ -37,7 +37,7 @@
 # define external public interface
 # __all__ = [] # dir(rar)
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 import io
 import struct
 import os
@@ -106,7 +106,7 @@ def _parse_ext_time(block, pos):
 	return pos
 
 def _parse_xtime(flag, data, pos, dostime = None):
-	unit = 10000000.0 # 100 ns units
+	unit = 10000000 # 100 ns units
 	if flag & 8:
 		if not dostime:
 			t = struct.Struct('<L').unpack_from(data, pos)[0] # long
