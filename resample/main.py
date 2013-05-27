@@ -677,7 +677,7 @@ def avi_profile_sample(avi_data): # FileData object
 					show_spinner(blockcount)
 				
 				track_number = c.stream_number
-				if not tracks.has_key(track_number):
+				if track_number not in tracks:
 					tracks[track_number] = TrackData()
 				
 				track = tracks[track_number]
@@ -917,7 +917,7 @@ def profile_mp4(mp4_data): # FileData object
 		if atype in (b"tkhd",):
 			# grab track id 
 			(track_id,) = BE_LONG.unpack_from(data, 12)
-			assert not tracks.has_key(track_id)
+			assert track_id not in tracks
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
 			current_track = tracks[track_id]
@@ -1186,7 +1186,7 @@ def profile_wmv(wmv_data): # FileData object
 			i = 16 + 16 + 8 + 4 + 4
 			(flags,) = S_SHORT.unpack_from(data, i)
 			track_id = flags & 0xF
-			assert not tracks.has_key(track_id)
+			assert track_id not in tracks
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
 			
@@ -1643,7 +1643,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 			
 		# grab track or create new track
 		track_number = rr.current_chunk.stream_number
-		if not tracks.has_key(track_number):
+		if track_number not in tracks:
 			tracks[track_number] = TrackData()
 		track = tracks[track_number]
 		track.track_number = track_number
@@ -1749,7 +1749,7 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 def _mkv_block_find(tracks, er, done):
 	# grab track or create new track
 	track_number = er.current_element.track_number
-	if not tracks.has_key(track_number):
+	if track_number not in tracks:
 		tracks[track_number] = TrackData()
 		tracks[track_number].track_number = track_number
 	track = tracks[track_number]
@@ -2029,7 +2029,7 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 				for payload in packet.payloads:
 					# grab track or create new track
 					track_number = payload.stream_number
-					if not tracks.has_key(track_number):
+					if track_number not in tracks:
 						tracks[track_number] = TrackData()
 					track = tracks[track_number]
 					track.track_number = track_number
@@ -2212,7 +2212,7 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 		
 		# grab track or create new track
 		track_number = rr.current_chunk.stream_number
-		if not tracks.has_key(track_number):
+		if track_number not in tracks:
 			tracks[track_number] = TrackData()
 			tracks[track_number].track_number = track_number
 		track = tracks[track_number]
@@ -2283,7 +2283,7 @@ def mkv_extract_sample_streams(tracks, movie):
 				er.move_to_child()
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
-			if not attachments.has_key(current_attachment):
+			if current_attachment not in attachments:
 				att = AttachmentData(current_attachment)
 				attachments[current_attachment] = att
 		elif er.element_type == EbmlElementType.AttachedFileData:
@@ -2415,7 +2415,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 				for payload in packet.payloads:
 					# grab track or create new track
 					track_number = payload.stream_number
-					if not tracks.has_key(track_number):
+					if track_number not in tracks:
 						tracks[track_number] = TrackData()
 						tracks[track_number].track_number = track_number
 					track = tracks[track_number]
