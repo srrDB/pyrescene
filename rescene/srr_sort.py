@@ -67,7 +67,7 @@ def check_repack(srr_file):
 	for block in RarReader(srr_file):
 		if block.rawtype == BlockType.SrrRarFile:
 			matchf = lambda keyword: keyword in block.file_name 
-			if len(filter(matchf, tmatch)):
+			if any(map(matchf, tmatch)):
 				return True
 	return False
 

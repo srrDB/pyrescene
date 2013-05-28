@@ -1616,7 +1616,7 @@ class RarArguments(object):
 		return int(self.threads[3:])
 	
 	def arglist(self):
-		args = filter(lambda x: x != '', 
+		args = list(filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
 			"-vn", # old style rar naming
@@ -1625,7 +1625,7 @@ class RarArguments(object):
 			"-idcd", # Disable messages: copyright string, "Done" string
 			"-vn", # old style volume naming scheme
 			self.split,
-			self.rar_archive])
+			self.rar_archive]))
 		if len(self.store_all_files):
 #			global working_temp_dir
 #			out = os.path.abspath(os.path.join(working_temp_dir, "all_files.txt"))
