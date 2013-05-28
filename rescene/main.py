@@ -1249,7 +1249,7 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 #			  message="Could not locate data file: %s" % src)
 		if auto_locate_renamed:
 			src = _auto_locate_renamed(block.file_name, 
-									   block.unpacked_size, in_folder)
+				block.unpacked_size, in_folder) or src
 		if not os.path.isfile(src):
 			raise FileNotFound("The file does not exist: %s." % src)
 		
