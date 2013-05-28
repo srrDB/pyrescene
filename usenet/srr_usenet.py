@@ -726,7 +726,7 @@ class NNTPFile(io.IOBase):
 			# we can go 6 bytes back (and forward) "without problem"
 			if self.new_server and amount == 7:
 				amount = 19
-			test_range = [0] + range(-1, -amount, -1) + range(1, amount)
+			test_range = [0] + list(range(-1, -amount, -1)) + list(range(1, amount))
 		
 			for hoffset in test_range:
 				# we do have a correct RAR data block?
