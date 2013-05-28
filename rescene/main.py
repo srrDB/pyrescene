@@ -50,16 +50,6 @@ import subprocess
 import multiprocessing
 from tempfile import mkdtemp
 
-try:
-	from numpy import bitwise_xor
-	have_numpy = True
-except ImportError:
-	have_numpy = False
-	if not "PyPy" in sys.version:
-		# PyPy is already as fast or faster than CPython with NumPy
-		print("NOTE: install NumPy to speed up the reconstruction of RARs")
-		print("      with a Recovery Record.")
-	
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
@@ -75,6 +65,17 @@ from rescene.utility import decodetext, encodeerrors
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behavior
 	range = xrange #@ReservedAssignment
+
+try:  # Python 3
+	from functools import partial
+	int_to_bytes_big = partial(int.to_bytes, byteorder="big")
+	int_from_bytes_big = partial(int.from_bytes, byteorder="big")
+except AttributeError:  # Python < 3
+	from binascii import unhexlify, hexlify
+	def int_to_bytes_big(value, length):
+		return unhexlify(format(value, "0{0}X".format(length * 2)))
+	def int_from_bytes_big(bytes):
+		return int(hexlify(bytes), 16)
 
 callbacks = []
 
@@ -1203,8 +1204,6 @@ def _write_recovery_record(block, rarfs):
 	current_sector = 0	
 	crc = [0] * (protected_sectors * 2)
 	rs = [0] * recovery_sectors # [0, 0, ..., 0]
-	for i in range(recovery_sectors):
-		rs[i] = bytearray(512)
 
 	rarfs.seek(0, os.SEEK_END) # move relative to end of file
 	rar_length = rarfs.tell()
@@ -1231,11 +1230,7 @@ def _write_recovery_record(block, rarfs):
 		current_sector += 1
 
 		# update the recovery sector parity data for this slice
-		if have_numpy:
-			rs[rs_slice] = bitwise_xor(rs[rs_slice], bytearray(sector))
-		else:
-			for i in range(512):
-				rs[rs_slice][i] ^= ord(sector[i:i + 1])
+		rs[rs_slice] ^= int_from_bytes_big(sector)
 		rs_slice = rs_slice + 1 if (rs_slice + 1) % recovery_sectors else 0
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows
@@ -1243,7 +1238,7 @@ def _write_recovery_record(block, rarfs):
 	rarfs.write(block.block_bytes())  # write the backed-up block header,
 	rarfs.write(bytearray(crc))	      # CRC data and
 	for sector in rs:                 # recovery sectors
-		rarfs.write(sector)
+		rarfs.write(int_to_bytes_big(sector, 512))
 
 def _locate_file(block, in_folder, hints, auto_locate_renamed):
 	"""
