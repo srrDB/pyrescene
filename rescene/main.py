@@ -1717,10 +1717,17 @@ def compressed_rar_file_factory(block, blocks, src,
 			#TODO: compress all at once and reuse first block
 			
 			# try to locate the file to archive too
-			followup_src = _locate_file(followup, 
-			               in_folder, hints, auto_locate_renamed)
+			try:
+				followup_src = _locate_file(followup, 
+				               in_folder, hints, auto_locate_renamed)
+			except FileNotFound:
+				if followup.unpacked_size == 0: # a directory or empty file
+					followup_src = ""
+				else:
+					raise
 			return CompressedRarFile(block, blocks, src, 
-									followup, followup_src, solid=True)
+										followup, followup_src, solid=True)
+			
 		if block.flags & block.SOLID:
 			# get first file from archive
 			if block != blocks[0]:
@@ -1739,8 +1746,11 @@ def compressed_rar_file_factory(block, blocks, src,
 		
 		nblock = next_block(block, blocks)
 		if nblock:
-			followup_src = _locate_file(nblock, 
+			try:
+				followup_src = _locate_file(nblock, 
 			                            in_folder, hints, auto_locate_renamed)
+			except FileNotFound:
+				followup_src = ""
 		else:
 			followup_src = "" 
 	
