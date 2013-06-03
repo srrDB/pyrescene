@@ -41,7 +41,8 @@ except ImportError:
 	
 import rescene
 from rescene.rar import RarReader
-from rescene.main import RETURNCODE 
+from rescene.main import RETURNCODE
+from rescene.unrar import locate_unrar
 
 def main(options, args):
 	input_dir = args[0]
@@ -66,43 +67,6 @@ def main(options, args):
 		print("Could not find installed UnRAR version.")
 		return 1
 	copy_license_file(output_dir)
-
-def locate_unrar():
-	"""locating installed unrar"""
-	if(os.name == "nt" and False):
-		try:
-			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
-			if not os.path.exists(unrar):
-				unrar = os.environ["ProgramW6432"] + "\\Unrar\\UnRAR.exe"
-				if not os.path.exists(unrar):
-					raise KeyError
-		except KeyError:
-			try:
-				unrar = os.environ["ProgramFiles(x86)"] + "\\WinRAR\\UnRAR.exe"
-				if not os.path.exists(unrar):
-					unrar = os.environ["ProgramFiles(x86)"] + "\\Unrar\\UnRAR.exe"
-					if not os.path.exists(unrar):
-						raise KeyError
-			except KeyError:
-				#TODO: try grabbing location from the registry
-				#http://rescene.wikidot.com/forum/t-653887/preprardir-py-bug
-				print("-----------------------------------------------")
-				print("Install WinRAR to use all the functionalities.")
-				print("Freeware 'UnRAR for Windows' is already enough.")
-				print("http://www.rarlab.com/rar_add.htm")
-				print("-----------------------------------------------")
-				unrar = "UnRAR.exe" 
-				
-		# define your own path to a program to unrar: (uncomment)
-		#unrar = "C:\Program Files\7z.exe"
-	else:
-		process = subprocess.Popen("which unrar", shell=True, bufsize=0,
-								stdout=subprocess.PIPE,
-								stdin=subprocess.PIPE,
-								stderr=subprocess.STDOUT)
-		unrar = process.communicate()[0]
-		
-	return unrar
 
 def copy_license_file(output_dir):
 	"""From WinRAR order.htm:
