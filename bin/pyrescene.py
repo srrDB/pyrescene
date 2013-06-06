@@ -66,6 +66,7 @@ from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound
 from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
+from rescene.unrar import is_unrar_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 
@@ -104,12 +105,28 @@ def get_sample_files(reldir):
 	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 
 	                get_files(reldir, "*.mp4") + get_files(reldir, "*.wmv"))
 	result = []
+	not_samples = []
 	for sample in sample_files:
 		# sample folder or 'sample' in the name
-		# or a musicvideo file (sfv with same name)
+		# or a musicvideo file (SFV with same name)
 		if ("sample" in sample.lower() or 
 		    os.path.exists(sample[:-4] + ".sfv")):
 			result.append(sample)
+		else:
+			not_samples.append(sample)
+			
+	# this is for music videos with multiple MKVs
+	# this way so we don't always have to read in the SFV files unnecessarily
+	if len(not_samples):
+		sfv_stored_files = []
+		sfv_files = get_files(reldir, "*.sfv")
+		for sfv in sfv_files:
+			for entry in parse_sfv_file(sfv)[0]:
+				sfv_stored_files.append(entry.file_name)
+		for nsample in not_samples:
+			if os.path.basename(nsample) in sfv_stored_files:
+				result.append(nsample)
+			
 	return result
 
 def get_music_files(reldir):
@@ -216,6 +233,9 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		wanted_sfvs.append(sfv)
 	return wanted_sfvs
 
+def get_unwanted_sfvs(allsfvs, wantedsfvs):
+	return list(set(allsfvs)-set(wantedsfvs))
+	
 def get_start_rar_files(sfv_list):
 	"""
 	Get the main first RAR files to check sample against.
@@ -230,6 +250,11 @@ def get_start_rar_files(sfv_list):
 	return wanted_rars
 
 def copy_to_working_dir(working_dir, release_dir, copy_file):
+	"""
+	working_dir: temporary directory with all the files to store in the SRR
+	release_dir: release folder with path
+	copy_file: file somewhere inside the release_dir
+	"""
 	path = os.path.relpath(copy_file, release_dir)
 	dest_file = os.path.join(working_dir, path)
 	
@@ -273,6 +298,31 @@ def is_storable_fix(release_name):
 			re.match(".*\.DVDR.Fix-.*", release_name) or
 			re.match(".*\.DVDR.REPACK.Fix-.*", release_name))
 	
+def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
+	"""
+	unrar: location to the unrar executable
+	sfv: the sfv file from the vobsubs
+	working_dir: our current working directory
+	"""
+	# make in between dirs
+	path = os.path.relpath(sfv, release_dir)
+	dest_file = os.path.join(working_dir, path)
+	try:
+		os.makedirs(os.path.dirname(dest_file))
+	except:
+		pass
+	dest_srr = dest_file[:-4] + ".srr"
+	
+	
+	# get first RAR from SFV file
+	
+	
+	# unpack RAR contents to temp folder
+	
+	
+	
+	return ""
+
 def generate_srr(reldir, working_dir, options):
 	assert os.listdir(working_dir) == []
 	print(reldir)
@@ -289,6 +339,7 @@ def generate_srr(reldir, working_dir, options):
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
+	extra_sfvs = get_unwanted_sfvs(sfvs, main_sfvs)
 	
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
@@ -432,6 +483,20 @@ def generate_srr(reldir, working_dir, options):
 		len(parse_sfv_file(main_sfvs[0])[0]) == 1):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
+	
+	if is_unrar_available():
+		unrar = locate_unrar()
+		for esfv in extra_sfvs:
+			new_srr = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+			if new_srr:
+				copied_files.append(new_srr)
+			
+		r = os.path.split(reldir)[1].lower()
+		if "subpack" in r or "subfix" in r:
+			for esfv in main_sfvs:
+				new_srr = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+				if new_srr:
+					copied_files.append(new_srr)
 
 	#TODO: TXT files for m2ts with crc?
 		

@@ -26,7 +26,6 @@
 
 import os
 import subprocess
-from awescript import unrar
 
 try:
 	# renamed to winreg in Python 3
@@ -95,7 +94,7 @@ def locate_unix():
 								stderr=subprocess.STDOUT)
 	return process.communicate()[0]
 
-def is_available():
+def is_unrar_available():
 	return os.path.isfile(os.path.abspath(locate_unrar()))
 
 if __name__ == '__main__':
