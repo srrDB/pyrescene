@@ -431,6 +431,7 @@ class _SrrFileNameBlock(RarBlock):
 		# 2 bytes for name length, then the name (unsigned short)
 		length = struct.unpack_from("<H", self._rawdata, self._p)[0]
 		self.file_name = self._rawdata[self._p+2:self._p+2+length]
+		self.file_name = self.file_name.decode("utf-8")
 		self._p += 2 + length
 	
 	def _pack_file_name(self, file_name):
@@ -498,6 +499,7 @@ class SrrHeaderBlock(RarBlock):
 								self._rawdata, self._p)
 				self.appname = self._rawdata[self._p+2:self._p+2+
 											appname_length[0]] # tuple
+				self.appname = self.appname.decode("utf-8")
 				self._p += 2 + appname_length[0]
 			else:
 				self.appname = "" # "No application name present."
@@ -514,11 +516,12 @@ class SrrHeaderBlock(RarBlock):
 			self.rawtype = 0x69
 			self.flags = 0
 			self.appname = appname
+			appname_data = appname.encode("utf-8")
 			if len(self.appname):
 				self.flags = self.SRR_APP_NAME_PRESENT
-				self._write_header(HEADER_LENGTH + 2 + len(self.appname))
-				self._rawdata += struct.pack("<H", len(self.appname))
-				self._rawdata += str(self.appname)
+				self._write_header(HEADER_LENGTH + 2 + len(appname_data))
+				self._rawdata += struct.pack("<H", len(appname_data))
+				self._rawdata += appname_data
 			else:
 				self._write_header(HEADER_LENGTH)
 				
@@ -535,7 +538,7 @@ class SrrHeaderBlock(RarBlock):
 	def explain(self):
 		out = super(SrrHeaderBlock, self).explain()
 		out += "+Application name length: " + self.explain_size(
-		                                      len(self.appname)) + "\n"
+		        len(self.appname.encode("utf-8"))) + "\n"
 		out += "+Application name: " + self.appname + "\n"
 		return out
 
@@ -662,7 +665,7 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 			out += "+ADD_SIZE: " + self.explain_size(self.file_size) +  \
 				"(the size of the stored file)" + "\n"
 		out += "+Stored file name length (2 bytes): " + self.explain_size(
-		                                                len(self.file_name)) + "\n"
+		        len(self.file_name.encode("utf-8"))) + "\n"
 		out += "+Stored file name: " + self.file_name + "\n"
 		return out
 	
@@ -726,7 +729,7 @@ class SrrRarFileBlock(_SrrFileNameBlock):
 	def explain(self):
 		out = super(SrrRarFileBlock, self).explain()
 		out += "+Rar name length (2 bytes): " + self.explain_size(
-		                                        len(self.file_name)) + "\n"
+		        len(self.file_name.encode("utf-8"))) + "\n"
 		out += "+Rar name: " + self.file_name + "\n"
 		return out
 	
@@ -789,7 +792,7 @@ class SrrOsoHashBlock(_SrrFileNameBlock):
 												self.file_size) + "\n"
 		out += "+OSO hash (8 bytes): " + self.oso_hash + "\n"
 		out += "+Name length (2 bytes): " + self.explain_size(
-		                                        len(self.file_name)) + "\n"
+		        len(self.file_name.encode("utf-8"))) + "\n"
 		out += "+File name: " + self.file_name + "\n"
 		return out
 	

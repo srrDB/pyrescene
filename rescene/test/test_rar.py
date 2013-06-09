@@ -223,11 +223,6 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 					   "store_utf8_comment", "utf8_filename_added.srr"))
 		sfb = [s for s in rr.read_all() 
 			   if isinstance(s, SrrStoredFileBlock)][0]
-		# checked in hex editor:
-		self.assertEqual(sfb.file_name.encode('hex'), 
-						 "ce9aceb5ceafcebcceb5cebdce" +
-						 "bf20cf83cf84ceb7cebd20ceb5cebbcebbceb7cebdce" +
-						 "b9cebaceae20ceb3cebbcf8ecf83cf83ceb12e747874")
 		self.assertEqual(sfb.file_name, "Κείμενο στην ελληνική γλώσσα.txt")
 
 	def test_srr_stored_file_write(self):
