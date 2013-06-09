@@ -24,6 +24,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+# Enable Unicode string literals by default because Python 3.2 does not
+# support the u"" syntax. However the "struct" module does not support
+# Unicode format strings until Python 3, so they are wrapped in str() calls.
+from __future__ import unicode_literals
+
 import unittest
 from rescene.rar import *
 
@@ -146,7 +151,7 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 		self.assertEqual(srrh.crc, struct.unpack_from(str("<H"), data, 0)[0])
 		self.assertEqual(srrh.rawtype, struct.unpack_from(str("<B"), data, 2)[0])
 		self.assertEqual(srrh.flags, struct.unpack_from(str("<H"), data, 3)[0])
-		self.assertEqual(srrh.header_size, struct.unpack_from("<H", data, 5)[0])
+		self.assertEqual(srrh.header_size, struct.unpack_from(str("<H"), data, 5)[0])
 		self.assertEqual(srrh.appname, "ReScene .NET Beta 11")
 		
 		# old C implementation causes issues because of minimal header
@@ -158,7 +163,7 @@ class TestSrrHeaderBlock(unittest.TestCase): # 0x69
 		self.assertEqual(srrh.crc, struct.unpack_from(str("<H"), data, 0)[0])
 		self.assertEqual(srrh.rawtype, struct.unpack_from(str("<B"), data, 2)[0])
 		self.assertEqual(srrh.flags, struct.unpack_from(str("<H"), data, 3)[0])
-		self.assertEqual(srrh.header_size, struct.unpack_from("<H", data, 5)[0])
+		self.assertEqual(srrh.header_size, struct.unpack_from(str("<H"), data, 5)[0])
 		self.assertEqual(srrh.appname, "")
 		
 		hblock = SrrHeaderBlock(appname="Application Name")
@@ -244,10 +249,9 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		# Unicode tests
 		sfb = SrrStoredFileBlock(file_name="Κείμενο στην ελληνική γλώσσα.txt",
 								 file_size=65)
-		# tests file name encoding
-		self.assertEqual(sfb.file_name, ("ce9aceb5ceafcebcceb5cebdce"
-			 "bf20cf83cf84ceb7cebd20ceb5cebbcebbceb7cebdce"
-			 "b9cebaceae20ceb3cebbcf8ecf83cf83ceb12e747874").decode('hex'))
+		# tests file name attribute
+		self.assertEqual(sfb.file_name,
+			"Κείμενο στην ελληνική γλώσσα.txt")
 		# tests full block (including the previous test)
 		data = ("6A 6A 6A 00 80 46 00 41 00 00 00 39 00 CE 9A CE B5 CE AF"
 		" CE BC CE B5 CE BD CE BF 20 CF 83 CF 84 CE B7 CE BD 20 CE B5 CE"
@@ -302,14 +306,14 @@ class TestRarBlocks(unittest.TestCase):
 		srrrfb = SrrRarFileBlock(data, 0)
 		self.assertEqual(srrrfb.crc, 0x7171)
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
-		self.assertEqual(srrrfb.flags, struct.unpack("<H", b"\x01\x00")[0])
+		self.assertEqual(srrrfb.flags, struct.unpack(str("<H"), b"\x01\x00")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty.rar")
 	
 	def test_srr_rar_file_write(self): #0x71
 		srrrfb = SrrRarFileBlock(file_name="store_empty.rar")
 		self.assertEqual(srrrfb.crc, 0x7171)
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
-		self.assertEqual(srrrfb.flags, struct.unpack("<H", b"\x01\x00")[0])
+		self.assertEqual(srrrfb.flags, struct.unpack(str("<H"), b"\x01\x00")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty.rar")
 		self.assertEqual(srrrfb.block_bytes(), b"\x71\x71\x71\x01\x00"
 						 b"\x18\x00\x0F\x00\x73\x74\x6F\x72\x65\x5F\x65"

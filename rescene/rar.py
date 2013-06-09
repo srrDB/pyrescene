@@ -432,6 +432,25 @@ class _SrrFileNameBlock(RarBlock):
 		length = struct.unpack_from("<H", self._rawdata, self._p)[0]
 		self.file_name = self._rawdata[self._p+2:self._p+2+length]
 		self._p += 2 + length
+	
+	def _pack_file_name(self, file_name):
+		"""Set attribute and return byte string ready for writing
+		
+		Sets "self.file_name", with any directory separators
+		converted to internal format. The return value is also
+		encoded with UTF-8 and prefixed with its length.
+		
+		Paths always use forward slashes as the directory separator.
+		File paths in RAR files use backward slashes."""
+		
+		if os.sep != "/" and os.sep in file_name:
+			file_name = file_name.replace(os.sep, "/")
+		self.file_name = file_name
+		
+		file_name = file_name.encode("utf-8")
+		
+		# the size in bytes (not the number of Unicode characters).
+		return struct.pack("<H", len(file_name)) + file_name
 
 class SrrHeaderBlock(RarBlock):
 	""" Represents marker/srr volume header block.
@@ -580,17 +599,16 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 					"SrrStoredFileBlock are called file_name and file_size.")
 
 	def _write_rawdata(self, file_name, file_size):
-		# Paths always use forward slashes as the directory separator
-		# File paths in RAR files use backward slashes.
-		if os.sep != "/" and os.sep in file_name:
-			file_name = file_name.replace(os.sep, "/")
-			
-		if not utility.is_good_srr(file_name): 
+		file_name_data = self._pack_file_name(file_name)
+		if not utility.is_good_srr(self.file_name): 
 			raise AttributeError("Illegal Windows character used " +
 			                     "somewhere in the filename/path.")
 		elif file_size < 0:
 			raise AttributeError("Negative file sizes do not exist.")
-		elif not 0 < len(file_name) < 0xFFF3:
+		
+		# full length header: basic header (7 bytes), add_size, name
+		length = HEADER_LENGTH + 4 + len(file_name_data)
+		if not self.file_name or length >= 0x10000:
 			raise AttributeError("Invalid file name length.")
 
 		self.crc = 0x6A6A
@@ -599,19 +617,15 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 		self.flags = self.LONG_BLOCK
 		# setting PATHS_SAVED (0x2) flag after construction doesn't do shit
 		# This detection can be done afterwards and we do not set the flag.
-		#if "/" in file_name:
+		#if "/" in self.file_name:
 		#	self.flags |= SrrStoredFileBlock.PATHS_SAVED
 		
-		self.file_name = file_name.encode("utf-8")
 		self.file_size = file_size # uint (2 bytes)
 		
-		# full length header: basic header (7 bytes), add_size, name length
-		# the size in bytes (not the number of Unicode characters).
-		self._write_header(HEADER_LENGTH + 4 + 2 + len(self.file_name))
+		self._write_header(length)
 		# ADD_SIZE field: unsigned integer (4 bytes)
 		self._rawdata += (struct.pack("<I", file_size))
-		self._rawdata += (struct.pack("<H", len(self.file_name))) # ushort 
-		self._rawdata += (self.file_name).encode('utf-8')
+		self._rawdata += file_name_data
 
 	def srr_data(self):
 		""" Returns the stored file. """
@@ -693,16 +707,11 @@ class SrrRarFileBlock(_SrrFileNameBlock):
 			# earlier beta versions of ReScene .NET did not remove it
 			# we always set this flag, even if there aren't RR
 			self.flags = self.RECOVERY_BLOCKS_REMOVED
-			self.file_name = file_name
-			# Paths always use forward slashes as the directory separator
-			# File paths in RAR files use backward slashes.
-			if os.sep != "/" and os.sep in file_name:
-				file_name = file_name.replace(os.sep, "/")
+			file_name_data = self._pack_file_name(file_name)
 	
 			# parameter: full length header
-			self._write_header(HEADER_LENGTH + 2 + len(file_name))
-			self._rawdata += struct.pack("<H", len(file_name)) # ushort
-			self._rawdata += str(file_name)
+			self._write_header(HEADER_LENGTH + len(file_name_data))
+			self._rawdata += file_name_data
 			
 	def explain_flags(self):
 		out = super(SrrRarFileBlock, self).explain_flags()
@@ -762,16 +771,15 @@ class SrrOsoHashBlock(_SrrFileNameBlock):
 			
 			self.file_size = file_size
 			self.oso_hash = oso_hash 
-			self.file_name = file_name
+			file_name_data = self._pack_file_name(file_name)
 			
 			assert len(oso_hash) == 16
 		
 			# parameter: full length header
-			self._write_header(HEADER_LENGTH + 8 + 8 + 2 + len(file_name))
+			self._write_header(HEADER_LENGTH + 8 + 8 + len(file_name_data))
 			self._rawdata += struct.pack("<Q", self.file_size) # ulonglong
 			self._rawdata += struct.pack("<Q", int(self.oso_hash, 16))
-			self._rawdata += struct.pack("<H", len(file_name)) # ushort
-			self._rawdata += str(file_name)
+			self._rawdata += file_name_data
 		else:
 			raise AttributeError("Invalid values for the constructor.")
 			
