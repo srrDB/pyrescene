@@ -100,11 +100,8 @@ class SfvEntry(object):
 		# .part1.rar < .part2.rar, r99 < s00, 001 < 002
 		return self.file_name < other.file_name
 		
-	def __str__(self):
-		return self.file_name + " " + str(self.crc32)
-	
 	def __repr__(self):
-		return self.__str__()
+		return self.file_name + " " + str(self.crc32)
 	
 	def __eq__(self, other) : 
 		return self.__dict__ == other.__dict__

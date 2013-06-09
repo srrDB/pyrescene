@@ -1418,11 +1418,9 @@ class FileInfo(object):
 		self.orig_filename = ""
 		# use the same sorting used for the sfv entries
 		self.__lt__ = SfvEntry.__lt__
-	def __str__(self):
+	def __repr__(self): # if possible evaluable representation of an object
 		return (str(self.file_name) + " " + str(self.file_size)
 				+ " " + str(self.crc))
-	def __repr__(self): # if possible evaluable representation of an object
-		return self.__str__()
 
 ### Compressed RAR stuff ######################################################
 

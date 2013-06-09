@@ -111,7 +111,6 @@ class TestSfv(unittest.TestCase):
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)
 		
-		# test __str__ method
 		self.assertEqual(str(entries[0]), 'test.r00 aabb0099')
 		
 		# just supply the data
