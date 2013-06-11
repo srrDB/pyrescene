@@ -127,8 +127,7 @@ class TestRarStream(unittest.TestCase):
 	def test_error_archive_not_found(self):
 		# ArchiveNotFoundError: [Errno 2] No such file or directory: '/'
 		self.assertRaises(ArchiveNotFoundError, RarStream, "/")
-		#TODO: test in Linux
-		
+	
 	def test_error_compressed_rar(self):
 		compr = os.path.join(os.pardir, os.pardir, "test_files", 
 		                     "best_little", "best_little.rar")
