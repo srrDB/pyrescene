@@ -883,20 +883,17 @@ class NNTPFile(io.IOBase):
 		if (is_rar(self.name) and self._current_position == 0):
 #			print("Is RAR and reading from the start!")
 #			print(hexlify(self.data[1][0:6]).decode('ascii'))
-			size_before_magic = len(self.data[1])
-			if self.data[1][0:6] == "6172211a0700".decode('hex'):
-				# only part of the magic marker is detected
-				# add the known missing byte
-				self.data[1] = "R" + self.data[1]
-			elif self.data[1][0:5] == "72211a0700".decode('hex'):
-				self.data[1] = "Ra" + self.data[1]
-			elif self.data[1][0:4] == "211a0700".decode('hex'):
-				self.data[1] = "Rar" + self.data[1]
-			elif self.data[1][0:3] == "1a0700".decode('hex'):
-				self.data[1] = "Rar!" + self.data[1]
-			if size_before_magic != len(self.data[1]):
-				print("MAGIC2: Adding first missing RAR byte(s)!")
-				
+			marker = b"Rar!\x1a\x07\x00"
+			for missing in range(1, len(b"Rar!") + 1):
+				if self.data[1].startswith(marker[missing:]):
+					# Only part of the magic marker is
+					# detected. Add the known missing
+					# bytes.
+					self.data[1] = (marker[:missing] +
+						self.data[1])
+					print("MAGIC2: Adding first missing RAR byte(s)!")
+					break
+		
 		# MAGIC for all other cases (for RAR volumes with many files)
 		# we are probably reading a rar basic header block	
 		if (is_rar(self.name) and size == 7 and self._did_seek):
