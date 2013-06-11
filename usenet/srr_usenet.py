@@ -414,9 +414,7 @@ class NNTPFile(io.IOBase):
 										print(error)
 							# closes socket
 							return s.body_little(article_id, nb_lines)
-						except KeyboardInterrupt:
-							raise
-						except BaseException as error:
+						except Exception as error:
 							print(error)
 							print("Small article not on '%s'." % server[0])
 					except KeyboardInterrupt:
@@ -1157,9 +1155,7 @@ def create_srr(nzb_path, options):
 				                             and len(newc) > len(oldc)):
 					print("Using the better SFV file.")
 					uniqfile[index] = sfile
-			except KeyboardInterrupt:
-				raise
-			except BaseException as error:
+			except Exception as error:
 				print(error)
 				traceback.print_exc()
 	sfvs = uniqfile

@@ -36,9 +36,7 @@ def read_nzb(nzb_file):
 
 	try:
 		return parse(nzb_file)
-	except KeyboardInterrupt:
-		raise
-	except:
+	except Exception:
 		print("Parsing the nzb file failed. Trying to fix invalid XML.")
 		# Problem with the ampersand.
 		# newsmangler doesn't properly escape the & in the NZB
