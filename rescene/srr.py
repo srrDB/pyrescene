@@ -25,6 +25,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 import optparse
 import sys
 import os
@@ -69,7 +71,8 @@ class MessageThread(Thread):
 			if len(o.events):
 				for event in o.events:
 					if event.code in self.messages or self.all:
-						print(event.message)
+						print(event.message,
+							file=sys.stderr)
 				o.events = []
 			time.sleep(self.sleeptime) # in seconds
 		return
@@ -100,7 +103,7 @@ def display_info(srr_file):
 		print("Stored files:")
 		for sfile in info["stored_files"].values():
 			print("\t%9s  %s" % (sep(sfile.file_size), sfile.file_name))
-		print("")
+		print()
 		
 	if len(info["rar_files"]):
 		print("RAR files:")
@@ -110,26 +113,26 @@ def display_info(srr_file):
 								sfile.file_size))
 			except AttributeError: # No SFV file is used
 				print("\t%s %d" % (sfile.file_name, sfile.file_size))
-		print("")
+		print()
 		
 	if len(info["archived_files"]):
 		print("Archived files:")
 		for sfile in info["archived_files"].values():
 			print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
 								sfile.file_size))
-		print("")
+		print()
 		
 	if len(info["oso_hashes"]):
 		print("OpenSubtitles.org hashes:")
 		for (name, ohash, size) in info["oso_hashes"]:
 			print("\t%s %s %d" % (name, ohash, size))
-		print("")
+		print()
 		
 	if len(info["sfv_comments"]):
 		print("SFV comments:")
 		for sfvline in info["sfv_comments"]:
 			print("\t%s" % sfvline)
-		print("")
+		print()
 	
 def manage_srr(options, in_folder, infiles, working_dir):
 	out_folder = working_dir
@@ -181,7 +184,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 				result = "not extracted!"
 				status = 1
 			efile = efile[len(out_folder):]
-			print("%s: %s" % (efile, result))
+			print("%s: %s" % (efile, result), file=sys.stderr)
 		return status
 	elif options.store_files: # -s
 		mthread.set_messages([MsgCode.STORING])
@@ -207,14 +210,16 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		except (FileNotFound, RarNotFound):
 			mthread.done = True
 			mthread.join()
-			print(sys.exc_info()[1])
+			print(sys.exc_info()[1], file=sys.stderr)
 			return 1
 		except EmptyRepository:
 			mthread.done = True
 			mthread.join()
-			print("=> Failure trying to reconstruct compressed RAR archives.")
-			print("=> Use the -z switch to point to a directory with RAR executables.")
-			print("=> Create this directory by using the preprardir.py script.")
+			sys.stderr.write("""\
+=> Failure trying to reconstruct compressed RAR archives.
+=> Use the -z switch to point to a directory with RAR executables.
+=> Create this directory by using the preprardir.py script.
+""")
 			return 1
 
 def create_srr(options, infolder, infiles, working_dir):
@@ -243,23 +248,23 @@ def create_srr(options, infolder, infiles, working_dir):
 		else:
 			srr_name = os.path.join(out_folder, infiles[0][:-4] + ".srr")
 			
-#	print("SRR name: %s" % srr_name)
-#	print("infiles: %s" % infiles)
-#	print("infolder: %s" % infolder)
-#	print("store files: %s" % store_files)
+#	print("SRR name: %s" % srr_name, file=sys.stderr)
+#	print("infiles: %s" % infiles, file=sys.stderr)
+#	print("infolder: %s" % infolder, file=sys.stderr)
+#	print("store files: %s" % store_files, file=sys.stderr)
 	try:
 		rescene.create_srr(srr_name, infiles, infolder, 
 	                       store_files, save_paths, options.allow_compressed)
 		mthread.done = True
 		mthread.join()
-		print("SRR file successfully created.")
+		print("SRR file successfully created.", file=sys.stderr)
 	except (EnvironmentError, ValueError):
 		# Can not read basic block header
 		# ValueError: compressed SRR
 		mthread.done = True
 		mthread.join()
-		print(sys.exc_info()[1])
-		print("SRR creation failed. Aborting.")
+		print(sys.exc_info()[1], file=sys.stderr)
+		print("SRR creation failed. Aborting.", file=sys.stderr)
 		return 1
 
 def main(argv=None):
@@ -381,10 +386,12 @@ def main(argv=None):
 	rescene.main.can_overwrite = can_overwrite
 	
 	if options.allow_compressed:
-		print("*"*60)
-		print("WARNING: SRR files for compressed RARs are like SRS files:")
-		print("         you can never be sure they will reconstruct!")
-		print("*"*60)
+		print("*"*60, file=sys.stderr)
+		sys.stderr.write("""\
+WARNING: SRR files for compressed RARs are like SRS files:
+         you can never be sure they will reconstruct!
+""")
+		print("*"*60, file=sys.stderr)
 	
 	try:
 		mthread.start()
@@ -394,15 +401,15 @@ def main(argv=None):
 		for infile in infiles:
 			ext = infile[-4:]
 			if not os.path.exists(infile):
-				print(parser.format_help())
+				print(parser.format_help(), file=sys.stderr)
 				report_error(1, "Input file not found: %s\n" % infile)
 			elif ext != ".srr" and ext != ".sfv" and ext != ".rar":
-				print(parser.format_help())
+				print(parser.format_help(), file=sys.stderr)
 				report_error(1, "Input file type not recognized: %s\n" %
 							 infile)
 				
 		if not len(infiles):
-			print(parser.format_help())
+			print(parser.format_help(), file=sys.stderr)
 			report_error(1, "No input file(s) specified.\n")
 			
 		infolder = working_dir
@@ -414,8 +421,8 @@ def main(argv=None):
 		else:
 			parser.exit(create_srr(options, infolder, infiles, working_dir))
 	except KeyboardInterrupt:
-		print()
-		print("Ctrl+C pressed. Aborting.")
+		print(file=sys.stderr)
+		print("Ctrl+C pressed. Aborting.", file=sys.stderr)
 		parser.exit(130) # http://tldp.org/LDP/abs/html/exitcodes.html
 	except Exception:
 		traceback.print_exc()
