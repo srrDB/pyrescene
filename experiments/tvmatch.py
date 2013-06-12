@@ -1,5 +1,6 @@
 import re
 import unittest
+import sys
 
 def get_show_info(release_name):
 	
@@ -45,7 +46,8 @@ fullPattern = ""
 for pattern in patterns:
 	sep = "(.*" if fullPattern == "" else "|(.*"
 	fullPattern += sep + pattern + ".*)"
-print(fullPattern)
+if False:
+	print(fullPattern)
 
 def is_show(release_name):
 	return True and re.match(fullPattern, release_name)
@@ -126,8 +128,8 @@ nomatch = [
 # "24.1X01.12.00.AM_1.00.AM.AC3.iNTERNAL.DVDRip_WS_XviD-FoV",
 
 
-	
-print("Done!")
+if False:
+	print("Done!")
 
 """ original one Skalman^:
 if(preg_match("/(e[0-9][0-9])|(s[0-9][0-9])|([0-9][0-9]x[0-9][0-9])|
@@ -163,4 +165,7 @@ if __name__ == '__main__':
 	suites.append(unittest.TestLoader().loadTestsFromTestCase(TestAll))
 	alltests = unittest.TestSuite(suites)
 	
-	unittest.TextTestRunner(verbosity=2).run(alltests)
+	kw = dict()
+	if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
+		kw.update(buffer=True)
+	unittest.TextTestRunner(verbosity=2, **kw).run(alltests)
