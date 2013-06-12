@@ -1,2 +1,3 @@
 umlaut (original .NET implementation)
-Gfy <pyrescene@gmail.com>
+Gfy <pyrescene@gmail.com> (porting to Python + everything new)
+Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
