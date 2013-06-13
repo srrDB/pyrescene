@@ -410,13 +410,12 @@ class TestCreate(TmpDirSetup):
 
 	def test_compressed(self):
 		rar = os.path.join(self.compression, "best_little.rar")
-		dest = os.path.join(self.test_dir, "compression.srr")
+		dest = os.path.join(self.tdir, "compression.srr")
 #		self.assertRaises(ValueError, create_srr, dest, rar)
 #		self.assertEqual(MsgCode.FBLOCK, self.o.last_event().code)
-		create_srr(dest, rar, compressed=True)
+		self.assertTrue(create_srr(dest, rar, compressed=True))
 		#self._print_events()
 		self.assertEqual(MsgCode.BLOCK, self.o.last_event().code)
-		os.unlink(dest)
 
 def _copy(cfile, destination_dir):
 	"""Copies 'cfile' to 'destination_dir'. Returns path of new file.
@@ -496,7 +495,7 @@ class TestRebuild(TmpDirSetup):
 	
 	def test_compressed(self):
 		rar = os.path.join(self.compression, "best_little.rar")
-		dest = os.path.join(self.test_dir, "compression.srr")
+		dest = os.path.join(self.tdir, "compression.srr")
 		
 		
 
