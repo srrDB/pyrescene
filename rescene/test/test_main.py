@@ -117,14 +117,16 @@ class TestExtract(TmpDirSetup):
 		                        "store_little_srrfile_with_path_backslash.srr")
 		
 		extract_files(srr_file, self.tdir)
-		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		self.assertTrue(os.path.isfile(efile),
+			"{0!r} should be a file".format(efile))
 		self.assertEqual(self.o.last_event().code, MsgCode.MSG)
+		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		
 		extract_files(srr_file, self.tdir)
 		self.assertEqual(self.o.last_event().code, MsgCode.NO_OVERWRITE)
 		self.assertEqual(self.o.last_event().message[:15], 
 		                 "Overwrite operation aborted"[:15])
-		self.assertTrue(os.path.isfile(efile))
-		
+	
 	def test_extract_srr_utf8(self):
 		utf8 = "Κείμενο στην ελληνική γλώσσα.txt"
 		temputf = os.path.join(self.tdir, utf8)
