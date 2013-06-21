@@ -296,6 +296,12 @@ def create_srr(options, infolder, infiles, working_dir):
 	except (EnvironmentError, ValueError):
 		# Can not read basic block header
 		# ValueError: compressed SRR
+		# ValueError: The file is too small.
+		# make sure there is no broken SRR file
+		try:
+			os.unlink(srr_name)
+		except:
+			pass
 		mthread.done = True
 		mthread.join()
 		print(sys.exc_info()[1])
