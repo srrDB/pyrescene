@@ -785,9 +785,9 @@ def srs(files, options, cwdsolo):
             if os.path.isfile(folder+srs_file) and os.path.getsize(folder+srs_file) > 0:
                 print("SRS file exists, skipping %s" % srs_file)
                 code = 0
-                if options.debug:
-                    print("delete %s%s" % (folder,file))
-                else:
+                if options.delete_samples or options.delete_samples_force:
+                    if options.debug:
+                        print("delete %s%s" % (folder,file))
                     deleteFiles([folder+file], "Video Sample", None, False)
 
                 continue
