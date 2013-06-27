@@ -1895,13 +1895,10 @@ class CompressedRarFile(io.IOBase):
 		# link 'blocks' objects
 		
 		if not self.good_rar:
+			# the directory can still have the .r00,... files
 			try:
-				assert len(os.listdir(self.temp_dir)) == 0
-			except AssertionError:
-				print(os.listdir(self.temp_dir))
-				assert False
-			try:
-				os.rmdir(self.temp_dir)
+				#os.rmdir(self.temp_dir)
+				shutil.rmtree(self.temp_dir)
 			except:
 				print("Failure to remove temp dir: %s" % self.temp_dir)
 			raise RarNotFound("No good RAR version found.")
