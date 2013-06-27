@@ -1936,9 +1936,15 @@ class CompressedRarFile(io.IOBase):
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
 			
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
-		self.rarstream = RarStream(out, compressed=True, 
-			packed_file_name=os.path.basename(first_block.file_name))
-		
+		try:
+			self.rarstream = RarStream(out, compressed=True, 
+				packed_file_name=os.path.basename(first_block.file_name))
+		except AttributeError:
+			# -r parameter is used to find the file to compress
+			# that renamed file is inside the RAR
+			# we "don't know" the packed file name; try the first file
+			self.rarstream = RarStream(out, compressed=True)
+			
 		self.rarstream.seek(0, os.SEEK_END)
 		size = self.rarstream.tell()
 		self.rarstream.seek(0, os.SEEK_SET)
