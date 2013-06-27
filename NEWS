@@ -11,6 +11,7 @@ pyReScene 0.5 (2013-05-)
  * ReScene: provided -t folder does not need to be empty
  * ReScene: support for padding at the end of the RAR files
             Never.on.Sunday.1960.DVDRip.XviD-AEN and recent DAA releases
+ * ReScene: don't leave a broken SRR file when a 0-byte RAR file is encountered
  * ReScene: -r parameter to locate renamed files when using  -q, --verify
  * ReSample: FLAC and MP3 support: backing up tags to SRS file
              + AcoustID fingerprint and duration
@@ -25,6 +26,8 @@ pyReScene 0.5 (2013-05-)
  * pyReScene Auto: DVDx and DISCx subfolders added
  * pyReScene Auto: support for music releases
  * pyReScene Auto: stores complete RARs of small fix releases
+ * pyReScene Auto: support for music video releases with multiple files
+ * pyReScene Auto: --list-releases, --missing-nfos, --missing-samples
  * preprardir.py: bug with copying license file on Linux fixed
  * preprardir.py: Python 2.6 and Python 3 support
  * awescript.py: update to version 0.7 by gooober

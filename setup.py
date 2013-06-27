@@ -56,7 +56,7 @@ pyReScene consists of multiple related tools.
 
 # for creating Windows EXE files
 if 'py2exe' in sys.argv:
-	import py2exe
+	import py2exe #@UnresolvedImport
 	config_dict["options"] = {
 		'py2exe': {'bundle_files': 1,
 	               'optimize': 2,

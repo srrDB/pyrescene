@@ -63,10 +63,10 @@ except ImportError:
 import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
-from rescene.main import MsgCode, FileNotFound
+from rescene.main import MsgCode, FileNotFound, custom_popen
 from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
-from rescene.unrar import is_unrar_available, locate_unrar
+from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 
@@ -303,6 +303,8 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	unrar: location to the unrar executable
 	sfv: the sfv file from the vobsubs
 	working_dir: our current working directory
+	
+	return: list of SRR files to add to the main SRR
 	"""
 	# make in between dirs
 	path = os.path.relpath(sfv, release_dir)
@@ -311,26 +313,98 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		os.makedirs(os.path.dirname(dest_file))
 	except:
 		pass
-	dest_srr = dest_file[:-4] + ".srr"
+
+	idx_lang = os.path.join(dest_file[:-4], "languages.diz")
 	
+	# recursively create SRR and extract RARs
+	def extract_and_create_srr(folder, first_rars=None):
+		# find first RAR files in folder
+		if not first_rars:
+			first_rars = rescene.utility.first_rars(os.listdir(folder))
+			first_rars = [os.path.join(folder, x) for x in first_rars]
+			first_level = False
+		else:
+			first_level = True # RARS not somewhere in the temp folder
+		if not len(first_rars):
+			return []
+		if not os.path.isdir(folder):
+			os.mkdir(folder)
+		
+		result = []
+		
+		for fr in first_rars:
+			srr_files_to_store = []
+			
+			# extract archives
+			dest = os.path.join(folder, os.path.basename(fr)[:-4])
+			extract_rar(unrar, fr, dest)
+			
+			# search for idx files and store their language info
+			for efile in os.listdir(dest):
+				if efile[-4:].lower() == ".idx":
+					language_lines = []
+					with open(os.path.join(dest, efile), "r") as idx:
+						for line in idx:
+							if line.startswith("id: "):
+								language_lines.append(line)
+					with open(idx_lang, "a") as diz:
+						diz.write("# %s\n" % efile)
+						for line in language_lines:
+							diz.write(line)
+			
+			# recursive step for each of the archives
+			for srr in extract_and_create_srr(dest):
+				srr_files_to_store.append(srr)
+		
+			if first_level:
+				# at same level as SFV (in main SRR)
+				# not in extract folder to prevent possible collisions
+				srr = folder + ".srr"
+				#srr_files_to_store.append("languages.diz")
+			else:
+				srr = dest + ".srr"
+			# create SRRs and add SRRs from previous steps
+			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
+						save_paths=False, compressed=True, oso_hash=False)
+			result.append(srr)
+			
+		return result
 	
-	# get first RAR from SFV file
+	results = []
 	
+	# get first RARs from SFV file
+	first_rars = get_start_rar_files([sfv])
+	for sfile in extract_and_create_srr(dest_file[:-4], first_rars):
+		results.append(sfile)
+		
+	# add languages.diz to the first SRR file
+	if len(results):
+		rescene.add_stored_files(results[0], [idx_lang], save_paths=False)
 	
-	# unpack RAR contents to temp folder
-	
-	
-	
-	return ""
+	return results
+
+def extract_rar(unrar, rarfile, destination):
+	if not os.path.isdir(destination):
+		os.mkdir(destination)
+	extract = custom_popen([unrar, "e", "-ep", "-o+", rarfile, "*", destination])
+	extract.wait()
+			
+	if extract.returncode != 0:
+		print("Some unrar error occurred:")
+		if extract.stdout:
+			print(extract.stdout.read())
+		if extract.stderr:
+			print(extract.stderr.read())
 
 def generate_srr(reldir, working_dir, options):
 	assert os.listdir(working_dir) == []
 	print(reldir)
+	relname = os.path.split(reldir)[1]
 	if options.srr_in_reldir:
 		srr_directory = reldir
 	else:
 		srr_directory = options.output_dir
-	srr = os.path.join(srr_directory, os.path.split(reldir)[1] + ".srr")
+	srr = os.path.join(srr_directory, relname + ".srr")
 		
 	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
 	if options.always_no and os.path.exists(srr):
@@ -339,8 +413,12 @@ def generate_srr(reldir, working_dir, options):
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
+	# we still want to do subpacks
+	if (not len(main_sfvs) and 
+		("subpack" in relname.lower() or "subfix" in relname.lower())):
+		main_sfvs = sfvs
 	extra_sfvs = get_unwanted_sfvs(sfvs, main_sfvs)
-	
+		
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
@@ -484,19 +562,19 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
-	if is_unrar_available():
+	if unrar_is_available():
 		unrar = locate_unrar()
 		for esfv in extra_sfvs:
-			new_srr = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-			if new_srr:
-				copied_files.append(new_srr)
+			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+			for s in new_srrs:
+				copied_files.append(s)
 			
 		r = os.path.split(reldir)[1].lower()
 		if "subpack" in r or "subfix" in r:
 			for esfv in main_sfvs:
-				new_srr = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-				if new_srr:
-					copied_files.append(new_srr)
+				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+				for s in new_srrs:
+					copied_files.append(s)
 
 	#TODO: TXT files for m2ts with crc?
 		

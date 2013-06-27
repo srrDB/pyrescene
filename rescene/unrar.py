@@ -94,7 +94,7 @@ def locate_unix():
 								stderr=subprocess.STDOUT)
 	return process.communicate()[0]
 
-def is_unrar_available():
+def unrar_is_available():
 	return os.path.isfile(os.path.abspath(locate_unrar()))
 
 if __name__ == '__main__':
