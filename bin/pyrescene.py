@@ -52,8 +52,10 @@ import logging
 
 try:
 	import win32api
+	win32api_available = True
 except ImportError:
 	sys.exc_clear()
+	win32api_available = False
 
 try:
 	import _preamble
@@ -337,7 +339,9 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			
 			# extract archives
 			dest = os.path.join(folder, os.path.basename(fr)[:-4])
-			extract_rar(unrar, fr, dest)
+			success = extract_rar(unrar, fr, dest)
+			if not success: # probably too long paths issue
+				continue
 			
 			# search for idx files and store their language info
 			for efile in os.listdir(dest):
@@ -387,9 +391,17 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	return results
 
 def extract_rar(unrar, rarfile, destination):
-	if not os.path.isdir(destination):
-		os.mkdir(destination)
-	extract = custom_popen([unrar, "e", "-ep", "-o+", rarfile, "*", destination])
+	"""Returns a boolean wheter extraction was successful or not."""
+	mk_long_dir(destination)
+	if os.name == "nt" and win32api_available:
+		try:
+			destination = win32api.GetShortPathName(destination)
+		except:
+			#pywintypes.error: (3, 'GetShortPathName', 
+			#'Het systeem kan het opgegeven pad niet vinden.')
+			pass
+	extract = custom_popen([unrar, "e", "-ep", "-o+", 
+	                        rarfile, "*", destination])
 	extract.wait()
 			
 	if extract.returncode != 0:
@@ -398,9 +410,25 @@ def extract_rar(unrar, rarfile, destination):
 			print(extract.stdout.read())
 		if extract.stderr:
 			print(extract.stderr.read())
+		return False
+	return True
+			
+def mk_long_dir(destination):
+	if not os.path.isdir(destination):
+		try:
+			os.mkdir(destination)
+		except OSError:
+			# WindowsError: [Error 3]
+			try:
+				os.mkdir("\\\\?\\" + destination)
+			except OSError, e:
+				print(e)
 
 def generate_srr(reldir, working_dir, options):
-	assert os.listdir(working_dir) == []
+	if os.listdir(working_dir) != []:
+		# Can happen with PyPy and long dirs: create new working dir
+		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+		
 	print(reldir)
 	relname = os.path.split(reldir)[1]
 	if options.srr_in_reldir:
@@ -632,7 +660,12 @@ def generate_srr(reldir, working_dir, options):
 	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
 
-	empty_folder(working_dir)
+	try:
+		empty_folder(working_dir)
+	except OSError:
+		print("Could not empty temporary working directory:")
+		print(working_dir)
+		print("This is a know problem for PyPy users.")
 	
 	return True
 
@@ -934,12 +967,16 @@ def main(argv=None):
 		print("------------------------------------")
 				
 	# delete temporary working dir
-	shutil.rmtree(working_dir)
+	try:
+		shutil.rmtree(working_dir)
+	except OSError:
+		print("Could not empty temporary working directory!")
+		print(working_dir)
+		print("This is a know problem for PyPy users. (long paths issue)")
 	
 	# see if we need to eject a disk drive
 	if options.eject and os.name == "nt" and not aborted:
 		import ctypes
-		import winsound
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
@@ -947,7 +984,11 @@ def main(argv=None):
 			ctypes.windll.WINMM.mciSendStringW(
 				u"set ddrive door open", None, 0, None)
 		
-		winsound.Beep(1000, 500)
+		try:
+			import winsound #@UnresolvedImport
+			winsound.Beep(1000, 500)
+		except:
+			pass
 	elif options.eject and not aborted:
 		import subprocess
 		

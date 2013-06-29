@@ -42,6 +42,13 @@ import locale
 import os
 import shutil
 
+try:
+	import win32api
+	win32api_available = True
+except ImportError:
+	sys.exc_clear()
+	win32api_available = False
+
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
 
 def deprecated(func):
@@ -140,8 +147,12 @@ def parse_sfv_file(sfv_file):
 		sfv_data = sfv_file.read()
 	except AttributeError:
 		try:
-			with open(sfv_file, mode='rt') as fsock:
-				sfv_data = fsock.read()
+			try:
+				with open(sfv_file, mode='rt') as fsock:
+					sfv_data = fsock.read()
+			except IOError:
+				with open("\\\\?\\" + sfv_file, mode='rt') as fsock:
+					sfv_data = fsock.read()
 		except IOError:
 			sfv_data = sfv_file
 	parse(sfv_data)
@@ -238,13 +249,42 @@ def remove_spinner():
 	sys.stdout.write("\b"), # removes spinner
 	
 def empty_folder(folder_path):
+	if os.name == "nt" and win32api_available:
+		folder_path = win32api.GetShortPathName(folder_path)
 	for file_object in os.listdir(folder_path):
 		file_object_path = os.path.join(folder_path, file_object)
+		if os.name == "nt" and win32api_available:
+			file_object_path = win32api.GetShortPathName(file_object_path)
 		if os.path.isfile(file_object_path):
 			os.unlink(file_object_path)
 		else:
-			shutil.rmtree(file_object_path)
-	
+			try:
+				shutil.rmtree(file_object_path)
+			except OSError:
+				remove_folder(file_object_path)
+
+def remove_folder(path):
+	"""Recursively delete a directory tree."""
+	if os.name == "nt" and win32api_available:
+		path = win32api.GetShortPathName(path)
+	names = os.listdir(path)
+	for name in names:
+		fullname = os.path.join(path, name)
+		if os.path.isdir(fullname):
+			remove_folder(fullname)
+		else:
+			try:
+				os.remove(fullname)
+			except OSError:
+				try:
+					os.remove("\\\\?\\" + fullname)
+				except OSError: # it's a dir?
+					remove_folder(fullname)
+	try:
+		os.rmdir(path)
+	except OSError:
+		os.rmdir("\\\\?\\" + path)
+		
 ###############################################################################
 
 def diff_lists(one, two):
