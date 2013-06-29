@@ -374,8 +374,11 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	
 	# get first RARs from SFV file
 	first_rars = get_start_rar_files([sfv])
-	for sfile in extract_and_create_srr(dest_file[:-4], first_rars):
-		results.append(sfile)
+	if not len(first_rars) and os.path.isfile(sfv[:-4] + ".rar"): # bad SFV
+		first_rars = [sfv[:-4] + ".rar"]
+	if len(first_rars):
+		for sfile in extract_and_create_srr(dest_file[:-4], first_rars):
+			results.append(sfile)
 		
 	# add languages.diz to the first SRR file
 	if len(results):
@@ -576,7 +579,7 @@ def generate_srr(reldir, working_dir, options):
 				for s in new_srrs:
 					copied_files.append(s)
 
-	#TODO: TXT files for m2ts with crc?
+	#TODO: TXT files for m2ts/vob with crc and size?
 		
 	copied_sfvs = [] # SFVs in the working dir
 	for sfv in sfvs:

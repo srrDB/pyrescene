@@ -28,6 +28,7 @@ pyReScene 0.5 (2013-05-)
  * pyReScene Auto: stores complete RARs of small fix releases
  * pyReScene Auto: support for music video releases with multiple files
  * pyReScene Auto: --list-releases, --missing-nfos, --missing-samples
+ * pyReScene Auto: SRRs for vobsubs
  * preprardir.py: bug with copying license file on Linux fixed
  * preprardir.py: Python 2.6 and Python 3 support
  * awescript.py: update to version 0.7 by gooober
