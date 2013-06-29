@@ -347,6 +347,8 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			for efile in os.listdir(dest):
 				if efile[-4:].lower() == ".idx":
 					language_lines = []
+					if os.name == "nt" and win32api_available:
+						dest = win32api.GetShortPathName(dest)
 					with open(os.path.join(dest, efile), "r") as idx:
 						for line in idx:
 							if line.startswith("id: "):
