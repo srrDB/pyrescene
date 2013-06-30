@@ -316,7 +316,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	except:
 		pass
 
-	idx_lang = os.path.join(dest_file[:-4], "languages.diz")
+	idx_lang = os.path.join(working_dir, "languages.diz")
 	
 	# recursively create SRR and extract RARs
 	def extract_and_create_srr(folder, first_rars=None):
@@ -330,7 +330,13 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		if not len(first_rars):
 			return []
 		if not os.path.isdir(folder):
-			os.mkdir(folder)
+			head, tail =  os.path.split(folder)
+			if os.name == "nt" and win32api_available:
+				head = win32api.GetShortPathName(head)
+			try:
+				os.mkdir(os.path.join(head, tail))
+			except OSError:
+				pass
 		
 		result = []
 		
@@ -339,6 +345,27 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			
 			# extract archives
 			dest = os.path.join(folder, os.path.basename(fr)[:-4])
+			dest_long = dest
+			mk_long_dir(dest)
+			if os.name == "nt" and win32api_available:
+				try:
+					dest = win32api.GetShortPathName(dest)
+				except:
+					#pywintypes.error: (3, 'GetShortPathName', 
+					#'Het systeem kan het opgegeven pad niet vinden.')
+					head, tail =  os.path.split(dest)
+					try:
+						head = win32api.GetShortPathName(head)
+					except:
+						h, t =  os.path.split(head)
+						try:
+							h = win32api.GetShortPathName(h)
+						except:
+							# now we give up; bug in unrar: 
+							# it could overwrite main RAR files otherwise
+							continue
+						head = os.path.join(h, t)
+					dest = os.path.join(head, tail)
 			success = extract_rar(unrar, fr, dest)
 			if not success: # probably too long paths issue
 				continue
@@ -347,8 +374,6 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			for efile in os.listdir(dest):
 				if efile[-4:].lower() == ".idx":
 					language_lines = []
-					if os.name == "nt" and win32api_available:
-						dest = win32api.GetShortPathName(dest)
 					with open(os.path.join(dest, efile), "r") as idx:
 						for line in idx:
 							if line.startswith("id: "):
@@ -368,7 +393,14 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 				srr = folder + ".srr"
 				#srr_files_to_store.append("languages.diz")
 			else:
-				srr = dest + ".srr"
+				srr = dest_long + ".srr"
+			if os.name == "nt" and win32api_available:
+				head, tail =  os.path.split(srr)
+				try:
+					head = win32api.GetShortPathName(head)
+				except:
+					pass
+				srr = os.path.join(head, tail)
 			# create SRRs and add SRRs from previous steps
 			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
 						save_paths=False, compressed=True, oso_hash=False)
@@ -393,15 +425,11 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	return results
 
 def extract_rar(unrar, rarfile, destination):
-	"""Returns a boolean wheter extraction was successful or not."""
-	mk_long_dir(destination)
+	"""Returns a boolean whether extraction was successful or not."""
 	if os.name == "nt" and win32api_available:
-		try:
-			destination = win32api.GetShortPathName(destination)
-		except:
-			#pywintypes.error: (3, 'GetShortPathName', 
-			#'Het systeem kan het opgegeven pad niet vinden.')
-			pass
+		head, tail =  os.path.split(rarfile)
+		head = win32api.GetShortPathName(head)
+		rarfile = os.path.join(head, tail)
 	extract = custom_popen([unrar, "e", "-ep", "-o+", 
 	                        rarfile, "*", destination])
 	extract.wait()
