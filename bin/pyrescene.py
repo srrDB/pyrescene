@@ -623,19 +623,19 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
-	if unrar_is_available():
-		unrar = locate_unrar()
-		for esfv in extra_sfvs:
-			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-			for s in new_srrs:
-				copied_files.append(s)
-			
-		r = os.path.split(reldir)[1].lower()
-		if "subpack" in r or "subfix" in r:
-			for esfv in main_sfvs:
-				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-				for s in new_srrs:
-					copied_files.append(s)
+#	if unrar_is_available():
+#		unrar = locate_unrar()
+#		for esfv in extra_sfvs:
+#			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+#			for s in new_srrs:
+#				copied_files.append(s)
+#			
+#		r = os.path.split(reldir)[1].lower()
+#		if "subpack" in r or "subfix" in r:
+#			for esfv in main_sfvs:
+#				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+#				for s in new_srrs:
+#					copied_files.append(s)
 
 	#TODO: TXT files for m2ts/vob with crc and size?
 		
