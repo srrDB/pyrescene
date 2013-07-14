@@ -482,6 +482,8 @@ def create_srr(srr_name, infiles, in_folder="",
 		# STORE ARCHIVE BLOCKS
 		for rarfile in rarfiles:
 			if not os.path.isfile(rarfile):
+				# TODO: case sensitivity on Unix systems
+				# all lower in sfv and casings in RAR file names
 				_fire(code=MsgCode.FILE_NOT_FOUND,
 					  message="Referenced file not found: %s" % rarfile)
 				srr.close()	  
@@ -1636,6 +1638,8 @@ class RarArguments(object):
 		return False
 	
 	def thread_count(self):
+		if self.threads == "":
+			return 1 # so it won't crash here; see t-670586
 		return int(self.threads[3:])
 	
 	def arglist(self):
