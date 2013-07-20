@@ -180,7 +180,7 @@ def get_proof_files(reldir):
 			# RAR file must contain image file
 			for block in RarReader(proof):
 				if block.rawtype == BlockType.RarPackedFile:
-					if (block.file_name[-4:] in 
+					if (block.file_name[-4:].lower() in 
 						(".jpg", "jpeg", ".png", ".bmp", ".gif")):
 						result.append(proof)
 						break
@@ -188,7 +188,7 @@ def get_proof_files(reldir):
 
 def remove_unwanted_sfvs(sfv_list, release_dir):
 	"""
-	Remove SFVs from subs and music releases.
+	Remove SFVs from subs and certain rarred proof files.
 	"""
 	wanted_sfvs = []
 	for sfv in sfv_list:
@@ -215,6 +215,23 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			# Kellys.Heroes.1970.iNTERNAL.DVDRip.XviD-BELiAL/Codec/
 			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
 			continue
+		
+		if (pardir == "proof" or pardir == "proofs"):
+			# only if it's one RAR file containing an image
+			sfvfiles = rescene.utility.parse_sfv_file(sfv)[0]
+			if len(sfvfiles) == 1:
+				rar = os.path.join(os.path.dirname(sfv), sfvfiles[0].file_name)
+				if os.path.isfile(rar):
+					skip = False
+					for block in RarReader(rar):
+						if block.rawtype == BlockType.RarPackedFile:
+							if (block.file_name[-4:].lower() in 
+								(".jpg", "jpeg", ".png", ".bmp", ".gif")):
+								skip = True
+							else:
+								skip = False
+					if skip:
+						continue
 		
 		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
 			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
