@@ -389,7 +389,7 @@ def main(argv=None, no_exit=False):
 		if _DEBUG:
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-				sys.exc_info()[1])
+				str(sys.exc_info()[1]).strip('\n'))
 	except fpcalc.ExecutableNotFound:
 		pexit(3, str(sys.exc_info()[1]))
 	except AttributeError:

@@ -1321,8 +1321,11 @@ def flac_profile_sample(flac_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(flac_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def mp3_profile_sample(mp3_data): # FileData object
@@ -1390,8 +1393,11 @@ def mp3_profile_sample(mp3_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(mp3_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def avi_create_srs(tracks, sample_data, sample, srs, big_file):

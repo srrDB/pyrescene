@@ -161,9 +161,10 @@ class Mp3Reader(object):
 			
 		# in between is SRS or MP3 data
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
-		(sync,) = BE_SHORT.unpack(self._mp3_stream.read(2))
+		marker = self._mp3_stream.read(4)
+		(sync,) = BE_SHORT.unpack(marker[:2])
 		main_size = end_meta_data_offset - begin_main_content
-		if sync & 0xFFE0 == 0xFFE0:
+		if sync & 0xFFE0 == 0xFFE0 or marker == "RIFF":
 			mp3_data_block = Block(main_size, "MP3", begin_main_content)
 			self.blocks.append(mp3_data_block)
 		else: # SRS data blocks

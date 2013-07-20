@@ -1,3 +1,14 @@
+pyReScene 0.6
+=============
+
+ * pyReScene Auto: don't create SRR meta data for proof images in RAR
+ * ReSample: KeyError fixed for RIFF mp3
+
+pyReScene 0.5.1 (2013-07-14)
+===============
+
+ * "SRRs for vobsubs" is disabled due to a bug.
+
 pyReScene 0.5 (2013-07-14)
 =============
 
