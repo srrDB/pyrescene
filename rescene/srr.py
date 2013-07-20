@@ -312,7 +312,7 @@ def main(argv=None):
 	global parser
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog [input file list] [options]\n"
-	"To create a display file (.srr), use the .sfv file(s) accompanied" 
+	"To create a ReScene file (.srr), use the .sfv file(s) accompanied" 
 	" with the archives or pick the first .rar file(s).\n"
 	"All files referenced by the .sfv"
 	" must be in the same folder as the .sfv file.\n"
@@ -439,7 +439,7 @@ def main(argv=None):
 		
 		# check existence and type of the input files
 		for infile in infiles:
-			ext = infile[-4:]
+			ext = infile[-4:].lower()
 			if not os.path.exists(infile):
 				print(parser.format_help())
 				report_error(1, "Input file not found: %s\n" % infile)

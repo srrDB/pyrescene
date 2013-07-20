@@ -678,7 +678,7 @@ def generate_srr(reldir, working_dir, options):
 						to_remove.append(stored_file)
 						logging.critical("%s: SFV verification failed for %s."
 										% (reldir, srs_data.name))
-				except IOError:
+				except IOError: #TODO: supported, no? then remove this
 					logging.critical("%s: FLAC with ID3 tag: %s." % 
 						             (reldir, os.path.basename(stored_file)))
 					to_remove.append(stored_file)

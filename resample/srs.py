@@ -58,7 +58,7 @@ def main(argv=None, no_exit=False):
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
 		
 	"To create a ReSample file (SRS), pass in the sample file.\n"
-	"This can be an AVI, MKV, MP4 or WMV file.\n"
+	"This can be an AVI, MKV, MP4, WMV, MP3 or FLAC file.\n"
 	"	ex: srs sample.mkv -dd\n"
 	"To recreate a sample, pass in the SRS file and the full movie file\n"
 	"or the first file of a RAR set containing the full movie.\n"
