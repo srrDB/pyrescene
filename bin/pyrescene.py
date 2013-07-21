@@ -439,6 +439,10 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	if len(results):
 		rescene.add_stored_files(results[0], [idx_lang], save_paths=False)
 	
+	# hopefully the path of the root SRRs isn't too long anymore
+	if os.name == "nt" and win32api_available:
+		results = [win32api.GetLongPathName(x) for x in results]
+	
 	return results
 
 def extract_rar(unrar, rarfile, destination):
@@ -491,7 +495,7 @@ def generate_srr(reldir, working_dir, options):
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
-	# we still want to do subpacks
+	# we still want to do subpacks as main SRR
 	if (not len(main_sfvs) and 
 		("subpack" in relname.lower() or "subfix" in relname.lower())):
 		main_sfvs = sfvs
@@ -541,7 +545,7 @@ def generate_srr(reldir, working_dir, options):
 	for m3u in get_files(reldir, "*.m3u"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))		
 		
-	for proof in get_proof_files(reldir):
+	for proof in get_proof_files(reldir): #also does certain Proof RARs
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
@@ -640,19 +644,27 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
-#	if unrar_is_available():
-#		unrar = locate_unrar()
-#		for esfv in extra_sfvs:
-#			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-#			for s in new_srrs:
-#				copied_files.append(s)
-#			
-#		r = os.path.split(reldir)[1].lower()
-#		if "subpack" in r or "subfix" in r:
-#			for esfv in main_sfvs:
-#				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
-#				for s in new_srrs:
-#					copied_files.append(s)
+	if options.vobsub_srr and unrar_is_available():
+		unrar = locate_unrar()
+		for esfv in extra_sfvs:
+			# not for Proof RARs that are already stored inside the SRR
+			skip = False
+			for cfile in copied_files:
+				if cfile.endswith((os.path.basename(esfv)[:-3] + "rar")):
+					skip = True
+					break
+			if skip:
+				continue
+			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+			for s in new_srrs:
+				copied_files.append(s)
+			
+		r = os.path.split(reldir)[1].lower()
+		if "subpack" in r or "subfix" in r:
+			for esfv in main_sfvs:
+				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+				for s in new_srrs:
+					copied_files.append(s)
 
 	#TODO: TXT files for m2ts/vob with crc and size?
 		
@@ -841,6 +853,8 @@ def main(argv=None):
 	parser.add_option("-s", "--sample-verify",
 					action="store_true", dest="sample_verify",
 					help="verifies sample agains main movie files")
+	parser.add_option("-v", "--vobsub-srr", dest="vobsub_srr",
+					action="store_true", help="create SRRs for vobsubs")
 	parser.add_option("-o", "--output", dest="output_dir", metavar="DIR",
 					default=".",
 					help="<path>: Specify output file or directory path. "

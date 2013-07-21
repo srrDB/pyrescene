@@ -2,6 +2,7 @@ pyReScene 0.6
 =============
 
  * pyReScene Auto: don't create SRR meta data for proof images in RAR
+ * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
  * ReSample: KeyError fixed for RIFF mp3
 
 pyReScene 0.5.1 (2013-07-14)
@@ -21,7 +22,7 @@ pyReScene 0.5 (2013-07-14)
             (larger packed size than unpacked size)
  * ReScene: provided -t folder does not need to be empty
  * ReScene: support for padding at the end of the RAR files
-            Never.on.Sunday.1960.DVDRip.XviD-AEN and recent DAA releases
+            Never.on.Sunday.1960.DVDRip.XviD-AEN and recent DAA, Ltu releases
  * ReScene: don't leave a broken SRR file when a 0-byte RAR file is encountered
  * ReScene: -r parameter to locate renamed files when using  -q, --verify
  * ReSample: FLAC and MP3 support: backing up tags to SRS file
