@@ -638,9 +638,12 @@ def generate_srr(reldir, working_dir, options):
 			pass
 
 	# stores the main RARs of DVDR fixes
+	false_positives = [
+		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM"]
 	if (is_storable_fix(os.path.split(reldir)[1]) and 
 		len(main_sfvs) == 1 and len(main_rars) == 1 and 
-		len(parse_sfv_file(main_sfvs[0])[0]) == 1):
+		len(parse_sfv_file(main_sfvs[0])[0]) == 1 and
+		os.path.basename(reldir) not in false_positives):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
