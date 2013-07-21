@@ -4,6 +4,7 @@ pyReScene 0.6
  * pyReScene Auto: don't create SRR meta data for proof images in RAR
  * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
  * ReSample: KeyError fixed for RIFF mp3
+ * ReScene: SRR was stored in subfolder instead of output folder
 
 pyReScene 0.5.1 (2013-07-14)
 ===============

@@ -279,9 +279,10 @@ def create_srr(options, infolder, infiles, working_dir):
 	if not srr_name:
 		if options.parent: # -d
 			srr_name = os.path.join(out_folder, 
-			                        os.path.split(infolder)[-1] + ".srr")
+		                        os.path.split(infolder)[-1] + ".srr")
 		else:
-			srr_name = os.path.join(out_folder, infiles[0][:-4] + ".srr")
+			srr_name = os.path.join(out_folder, 
+								os.path.basename(infiles[0])[:-4] + ".srr")
 			
 #	print("SRR name: %s" % srr_name)
 #	print("infiles: %s" % infiles)
