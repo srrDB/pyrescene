@@ -717,7 +717,20 @@ def generate_srr(reldir, working_dir, options):
 					
 		for removed_file in to_remove:
 			copied_files.remove(removed_file)
-			
+	else:
+		# put vobsub SRRs and proof RARs above their SFV file in the list
+		to_move = []
+		for cfile in copied_files:
+			if (cfile[-4:].lower() in (".srr", ".rar") and
+				cfile[:-4].lower() + ".sfv" in 
+				[x.lower() for x in copied_files]):
+				to_move.append(cfile)
+		for move in to_move:
+			copied_files.remove(move)
+			index = [x.lower() for x in copied_files
+			        ].index(move[:-4].lower() + ".sfv")
+			copied_files.insert(index, move)
+
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
