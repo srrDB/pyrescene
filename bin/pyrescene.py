@@ -511,7 +511,10 @@ def generate_srr(reldir, working_dir, options):
 				return False
 		except IOError:
 			print("Read error. DVD disk unreadable? Try again!")
-			os.unlink(srr)
+			try:
+				os.unlink(srr)
+			except OSError:
+				pass
 			return False
 		except KeyboardInterrupt, e:
 			if e.message != "DONT_DELETE":
@@ -639,7 +642,8 @@ def generate_srr(reldir, working_dir, options):
 
 	# stores the main RARs of DVDR fixes
 	false_positives = [
-		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM"]
+		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM",
+		"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED"]
 	if (is_storable_fix(os.path.split(reldir)[1]) and 
 		len(main_sfvs) == 1 and len(main_rars) == 1 and 
 		len(parse_sfv_file(main_sfvs[0])[0]) == 1 and
