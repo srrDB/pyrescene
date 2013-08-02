@@ -3,7 +3,12 @@ pyReScene 0.6
 
  * pyReScene Auto: don't create SRR meta data for proof images in RAR
  * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
+ * pyReScene Auto: stored SRR and RAR files above their SFV in list
+ * pyReScene Auto: crash fixed when path of SRR to create was too long
  * ReSample: KeyError fixed for RIFF mp3
+ * ReSample: construct SRS for some bad MP3 files too + print warning
+ * ReSample: "OverflowError: Python int too large to convert to C long"
+             on a bad MP3 file fixed
  * ReScene: SRR was stored in subfolder instead of output folder
 
 pyReScene 0.5.1 (2013-07-14)
