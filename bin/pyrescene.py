@@ -522,6 +522,7 @@ def generate_srr(reldir, working_dir, options):
 			raise
 		except FileNotFound:
 			# rescene doesn't leave a half finished file
+			print(sys.exc_info()[1])
 			return False
 		except (ValueError, EnvironmentError):
 			# e.g. 0 byte RAR file
@@ -530,8 +531,10 @@ def generate_srr(reldir, working_dir, options):
 				os.unlink(srr)
 			except: # WindowsError
 				pass
+			print(sys.exc_info()[1])
 			return False
 	else:
+		print("No SFV files found.")
 		return False
 	
 	# remove all stored files so we can add them all in the right order again
@@ -1010,6 +1013,8 @@ def main(argv=None):
 				result = generate_srr(reldir, working_dir, options)
 				if not result:
 					missing.append(reldir)
+					logging.warning("%s: SRR could not be created." % 
+									release_dir)
 			else:
 				for release_dir in get_release_directories(reldir):
 					try:
