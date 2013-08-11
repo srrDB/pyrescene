@@ -1014,7 +1014,7 @@ def main(argv=None):
 				if not result:
 					missing.append(reldir)
 					logging.warning("%s: SRR could not be created." % 
-									release_dir)
+									reldir)
 			else:
 				for release_dir in get_release_directories(reldir):
 					try:
