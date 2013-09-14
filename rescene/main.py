@@ -1619,6 +1619,7 @@ class RarArguments(object):
 		self.set_solid_namesort(False)
 		self.threads = ""
 		self.split = ""
+		self.old_naming_flag = "-vn"
 		
 	def increase_thread_count(self):
 		if self.threads == "":
@@ -1646,11 +1647,10 @@ class RarArguments(object):
 		args = filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
-			"-vn", # old style rar naming
+			self.old_naming_flag, # old style volume naming scheme
 			"-o+", # Overwrite all
 			"-ep", # Exclude paths from names.
 			"-idcd", # Disable messages: copyright string, "Done" string
-			"-vn", # old style volume naming scheme
 			self.split,
 			self.rar_archive])
 		if len(self.store_all_files):
@@ -1702,6 +1702,9 @@ class RarArguments(object):
 		
 	def set_extra_files_after(self, file_list):
 		self.extra_files_after = file_list
+
+	def set_rar2_flags(self, rar2_detected):
+		self.old_naming_flag = "" if rar2_detected else "-vn"
 	
 def compressed_rar_file_factory(block, blocks, src,
 	                            in_folder, hints, auto_locate_renamed):
@@ -2120,6 +2123,7 @@ class CompressedRarFile(io.IOBase):
 			
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			_fire(MsgCode.MSG, message="Trying %s." % rar)
+			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
 				while(args.increase_thread_count()):
