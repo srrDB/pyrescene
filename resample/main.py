@@ -1115,7 +1115,7 @@ def profile_wmv(wmv_data): # FileData object
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				data = ar.read_data_part(start + i * psize, psize)
@@ -2400,7 +2400,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				# don't do unnecessary processing
@@ -2793,7 +2793,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				i = 16 + 8 + 16
 				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
-				psize = (o.osize - len(o.raw_header)) / total_data_packets
+				psize = (o.osize - len(o.raw_header)) // total_data_packets
 				rp_offsets = 0
 				start = o.start_pos + len(o.raw_header)
 				for i in range(total_data_packets):
