@@ -195,10 +195,13 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		sfv_name = os.path.basename(sfv)
 		if ("subs" in sfv_name.lower() or "vobsub" in sfv_name.lower() or
 			"subtitle" in sfv_name.lower()):
-			# false positive: the.substitute.4.vrs.cd1.rar 92341f72
+			# False positives: 
 			# The.Substitute.4.2001.Failure.Is.Not.An.Option.iNT.DVDRip.XVID-vRs
+			# the.substitute.4.vrs.cd1.rar 92341f72
+			# RV800-Subsync-(FORM001)-READNFO-VINYL-FLAC-2012-dL
+			# 00-rv800-subsync-(form001)-vinyl-flac-2012.sfv
 			if ("subs" in sfv_name.lower() and 
-				re.match(".*cd\d.*", sfv_name, re.IGNORECASE)):
+				re.match(".*(cd\d|flac).*", sfv_name, re.IGNORECASE)):
 				pass
 			else:
 				continue
