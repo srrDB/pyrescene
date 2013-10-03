@@ -1,0 +1,796 @@
+Content-Type: multipart/related; start=<op.mhtml.1345793793511.9eab166e1d6fb75c@192.168.0.177>; boundary=----------DhXrAqXxfnaCToEUNIgX0T
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/index.html
+Subject: =?utf-8?Q?srrDB?=
+MIME-Version: 1.0
+
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=index.html
+Content-Type: text/html; charset=ascii; name=index.html
+Content-ID: <op.mhtml.1345793793511.9eab166e1d6fb75c@192.168.0.177>
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/index.html
+Content-Transfer-Encoding: 8bit
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta content="rescene,srr files,srr database,nfo archive" name="keywords">
+<meta content="SrrDB: Without doubt the largest collection of ReScene and possibly also nfo files!" name="description">
+<meta content="en" http-equiv="content-language">
+<title>srrDB</title>
+<link href="favicon.ico" rel="icon" />
+<link href="style.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+/*
+squiddz' changes to style.css:
+	stopped all "p" being display:inline; - was there a reason for this?
+squiddz' changes to page:
+	is it html4 or xhtml?
+*/
+p {
+	margin-bottom: 5px;
+}
+div.cmd {
+	color: white;
+	background: black;
+	padding: 0px 5px;
+	border: 1px
+}
+div.command {
+	background-color:black;
+	color: #CCC;
+	display: inline-block;
+	width: 664px;
+	margin: 5px;
+	padding: 10px 15px ;
+	border-style: double;
+	border-color: white;
+	border-width: 3px;
+}
+code {
+	font-weight: bold;
+	white-space: pre;
+	font-family: monospace;
+}
+code.command {
+	padding: 0;
+	margin: 0;
+}
+</style>
+<body>
+
+<div id="site">
+	<div id="topBar" class="container">
+			<div class="sidebyside half">Welcome, <a href="http://www.srrdb.com/profile.php?uid=39">squiddz</a></div>&nbsp;<div class="sidebyside rightalign half"><a href="http://www.srrdb.com/inbox.php"><img alt="" src="m1.gif" height="12" width="16"></a> <a href="http://www.srrdb.com/settings.php"><img alt="" src="wrench.gif"></a> <a href="http://www.srrdb.com/logout.php"><img alt="" src="no.gif"></a></div>
+	</div>
+	<div id="top" class="container">
+		<div id="logo" class="sidebyside">
+			<h1><a href="http://www.srrdb.com/index.php">srrDB</a></h1></div>
+		<div id="topmenu" class="sidebyside">
+			<ul>
+				<li><a href="http://www.srrdb.com/index.php">Home</a></li>
+				<li><a href="http://www.srrdb.com/browse.php">Browse</a></li>
+				<li><a href="http://www.srrdb.com/upload.php">Upload</a></li>
+				<li><a href="http://www.srrdb.com/requests.php">Requests</a></li>
+			</ul>
+		</div>
+		<div id="topsearch" class="sidebyside rightalign">
+			<form action="http://www.srrdb.com/browse.php" method="get">
+				<p> <input id="search" name="q" type="text"></p>
+			</form></div>
+	</div>
+	<div id="main">
+		<div id="left">
+			<div class="container">
+				<ul>
+					<li><a href="http://www.srrdb.com/browse.php?confirmed=no">Unconfirmed uploads</a></li>
+					<li><a href="http://www.srrdb.com/adds.php">Unconfirmed adds</a> (0)</li>
+					<li><a href="http://www.srrdb.com/software.php">Software</a> (<a href="http://www.srrdb.com/faqs.php">FAQ</a>)</li>
+					<li><a href="#">Tutorial</a></li>
+					<li><hr></li>
+					<li><a href="http://www.srrdb.com/members.php">Members</a></li>
+					<li><hr></li>
+					<li><a href="http://www.srrdb.com/viewlog.php">View Log</a></li>
+					<li><a href="http://www.srrdb.com/stats.php">Stats</a></li>
+					<li><a href="http://www.srrdb.com/list.php">List search</a></li>
+				</ul>
+			</div>
+		</div>
+		<div id="right">
+			<div class="container">
+<h2>Tutorial: Introduction</h2>
+
+<p>The purpose of ReScene is to recreate or repack an extracted movie into its original RAR archived format.</p>
+
+<p>You might do this to re-seed a torrent containing rar-format files (x.rar, x.r00, x.part001.rar etc), from files you've already extracted, or for various other reasons. See <a href="http://scenelingo.wordpress.com/2008/08/16/the-rar-argument/">The RAR Argument</a> for a detailed discussion. Bear in mind, you can always <a href="http://scenelingo.wordpress.com/2012/04/22/play-rar/">play movies directly from RAR</a> anyway.</p>
+
+<p>Requirements:
+<br />
+# ReScene (downloaded <a href="http://www.srrdb.com/software.php">here</a>), with srr.exe either in the folder where the movie is, or in your system path.
+<br />
+# Basic knowledge of the command prompt (unless you use the <a href="http://www.srrdb.com/software.php">GUI</a>).
+</p>
+
+<p>ReScene works with both 'x264' and 'xvid' Scene releases (and theoretically with any file archived using m0 (store) compression.</p>
+
+<h2>Tutorial: ReScene: Recreating RARs from video file</h2>
+
+<p>Let's assume you have the file <code>Twilight.720p.BluRay.x264-SEPTiC.mkv</code>, but have foolishly deleted the original rar files.</p>
+			
+<p>Now you want to repack it into those archives it came in.</p>
+
+<p><strong>[1]</strong> Grab the <code>.srr</code> file by searching the release name in the database on <a href="http://www.srrdb.com">srrDB</a>, and put it in the same directory as the film.</p>
+
+<p><strong>[2]</strong> Open command prompt, and navigate to the folder containing the files.</p>
+<div class="command">
+<code>C:\Users\Fanboy>U:
+
+U:\>cd FILMS
+
+U:\FILMS>
+</code>
+</div>
+<p>Tip: If you navigate to the desired folder in explorer, and hold Ctrl+Shift while right-clicking, you can 'open command window here' directly.</p>
+<p>Tip: You can paste text into the command line (useful!) using the right-click menu (but not Ctrl+V).</p>
+
+<p><strong>[3]</strong> List all files and details stored in the <code>.srr</code>, using the <code>-l</code> switch.</p>
+<div class="command">
+<code>U:\FILMS>srr Twilight.720p.BluRay.x264-SEPTiC.srr -l
+Creating Application:
+        ReScene .NET Beta 6
+
+Stored Files:
+        twilight-septic-sample.srs
+        twilight-septic.nfo
+        twilight-septic.sfv
+
+RAR Files:
+        twilight-septic.rar
+        twilight-septic.r00
+        twilight-septic.r01
+        ...
+        twilight-septic.r68
+        twilight-septic.r69
+
+Archived Files:
+        twilight-septic.mkv
+
+U:\FILMS>
+</code>
+</div>
+<p>Tip: If you get the "<code>'srr' is not recognized as an internal or external command</code>" error, you haven't put the srr.exe file either in the same folder, or in a folder on your system path.</p>
+
+<p>The original filename for the release (<code>twilight-septic.mkv</code>) is shown. You now have three options.</p>
+
+<p><strong>[4 - Option A]</strong> Rename the movie file to match the given release filename (i.e. <code>twilight-septic.mkv</code>).</p>
+<p>Note: The <code>-o</code> switch places the generated files in a directory with the name supplied.</p>
+<p>Note: The <code>-p</code> switch ensures the generated files are stored in their proper subfolders, such as "/Subs".</p>
+<div class="command">
+<code>U:\FILMS>srr Twilight.720p.BluRay.x264-SEPTiC.srr -o Twilight.720p.BluRay.x264-S
+EPTiC -p
+Re-creating stored file: twilight-septic-sample.srs
+Re-creating stored file: twilight-septic.nfo
+Re-creating stored file: twilight-septic.sfv
+Re-creating RAR file: twilight-septic.rar
+Re-creating RAR file: twilight-septic.r00
+Re-creating RAR file: twilight-septic.r01
+...
+Re-creating RAR file: twilight-septic.r68
+Re-creating RAR file: twilight-septic.r69
+
+Release successfully reconstructed.
+Please re-check files against the SFV to verify before using.
+
+U:\FILMS>
+</code>
+</div>
+
+<p><strong>[4 - Option B]</strong> Use the <code>-h</code> switch to manually specify the alternate movie filename.</p>
+<div class="command">
+<code>U:\FILMS>srr Twilight.720p.BluRay.x264-SEPTiC.srr -o Twilight.720p.BluRay.x264-S
+EPTiC -p -h twilight-septic.mkv:Twilight.720p.BluRay.x264-SEPTiC.mkv
+Re-creating stored file: twilight-septic-sample.srs
+Re-creating stored file: twilight-septic.nfo
+Re-creating stored file: twilight-septic.sfv
+Re-creating RAR file: twilight-septic.rar
+Re-creating RAR file: twilight-septic.r00
+Re-creating RAR file: twilight-septic.r01
+...
+Re-creating RAR file: twilight-septic.r68
+Re-creating RAR file: twilight-septic.r69
+
+Release successfully reconstructed.
+Please re-check files against the SFV to verify before using.
+
+U:\FILMS>
+</code>
+</div>
+
+<p><strong>[4 - Option C]</strong> Use the <code>-r</code> switch to attempt to guess the filename.</p>
+<div class="command">
+<code>U:\FILMS>srr Twilight.720p.BluRay.x264-SEPTiC.srr -o Twilight.720p.BluRay.x264-S
+EPTiC -p -r
+Re-creating stored file: twilight-septic-sample.srs
+Re-creating stored file: twilight-septic.nfo
+Re-creating stored file: twilight-septic.sfv
+Re-creating RAR file: twilight-septic.rar
+</code>
+<code class="error">Could not locate data file: U:\FILMS\twilight-septic.mkv
+Attempting to substitute file: U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC.mkv
+</code>
+<code>Re-creating RAR file: twilight-septic.r00
+Re-creating RAR file: twilight-septic.r01
+...
+Re-creating RAR file: twilight-septic.r68
+Re-creating RAR file: twilight-septic.r69
+
+Release successfully reconstructed.
+Please re-check files against the SFV to verify before using.
+
+U:\FILMS>
+</code>
+</div>
+
+<p>Tip: It's probably a good idea to keep the downloaded <code>.srr</code> file with the release in case you need it again.</p>
+
+<h2>Tutorial: ReSample: Recreating the Sample</h2>
+
+<p>Having recreated the original RARs, it might also be useful to recreate the sample. This can be achieved using either the rar files, or the complete movie file. This is achieved using the ReSample (SRS) tool, with a small <code>.srs</code> file. Effectively, the <code>.srs</code> file stores the location within the main video file from which the sample is taken, allowing it to be recreated by simply snipping it from the complete file.</p>
+
+<p>Generating the sample is very straightforward, and there are two options - using the original movie file, or using the RAR files.</p>
+
+<p><strong>[1]</strong> Extract ReSample (<code>srs.exe</code>) from the ReScene Pack, and move it to the current directory, or into your system path.</p>
+
+<p><strong>[2]</strong> Change directory to where the files are located. You will want to move the movie file here too.</p>
+<div class="command">
+<code>U:\FILMS>cd Twilight.720p.BluRay.x264-SEPTiC
+
+U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>
+</code>
+</div>
+
+<p><strong>[3 - Option A]</strong> ReSample using the original video file. (You might need to move it into the right folder.)</p>
+<div class="command">
+<code>U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>srs twilight-septic-sample.srs twilight-septic.mkv
+SRS Load Complete...          Elapsed Time: 0.02s
+Track Location Complete...    Elapsed Time: 7.22s
+Track Extraction Complete...  Elapsed Time: 8.55s
+Rebuild Complete...           Elapsed Time: 9.25s
+
+File Details:   Size           CRC
+                -------------  --------
+Expected    :      63,711,542  6375CE2F
+Actual      :      63,711,542  6375CE2F
+
+Successfully rebuilt sample: twilight-septic-sample.mkv
+
+U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>
+</code>
+</div>
+<p>Tip: The filename of the complete movie is irrelevant in this context.</p>
+
+<p><strong>[3 - Option B]</strong> ReSample using the (first) RAR file.</p>
+<div class="command">
+<code>U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>srs twilight-septic-sample.srs twiligh
+t-septic.rar
+SRS Load Complete...          Elapsed Time: 0.03s
+Track Location Complete...    Elapsed Time: 1.14s
+Track Extraction Complete...  Elapsed Time: 1.45s
+Rebuild Complete...           Elapsed Time: 1.95s
+
+File Details:   Size           CRC
+                -------------  --------
+Expected    :      63,711,542  6375CE2F
+Actual      :      63,711,542  6375CE2F
+
+Successfully rebuilt sample: twilight-septic-sample.mkv
+
+U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>
+</code>
+</div>
+
+<p>If required, move the new sample file into a 'Sample' subfolder.</p>
+
+<h2>Tutorial: Creating new Reconstruction files (SRRs)</h2>
+
+<p>If possible, find any releases that aren't in the database, and add them yourself. You can quickly check for these releases using the <a href="http://www.srrdb.com/list.php">List Search</a> feature!</p>
+
+<p>Creating a <code>.srr</code> file is very simple. You can use the RARs or the SFV file, but either way it's a one-step process!</p>
+
+<p><strong>[Option A]</strong> Using the SFV file</p>
+<div class="command">
+<code>U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>srr twilight-septic.sfv
+Storing file: twilight-septic.sfv
+Processing file: twilight-septic.rar
+Processing file: twilight-septic.r00
+Processing file: twilight-septic.r01
+...
+Processing file: twilight-septic.r68
+Processing file: twilight-septic.r69
+
+Reconstruction file successfully created: U:\FILMS\Twilight.720p.BluRay.x264-SEP
+TiC\twilight-septic.srr
+
+U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>
+</code>
+</div>
+
+<p><strong>[Option B]</strong> Using the RAR files (only if SFV is unavailable)</p>
+<div class="command">
+<code>U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>srr twilight-septic.rar
+Processing file: twilight-septic.rar
+Processing file: twilight-septic.r00
+Processing file: twilight-septic.r01
+...
+Processing file: twilight-septic.r68
+Processing file: twilight-septic.r69
+
+Reconstruction file successfully created: U:\FILMS\Twilight.720p.BluRay.x264-SEP
+TiC\twilight-septic.srr
+
+U:\FILMS\Twilight.720p.BluRay.x264-SEPTiC>
+</code>
+</div>
+
+
+<p>If you're feeling extra productive, why not hunt for some releases with <a href="http://www.srrdb.com/_listmissingnfo.php">missing NFOs</a> and upload them?</p>
+
+
+
+<h2>Footnotes</h2>
+<p>The ReScene project originated at <a href="http://rescene.info/">ReScene.info</a>.</p>
+
+
+<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+
+<h1>==== Old content ====</h1>
+<p>Or, how to eat your cake and have it too.</p>
+
+<p>The output will be:</p>
+<code class="command">srr Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr -o 
+Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE -p -h 
+fl-ffrotss-xvid.avi:Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.avi
+</code>
+<br>
+AKA, how to use/make .srr files. This is very useful if you've extracted .RAR files but then a reseed request comes along and you want to help reseed or perhaps even seed again and get your ratio up.<br>
+<br>
+Why? You have the data. You have the power. Use it to your advantage! Get those GBs moving!<br>
+<br>
+Many of us download Scene releases, not so many keep the original RAR files, NFOs, SFVs, etc.<br>
+<br>
+Have you ever thought to yourself - damn I have that release if only I've kept the .rar files I could help seed it?<br>
+<br>
+Look no further than <a href="http://www.rescene.info/">ReScene.info</a>. ReScene will take that .avi/.mkv/*.* file and reconstruct the original release files.<br>
+<br>
+<i>(HINT: Get <a href="http://www.rescene.info/download.htm">ReScene</a> before continuing).</i><br>
+<br>
+With a growing database of .srr files at <a href="http://xvid.rescene.info/">xvid.rescene.info</a> and <a href="http://x264.rescene.info/">x264.rescene.info</a>,<br>
+It can be a matter of seconds before you can seed that release again.<br>
+<br>
+If the .srr file was constructed using the new -p option it'll even recreate the folder structure for you (e.g. CD1 CD2). How awesome is that?<br>
+<br>
+<h2>Tutorial</h2><br>
+<br>
+Requirements:<br>
+1) Download ReScene, either have srr.exe in the folder where the movie is, or in your path.<br>
+2) Basic knowledge of the command prompt.<br>
+<br>
+Lets assume you have this movie:<br>
+Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.avi<br>
+<br>
+And that you've downloaded:<br>
+Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr<br>
+from: <a href="http://xvid.rescene.info/">xvid.rescene.info</a><br>
+<br>
+Open a command prompt window at the folder where those files are.<br>
+<img src="3586yhh.png"><br>
+First we'll run:<br>
+<br>
+srr Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr -l<br>
+<img src="ztx9gk.png"><br>
+<br>
+Notice where under Archived Files: it says fl-ffrotss-xvid.avi that is the original file name.<br>
+<br>
+We could Try:<br>
+<br>
+srr Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr -o Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE -p<br>
+<img src="108a2cx.png"><br>
+The -o tells srr to create the new files in the<br>
+Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE folder<br>
+<br>
+The -p , tells srr to recreate the folder structure, if it was preserved when the srr file was created, srr will do so.<br>
+<br>
+<br>
+You'll see that it extracted several files (nfo, sfv and srs) those are the originals that were preserved inside the .srr file, but you've got and error message it can't find fl-ffrotss-xvid.avi , thats because the original .avi file was renamed.<br>
+<br>
+Here we have a few options:<br>
+1: use -h fl-ffrotss-xvid.avi:Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.avi<br>
+to let srr know that the file was renamed.<br>
+<br>
+Add the above mentioned hint like so:<br>
+(answer yes when it ask to overwrite those files previously extracted)<br>
+<br>
+srr Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr -o Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE -p -h fl-ffrotss-xvid.avi:Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.avi<br>
+<img src="2pqvpu8.png"><br>
+<img src="14o61k3.png"><br>
+<br>
+2: rename the file to its original name.<br>
+<br>
+3: use the -r switch to have srr try and auto-detect the change in file name.<br>
+<br>
+Like so:<br>
+(answer yes when it ask to overwrite those files previously extracted)<br>
+<br>
+srr Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.srr -o Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE -p -r<br>
+<img src="24fg3tw.png"><br>
+<img src="20iv0p5.png"><br>
+<br>
+And viola, in a few seconds you have the original release folder with the original rar's just waiting to be seeded.<br>
+<br>
+On some releases, you'll notice there is an extra .srs file (e.g. fl-ffrotss-xvid-sample.srs).<br>
+<br>
+An .srs file could be used to reconstruct the sample.<br>
+<br>
+To do so you'd have to get ReSample: <a href="http://rescene.info/resample/index.htm">rescene.info/resample/index.htm</a> from <a href="http://rescene.info/resample/download.htm">rescene.info/resample/download.htm</a><br>
+Again we assume srs.exe is either in your path. Or in the folder with the .srs file.<br>
+<br>
+And:<br>
+<br>
+srs fl-ffrotss-xvid-sample.srs fl-ffrotss-xvid.rar<br>
+<br>
+Or:<br>
+<br>
+srs fl-ffrotss-xvid-sample.srs Fantastic.Four.Rise.Of.The.Silver.Surfer.2007.DVDRip.XviD-FLAiTE.avi<br>
+<img src="118j3ms.png"><br>
+And viola you also have the sample.<br>
+<br>
+<br>
+<br>
+There is also an (unofficial) gui (thanks korombos)<br>
+<img src="mw349v.jpg" width="398" height="476"><br>
+Download: <a href="http://rescene.info/download.htm">Unofficial GUI</a><br>
+<br>
+<b>And another site that gives movie information and links to srrs where available:<br>
+<a href="http://www.movie-info.org/browse">www.movie-info.org</a><br></b>
+<br>
+My own modest collection for daily tv shows and dvdrips (subs included where available) is hosted at:<br>
+<a href="http://www.mediafire.com/srrd">www.mediafire.com/srrd</a><br>
+It is not an attempt to compete but to complement the regular db since it takes time to update and can't allow subs to be included because of copyright issues.<br>
+<br>
+If you want to contribute or if you're intrested in some batch files I've compiled to make things easier, send a pm.<br>
+<br>
+And a user developed db site: <a href="http://www.srrdb.com/">srrDB</a><br>
+<br>
+Edit: (tutorial updated with the use of the new -r switch)<br>
+Edit: Someone put up a <a href="http://filesharefreak.com/2010/02/24/rescene-rebuild-extracted-scene-releases-into-rars">ReScene Tutorial on FileSharingFreak</a><br>
+Edit: <a href="http://rescene.info/download.htm">Unofficial GUI now hosted on the rescene site</a><br>
+Edit: www.movie-info.org closed down.<br>
+Edit: Added link to FiREScene<br>
+Edit: FiREScene is now srrDB updated link.<br>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+
+<div id="window-resizer-tooltip"><a href="http://www.srrdb.com/tutorial.php#" title="Edit settings" style="background-image: url(chrome-extension://kkelicaakdanhinjdeammmilcgefonfh/images/icon_19.png); "></a><span class="tooltipTitle">Window size: </span><span class="tooltipWidth" id="winWidth"></span> x <span class="tooltipHeight" id="winHeight"></span><br><span class="tooltipTitle">Viewport size: </span><span class="tooltipWidth" id="vpWidth"></span> x <span class="tooltipHeight" id="vpHeight"></span></div></body></html>
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=style.css
+Content-Type: text/css; charset=utf-8; name=style.css
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/style.css
+Content-Transfer-Encoding: 8bit
+
+﻿body {
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+	font-size: 11px;
+	padding: 0px;
+	margin: 0px;
+}
+a {
+	font-weight: bold;
+	color: #000000;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+ul {
+	display: table;
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+	width: 100%;
+}
+a img {
+	border: 0px;
+}
+form p {
+	display: inline;
+}
+table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px black solid;
+	background-color: #FFFFFF;
+}
+.highlight tr:hover {
+	background-color: #99CCFF;
+}
+td {
+	vertical-align: top;
+	border-bottom: 1px #000000 solid;
+}
+input, textarea {
+	border: 1px #000000 solid;
+}
+h1, h2, h3, h4, h5, h6 {
+	margin: 0px;
+}
+#logo h1 {
+	font-size: 22px;
+	margin-top: -2px;
+}
+.list {
+	border-bottom: 0px;
+}
+.first {
+	border-top: 1px #000000 solid;
+}
+.crcField {
+	text-align: right;
+	font-family: "Lucida Console", "Lucida Sans", "Lucida Sans Regular", "Lucida Grande", "Lucida Sans Unicode", sans-serif;
+}
+.container {
+	border: 2px #000000 solid;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	background-color: #CCCCCC;
+	padding: 7px;
+	margin-bottom: 6px;
+}
+.sidebyside {
+	vertical-align: middle;
+	float: left;
+	width: 289px;
+	height: 25px;
+}
+.half {
+	width: 441px;
+}
+.rightalign {
+	text-align: right;
+	clear: right;
+}
+.centeralign {
+	text-align: center;
+}
+.high {
+	background-color: #FF9999;
+}
+.midhigh {
+	background-color: #FF9966;
+}
+.medium {
+	background-color: #FFFF66;
+}
+.low {
+	background-color: #99FF99;
+}
+.error {
+	color: #FF0000;
+	font-weight: bold;
+}
+.oflow {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	position: absolute;
+	width: 570px;
+}
+.login {
+	font-size: 9px;
+	width: 70px;
+}
+#site {
+	width: 900px;
+	margin: 0px auto;
+	display: table;
+}
+#topBar {
+	padding: 5px;
+	border-top: 0px;
+	margin-top: -4px;
+	padding-top: 7px;
+}
+#search {
+	width: 300px;
+}
+#left {
+	width: 160px;
+	float: left;
+	margin-right: 6px;
+}
+#right {
+	width: 734px;
+	float: left;
+}
+#top {
+	background-image: url('gfx/logo.gif');
+	background-repeat: no-repeat;
+	background-position: 100px 13px;
+	height: 25px;
+}
+#main {
+	clear: left;
+}
+#logo {
+	width: 264px;
+}
+#topmenu {
+	padding-top: 7px;
+}
+#topmenu li {
+	float: left;
+	margin-left: 15px;
+	text-align: center;
+}
+#topsearch {
+	width: 328px;
+}
+/*details.php*/
+#warningsicon {
+	width: 9px; 
+	height: 9px;
+	float: left; 
+	background-image: url('gfx/plusminus.gif');
+	background-position: 9px 0px;
+}
+.extension {
+	background-image: url('gfx/extensions.png');
+	float: left;
+	width: 16px;
+	height: 16px;
+}
+.jpg {
+	background-position: -16px 0px;
+}
+.nfo {
+	background-position: -32px 0px;
+}
+.txt {
+	background-position: -48px 0px;
+}
+.sfv {
+	background-position: -64px 0px;
+}
+.png {
+	background-position: -80px 0px;
+}
+.srs {
+	background-position: -96px 0px;
+}
+.rar {
+	background-position: -128px 0px;
+}
+/*index.php*/
+#bars {
+	position: relative;
+	height: 120px;
+	top: 13px;
+	margin-bottom: 6px;
+}
+.bar {
+	width: 25px;
+	height: 13px;
+	position: absolute;
+	bottom: 13px;
+	background-color: #FF9966;
+	float: left;
+	text-align: center;
+}
+.bottombar {
+	background-color: #808080;
+	top: 107px;
+	bottom: 0px;
+	width: 29px;
+	color: #FFFFFF;
+}
+.bar:hover {
+	background-color: #99CCFF;
+	cursor: pointer;
+}
+/*icon stuff*/
+.text_16 {
+	float: left;
+}
+.text_16m, .icon_16 {
+	margin-left: 4px;
+	float: left;
+}
+.icon_16 {
+	width: 16px;
+	height: 16px;
+}
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=m1.gif
+Content-Type: image/gif; name=m1.gif
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/m1.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODlhEAAMAPcAAAAAAAEBAQICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsL
+CwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUFBUVFRYWFhcXFxgYGBkZGRoaGhsb
+GxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisr
+KywsLC0tLS4uLi8vLzAwMDExMTIyMjMzMzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7
+Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktL
+S0xMTE1NTU5OTk9PT1BQUFFRUVJSUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltb
+W1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtr
+a2xsbG1tbW5ubm9vb3BwcHFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7
+e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouL
+i4yMjI2NjY6Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampub
+m5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqur
+q6ysrK2tra6urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7
+u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvL
+y8zMzM3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb
+29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr
+6+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7
++/z8/P39/f7+/v///ywAAAAAEAAMAAAImADnCJQzkKAcgwLnxClmzZvDh98cfrNm
+LI6bbq2CddvokKOwVt3ctMmWzROoa9pIarsGyhPJNmusydQEiCHFQJuqyVyjZppP
+aZvcpErlBpM0adOkpTnj7FnTZ5nQnMHk9JnVM2aWad1qydLWrWbIHEN2bCwysmfR
+IiMzhpjbt3DhigkDrG7dYHaBBdsLTMyXv3/BgAFM+G9AADs=
+
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=wrench.gif
+Content-Type: image/gif; name=wrench.gif
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/wrench.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODlhEAAQANUAAAAAAP///97e3t3d3dzc3NjY2NbW1tXV1dDQ0M3NzczMzMjI
+yMfHx8PDw8LCwsHBwb6+vr29vbu7u7q6urm5ube3t7a2trW1tbS0tLKysq6urqys
+rKurq6ioqKSkpKKiop6enpubm5qampiYmJSUlJOTk5KSkpCQkI+Pj4uLi4eHh4OD
+g4GBgX5+fnp6enZ2dnV1dXJycnFxcW5ubmxsbGdnZ2ZmZmRkZGJiYv///wAAAAAA
+AAAAAAAAAAAAAAAAACH5BAEAADkALAAAAAAQABAAAAZ4wJxwOBQZRcSkcCQYCGpK
+IklAeMiiRJOgwBqWTFGUwHASilHRlABhMa5TSpVAkTgI5pJXciVYMP5/FTZJLQIN
+DQ4bNTY2OEkuAhEQER2DUTACExQTHpZKMQIYGBcfnkkzAhmqIFBYNAwaGiGmSjci
+HLNYRDiMukNBADs=
+
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=no.gif
+Content-Type: image/gif; name=no.gif
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/no.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODlhDQANAMQAAAAAAP///9g7O/FfX9RTU9hWVtdVVf1lZf5qat5eXuFjY+Zq
+av94eOhvb+t0dO13d/yVlf6mpva0tP/Jyf7Y2P///wAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAACH5BAEAABUALAAAAAANAA0AAAVZYCUCZAmIKEBNUwS950g9
+j+M0zcKcKm3ji4ViB5DYAjhBQDEkSXCNgJLBRDiDiykzYS0Kp4GEuCthBhjiMJcE
+MbjfhgLBWgE85IR8nj56HAaAAwcxKSYkKCEAOw==
+
+------------DhXrAqXxfnaCToEUNIgX0T
+Content-Disposition: inline; filename=favicon.htm
+Content-Type: text/html; charset=utf-8; name=favicon.htm
+Content-Location: http://dl.dropbox.com/u/788363/srrdb.com/v2/favicon.ico
+Content-Transfer-Encoding: 8bit
+
+
+<html>
+<head><title>Dropbox - 404</title>
+<link href="https://www.dropbox.com/static/css/main.css" rel="stylesheet" type="text/css">
+<link rel="shortcut icon" href="/static/images/favicon.ico"/>
+</head>
+<body style="background-color:#fff">
+<br/><br/>
+<div align="center">
+<table><tr><td width="600px">
+<center><img id="errorimage" src="/static/images/psychobox.png"/></center>
+<div id="errorbox">
+<h1>Error (404)</h1>We can't find the page you're looking for. Check out our <a href="https://www.dropbox.com/help">Help Center</a> and <a href="http://forums.dropbox.com">forums</a> for help, or head back to <a href="https://www.dropbox.com/home">home</a>.
+</div>
+</td></tr></table>
+</div>
+
+</body>
+</html>
+------------DhXrAqXxfnaCToEUNIgX0T--
