@@ -325,6 +325,9 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	unrar: location to the unrar executable
 	sfv: the sfv file from the vobsubs
 	working_dir: our current working directory
+		where the generated SRR file will be placed
+	release_dir: used to determine in which subfolders the resulting SRR
+		file should be placed in the working_dir
 	
 	return: list of SRR files to add to the main SRR
 	"""
@@ -451,7 +454,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 def extract_rar(unrar, rarfile, destination):
 	"""Returns a boolean whether extraction was successful or not."""
 	if os.name == "nt" and win32api_available:
-		head, tail =  os.path.split(rarfile)
+		head, tail = os.path.split(rarfile)
 		head = win32api.GetShortPathName(head)
 		rarfile = os.path.join(head, tail)
 	extract = custom_popen([unrar, "e", "-ep", "-o+", 
@@ -896,6 +899,8 @@ def main(argv=None):
 					help="reports which samples had issues")
 	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
 					metavar="DIRECTORY", help="Specify temporary directory.")
+	parser.add_option("--vobsubs", dest="vobsubs", metavar="VOBSUBS_SFV",
+					help="creates an SRR file for the vobsubs RARs only")
 	
 	listoptions = OptionGroup(parser, "List options")
 	parser.add_option_group(listoptions)
@@ -1000,6 +1005,20 @@ def main(argv=None):
 	else:
 		options.temp_dir = None
 	working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+	
+	if options.vobsubs:
+		unrar = locate_unrar()
+		sfv = os.path.abspath(options.vobsubs)
+		srr_list = create_srr_for_subs(unrar, sfv, working_dir,
+		                               os.path.dirname(sfv))	
+		for vobsub_srr in srr_list:
+			f = os.path.basename(vobsub_srr)
+			out = os.path.join(options.output_dir, f)
+			if os.path.isfile(out):
+				if can_overwrite(out):
+					shutil.copy(vobsub_srr, out)
+			else:
+				shutil.copy(vobsub_srr, out)
 	
 	drive_letters = []
 	aborted = False
