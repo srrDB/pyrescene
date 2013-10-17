@@ -496,6 +496,7 @@ def generate_srr(reldir, working_dir, options):
 		
 	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
 	if options.always_no and os.path.exists(srr):
+		logging.info("%s: Skipping. SRR already exists." % relname)
 		return False
 	
 	sfvs = get_files(reldir, "*.sfv")
