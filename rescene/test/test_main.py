@@ -421,7 +421,7 @@ def _copy(cfile, destination_dir):
 	Removes read-only tag to enable cleanup afterwards."""
 	shutil.copy(cfile, destination_dir)
 	origcopy = os.path.join(destination_dir, os.path.basename(cfile))
-	os.chmod(origcopy, 700) # remove read-only flag
+	os.chmod(origcopy, 0o700) # remove read-only flag
 	return origcopy
 		
 class TestRebuild(TmpDirSetup):
