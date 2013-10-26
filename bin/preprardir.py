@@ -180,7 +180,7 @@ def get_rar_date_name(file_name):
 				if block.file_name in ("Rar.exe", "Rar.Exe", "rar\\rar", "rar"):
 					t = block.file_datetime
 					return ("%d-%02d-%02d" % (t[0], t[1], t[2]), 
-					                          block.file_name)
+					                          block.os_file_name())
 			except Exception:
 				pass
 	elif tarfile.is_tarfile(file_name):

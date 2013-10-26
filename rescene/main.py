@@ -502,7 +502,7 @@ def create_srr(srr_name, infiles, in_folder="",
 							           "compression method: %s" % rarfile)
 					else:
 						# store first RAR where we encounter the stored file
-						oso_dict.setdefault(block.file_name, rarfile)
+						oso_dict.setdefault(block.os_file_name(), rarfile)
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -709,7 +709,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 	#									 "method: %s", rarfile)
 					else:
 						# store first RAR where we encounter the stored file
-						oso_dict.setdefault(block.file_name, rarfile)
+						oso_dict.setdefault(block.os_file_name(), rarfile)
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -1036,7 +1036,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	"""
 	rar_name = ""
 	ofile = ""
-	source_name = ""
+	source_name = None
 	rarfs = None # RAR Volume that is being reconstructed
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
@@ -1235,14 +1235,14 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 	# if file has been renamed, use renamed file name
 	src = hints.get(block.file_name)
 	if src is None:
-		src = block.file_name
+		src = block.os_file_name()
 	src = os.path.abspath(os.path.join(in_folder, src))
 	
 	if not os.path.isfile(src):
 #		_fire(MsgCode.FILE_NOT_FOUND, 
 #			  message="Could not locate data file: %s" % src)
 		if auto_locate_renamed:
-			src = _auto_locate_renamed(block.file_name, 
+			src = _auto_locate_renamed(block.os_file_name(),
 				block.unpacked_size, in_folder) or src
 		if not os.path.isfile(src):
 			raise FileNotFound("The file does not exist: %s." % src)
