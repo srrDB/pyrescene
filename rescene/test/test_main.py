@@ -212,8 +212,8 @@ class TestAddRemoveFiles(TmpDirSetup):
 		self.o.events = []
 		add_stored_files(srr, files, self.files_dir, True)
 		
-		files = map(lambda x: os.path.relpath(x, 
-					self.files_dir).replace(os.sep, "/"), files)  
+		files = sorted(os.path.relpath(x, 
+					self.files_dir).replace(os.sep, "/") for x in files)  
 		files_srr = info(srr)["stored_files"]
 		s = [v.file_name for _, v in files_srr.items()]
 		s.sort()
