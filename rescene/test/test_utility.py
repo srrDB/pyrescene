@@ -70,11 +70,11 @@ class TestSfv(unittest.TestCase):
 		correct = [e.file_name for e in self.sorted_list]
 		# sorted(): yields sorted list
 		test = [e.file_name for e in sorted(self.unsorted_list)]
-		self.assertEquals(correct, test, "Sorting does not work.")
+		self.assertEqual(correct, test, "Sorting does not work.")
 		# sort(): in-place sort
 		self.unsorted_list.sort()
 		test = [e.file_name for e in self.unsorted_list]
-		self.assertEquals(correct, test, "Sorting does not work.")
+		self.assertEqual(correct, test, "Sorting does not work.")
 		
 	def test_sort_bug(self):
 		# multiple .rar files from different sets
@@ -82,7 +82,7 @@ class TestSfv(unittest.TestCase):
 				SfvEntry("group-begin.r00", "00000000"),
 				SfvEntry("group-other.rar", "00000000"),
 				SfvEntry("group-other.r00", "00000000"),]
-		self.assertEquals(slist, sorted(slist), "Sorting does not work.")
+		self.assertEqual(slist, sorted(slist), "Sorting does not work.")
 		
 	def test_sfv_entry(self):
 		self.assertRaises(ValueError, SfvEntry, "file_name", "11aa33XX")
@@ -237,8 +237,8 @@ class TestUtility(unittest.TestCase):
 
 	def test_sep(self):
 		try:
-			self.assertEquals(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
-			self.assertEquals(sep(1000000, 'English'),
+			self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
+			self.assertEqual(sep(1000000, 'English'),
 				"1,000,000")
 		except locale.Error as err:
 			fmt = ('"Dutch_Belgium.1252" and "English" locales: '
