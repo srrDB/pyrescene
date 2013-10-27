@@ -170,7 +170,7 @@ class Mp3Reader(object):
 			end_meta_data_offset -= apev2_block.size
 		
 		def marker_has_issues(marker):
-			if not len(marker) or len(marker) != 4:
+			if len(marker) != 4:
 				return True
 			(sync,) = BE_SHORT.unpack(marker[:2])
 			if (sync & 0xFFE0 != 0xFFE0 and 
