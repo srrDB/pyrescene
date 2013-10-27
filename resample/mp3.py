@@ -173,7 +173,7 @@ class Mp3Reader(object):
 			self.blocks.append(mp3_data_block)
 		else: # SRS data blocks
 			cur_pos = begin_main_content
-			while(cur_pos < begin_main_content + main_size):
+			while cur_pos < begin_main_content + main_size:
 				self._mp3_stream.seek(cur_pos, os.SEEK_SET)
 				# SRSF, SRST and SRSP
 				try:

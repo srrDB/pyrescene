@@ -120,12 +120,12 @@ def parse_sfv_file(sfv_file):
 	def parse(file_data):
 		for line in file_data.split("\n"):
 			# empty line, comments or useless text for whatever reason
-			if (line).strip() == (""):
+			if line.strip() == "":
 				pass # blank line detected
-			elif (line).lstrip()[0] == ";": # or len(line) < 10:
+			elif line.lstrip()[0] == ";": # or len(line) < 10:
 				comments.append(line)
 			else:
-				line = (line.rstrip())
+				line = line.rstrip()
 				try:
 					line = line.replace("\t", "    ") # convert tabs
 					index = line.rindex(" ") # ValueError: substring not found
@@ -237,7 +237,7 @@ def show_spinner(amount):
 	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
 
 def remove_spinner():
-	sys.stdout.write("\b"), # removes spinner
+	sys.stdout.write("\b") # removes spinner
 	
 def empty_folder(folder_path):
 	for file_object in os.listdir(folder_path):
