@@ -214,6 +214,21 @@ def is_good_srr(filepath):
 			return False
 	return True
 
+def joinpath(path, start=""):
+	"""Validates and joins a sequence of path elements into an OS path
+	
+	Each path element is an individual directory, subdirectory or file
+	name. Raises ValueError if an element name is not supported by the
+	OS."""
+	
+	illegal_names = frozenset(
+		("", os.path.curdir, os.path.pardir, os.path.devnull))
+	for elem in path:
+		if os.path.dirname(elem) or elem in illegal_names:
+			fmt = "Path element not supported by OS: {0!r}"
+			raise ValueError(fmt.format(elem))
+	return os.path.join(start, *path)
+
 def sep(number, loc=''):
 	"""Adds a thousands separator to the number.
 	The function is locale aware."""
