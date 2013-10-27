@@ -421,7 +421,18 @@ class RarBlock(object):
 	
 	def explain_size(self, size):
 		return "0x%X (%u bytes)" % (size, size)
+
+class _SrrFileNameBlock(RarBlock):
+	"""Base class for SRR blocks with a file name field"""
+	
+	def _unpack_file_name(self):
+		'''Read in "self.file_name"'''
 		
+		# 2 bytes for name length, then the name (unsigned short)
+		length = struct.unpack_from("<H", self._rawdata, self._p)[0]
+		self.file_name = self._rawdata[self._p+2:self._p+2+length]
+		self._p += 2 + length
+
 class SrrHeaderBlock(RarBlock):
 	""" Represents marker/srr volume header block.
 	It contains the name of the ReScene application.
@@ -509,7 +520,7 @@ class SrrHeaderBlock(RarBlock):
 		out += "+Application name: " + self.appname + "\n"
 		return out
 
-class SrrStoredFileBlock(RarBlock):
+class SrrStoredFileBlock(_SrrFileNameBlock):
 	"""
 	SRR block used to store additional files inside the .srr file.
 	e.g. .nfo and .sfv files.
@@ -550,12 +561,11 @@ class SrrStoredFileBlock(RarBlock):
 			super(SrrStoredFileBlock, self).__init__(bbytes, filepos, fname)
 			
 			# 4 bytes for file length (unsigned int) (add_size field)
-			# 2 bytes for name length, then the name (unsigned short)
-			(self.file_size, length) = struct.unpack_from("<IH",
+			(self.file_size,) = struct.unpack_from("<I",
 			                           self._rawdata, self._p)
-			self.file_name = self._rawdata[self._p+6:self._p+6+length]
-			self._p += 6 + length
-			
+			self._p += 4
+			self._unpack_file_name()
+		
 		# creating a srr file block
 #		elif file_name != None and isinstance(file_size, (int, long)):
 		elif file_name != None and file_size != None:
@@ -649,7 +659,7 @@ class SrrStoredFileBlock(RarBlock):
 #				"(a path is added before the file name)\n"
 		return out
 
-class SrrRarFileBlock(RarBlock):
+class SrrRarFileBlock(_SrrFileNameBlock):
 	""" We create one SRR block (type 0x71) for each RAR file.
 	It has a 7 byte header: 2 bytes for file name length, then file name.
 	Flag 0x1 means recovery records have been removed if present. This
@@ -676,11 +686,7 @@ class SrrRarFileBlock(RarBlock):
 		if not file_name:
 			super(SrrRarFileBlock, self).__init__(bbytes, filepos, fname)
 			
-			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack_from("<H",
-			                            self._rawdata, self._p)[0]
-			self.file_name = self._rawdata[self._p+2:self._p+2+name_length]
-			self._p += 2 + name_length
+			self._unpack_file_name()
 		else:
 			self.crc = 0x7171
 			self.rawtype = 0x71
@@ -715,7 +721,7 @@ class SrrRarFileBlock(RarBlock):
 		out += "+Rar name: " + self.file_name + "\n"
 		return out
 	
-class SrrOsoHashBlock(RarBlock):
+class SrrOsoHashBlock(_SrrFileNameBlock):
 	"""SRR block that contains an OpenSubtitles.Org hash.
 	http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 	
@@ -746,12 +752,9 @@ class SrrOsoHashBlock(RarBlock):
 			# 8 bytes for the OSO hash
 			self.oso_hash = "%016x" % struct.unpack_from("<Q", 
 				self._rawdata, self._p+8)[0]
-				
-			# 2 bytes for name length, then the name (unsigned short)
-			name_length = struct.unpack_from("<H",
-				self._rawdata, self._p+16)[0]
-			self.file_name = self._rawdata[self._p+18:self._p+18+name_length]
-			self._p += 18 + name_length
+			
+			self._p += 16
+			self._unpack_file_name()
 		elif file_size != None and file_name != None and oso_hash != None:
 			self.crc = 0x6B6B
 			self.rawtype = 0x6B
