@@ -132,7 +132,7 @@ class FlacReader(object):
 			return True
 
 		(self.block_type,) = BE_BYTE.unpack_from(self._block_header, 0)
-		if self.block_type & 0xFF == 0xFF: # frame data
+		if self.block_type == 0xFF: # frame data
 			block_length = self._file_length - block_start_position
 			# check for ID3v1 tag
 			self._flac_stream.seek(self._file_length - 128)
