@@ -970,7 +970,8 @@ class NNTPFile(io.IOBase):
 		except AttributeError: # fails on nb_segments
 			# it compares with a real file in rescene lib
 			return self.name == other
-		
+	__hash__ = None  # Avoid DeprecationWarning in Python < 3
+	
 	def __lt__(self, other):
 		"""The sort routines are guaranteed to use __lt__ when making 
 		   comparisons between two objects."""

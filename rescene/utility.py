@@ -98,6 +98,7 @@ class SfvEntry(object):
 	
 	def __eq__(self, other) : 
 		return self.__dict__ == other.__dict__
+	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
 def parse_sfv_file(sfv_file):
 	"""Returns lists: (entries, comments, errors).
