@@ -732,7 +732,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 					end_segments_tested = True
 					
 				# store the raw data for any blocks found
-				srr.write(block.block_bytes());
+				srr.write(block.block_bytes())
 				
 				#TODO: when starting from RARs, detect when incomplete!!!!
 	
