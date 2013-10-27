@@ -76,14 +76,14 @@ class TestStsc(unittest.TestCase):
 	def test_normal(self):
 		inlist = [(1, 4, 0), (2, 4, 0), (3, 4, 0), (4, 4, 0), ]
 		outlist = stsc(inlist)
-		self.assertEquals(inlist, outlist)
+		self.assertEqual(inlist, outlist)
 		
 	def test_compact(self):
 		inlist = [(1, 4, 0), (2, 4, 7), (5, 8, 0), (7, 4, 0), ]
 		outlist = stsc(inlist)
 		expected = [(1, 4, 0), (2, 4, 7), (3, 4, 7), (4, 4, 7), (5, 8, 0), 
 		            (6, 8, 0), (7, 4, 0), ]
-		self.assertEquals(expected, outlist)
+		self.assertEqual(expected, outlist)
 
 class TestMp4CreateSrs(unittest.TestCase):
 	def setUp(self):
