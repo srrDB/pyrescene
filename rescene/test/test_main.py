@@ -33,11 +33,17 @@ import pprint
 from filecmp import cmp
 from os.path import join
 from tempfile import mkdtemp
+import sys
 
 import rescene
 from rescene.main import *
 from rescene.main import _handle_rar, _flag_check_srr, _auto_locate_renamed
 from rescene.rar import ArchiveNotFoundError
+
+try:  # Python < 3
+	from StringIO import StringIO  # Supports writing non-Unicode strings
+except ImportError:  # Python 3
+	from io import StringIO
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -340,6 +346,17 @@ class TestDisplayInfo(TestInit):
 				#"win_comment.rar"
 #		info(comment)
 #		print_details(comment)
+	
+	def test_details(self):
+		"""Exercise main.print_details()"""
+		srr = os.path.join(os.pardir, os.pardir, "test_files",
+			"other", "house.713.hdtv-lol.srr")
+		orig_stdout = sys.stdout
+		try:
+			sys.stdout = StringIO()
+			print_details(srr)
+		finally:
+			sys.stdout = orig_stdout
 
 class TestCreate(TmpDirSetup):
 	"""Tests the creation of SRR files."""
