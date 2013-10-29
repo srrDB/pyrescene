@@ -160,17 +160,17 @@ class TestExtract(TmpDirSetup):
 class TestAddRemoveRenameError(TestInit):
 	"""Tests the errors of adding and removing stored files."""	
 	def test_error_unknown_srr_file(self):
-		self.assertRaises(ArchiveNotFoundError, add_stored_files, None, None)
+		self.assertRaises(ArchiveNotFoundError, add_stored_files, None, ())
 		self.assertRaises(ArchiveNotFoundError,
 		                  remove_stored_files, None, None)
 		self.assertRaises(ArchiveNotFoundError,
-		                  rename_stored_file, None, None, None)
+		                  rename_stored_file, None, "dummy", "dummy")
 	
 	def test_error_rar_for_srr(self):
 		rar = os.path.join(self.little, "store_little.rar")
-		self.assertRaises(NotSrrFile, add_stored_files, rar, None)
+		self.assertRaises(NotSrrFile, add_stored_files, rar, ())
 		self.assertRaises(NotSrrFile, remove_stored_files, rar, None)
-		self.assertRaises(NotSrrFile, rename_stored_file, rar, None, None)
+		self.assertRaises(NotSrrFile, rename_stored_file, rar, "dummy", "dummy")
 
 	def test_error_dupe(self):
 		srrp = os.path.join(self.little, "store_little_srrfile_with_path.srr")
