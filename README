@@ -57,6 +57,7 @@ This script extracts the RAR executables from the archives and renames them
 for further usage. The new folder with RAR executables will need to be passed
 to the -z parameter of ReScene when reconstructing compressed archives.
 http://rescene.wikidot.com/rar-versions
+UnRAR.exe or its Linux equivalent is required for SRR creation of vobsubs.
 
 Installation instructions
 =========================
