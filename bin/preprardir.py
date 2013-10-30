@@ -41,42 +41,32 @@ except ImportError:
 	
 import rescene
 from rescene.rar import RarReader
-from rescene.main import RETURNCODE 
+from rescene.main import RETURNCODE
+from rescene.unrar import locate_unrar
 
 def main(options, args):
-	for element in args:
-		if not os.path.isdir(element):
-			print("One of the arguments isn't a folder.")
-			return 1
-		
 	input_dir = args[0]
 	output_dir = args[1]
 	
-	extract_rarbin(input_dir, output_dir)
-	copy_license_file(output_dir)
-
-def locate_unrar():
-	"""locating installed unrar"""
-	if(os.name == "nt"):
+	if not os.path.isdir(input_dir):
+		print("The input argument must be a directory.")
+		return 1
+	
+	if not os.path.isdir(output_dir):
 		try:
-			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
-			if not os.path.exists(unrar):
-				raise KeyError
-		except KeyError:
-			try:
-				unrar = os.environ["ProgramFiles(x86)"] + "\\WinRAR\\UnRAR.exe"
-				if not os.path.exists(unrar):
-					raise KeyError
-			except KeyError:
-				print("Install WinRAR to use all the functionalities.")
-				unrar = "UnRAR.exe" 
-				
-		# define your own path to a program to unrar: (uncomment)
-		#unrar = "C:\Program Files\7z.exe"
-	else:
-		unrar = "/usr/bin/env unrar"
-		
-	return unrar
+			os.makedirs(output_dir)
+		except OSError:
+			pass
+		if not os.path.isdir(output_dir):
+			print("The output argument must be a directory.")
+			return 1
+	
+	try:
+		extract_rarbin(input_dir, output_dir)
+	except OSError:
+		print("Could not find installed UnRAR version.")
+		return 1
+	copy_license_file(output_dir)
 
 def copy_license_file(output_dir):
 	"""From WinRAR order.htm:
