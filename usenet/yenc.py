@@ -89,7 +89,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 			# Decode data
 			if HAVE_YENC:
 				decoded_data, crc = _yenc.decode_string(''.join(data))[:2] #@UndefinedVariable
-				partcrc = '%08X' % ((crc ^ -1) & 0xFFFFFFFF)
+				partcrc = (crc ^ -1) & 0xFFFFFFFF
 			else:
 				data = ''.join(data)
 				for i in (0, 9, 10, 13, 27, 32, 46, 61):
@@ -98,7 +98,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 				decoded_data = data.translate(YDEC_TRANS)
 				if not seg_part:
 					crc = crc32(decoded_data)
-					partcrc = '%08X' % (crc & 0xFFFFFFFF)
+					partcrc = crc & 0xFFFFFFFF
 
 			# we don't need to check all the CRC stuff if it isn't there
 			if not seg_part and not ignore_crc:
@@ -107,10 +107,9 @@ def decode(data, seg_part=False, ignore_crc=False):
 				else:
 					crcname = 'crc32'
 
-				if crcname in yend:
-					_partcrc = ('0' * (8 - len(yend[crcname])) + 
-					            yend[crcname].upper())
-				else:
+				try:
+					_partcrc = int(yend[crcname], 16)
+				except (LookupError, ValueError):
 					_partcrc = None
 					logging.debug("Corrupt header detected " + \
 								  "=> yend: %s", yend)
