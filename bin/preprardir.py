@@ -144,22 +144,32 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 				print("Extracting %s..." % new_name),
 				args = [unrar, "e", archive_name, name, dest]
 				extract = custom_popen(args)
-				if extract.wait() == 0:
+				if extract.wait() in (0, 1):
+					# Error code 1: when there is some corruption in the file
+					# Verifying authenticity information ...  Failed
+					# has been seen on wrar260.exe
 					try:
 						# for rarln271.sfx and others
 						name = os.path.basename(name)
 						os.rename(os.path.join(dest, name), 
 								  os.path.join(dest, new_name))
-						print("done.")
+						if extract.wait() == 1:
+							print("done. (Non fatal error(s) occurred)")
+						else:
+							print("done.")
 					except: # WindowsError: # [Error 183]
 						# ERROR_ALREADY_EXISTS
 						os.unlink(os.path.join(dest, name))
 						print("failed.")
 				else:
-					# Error 2 for example when there is a corrupt exe
-					# Verifying authenticity information ...  Failed
-					# Invalid authenticity information
 					print(RETURNCODE[extract.wait()])
+					# not sure the following is necessary
+					# but if the file is extracted to disk,
+					# remove it so the next steps can continue successfully
+					try:
+						os.unlink(os.path.join(dest, name))
+					except:
+						pass
 		else:
 			print("error: %s" % fname)
 
