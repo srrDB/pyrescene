@@ -1382,7 +1382,7 @@ def create_srr_nzbmove(nzb_file):
 		
 		faildir = "failure"
 		try:
-			ename = error[0]
+			ename = error.args[0]
 		except KeyError:
 			ename = ""
 		if ename == "Failure on all servers." or "430" in str(ename):
