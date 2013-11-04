@@ -476,7 +476,7 @@ def mk_long_dir(destination):
 			# WindowsError: [Error 3]
 			try:
 				os.mkdir("\\\\?\\" + destination)
-			except OSError, e:
+			except OSError as e:
 				print(e)
 
 def generate_srr(reldir, working_dir, options):
@@ -946,15 +946,16 @@ def main(argv=None):
 				if options.list_releases:
 					print_release(release_dir)
 				if options.missing_nfos:
-					if not len(filter(lambda f: f[-4:].lower() == ".nfo",
-					                  os.listdir(release_dir))):
+					if not any(f[-4:].lower() == ".nfo" for f in
+					                  os.listdir(release_dir)):
 						print_release(release_dir)
 				if options.missing_samples:
-					sample_dirs = filter(lambda d: d.lower() == "sample",
-					                     os.listdir(release_dir))
+					sdir = next((d for d in
+						os.listdir(release_dir) if
+						d.lower() == "sample"), None)
 					found = False
-					if len(sample_dirs):
-						sdir = os.path.join(release_dir, sample_dirs[0])
+					if sdir is not None:
+						sdir = os.path.join(release_dir, sdir)
 						for sfile in os.listdir(sdir):
 							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts|mpg)",
 									sfile, re.IGNORECASE):

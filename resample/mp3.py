@@ -169,7 +169,7 @@ class Mp3Reader(object):
 		marker = self._mp3_stream.read(4)
 		(sync,) = BE_SHORT.unpack(marker[:2])
 		main_size = end_meta_data_offset - begin_main_content
-		if marker[:3] == "SRS": # SRS data blocks
+		if marker[:3] == b"SRS": # SRS data blocks
 			cur_pos = begin_main_content
 			while(cur_pos < begin_main_content + main_size):
 				self._mp3_stream.seek(cur_pos, os.SEEK_SET)
@@ -188,7 +188,7 @@ class Mp3Reader(object):
 					raise InvalidDataException("SRS size field is zero")
 				if size > begin_main_content + main_size:
 					raise InvalidDataException("Broken SRS")
-		elif sync & 0xFFE0 == 0xFFE0 or marker == "RIFF":
+		elif sync & 0xFFE0 == 0xFFE0 or marker == b"RIFF":
 			mp3_data_block = Block(main_size, "MP3", begin_main_content)
 			self.blocks.append(mp3_data_block)
 		else:

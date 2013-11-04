@@ -42,7 +42,6 @@ try:
 	import win32api
 	win32api_available = True
 except ImportError:
-	sys.exc_clear()
 	win32api_available = False
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False

@@ -152,7 +152,7 @@ class TestSfv(unittest.TestCase):
 		self.assertTrue(len(entries) == 1)
 		self.assertTrue(len(comments) == 4)
 		self.assertTrue(len(errors) == 0)
-		self.assertEquals("gh-flow.subs.rar", entries[0].file_name)
+		self.assertEqual("gh-flow.subs.rar", entries[0].file_name)
 	
 	def test_encoding_error(self):
 		"""Should not crash parsing garbage or non-ASCII SFV file"""
