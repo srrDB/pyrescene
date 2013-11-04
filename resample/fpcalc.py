@@ -102,9 +102,17 @@ def module_path():
 	""" This will get us the program's directory,
 	even if we are frozen using py2exe"""
 	if we_are_frozen():
-		return os.path.dirname(unicode(sys.executable, 
-		                               sys.getfilesystemencoding()))
-	return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
+		return os.path.dirname(fsunicode(sys.executable))
+	return os.path.dirname(fsunicode(__file__))
+
+try:
+	unicode
+except NameError:  # Python 3
+	def fsunicode(path):
+		return path
+else:  # Python < 3
+	def fsunicode(path):
+		return unicode(path, sys.getfilesystemencoding())
 
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""

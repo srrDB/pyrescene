@@ -46,7 +46,7 @@ def main(options, args):
 				shutil.move(f, odir)
 				os.rename(os.path.join(odir, nzb_file),
 						os.path.join(odir, new_name + ".nzb"))
-			except Exception, e:
+			except Exception as e:
 				print(e)
 		else:
 			pass # leave it

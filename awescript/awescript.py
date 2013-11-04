@@ -160,7 +160,7 @@ def get_files(path, cwdsolo, options):
             # fix paths with [ or ] in name
             path = re.sub("([[\\]])", "[\\1]", path) + "*.*"
             if options.debug:
-                print "glob.glob " + path
+                print("glob.glob " + path)
             fileList += glob.glob(path)
     fileList.sort()
     
