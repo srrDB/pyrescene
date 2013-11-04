@@ -41,7 +41,7 @@ Sorting isn't how we want it in this case:
 
 from __future__ import unicode_literals
 
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 from tempfile import mkdtemp
 from datetime import datetime
 import sys
@@ -54,8 +54,9 @@ import logging
 
 try:
 	import win32api
+	win32api_available = True
 except ImportError:
-	pass
+	win32api_available = False
 
 try:
 	import _preamble
@@ -65,9 +66,10 @@ except ImportError:
 import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
-from rescene.main import MsgCode, FileNotFound
+from rescene.main import MsgCode, FileNotFound, custom_popen
 from rescene.rar import RarReader, BlockType
-from rescene.utility import empty_folder, _DEBUG
+from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
+from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 from rescene.utility import raw_input
@@ -106,12 +108,28 @@ def get_sample_files(reldir):
 	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 
 	                get_files(reldir, "*.mp4") + get_files(reldir, "*.wmv"))
 	result = []
+	not_samples = []
 	for sample in sample_files:
 		# sample folder or 'sample' in the name
-		# or a musicvideo file (sfv with same name)
+		# or a musicvideo file (SFV with same name)
 		if ("sample" in sample.lower() or 
 		    os.path.exists(sample[:-4] + ".sfv")):
 			result.append(sample)
+		else:
+			not_samples.append(sample)
+			
+	# this is for music videos with multiple MKVs
+	# this way so we don't always have to read in the SFV files unnecessarily
+	if len(not_samples):
+		sfv_stored_files = []
+		sfv_files = get_files(reldir, "*.sfv")
+		for sfv in sfv_files:
+			for entry in parse_sfv_file(sfv)[0]:
+				sfv_stored_files.append(entry.file_name)
+		for nsample in not_samples:
+			if os.path.basename(nsample) in sfv_stored_files:
+				result.append(nsample)
+			
 	return result
 
 def get_music_files(reldir):
@@ -163,7 +181,7 @@ def get_proof_files(reldir):
 			# RAR file must contain image file
 			for block in RarReader(proof):
 				if block.rawtype == BlockType.RarPackedFile:
-					if block.file_name.endswith(
+					if (block.file_name[-4:].lower() in 
 						(".jpg", "jpeg", ".png", ".bmp", ".gif")):
 						result.append(proof)
 						break
@@ -171,17 +189,20 @@ def get_proof_files(reldir):
 
 def remove_unwanted_sfvs(sfv_list, release_dir):
 	"""
-	Remove SFVs from subs and music releases.
+	Remove SFVs from subs and certain rarred proof files.
 	"""
 	wanted_sfvs = []
 	for sfv in sfv_list:
 		sfv_name = os.path.basename(sfv)
 		if ("subs" in sfv_name.lower() or "vobsub" in sfv_name.lower() or
 			"subtitle" in sfv_name.lower()):
-			# false positive: the.substitute.4.vrs.cd1.rar 92341f72
+			# False positives: 
 			# The.Substitute.4.2001.Failure.Is.Not.An.Option.iNT.DVDRip.XVID-vRs
+			# the.substitute.4.vrs.cd1.rar 92341f72
+			# RV800-Subsync-(FORM001)-READNFO-VINYL-FLAC-2012-dL
+			# 00-rv800-subsync-(form001)-vinyl-flac-2012.sfv
 			if ("subs" in sfv_name.lower() and 
-				re.match(".*cd\d.*", sfv_name, re.IGNORECASE)):
+				re.match(".*(cd\d|flac).*", sfv_name, re.IGNORECASE)):
 				pass
 			else:
 				continue
@@ -199,8 +220,32 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
 			continue
 		
-		# subpack inside release dir
-		if "subpack" in sfv.lower() or "subfix" in sfv.lower():
+		if (pardir == "proof" or pardir == "proofs"):
+			# only if it's one RAR file containing an image
+			sfvfiles = rescene.utility.parse_sfv_file(sfv)[0]
+			if len(sfvfiles) == 1:
+				rar = os.path.join(os.path.dirname(sfv), sfvfiles[0].file_name)
+				if os.path.isfile(rar):
+					skip = False
+					for block in RarReader(rar):
+						if block.rawtype == BlockType.RarPackedFile:
+							if (block.file_name[-4:].lower() in 
+								(".jpg", "jpeg", ".png", ".bmp", ".gif")):
+								skip = True
+							else:
+								skip = False
+					if skip:
+						continue
+		
+		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
+			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
+			#	Subs/CD1/toyst.subs.cd1-iffm.sfv
+			continue
+		
+		# subpack inside release dir not, but subpack release itself yes
+		if "subpack" in pardir and not "subpack" in release_dir.lower():
+			continue
+		if "subfix" in pardir and not "subfix" in release_dir.lower():
 			continue
 		
 		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
@@ -211,6 +256,9 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		wanted_sfvs.append(sfv)
 	return wanted_sfvs
 
+def get_unwanted_sfvs(allsfvs, wantedsfvs):
+	return list(set(allsfvs)-set(wantedsfvs))
+	
 def get_start_rar_files(sfv_list):
 	"""
 	Get the main first RAR files to check sample against.
@@ -225,6 +273,11 @@ def get_start_rar_files(sfv_list):
 	return wanted_rars
 
 def copy_to_working_dir(working_dir, release_dir, copy_file):
+	"""
+	working_dir: temporary directory with all the files to store in the SRR
+	release_dir: release folder with path
+	copy_file: file somewhere inside the release_dir
+	"""
 	path = os.path.relpath(copy_file, release_dir)
 	dest_file = os.path.join(working_dir, path)
 	
@@ -254,25 +307,208 @@ def key_sort_music_files(name):
 	if name[-4:].lower() == ".nfo":
 		return "-"
 	else:
-		return name 
+		return name
 	
+def is_storable_fix(release_name):
+	"""Tests if we can store the main RAR file of this release."""
+	#Rules.of.Engagement.S02E03.Mr.Fix.It.DVDRip.XviD-SAiNTS
+	#Ron.White.You.Cant.Fix.Stupid.XviD-LMG
+	#not: Rar|sub|audio|sample|
+	return (re.match(
+			".*(SFV|PPF|sync|proof?|dir|nfo|Interleaving|Trackorder).?"
+			"(Fix|Patch).*", release_name, re.IGNORECASE) or 
+			re.match(".*\.(FiX|FIX)(\.|-).*", release_name) or
+			re.match(".*\.DVDR.Fix-.*", release_name) or
+			re.match(".*\.DVDR.REPACK.Fix-.*", release_name))
+	
+def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
+	"""
+	unrar: location to the unrar executable
+	sfv: the sfv file from the vobsubs
+	working_dir: our current working directory
+		where the generated SRR file will be placed
+	release_dir: used to determine in which subfolders the resulting SRR
+		file should be placed in the working_dir
+	
+	return: list of SRR files to add to the main SRR
+	"""
+	# make in between dirs
+	path = os.path.relpath(sfv, release_dir)
+	dest_file = os.path.join(working_dir, path)
+	try:
+		os.makedirs(os.path.dirname(dest_file))
+	except:
+		pass
+
+	idx_lang = os.path.join(working_dir, "languages.diz")
+	
+	# recursively create SRR and extract RARs
+	def extract_and_create_srr(folder, first_rars=None):
+		# find first RAR files in folder
+		if not first_rars:
+			first_rars = rescene.utility.first_rars(os.listdir(folder))
+			first_rars = [os.path.join(folder, x) for x in first_rars]
+			first_level = False
+		else:
+			first_level = True # RARS not somewhere in the temp folder
+		if not len(first_rars):
+			return []
+		if not os.path.isdir(folder):
+			head, tail =  os.path.split(folder)
+			if os.name == "nt" and win32api_available:
+				head = win32api.GetShortPathName(head)
+			try:
+				os.mkdir(os.path.join(head, tail))
+			except OSError:
+				pass
+		
+		result = []
+		
+		for fr in first_rars:
+			srr_files_to_store = []
+			
+			# extract archives
+			dest = os.path.join(folder, os.path.basename(fr)[:-4])
+			dest_long = dest
+			mk_long_dir(dest)
+			if os.name == "nt" and win32api_available:
+				try:
+					dest = win32api.GetShortPathName(dest)
+				except:
+					#pywintypes.error: (3, 'GetShortPathName', 
+					#'Het systeem kan het opgegeven pad niet vinden.')
+					head, tail =  os.path.split(dest)
+					try:
+						head = win32api.GetShortPathName(head)
+					except:
+						h, t =  os.path.split(head)
+						try:
+							h = win32api.GetShortPathName(h)
+						except:
+							# now we give up; bug in unrar: 
+							# it could overwrite main RAR files otherwise
+							continue
+						head = os.path.join(h, t)
+					dest = os.path.join(head, tail)
+			success = extract_rar(unrar, fr, dest)
+			if not success: # probably too long paths issue
+				continue
+			
+			# search for idx files and store their language info
+			for efile in os.listdir(dest):
+				if efile[-4:].lower() == ".idx":
+					language_lines = []
+					with open(os.path.join(dest, efile), "r") as idx:
+						for line in idx:
+							if line.startswith("id: "):
+								language_lines.append(line)
+					with open(idx_lang, "a") as diz:
+						diz.write("# %s\n" % efile)
+						for line in language_lines:
+							diz.write(line)
+			
+			# recursive step for each of the archives
+			for srr in extract_and_create_srr(dest):
+				srr_files_to_store.append(srr)
+		
+			if first_level:
+				# at same level as SFV (in main SRR)
+				# not in extract folder to prevent possible collisions
+				srr = folder + ".srr"
+				#srr_files_to_store.append("languages.diz")
+			else:
+				srr = dest_long + ".srr"
+			if os.name == "nt" and win32api_available:
+				head, tail =  os.path.split(srr)
+				try:
+					head = win32api.GetShortPathName(head)
+				except:
+					pass
+				srr = os.path.join(head, tail)
+			# create SRRs and add SRRs from previous steps
+			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
+						save_paths=False, compressed=True, oso_hash=False)
+			result.append(srr)
+			
+		return result
+	
+	results = []
+	
+	# get first RARs from SFV file
+	first_rars = get_start_rar_files([sfv])
+	if not len(first_rars) and os.path.isfile(sfv[:-4] + ".rar"): # bad SFV
+		first_rars = [sfv[:-4] + ".rar"]
+	if len(first_rars):
+		for sfile in extract_and_create_srr(dest_file[:-4], first_rars):
+			results.append(sfile)
+		
+	# add languages.diz to the first SRR file
+	if len(results):
+		rescene.add_stored_files(results[0], [idx_lang], save_paths=False)
+	
+	# hopefully the path of the root SRRs isn't too long anymore
+	if os.name == "nt" and win32api_available:
+		results = [win32api.GetLongPathName(x) for x in results]
+	
+	return results
+
+def extract_rar(unrar, rarfile, destination):
+	"""Returns a boolean whether extraction was successful or not."""
+	if os.name == "nt" and win32api_available:
+		head, tail = os.path.split(rarfile)
+		head = win32api.GetShortPathName(head)
+		rarfile = os.path.join(head, tail)
+	extract = custom_popen([unrar, "e", "-ep", "-o+", 
+	                        rarfile, "*", destination])
+	extract.wait()
+			
+	if extract.returncode != 0:
+		print("Some unrar error occurred:")
+		if extract.stdout:
+			print(extract.stdout.read())
+		if extract.stderr:
+			print(extract.stderr.read())
+		return False
+	return True
+			
+def mk_long_dir(destination):
+	if not os.path.isdir(destination):
+		try:
+			os.mkdir(destination)
+		except OSError:
+			# WindowsError: [Error 3]
+			try:
+				os.mkdir("\\\\?\\" + destination)
+			except OSError, e:
+				print(e)
+
 def generate_srr(reldir, working_dir, options):
-	assert os.listdir(working_dir) == []
+	if os.listdir(working_dir) != []:
+		# Can happen with PyPy and long dirs: create new working dir
+		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+		
 	print(reldir)
+	relname = os.path.split(reldir)[1]
 	if options.srr_in_reldir:
 		srr_directory = reldir
 	else:
 		srr_directory = options.output_dir
-	srr = os.path.join(srr_directory, os.path.split(reldir)[1] + ".srr")
+	srr = os.path.join(srr_directory, relname + ".srr")
 		
 	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
 	if options.always_no and os.path.exists(srr):
+		logging.info("%s: Skipping. SRR already exists." % relname)
 		return False
 	
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
-	
+	# we still want to do subpacks as main SRR
+	if (not len(main_sfvs) and 
+		("subpack" in relname.lower() or "subfix" in relname.lower())):
+		main_sfvs = sfvs
+	extra_sfvs = get_unwanted_sfvs(sfvs, main_sfvs)
+		
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
@@ -283,7 +519,10 @@ def generate_srr(reldir, working_dir, options):
 				return False
 		except IOError:
 			print("Read error. DVD disk unreadable? Try again!")
-			os.unlink(srr)
+			try:
+				os.unlink(srr)
+			except OSError:
+				pass
 			return False
 		except KeyboardInterrupt as e:
 			if e.message != "DONT_DELETE":
@@ -291,6 +530,7 @@ def generate_srr(reldir, working_dir, options):
 			raise
 		except FileNotFound:
 			# rescene doesn't leave a half finished file
+			print(sys.exc_info()[1])
 			return False
 		except (ValueError, EnvironmentError):
 			# e.g. 0 byte RAR file
@@ -299,8 +539,10 @@ def generate_srr(reldir, working_dir, options):
 				os.unlink(srr)
 			except: # WindowsError
 				pass
+			print(sys.exc_info()[1])
 			return False
 	else:
+		print("No SFV files found.")
 		return False
 	
 	# remove all stored files so we can add them all in the right order again
@@ -317,7 +559,7 @@ def generate_srr(reldir, working_dir, options):
 	for m3u in get_files(reldir, "*.m3u"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))		
 		
-	for proof in get_proof_files(reldir):
+	for proof in get_proof_files(reldir): #also does certain Proof RARs
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
@@ -406,9 +648,42 @@ def generate_srr(reldir, working_dir, options):
 			copied_files.append(copy_to_working_dir(working_dir, reldir, srs))
 		else:
 			# TODO: pick the best SRS file (checked against main movie file)
-			pass 
+			pass
 
-	#TODO: TXT files for m2ts with crc?
+	# stores the main RARs of DVDR fixes
+	false_positives = [
+		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM",
+		"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED"]
+	if (is_storable_fix(os.path.split(reldir)[1]) and 
+		len(main_sfvs) == 1 and len(main_rars) == 1 and 
+		len(parse_sfv_file(main_sfvs[0])[0]) == 1 and
+		os.path.basename(reldir) not in false_positives):
+		copied_files.append(copy_to_working_dir(
+			working_dir, reldir, main_rars[0]))
+	
+	if options.vobsub_srr and unrar_is_available():
+		unrar = locate_unrar()
+		for esfv in extra_sfvs:
+			# not for Proof RARs that are already stored inside the SRR
+			skip = False
+			for cfile in copied_files:
+				if cfile.endswith((os.path.basename(esfv)[:-3] + "rar")):
+					skip = True
+					break
+			if skip:
+				continue
+			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+			for s in new_srrs:
+				copied_files.append(s)
+			
+		r = os.path.split(reldir)[1].lower()
+		if "subpack" in r or "subfix" in r:
+			for esfv in main_sfvs:
+				new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
+				for s in new_srrs:
+					copied_files.append(s)
+
+	#TODO: TXT files for m2ts/vob with crc and size?
 		
 	copied_sfvs = [] # SFVs in the working dir
 	for sfv in sfvs:
@@ -449,19 +724,37 @@ def generate_srr(reldir, working_dir, options):
 						to_remove.append(stored_file)
 						logging.critical("%s: SFV verification failed for %s."
 										% (reldir, srs_data.name))
-				except IOError:
+				except IOError: #TODO: supported, no? then remove this
 					logging.critical("%s: FLAC with ID3 tag: %s." % 
 						             (reldir, os.path.basename(stored_file)))
 					to_remove.append(stored_file)
 					
 		for removed_file in to_remove:
 			copied_files.remove(removed_file)
-			
+	else:
+		# put vobsub SRRs and proof RARs above their SFV file in the list
+		to_move = []
+		for cfile in copied_files:
+			if (cfile[-4:].lower() in (".srr", ".rar") and
+				cfile[:-4].lower() + ".sfv" in 
+				[x.lower() for x in copied_files]):
+				to_move.append(cfile)
+		for move in to_move:
+			copied_files.remove(move)
+			index = [x.lower() for x in copied_files
+			        ].index(move[:-4].lower() + ".sfv")
+			copied_files.insert(index, move)
+
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
 
-	empty_folder(working_dir)
+	try:
+		empty_folder(working_dir)
+	except OSError:
+		print("Could not empty temporary working directory:")
+		print(working_dir)
+		print("This is a know problem for PyPy users.")
 	
 	return True
 
@@ -592,6 +885,8 @@ def main(argv=None):
 	parser.add_option("-s", "--sample-verify",
 					action="store_true", dest="sample_verify",
 					help="verifies sample agains main movie files")
+	parser.add_option("-v", "--vobsub-srr", dest="vobsub_srr",
+					action="store_true", help="create SRRs for vobsubs")
 	parser.add_option("-o", "--output", dest="output_dir", metavar="DIR",
 					default=".",
 					help="<path>: Specify output file or directory path. "
@@ -606,16 +901,26 @@ def main(argv=None):
 					action="store_true", dest="report",
 					help="reports which samples had issues")
 	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
-					metavar="DIRECTORY", help="Specify temporary directory. "
-					"Music files and samples will be written to this dir.")
+					metavar="DIRECTORY", help="Specify temporary directory.")
+	parser.add_option("--vobsubs", dest="vobsubs", metavar="VOBSUBS_SFV",
+					help="creates an SRR file for the vobsubs RARs only")
 	
-	parser.add_option("--list-releases", dest="list_releases", 
-					action="store_true", help="Only list the release names "
+	listoptions = OptionGroup(parser, "List options")
+	parser.add_option_group(listoptions)
+	
+	listoptions.add_option("--show-paths", dest="show_paths", 
+					action="store_true", help="Shows the complete path. "
+					"To be used with the following parameters:")
+	listoptions.add_option("--list-releases", dest="list_releases", 
+					action="store_true", help="Lists the release names "
 					"the script will encounter.")
-	parser.add_option("--list-releases-dirs", dest="list_releases_dirs", 
-					action="store_true", help="Only list the directories of "
-					"the release names the script will encounter.")
-		
+	listoptions.add_option("--missing-nfos", dest="missing_nfos", 
+					action="store_true", 
+					help="Lists releases with no nfo file.")
+	listoptions.add_option("--missing-samples", dest="missing_samples", 
+					action="store_true", 
+					help="Lists releases with no sample file.")
+	
 	if argv is None:
 		argv = sys.argv[1:]
 		
@@ -627,19 +932,36 @@ def main(argv=None):
 	
 	(options, indirs) = parser.parse_args(args=argv)
 	
-	if options.list_releases:
-		for procdir in indirs:
-			procdir = os.path.abspath(procdir)
-			for release_dir in get_release_directories(procdir):
+	if (options.list_releases or options.missing_nfos or 
+		options.missing_samples):
+		def print_release(release_dir):
+			if options.show_paths:
+				print(release_dir)
+			else:
 				_head, tail = os.path.split(release_dir)
 				print(tail)
-		return 0
-	
-	if options.list_releases_dirs:
 		for procdir in indirs:
 			procdir = os.path.abspath(procdir)
 			for release_dir in get_release_directories(procdir):
-				print(release_dir)
+				if options.list_releases:
+					print_release(release_dir)
+				if options.missing_nfos:
+					if not len(filter(lambda f: f[-4:].lower() == ".nfo",
+					                  os.listdir(release_dir))):
+						print_release(release_dir)
+				if options.missing_samples:
+					sample_dirs = filter(lambda d: d.lower() == "sample",
+					                     os.listdir(release_dir))
+					found = False
+					if len(sample_dirs):
+						sdir = os.path.join(release_dir, sample_dirs[0])
+						for sfile in os.listdir(sdir):
+							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts|mpg)",
+									sfile, re.IGNORECASE):
+								found = True
+								break
+					if not found:
+						print_release(release_dir)
 		return 0
 	
 	if options.always_yes and options.always_no:
@@ -686,6 +1008,20 @@ def main(argv=None):
 		options.temp_dir = None
 	working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
 	
+	if options.vobsubs:
+		unrar = locate_unrar()
+		sfv = os.path.abspath(options.vobsubs)
+		srr_list = create_srr_for_subs(unrar, sfv, working_dir,
+		                               os.path.dirname(sfv))	
+		for vobsub_srr in srr_list:
+			f = os.path.basename(vobsub_srr)
+			out = os.path.join(options.output_dir, f)
+			if os.path.isfile(out):
+				if can_overwrite(out):
+					shutil.copy(vobsub_srr, out)
+			else:
+				shutil.copy(vobsub_srr, out)
+	
 	drive_letters = []
 	aborted = False
 	missing = []
@@ -701,6 +1037,8 @@ def main(argv=None):
 				result = generate_srr(reldir, working_dir, options)
 				if not result:
 					missing.append(reldir)
+					logging.warning("%s: SRR could not be created." % 
+									reldir)
 			else:
 				for release_dir in get_release_directories(reldir):
 					try:
@@ -739,12 +1077,16 @@ def main(argv=None):
 		print("------------------------------------")
 				
 	# delete temporary working dir
-	shutil.rmtree(working_dir)
+	try:
+		shutil.rmtree(working_dir)
+	except OSError:
+		print("Could not empty temporary working directory!")
+		print(working_dir)
+		print("This is a know problem for PyPy users. (long paths issue)")
 	
 	# see if we need to eject a disk drive
 	if options.eject and os.name == "nt" and not aborted:
 		import ctypes
-		import winsound
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
@@ -752,7 +1094,11 @@ def main(argv=None):
 			ctypes.windll.WINMM.mciSendStringW(
 				"set ddrive door open", None, 0, None)
 		
-		winsound.Beep(1000, 500)
+		try:
+			import winsound #@UnresolvedImport
+			winsound.Beep(1000, 500)
+		except:
+			pass
 	elif options.eject and not aborted:
 		import subprocess
 		

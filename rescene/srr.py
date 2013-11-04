@@ -31,6 +31,7 @@ import os
 import time
 import traceback
 import zlib
+import fnmatch
 from threading import Thread
 
 import rescene
@@ -130,6 +131,61 @@ def display_info(srr_file):
 		for sfvline in info["sfv_comments"]:
 			print("\t%s" % sfvline)
 		print("")
+
+def verify_extracted_files(srr, in_folder, auto_locate):
+	status = 0
+	archived_files = rescene.info(srr)["archived_files"].values()
+	for afile in archived_files:
+		if afile.crc32 != "0": # skip the directories and empty files
+			name = os.path.join(in_folder, afile.file_name)
+			if not os.path.exists(name):
+				if not auto_locate:
+					print("File %s not found. Skipping." % afile.file_name)
+					status = 2
+				else: # look for possible renames
+					same_size_list = []
+					for root, _dirnames, filenames in os.walk(in_folder):
+						for fn in fnmatch.filter(filenames, 
+									"*" + os.path.splitext(name)[1]):
+							f = os.path.join(root, fn)
+							if os.path.getsize(f) == afile.file_size:
+								same_size_list.append(f)
+					# TODO: see if we can use OSO hash here to speed things up
+					# it happens that multiple episodes have the same size
+					found = False
+					for f in same_size_list:
+						crc = calculate_crc32(f)
+						if afile.crc32 == "%X" % crc:
+							found = True
+							print("File OK: %s matches %s." % 
+									(f, afile.file_name))
+							break
+						else:
+							print("%s does not match." % f)
+					if not found:
+						print("File %s not found. Skipping." % name)
+						status = 2
+			else:
+				crc = calculate_crc32(name)
+				if afile.crc32 == "%X" % crc:
+					print("File OK: %s." % afile.file_name)
+				else:
+					print("File CORRUPT: %s!" % afile.file_name)
+					status = 1
+	return status
+
+def calculate_crc32(file_name):
+	crc = 0
+	count = 0
+	with open(file_name, "rb") as f:
+		x = f.read(65536)
+		while x:
+			count += 1
+			show_spinner(count)
+			crc = zlib.crc32(x, crc)
+			x = f.read(65536)
+		remove_spinner()
+	return crc & 0xFFFFFFFF
 	
 def manage_srr(options, in_folder, infiles, working_dir):
 	out_folder = working_dir
@@ -142,31 +198,12 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	elif options.list_details: # -e
 		rescene.print_details(infiles[0])
 	elif options.verify: # -q
-		status = 0
-		archived_files = rescene.info(infiles[0])["archived_files"].values()
-		for afile in archived_files:
-			name = os.path.join(in_folder, afile.file_name)
-			if not os.path.exists(name):
-				print("File %s not found. Skipping." % name)
-			else:
-				crc = 0
-				count = 0
-				with open(name, "rb") as f:
-					x = f.read(65536)
-					while x:
-						count += 1
-						show_spinner(count)
-						crc = zlib.crc32(x, crc)
-						x = f.read(65536)
-					remove_spinner()
-				crc = crc & 0xFFFFFFFF
-				if afile.crc32 == "%X" % crc:
-					print("File OK: %s." % afile.file_name)
-				else:
-					print("File CORRUPT: %s!" % afile.file_name)
-					status = 1
-		return status
-		
+		s = verify_extracted_files(infiles[0], in_folder, options.auto_locate)
+		if s == 0:
+			print("All files OK!")
+		else:
+			print("Corrupt and/or missing files!")
+		return s
 	elif options.extract: # -x
 		status = 0
 		mthread.set_messages([])
@@ -239,9 +276,10 @@ def create_srr(options, infolder, infiles, working_dir):
 	if not srr_name:
 		if options.parent: # -d
 			srr_name = os.path.join(out_folder, 
-			                        os.path.split(infolder)[-1] + ".srr")
+		                        os.path.split(infolder)[-1] + ".srr")
 		else:
-			srr_name = os.path.join(out_folder, infiles[0][:-4] + ".srr")
+			srr_name = os.path.join(out_folder, 
+								os.path.basename(infiles[0])[:-4] + ".srr")
 			
 #	print("SRR name: %s" % srr_name)
 #	print("infiles: %s" % infiles)
@@ -256,6 +294,12 @@ def create_srr(options, infolder, infiles, working_dir):
 	except (EnvironmentError, ValueError):
 		# Can not read basic block header
 		# ValueError: compressed SRR
+		# ValueError: The file is too small.
+		# make sure there is no broken SRR file
+		try:
+			os.unlink(srr_name)
+		except:
+			pass
 		mthread.done = True
 		mthread.join()
 		print(sys.exc_info()[1])
@@ -266,7 +310,7 @@ def main(argv=None):
 	global parser
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog [input file list] [options]\n"
-	"To create a display file (.srr), use the .sfv file(s) accompanied" 
+	"To create a ReScene file (.srr), use the .sfv file(s) accompanied" 
 	" with the archives or pick the first .rar file(s).\n"
 	"All files referenced by the .sfv"
 	" must be in the same folder as the .sfv file.\n"
@@ -392,7 +436,7 @@ def main(argv=None):
 		
 		# check existence and type of the input files
 		for infile in infiles:
-			ext = infile[-4:]
+			ext = infile[-4:].lower()
 			if not os.path.exists(infile):
 				print(parser.format_help())
 				report_error(1, "Input file not found: %s\n" % infile)

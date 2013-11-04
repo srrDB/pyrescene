@@ -59,7 +59,7 @@ def main(argv=None, no_exit=False):
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
 		
 	"To create a ReSample file (SRS), pass in the sample file.\n"
-	"This can be an AVI, MKV, MP4 or WMV file.\n"
+	"This can be an AVI, MKV, MP4, WMV, MP3 or FLAC file.\n"
 	"	ex: srs sample.mkv -dd\n"
 	"To recreate a sample, pass in the SRS file and the full movie file\n"
 	"or the first file of a RAR set containing the full movie.\n"
@@ -390,13 +390,16 @@ def main(argv=None, no_exit=False):
 		if _DEBUG:
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-				sys.exc_info()[1])
+				str(sys.exc_info()[1]).strip('\n'))
 	except fpcalc.ExecutableNotFound:
 		pexit(3, str(sys.exc_info()[1]))
 	except AttributeError:
 		if str(sys.exc_info()[1]).startswith("Compressed RARs"):
 			# AttributeError: Compressed RARs are not supported
 			pexit(4, "Cannot verify sample against compressed RARs.")
+		elif (str(sys.exc_info()[1]) == 
+			"You must start with the first volume from a RAR set"):
+			pexit(5, str(sys.exc_info()[1]))
 		else:
 			traceback.print_exc()
 			pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])

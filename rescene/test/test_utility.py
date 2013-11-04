@@ -137,6 +137,23 @@ class TestSfv(unittest.TestCase):
 		one.append(SfvEntry("name"))
 		self.assertFalse(one == two)
 	
+	def test_sfv_quotes(self):
+		output = io.StringIO() # De.Gelukkige.Huisvrouw.2010.DVDRip.XviD-FloW
+		output.write(str("; sfv created by SFV Checker\n"
+		";\n"
+		""""gh-flow.subs.rar" 83a20923\n"""
+		";\n"
+		"; Total 1 File(s)	Combined CRC32 Checksum: 83a20923\n"
+		))
+		(entries, comments, errors) = parse_sfv_file(output)
+		print([str(e) for e in entries])
+		print(comments)
+		print(errors)
+		self.assertTrue(len(entries) == 1)
+		self.assertTrue(len(comments) == 4)
+		self.assertTrue(len(errors) == 0)
+		self.assertEquals("gh-flow.subs.rar", entries[0].file_name)
+	
 	def test_encoding_error(self):
 		"""Should not crash parsing garbage or non-ASCII SFV file"""
 		sfv = io.BytesIO(

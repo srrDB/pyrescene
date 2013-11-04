@@ -50,6 +50,16 @@ import subprocess
 import multiprocessing
 from tempfile import mkdtemp
 
+try:
+	from numpy import bitwise_xor
+	have_numpy = True
+except ImportError:
+	have_numpy = False
+	if not "PyPy" in sys.version:
+		# PyPy is already as fast or faster than CPython with NumPy
+		print("NOTE: install NumPy to speed up the reconstruction of RARs")
+		print("      with a Recovery Record.")
+	
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
@@ -428,7 +438,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	save_paths:  if the path relative to in_folder 
 	             must be stored with the file name e.g. Sample/ or Proof/
 	compressed:  Do we create an SRR or not when encountered compressed files?
-	oso_hash:    Only false for the unit tests.
+	oso_hash:    Store OSO hashes or not.
 				 
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
@@ -470,6 +480,8 @@ def create_srr(srr_name, infiles, in_folder="",
 		# STORE ARCHIVE BLOCKS
 		for rarfile in rarfiles:
 			if not os.path.isfile(rarfile):
+				# TODO: case sensitivity on Unix systems
+				# all lower in sfv and casings in RAR file names
 				_fire(code=MsgCode.FILE_NOT_FOUND,
 					  message="Referenced file not found: %s" % rarfile)
 				srr.close()	  
@@ -1152,6 +1164,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		elif block.rawtype == BlockType.SrrOsoHash:
 			# so no warning message 'unknown block' is shown
 			pass
+		elif block.rawtype == BlockType.SrrRarPadding:
+			rarfs.write(block.block_bytes()[block.header_size:])
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
@@ -1179,7 +1193,6 @@ def _write_recovery_record(block, rarfs):
 		based on the recovery sector count. (512 bytes * recovery sector count)
 	Each slice will get one parity sector created by xor-ing the 
 	corresponding bytes from all other sectors in the slice."""
-	#TODO: this function is way too slow
 	recovery_sectors = block.recovery_sectors
 	protected_sectors = block.data_sectors
 	_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
@@ -1188,7 +1201,7 @@ def _write_recovery_record(block, rarfs):
 
 	rs_slice = 0
 	current_sector = 0	
-	crc = bytearray(protected_sectors * 2)
+	crc = [0] * (protected_sectors * 2)
 	rs = [0] * recovery_sectors # [0, 0, ..., 0]
 	for i in range(recovery_sectors):
 		rs[i] = bytearray(512)
@@ -1198,7 +1211,10 @@ def _write_recovery_record(block, rarfs):
 	assert rar_length != 0 # you can't calculate stuff on nothing
 	rarfs.seek(0)
 	
-	while rarfs.tell() < rar_length:
+	count = 0
+	while count < rar_length:
+		count += 512
+		
 		# Read data one sector at a time.  Pad the last sector with 0's.
 		sector = rarfs.read(512)
 		if len(sector) != 512:
@@ -1206,23 +1222,26 @@ def _write_recovery_record(block, rarfs):
 			# bytearray(), and bytes(int) does not make a string
 			# of zeros
 			sector += bytes(bytearray(512 - len(sector)))
-		assert len(sector) == 512
+		# assert len(sector) == 512
 
 		# calculate the crc32 for the sector and store the 2 low-order bytes
-		sector_crc = ~zlib.crc32(sector) # Bitwise Inversion
+		sector_crc = ~zlib.crc32(sector) & 0xffff # Bitwise Inversion
 		crc[current_sector*2] = sector_crc & 0xff
-		crc[current_sector*2+1] = (sector_crc >> 8) & 0xff
+		crc[current_sector*2+1] = sector_crc >> 8
 		current_sector += 1
 
 		# update the recovery sector parity data for this slice
-		for i in range(512):
-			rs[rs_slice][i] ^= ord(sector[i:i + 1])
+		if have_numpy:
+			rs[rs_slice] = bitwise_xor(rs[rs_slice], bytearray(sector))
+		else:
+			for i in range(512):
+				rs[rs_slice][i] ^= ord(sector[i:i + 1])
 		rs_slice = rs_slice + 1 if (rs_slice + 1) % recovery_sectors else 0
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows
 	
-	rarfs.write(block.block_bytes()) # write the backed-up block header,
-	rarfs.write(crc)                  # CRC data and
+	rarfs.write(block.block_bytes())  # write the backed-up block header,
+	rarfs.write(bytearray(crc))	      # CRC data and
 	for sector in rs:                 # recovery sectors
 		rarfs.write(sector)
 
@@ -1598,6 +1617,7 @@ class RarArguments(object):
 		self.set_solid_namesort(False)
 		self.threads = ""
 		self.split = ""
+		self.old_naming_flag = "-vn"
 		
 	def increase_thread_count(self):
 		if self.threads == "":
@@ -1617,17 +1637,18 @@ class RarArguments(object):
 		return False
 	
 	def thread_count(self):
+		if self.threads == "":
+			return 1 # so it won't crash here; see t-670586
 		return int(self.threads[3:])
 	
 	def arglist(self):
 		args = list(filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
-			"-vn", # old style rar naming
+			self.old_naming_flag, # old style volume naming scheme
 			"-o+", # Overwrite all
 			"-ep", # Exclude paths from names.
 			"-idcd", # Disable messages: copyright string, "Done" string
-			"-vn", # old style volume naming scheme
 			self.split,
 			self.rar_archive]))
 		if len(self.store_all_files):
@@ -1679,6 +1700,9 @@ class RarArguments(object):
 		
 	def set_extra_files_after(self, file_list):
 		self.extra_files_after = file_list
+
+	def set_rar2_flags(self, rar2_detected):
+		self.old_naming_flag = "" if rar2_detected else "-vn"
 	
 def compressed_rar_file_factory(block, blocks, src,
 	                            in_folder, hints, auto_locate_renamed):
@@ -1698,10 +1722,17 @@ def compressed_rar_file_factory(block, blocks, src,
 			#TODO: compress all at once and reuse first block
 			
 			# try to locate the file to archive too
-			followup_src = _locate_file(followup, 
-			               in_folder, hints, auto_locate_renamed)
+			try:
+				followup_src = _locate_file(followup, 
+				               in_folder, hints, auto_locate_renamed)
+			except FileNotFound:
+				if followup.unpacked_size == 0: # a directory or empty file
+					followup_src = ""
+				else:
+					raise
 			return CompressedRarFile(block, blocks, src, 
-									followup, followup_src, solid=True)
+										followup, followup_src, solid=True)
+			
 		if block.flags & block.SOLID:
 			# get first file from archive
 			if block != blocks[0]:
@@ -1720,8 +1751,11 @@ def compressed_rar_file_factory(block, blocks, src,
 		
 		nblock = next_block(block, blocks)
 		if nblock:
-			followup_src = _locate_file(nblock, 
+			try:
+				followup_src = _locate_file(nblock, 
 			                            in_folder, hints, auto_locate_renamed)
+			except FileNotFound:
+				followup_src = ""
 		else:
 			followup_src = "" 
 	
@@ -1841,24 +1875,35 @@ class CompressedRarFile(io.IOBase):
 		global repository
 		if not repository:
 			repository = RarRepository()
+			
+		# set a minimum thread count to start with based on previous runs
+		# should make it a little bit faster too
+		thread_count = ""
+		for _key, value in archived_files.items():
+			if value.good_rar.args.threads > thread_count:
+				thread_count = value.good_rar.args.threads 
 		
 		# search the correct RAR executable
-		self.good_rar = self.search_matching_rar_executable(first_block, blocks)
+		self.good_rar = self.search_matching_rar_executable(
+			first_block, blocks, thread_count)
+		
 		
 		# try again with the next (previous) files added too
 		if not self.good_rar and next_block and not solid:
 			self.source_files.append(next_src)
 			self.good_rar = self.search_matching_rar_executable(first_block, 
-				blocks, more_files=True)
+				blocks, thread_count, more_files=True)
 			
+		
 		#TODO: to reconstruct succesfully, it probably needs to have the
 		# next 'window size' of file data
 		# link 'blocks' objects
 		
 		if not self.good_rar:
-			assert len(os.listdir(self.temp_dir)) == 0
+			# the directory can still have the .r00,... files
 			try:
-				os.rmdir(self.temp_dir)
+				#os.rmdir(self.temp_dir)
+				shutil.rmtree(self.temp_dir)
 			except:
 				print("Failure to remove temp dir: %s" % self.temp_dir)
 			raise RarNotFound("No good RAR version found.")
@@ -1893,9 +1938,15 @@ class CompressedRarFile(io.IOBase):
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
 			
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
-		self.rarstream = RarStream(out, compressed=True, 
-			packed_file_name=os.path.basename(first_block.file_name))
-		
+		try:
+			self.rarstream = RarStream(out, compressed=True, 
+				packed_file_name=os.path.basename(first_block.file_name))
+		except AttributeError:
+			# -r parameter is used to find the file to compress
+			# that renamed file is inside the RAR
+			# we "don't know" the packed file name; try the first file
+			self.rarstream = RarStream(out, compressed=True)
+			
 		self.rarstream.seek(0, os.SEEK_END)
 		size = self.rarstream.tell()
 		self.rarstream.seek(0, os.SEEK_SET)
@@ -1906,7 +1957,8 @@ class CompressedRarFile(io.IOBase):
 			self.close()
 			raise ValueError("Still not fine :(.")
 
-	def search_matching_rar_executable(self, block, blocks, more_files=False):
+	def search_matching_rar_executable(self, block, blocks, 
+			thread_count, more_files=False):
 		out = os.path.join(self.temp_dir, self.COMPRESSED_NAME)
 		if len(block.file_name) > 2:
 			piece = os.path.join(self.temp_dir, "pyReScene_data_piece." + 
@@ -1943,6 +1995,7 @@ class CompressedRarFile(io.IOBase):
 				"Grabbing large enough data piece size for testing.")
 			# we assume that newer versions always compress better
 			rarexe = repository.get_most_recent_version()
+			args.set_rar2_flags(re.search(r'_rar2', rarexe.path()) is not None)
 			
 			window_size = block.get_dict_size()
 			amount = 0
@@ -1984,6 +2037,10 @@ class CompressedRarFile(io.IOBase):
 		if more_files:
 			#TODO: only use 4MiB here
 			args.set_extra_files_after([self.source_files[1]])
+		
+		#TODO: use?
+#		# based on previous runs
+#		args.threads = thread_count
 			
 		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
@@ -2065,6 +2122,7 @@ class CompressedRarFile(io.IOBase):
 			
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			_fire(MsgCode.MSG, message="Trying %s." % rar)
+			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
 				while(args.increase_thread_count()):
@@ -2083,21 +2141,21 @@ class CompressedRarFile(io.IOBase):
 				print("Testing with previous file")
 				# try compressing with the previous rar file before it
 				prev = get_previous_block()
-				assert prev
-				prev_file = archived_files[prev.file_name]
-				
-				args.set_extra_files_before([prev_file.source_files[-1]])
-				
-				if rar.supports_setting_threads():
-					while(args.increase_thread_count()):
-						if try_rar_executable(rar, args, old):
-							found = True
-							break
-				else:
-					found = try_rar_executable(rar, args, old)
-				if found:
-					rar.args = args
-					return rar
+				if prev:
+					prev_file = archived_files[prev.file_name]
+					
+					args.set_extra_files_before([prev_file.source_files[-1]])
+					
+					if rar.supports_setting_threads():
+						while(args.increase_thread_count()):
+							if try_rar_executable(rar, args, old):
+								found = True
+								break
+					else:
+						found = try_rar_executable(rar, args, old)
+					if found:
+						rar.args = args
+						return rar
 
 			args.reset_extra_files()			
 			args.threads = ""
@@ -2308,6 +2366,7 @@ class CompressedRarFileAll(io.IOBase):
 		_fire(MsgCode.MSG, message=" ".join(self.good_rar.full()))
 		_fire(MsgCode.MSG, message="Compressing ALL files.")
 		time.sleep(0.5)
+		print("Command length: %d" % len(self.good_rar.full()))
 		compress = subprocess.Popen(self.good_rar.full())
 		stdout, stderr = compress.communicate()
 		

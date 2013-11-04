@@ -735,7 +735,7 @@ def avi_profile_sample(avi_data): # FileData object
 	
 	if avi_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, attachments
@@ -879,7 +879,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 	
 	if mkv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, attachments
@@ -1052,7 +1052,7 @@ def mp4_profile_sample(mp4_data):
 	
 	if mp4_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, {} #attachments
@@ -1244,7 +1244,7 @@ def wmv_profile_sample(wmv_data):
 	
 	if wmv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, {} #attachments
@@ -1324,8 +1324,11 @@ def flac_profile_sample(flac_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(flac_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def mp3_profile_sample(mp3_data): # FileData object
@@ -1393,8 +1396,11 @@ def mp3_profile_sample(mp3_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(mp3_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def avi_create_srs(tracks, sample_data, sample, srs, big_file):

@@ -46,4 +46,7 @@ suite.addTest(unittest.defaultTestLoader.loadTestsFromName("tvmatch"))
 sys.path.append(os.path.join(dir, "scripts"))
 suite.addTest(unittest.defaultTestLoader.loadTestsFromName("nzbsrr"))
 
-unittest.main(defaultTest="suite")
+kw = dict()
+if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
+	kw.update(buffer=True)
+unittest.main(defaultTest="suite", **kw)

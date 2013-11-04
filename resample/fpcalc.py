@@ -81,7 +81,7 @@ def find_fpcalc_executable():
 	                             inspect.getfile(inspect.currentframe())))
 	bin_dir = os.path.join(script_dir, "..", "bin")
 	
-	path = os.pathsep.join([script_dir, bin_dir, 
+	path = os.pathsep.join([script_dir, bin_dir, module_path(),
 	                       "C:\\", "D:\\", os.getenv('PATH', "")])
 	result = find_executable("fpcalc", path=path)
 
@@ -91,6 +91,20 @@ def find_fpcalc_executable():
 		return fpcalc_executable
 	else:
 		raise ExecutableNotFound(MSG_NOTFOUND)
+	
+# http://www.py2exe.org/index.cgi/WhereAmI
+def we_are_frozen():
+	"""Returns whether we are frozen via py2exe.
+	This will affect how we find out where we are located."""
+	return hasattr(sys, "frozen")
+
+def module_path():
+	""" This will get us the program's directory,
+	even if we are frozen using py2exe"""
+	if we_are_frozen():
+		return os.path.dirname(unicode(sys.executable, 
+		                               sys.getfilesystemencoding()))
+	return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
 
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
