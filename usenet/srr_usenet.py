@@ -213,64 +213,63 @@ When the socket module is first imported, the default is None."""
 nntplib.socket.setdefaulttimeout(180.0) # 3 minutes
 
 # add functionality to nntplib to grab only the first few lines
-def _body_little(self, article_id, nb_lines=DEFAULT_LINES):
-	self.putcmd('BODY ' + article_id)
-	resp, list_body = self.getlongresp_little(None, nb_lines)
-	resp, article_nr, msg_id = self.statparse(resp)
+class NNTP(nntplib.NNTP):
+	def body_little(self, article_id, nb_lines=DEFAULT_LINES):
+		self.putcmd('BODY ' + article_id)
+		resp, list_body = self.getlongresp_little(None, nb_lines)
+		resp, article_nr, msg_id = self.statparse(resp)
+		
+		# http://q-lang.sourceforge.net/qcalc/qdoc_12.html#SEC132
+		# The shutdown function terminates data transmission on a
+		# socket. You can stop reading, writing or both, depending on
+		# whether HOW is SHUT_RD, SHUT_WR or SHUT_RDWR. Note that
+		# this operation does not close the socket's file descriptor.
+		self.sock.shutdown(socket.SHUT_RDWR)
+		self.file.close()
+		self.sock.close()
+		del self.file, self.sock
+		
+		return resp, article_nr, msg_id, list_body
 	
-	# http://q-lang.sourceforge.net/qcalc/qdoc_12.html#SEC132
-	# The shutdown function terminates data transmission on a socket. 
-	# You can stop reading, writing or both, depending on whether HOW is 
-	# SHUT_RD, SHUT_WR or SHUT_RDWR. Note that this operation does not close 
-	# the socket's file descriptor;
-	self.sock.shutdown(socket.SHUT_RDWR)
-	self.file.close()
-	self.sock.close()
-	del self.file, self.sock
-	
-	return resp, article_nr, msg_id, list_body
-nntplib.NNTP.body_little = _body_little
-
-def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
-	"""Internal: get a response plus following text from the server.
-	Raise various errors if the response indicates an error.
-	
-	Gets only one or more of the first lines.
-	max_nb_lines = 3: yEnc header and first data line """
-	openedFile = None
-	try:
-		# If a string was passed then open a file with that name
-		if isinstance(ofile, str):
-			openedFile = ofile = open(ofile, "wb")
-
-		resp = self.getresp()
+	def getlongresp_little(self, ofile=None, max_nb_lines=DEFAULT_LINES):
+		"""Internal: get a response plus following text from server.
+		Raise various errors if the response indicates an error.
+		
+		Gets only one or more of the first lines.
+		max_nb_lines = 3: yEnc header and first data line """
+		openedFile = None
 		try:
-			resplist = nntplib.LONGRESP
-		except AttributeError: #Python 3
-			resplist = nntplib._LONGRESP #@UndefinedVariable
-		if resp[:3] not in resplist:
-			raise nntplib.NNTPReplyError(resp)
-		data_list = []
-		# grab one or more lines only
-		line_amount = 0
-		while line_amount < max_nb_lines:
-			line = self.getline()
-			if line == b'.':
-				break
-			if line.startswith(b'..'):
-				line = line[1:]
-			if ofile:
-				ofile.write(line + b"\n")
-			else:
-				data_list.append(line)
-			line_amount += 1
-	finally:
-		# If this method created the file, then it must close it
-		if openedFile:
-			openedFile.close()
+			# If a string was passed, open a file with that name
+			if isinstance(ofile, str):
+				openedFile = ofile = open(ofile, "wb")
 
-	return resp, data_list
-nntplib.NNTP.getlongresp_little = _getlongresp
+			resp = self.getresp()
+			try:
+				resplist = nntplib.LONGRESP
+			except AttributeError: #Python 3
+				resplist = nntplib._LONGRESP #@UndefinedVariable
+			if resp[:3] not in resplist:
+				raise nntplib.NNTPReplyError(resp)
+			data_list = []
+			# grab one or more lines only
+			line_amount = 0
+			while line_amount < max_nb_lines:
+				line = self.getline()
+				if line == b'.':
+					break
+				if line.startswith(b'..'):
+					line = line[1:]
+				if ofile:
+					ofile.write(line + b"\n")
+				else:
+					data_list.append(line)
+				line_amount += 1
+		finally:
+			# If this method created the file, it must close it
+			if openedFile:
+				openedFile.close()
+
+		return resp, data_list
 
 def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
 	return yenc.decode(data, partial_data, crc_behaviour)
@@ -356,7 +355,7 @@ class NNTPFile(io.IOBase):
 			if server_nb < 0:
 				server_nb = 0
 			
-		self.server = nntplib.NNTP(*EXTRA_SERVERS[server_nb])
+		self.server = NNTP(*EXTRA_SERVERS[server_nb])
 		print(self.server.getwelcome())
 		self.new_server = True
 		
@@ -403,7 +402,7 @@ class NNTPFile(io.IOBase):
 				# always use a new connection for these little grabs
 				for server in EXTRA_SERVERS:
 					try:
-						s = nntplib.NNTP(*server) # scatter tuple
+						s = NNTP(*server) # scatter tuple
 						try:
 							s.set_debuglevel(options.nntp_debug_level)
 							if self.group:
@@ -476,7 +475,7 @@ class NNTPFile(io.IOBase):
 			for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
 				try:
 					print("Trying %s." % server[0])
-					s = nntplib.NNTP(*server) # scatter tuple
+					s = NNTP(*server) # scatter tuple
 					
 					try:
 						s.set_debuglevel(options.nntp_debug_level)
@@ -1013,7 +1012,7 @@ class NNTPFile(io.IOBase):
 				# try to STAT on the other servers
 				for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
 					try:
-						s = nntplib.NNTP(*server) # scatter tuple
+						s = NNTP(*server) # scatter tuple
 						try:
 							s.set_debuglevel(options.nntp_debug_level)
 							if self.group:
