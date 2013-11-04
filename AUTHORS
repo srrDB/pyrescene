@@ -1,2 +1,5 @@
 umlaut (original .NET implementation)
-Gfy <pyrescene@gmail.com>
+gooober (awescript)
+Gfy <pyrescene@gmail.com> (porting to Python + everything new)
+Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
+mechtex (Fix commandline arguments for rar 2.xx archivers)

@@ -465,7 +465,8 @@ IX. General overview of a .srr file
         [RAR Marker Block]        |    For each RAR volume
         [RAR Volume Header Block] |
         [RAR Packed File Block]   |
-        [...]                     /
+        [...]                     |
+        [SRR RAR Padding Block]   /
     [SRR RAR Block]
         [RAR Block]
         [RAR Block]
@@ -663,6 +664,30 @@ SRR OSO Hash Block
   FILE_NAME:
     UTF-8 must be used as encoding.
     
+SRR RAR Padding
+===============
+
+  Some scene releases, e.g.
+    The.Numbers.Station.2013.720p.BluRay.x264-DAA
+    Stand.Up.Guys.2012.720p.BluRay.x264-DAA
+  have padded bytes after the end of the RAR Archive End Block.
+  This block will include those padded bytes into the SRR file.
+  
+    [SRR OSO Hash Block
+        - HEAD_CRC: 0x6C6C                                  2 bytes
+        - HEAD_TYPE: 0x6C                                   1 byte
+        - HEAD_FLAGS                                        2 bytes
+            0x8000: ADD_SIZE field present 
+        - HEAD_SIZE                                         2 bytes
+        - ADD_SIZE: the size of the padding                 4 bytes
+        [Padding data]
+    ]  
+  
+  HEAD_FLAGS:
+    0x0: no flags available
+  HEAD_SIZE:
+    7 + 4 = 11 bytes
+    
 RAR Marker Block
 ================
     
@@ -759,6 +784,8 @@ XVI. Change log
 ---------------
 
 2010-08-08: one of the first revisions
+2013-02-01: OSO hash support
+2013-05-15: RAR end padding block
 
 
 TODO: srr file verification build-in for pyReScene

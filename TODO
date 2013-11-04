@@ -3,6 +3,7 @@ pyReScene
 
  - SRR support for RAR5 files <supportATrarlab.com>
  - SRR support for ZIP files
+ - Make SFX volumes rescenable
  - *.sfv as the first parameter
  - add, remove, rename stored files from CLI
  - new block for empty directories?
@@ -25,7 +26,6 @@ pyReScene
    maybe an app which scans all your drives , checks which rls dont have srr 
    on site, create srr for them, download srr packages from srrdb and re-sample
    those rls which have missing Sample
- - Never.on.Sunday.1960.DVDRip.XviD-AEN
  - fail on empty sfv
  - automatically check for rar executables in srr.exe dir
  - new parameter: it must behave like -n (faster than recreating everything), 
@@ -33,6 +33,9 @@ pyReScene
    compared to the ones stored in the existing srr release folder, 
    contains new files. new in the sense of addition e.g. proof jpg
  - add a switch (like -z) for a single executable
+ - add --broken-samples parameter
+ - don't make SRR files disappear when no new one can be created
+ - store fpcalc output for RIFF mp3s in the txts
     
 pyReSample
 ==========
@@ -44,7 +47,7 @@ pyReSample
     * MPEG
  - Be able to use the srs command like this: srs *.mp4
  - try to extract sample from one big AVI (sample across CDs)
-    
+ - Reconstruct LOL AVI samples correctly.
     
 General
 =======

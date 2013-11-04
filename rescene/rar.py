@@ -217,7 +217,7 @@ class BlockType: # saved as integer number internally
 	RarOldSubblock = 0x77 # OS/2 extended attributes subblock
 	RarOldAuthenticity79 = 0x79 # SIGN_HEAD
 	
-	# these are the only rar block types we do anything with
+	# these are the only RAR block types we do anything with
 	RarVolumeHeader = 0x73  # Archive header                            s
 	RarPackedFile = 0x74    # File header                               t
 	RarOldRecovery = 0x78   # old-style recovery record                 x
@@ -232,6 +232,7 @@ class BlockType: # saved as integer number internally
 	SrrHeader = 0x69        # i -> 0x73 (s) RarVolumeHeader
 	SrrStoredFile = 0x6A    # j -> 0x74 (t) RarPackedFile
 	SrrOsoHash = 0x6B       # k
+	SrrRarPadding = 0x6C	# l
 	SrrRarFile = 0x71       # q -> 0x7A (z) RarNewSub
 	
 class SrrFlags():
@@ -798,6 +799,49 @@ class SrrOsoHashBlock(_SrrFileNameBlock):
 		        len(self.file_name.encode("utf-8"))) + "\n"
 		out += "+File name: " + self.file_name + "\n"
 		return out
+
+class SrrRarPaddingBlock(RarBlock):
+	"""
+	Some scene releases, e.g.
+	    The.Numbers.Station.2013.720p.BluRay.x264-DAA
+	    Stand.Up.Guys.2012.720p.BluRay.x264-DAA
+	have padded bytes after the end of the RAR Archive End Block.
+	This block will include those padded bytes into the SRR file.
+		
+	|CRC |TY|FLAG| HL |  SIZE  |
+	CRC:    0x6C6C (2 bytes)
+	TY:     Type 0x6C (1 byte)
+	FLAG:   Long block (2 bytes)
+	HL:     Header Length (2 bytes)
+	        Always 7 + 4 = 11 bytes.
+	"""
+	def __init__(self, bbytes=None, filepos=None, fname=None,
+				padding_bytes=None):
+		if bbytes != None:
+			super(SrrRarPaddingBlock, self).__init__(bbytes, filepos, fname)
+			
+			# 4 bytes for the padding size (ADD_SIZE)
+			self.padding_size = struct.unpack("<I", 
+				self._rawdata[self._p:self._p+4])[0]
+			self._p += 4
+		elif padding_bytes != None:
+			self.crc = 0x6C6C
+			self.rawtype = 0x6C
+			self.flags = self.LONG_BLOCK
+			self.padding_size = len(padding_bytes)
+			self.header_size = HEADER_LENGTH + 4
+			
+			self._write_header(self.header_size)
+			self._rawdata += struct.pack("<I", self.padding_size) # 4 bytes
+			self._rawdata += padding_bytes
+		else:
+			raise AttributeError("Invalid values for the constructor.")
+			
+	def explain(self):
+		out = super(SrrRarPaddingBlock, self).explain()
+		out += "+Padding size (4 bytes): " + self.explain_size(
+												self.padding_size) + "\n"
+		return out
 	
 class RarVolumeHeaderBlock(RarBlock): # 0x73
 	""" Archive header ( MAIN_HEAD )
@@ -1080,6 +1124,8 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			return "-mdB"
 		elif self.flags & self.DICT64 == self.DICT64:
 			return "-mdA"
+		else: # self.DIRECTORY
+			return ""
 	
 	def get_os(self):
 		return "%s used to create this file block." % OS_NAME[self.os]
@@ -1277,6 +1323,7 @@ BTYPES_CLASSES = {
 	BlockType.SrrStoredFile: SrrStoredFileBlock,
 	BlockType.SrrRarFile: SrrRarFileBlock,
 	BlockType.SrrOsoHash: SrrOsoHashBlock,
+	BlockType.SrrRarPadding: SrrRarPaddingBlock,
 	BlockType.RarVolumeHeader: RarVolumeHeaderBlock,
 	BlockType.RarPackedFile: RarPackedFileBlock,
 	BlockType.RarOldRecovery: RarOldRecoveryBlock,
@@ -1361,6 +1408,7 @@ class RarReader(object):
 				raise ValueError("SFX support not on or not a RAR archive.")
 		self._rarstream.seek(self._initial_offset)
 		self._current_index = 0
+		self._rar_end_block_encountered = False # for detecting padding
 
 	def __del__(self):
 		try: # close the file/stream
@@ -1402,7 +1450,10 @@ class RarReader(object):
 		#   otherwise you would get this error:
 		#   error: unpack requires a string argument of length 7
 		if block_start_position + HEADER_LENGTH > self._file_length:
-			raise EnvironmentError("Cannot read basic block header.")
+			if (self._rar_end_block_encountered and self._readmode == self.RAR):
+				return SrrRarPaddingBlock(padding_bytes=self._rarstream.read())
+			else:
+				raise EnvironmentError("Cannot read basic block header.")
 
 		""" The block header is always 7 bytes: (see struct BaseBlock unrar)
 		  - 2 for crc,                  H  unsigned short
@@ -1424,6 +1475,11 @@ class RarReader(object):
 		header_buffer = self._rarstream.read(HEADER_LENGTH)
 		fmt = "<HBHH"
 		(_crc, btype, flags, hsize) = struct.unpack(fmt, header_buffer)
+		
+		# detect padding bytes
+		if (self._rar_end_block_encountered and self._readmode == self.RAR):
+			return SrrRarPaddingBlock(
+				padding_bytes=header_buffer + self._rarstream.read())
 		
 		# one more sanity check on the length before continuing
 		if (hsize < HEADER_LENGTH or 
@@ -1511,6 +1567,9 @@ class RarReader(object):
 			self._readmode in (self.RAR, self.SFX)):
 			self._rarstream.seek(block_start_position + hsize)
 			self._rarstream.seek(rar_block.packed_size, os.SEEK_CUR)
+			
+		if btype == BlockType.RarMax:
+			self._rar_end_block_encountered = True
 		
 		return rar_block
 	

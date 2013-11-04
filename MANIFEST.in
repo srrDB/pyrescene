@@ -2,6 +2,7 @@ recursive-include bin *.bat *.py
 recursive-include rescene *.py
 recursive-include resample *.py
 recursive-include usenet *.py
+include awescript/awescript.py
 include usenet/srr_usenet_template.cfg
 include usenet/_yenc.so
 include bin/srr
