@@ -460,14 +460,11 @@ def extract_rar(unrar, rarfile, destination):
 		rarfile = os.path.join(head, tail)
 	extract = custom_popen([unrar, "e", "-ep", "-o+", 
 	                        rarfile, "*", destination])
-	extract.wait()
+	(stdout, _) = extract.communicate()
 			
 	if extract.returncode != 0:
 		print("Some unrar error occurred:")
-		if extract.stdout:
-			print(extract.stdout.read())
-		if extract.stderr:
-			print(extract.stderr.read())
+		print(stdout)
 		return False
 	return True
 			

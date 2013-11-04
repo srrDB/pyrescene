@@ -1928,11 +1928,9 @@ class CompressedRarFile(io.IOBase):
 		_fire(MsgCode.MSG, message="Compressing %s..." % os.path.basename(src))
 		time.sleep(0.5)
 		compress = subprocess.Popen(self.good_rar.full())
-		stdout, stderr = compress.communicate()
+		compress.communicate()
 		
 		if compress.returncode != 0:
-#			print(stdout)
-#			print(stderr)
 			_fire(MsgCode.MSG, 
 				message="Something went wrong executing Rar.exe:")
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
@@ -2011,11 +2009,10 @@ class CompressedRarFile(io.IOBase):
 					break
 				
 				proc = custom_popen([rarexe.path()] + args.arglist())
-				proc.wait()
+				(stdout, _) = proc.communicate()
 				
 				if proc.returncode != 0:
-					print(proc.stdout.read())
-					print(proc.stderr.read())
+					print(stdout)
 					_fire(MsgCode.MSG, message=
 						"Something went wrong executing Rar.exe:")
 					_fire(MsgCode.MSG, message=RETURNCODE[proc.returncode])
@@ -2044,11 +2041,10 @@ class CompressedRarFile(io.IOBase):
 			
 		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
-			stdout, stderr = compress.communicate()
+			stdout, _ = compress.communicate()
 			
 			if compress.returncode != 0:
 				print(stdout)
-				print(stderr)
 				_fire(MsgCode.MSG, message=
 					"Something went wrong executing Rar.exe:")
 				_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
@@ -2181,11 +2177,9 @@ class CompressedRarFile(io.IOBase):
 		def compress():
 			time.sleep(0.5)
 			compress = subprocess.Popen(self.good_rar.full())
-			stdout, stderr = compress.communicate()
+			compress.communicate()
 			
 			if compress.returncode != 0:
-				print(stdout)
-				print(stderr)
 				_fire(MsgCode.MSG, message=
 					"Something went wrong executing Rar.exe:")
 				_fire(MsgCode.MSG, message=
@@ -2368,11 +2362,9 @@ class CompressedRarFileAll(io.IOBase):
 		time.sleep(0.5)
 		print("Command length: %d" % len(self.good_rar.full()))
 		compress = subprocess.Popen(self.good_rar.full())
-		stdout, stderr = compress.communicate()
+		compress.communicate()
 		
 		if compress.returncode != 0:
-			print(stdout)
-			print(stderr)
 			_fire(MsgCode.MSG, 
 				message="Something went wrong executing Rar.exe:")
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
