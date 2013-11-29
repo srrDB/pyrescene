@@ -68,6 +68,16 @@ if sys.hexversion < 0x3000000:
 else:
 	unicode = str #@ReservedAssignment
 
+try:  # Python < 3
+	raw_input = raw_input
+except NameError:  # Python 3
+	raw_input = input
+
+try:  # Python < 3
+	basestring = basestring
+except NameError:  # Python 3
+	basestring = str
+
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""
 	def __init__(self, file_name, crc32="00000000"):
@@ -105,6 +115,7 @@ class SfvEntry(object):
 	
 	def __eq__(self, other) : 
 		return self.__dict__ == other.__dict__
+	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
 def parse_sfv_file(sfv_file):
 	"""Returns lists: (entries, comments, errors).
@@ -195,8 +206,9 @@ def is_rar(file_name):
 	"""
 	return bool(re.match(".*\.(rar|[r-v]\d{2}|\d{3})$", file_name, re.I))
 
-def first_rars(file_list):
+def first_rars(file_iter):
 	"""Tries to pick the first RAR file based on file name."""
+	
 	def isfirst(rar):
 		if re.match(".*(\.part0*1\.rar|(?<!\d)\.rar)$", rar, re.IGNORECASE):
 			return True
@@ -207,7 +219,7 @@ def first_rars(file_list):
 		if rar.endswith((".000", ".001")):
 			return True
 		return False
-	firsts = list(filter(isfirst, file_list))
+	firsts = list(filter(isfirst, file_iter))
 	# .000? then no .001
 	for first in filter(lambda x: x.endswith(".000"), firsts):
 		firsts.remove(first[:-1] + "1")
@@ -287,7 +299,7 @@ def diff_lists(one, two):
 #	for line in two:
 #		twoclean.append(line.encode('ascii', 'replace'))
 #	#a = d.compare(oneclean, twoclean)
-#	print "\n".join(list(a))
+#	print("\n".join(list(a)))
 #	
 
 	#TODO: remove empty lines?
@@ -305,7 +317,7 @@ def diff_lists(one, two):
 		else: # ? or space
 			no += 1
 			res.append(" ")
-	#print res
+	#print(res)
 	return pos, neg, no
 
 def cleanlines(line):

@@ -37,12 +37,13 @@
 # define external public interface
 # __all__ = [] # dir(rar)
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function, division
 import io
 import struct
 import os
 import sys
 import tempfile
+from binascii import hexlify
 
 from rescene import utility 
 
@@ -106,7 +107,7 @@ def _parse_ext_time(block, pos):
 	return pos
 
 def _parse_xtime(flag, data, pos, dostime = None):
-	unit = 10000000.0 # 100 ns units
+	unit = 10000000 # 100 ns units
 	if flag & 8:
 		if not dostime:
 			t = struct.Struct('<L').unpack_from(data, pos)[0] # long
@@ -395,7 +396,8 @@ class RarBlock(object):
 		bname = BLOCK_NAME.get(self.rawtype, "UNKNOWN BLOCK! NUKE IT!")
 		out = "Block: %s; offset: %s\n" % (bname, 
 			self.explain_size(self.block_position))
-		out += "|Header bytes: %s\n" % self._rawdata.encode('hex')
+		hex = hexlify(self._rawdata).decode('ascii')
+		out += "|Header bytes: %s\n" % hex
 		if self.rawtype == BlockType.RarMin:
 			out += "|Rar marker block is always 'Rar!1A0700' (magic number)\n"
 		out += "|HEAD_CRC:   0x%X\n" % self.crc
@@ -590,7 +592,8 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 			self._unpack_file_name()
 		
 		# creating a srr file block
-#		elif file_name != None and isinstance(file_size, (int, long)):
+#		elif (file_name != None and
+#		isinstance(file_size, numbers.Integral)):
 		elif file_name != None and file_size != None:
 			""" store block (type 0x6A) has the 0x8000 flag set to indicate
 				there is additional data following the block.
@@ -909,20 +912,21 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 
 		# TODO: look what is in the reserved places and figure it out
 		if self.reserved1 != 0 or self.reserved2 != 0:
-#			print self.reserved1, self.reserved2, self.fname
+#			print(self.reserved1, self.reserved2, self.fname)
 			pass
 			
-#		print self.reserved1, self.reserved2, self.fname
-		# print self._rawdata[7:].encode('hex')
-#		if not "000000000000" == self._rawdata[7:].encode('hex'):
-##			print self._rawdata[7:].encode('hex'), self.fname
+#		print(self.reserved1, self.reserved2, self.fname)
+		# hex = hexlify(self._rawdata[7:]).decode('ascii')
+		# print(hex)
+#		if not bytearray(6) == self._rawdata[7:]:
+##			print(hex, self.fname)
 #			# only with solid archives?
 #			pass
 
 	def explain(self):
 		out = super(RarVolumeHeaderBlock, self).explain()
-		out += "+RESERVED1: 2 bytes: " + bytes(self.reserved1) + "\n"
-		out += "+RESERVED2: 4 bytes: " + bytes(self.reserved2) + "\n"
+		out += "+RESERVED1: 2 bytes: " + str(self.reserved1) + "\n"
+		out += "+RESERVED2: 4 bytes: " + str(self.reserved2) + "\n"
 		return out
 		
 class RarPackedFileBlock(RarBlock): # 0x74
@@ -1348,8 +1352,8 @@ class RarReader(object):
 		else: # file on hard drive
 			try:
 				self._rarstream = open(rfile, mode="rb")
-			except (IOError, TypeError):
-				raise ArchiveNotFoundError(sys.exc_info()[1])
+			except (IOError, TypeError) as err:
+				raise ArchiveNotFoundError(err)
 		
 		# get the length of the stream
 		self._initial_offset = self._rarstream.tell()
@@ -1481,7 +1485,7 @@ class RarReader(object):
 		if (hsize < HEADER_LENGTH or 
 			block_start_position + hsize > self._file_length):
 			#XXX: ValueError would be better, no?
-#			print("Header buffer: %s" % header_buffer.encode('hex'))
+#			print("Header buffer: %s" % hexlify(header_buffer).decode('ascii'))
 			raise EnvironmentError("Invalid RAR block length (" + str(hsize) +\
 					") at offset {0:#x}".format(self._rarstream.tell() - 2))
 		elif hsize == HEADER_LENGTH: # Marker block

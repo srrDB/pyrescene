@@ -39,6 +39,8 @@ Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
+from __future__ import unicode_literals
+
 from optparse import OptionParser, OptionGroup
 from tempfile import mkdtemp
 from datetime import datetime
@@ -54,14 +56,13 @@ try:
 	import win32api
 	win32api_available = True
 except ImportError:
-	sys.exc_clear()
 	win32api_available = False
 
 try:
 	import _preamble
 except ImportError:
-	sys.exc_clear()
-	
+	pass
+
 import rescene
 from resample.srs import main as srsmain
 from rescene.srr import MessageThread
@@ -71,6 +72,7 @@ from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
+from rescene.utility import raw_input
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -81,7 +83,6 @@ def can_create(always_yes, path):
 	retvalue = True 
 	if not always_yes and os.path.isfile(path):
 		print("Warning: %s does not exist. Create it? " % path)
-		# http://www.python.org/dev/peps/pep-3111/
 		char = raw_input("Do you wish to continue? (Y/N): ").lower()
 		while char not in ('y', 'n'):
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -264,8 +265,8 @@ def get_start_rar_files(sfv_list):
 	"""
 	wanted_rars = []
 	for sfv in sfv_list:
-		first = rescene.utility.first_rars([x.file_name for x in 
-				rescene.utility.parse_sfv_file(sfv)[0]])
+		first = rescene.utility.first_rars(x.file_name for x in 
+				rescene.utility.parse_sfv_file(sfv)[0])
 		if len(first):
 			sfile = os.path.join(os.path.dirname(sfv), first[0])
 			wanted_rars.append(sfile)
@@ -289,14 +290,14 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	try:
 		# copy over file
 		shutil.copyfile(copy_file, dest_file)	
-	except IOError, e:
+	except IOError as e:
 		print("Could not copy %s." % copy_file)
 		print("Reason: %s" % e)
 		if "[Errno 2] No such file or directory" in str(e) and os.name == "nt":
 			print("Trying again!")
 			try:
 				shutil.copyfile("\\\\?\\" + copy_file, dest_file)
-			except IOError, e:
+			except IOError:
 				print("Failed again...")
 
 	return dest_file
@@ -459,14 +460,11 @@ def extract_rar(unrar, rarfile, destination):
 		rarfile = os.path.join(head, tail)
 	extract = custom_popen([unrar, "e", "-ep", "-o+", 
 	                        rarfile, "*", destination])
-	extract.wait()
+	(stdout, _) = extract.communicate()
 			
 	if extract.returncode != 0:
 		print("Some unrar error occurred:")
-		if extract.stdout:
-			print(extract.stdout.read())
-		if extract.stderr:
-			print(extract.stderr.read())
+		print(stdout)
 		return False
 	return True
 			
@@ -523,22 +521,22 @@ def generate_srr(reldir, working_dir, options):
 			except OSError:
 				pass
 			return False
-		except KeyboardInterrupt, e:
+		except KeyboardInterrupt as e:
 			if e.message != "DONT_DELETE":
 				os.unlink(srr)
 			raise
-		except FileNotFound:
+		except FileNotFound as e:
 			# rescene doesn't leave a half finished file
-			print(sys.exc_info()[1])
+			print(e)
 			return False
-		except (ValueError, EnvironmentError):
+		except (ValueError, EnvironmentError) as e:
 			# e.g. 0 byte RAR file
 			# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
 			try:
 				os.unlink(srr)
 			except: # WindowsError
 				pass
-			print(sys.exc_info()[1])
+			print(e)
 			return False
 	else:
 		print("No SFV files found.")
@@ -606,7 +604,7 @@ def generate_srr(reldir, working_dir, options):
 			original_stderr = sys.stderr
 			txt_error_file = os.path.join(dest_dir, 
 				os.path.basename(sample)) + ".txt"
-			sys.stderr = open(txt_error_file, "wb")
+			sys.stderr = open(txt_error_file, "wt")
 			keep_txt = False
 			try:
 				srsmain([sample, "-y", "-o", dest_dir], True)
@@ -616,14 +614,14 @@ def generate_srr(reldir, working_dir, options):
 				else:
 					copied_files.append(os.path.join(dest_dir, 
 						os.path.basename(sample))[:-4] + ".srs")
-			except ValueError:
+			except ValueError as e:
 				keep_txt = True
 				copied_files.append(txt_error_file)
 				logging.info("%s: Could not create SRS file for %s." %
 				             (reldir, os.path.basename(sample)))
 				
 				# fpcalc executable isn't found
-				if str(sys.exc_info()[1]).endswith(MSG_NOTFOUND):
+				if str(e).endswith(MSG_NOTFOUND):
 					# do cleanup
 					sys.stderr.close()
 					sys.stderr = original_stderr
@@ -800,12 +798,14 @@ RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|"
 	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
 			
 def is_release(dirpath, dirnames=None, filenames=None):
-	if dirnames == None:
-		l = lambda x: not os.path.isfile(os.path.join(dirpath, x))
-		dirnames = filter(l, os.listdir(dirpath))
-	if filenames == None:
-		l = lambda x: os.path.isfile(os.path.join(dirpath, x))
-		filenames = filter(l, os.listdir(dirpath))
+	if dirnames is None or filenames is None:
+		dirnames = list()
+		filenames = list()
+		for x in os.listdir(dirpath):
+			if os.path.isfile(os.path.join(dirpath, x)):
+				filenames.append(x)
+			else:
+				dirnames.append(x)
 		
 	release = False
 	# A folder is considered being an original scene release directory when
@@ -985,7 +985,6 @@ def main(argv=None):
 			if options.always_no:
 				return False
 			print("Warning: File %s already exists." % file_path)
-			# http://www.python.org/dev/peps/pep-3111/
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -1091,9 +1090,9 @@ def main(argv=None):
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
-				u"open %s type cdaudio alias ddrive" % drive, None, 0, None)
+				"open %s type cdaudio alias ddrive" % drive, None, 0, None)
 			ctypes.windll.WINMM.mciSendStringW(
-				u"set ddrive door open", None, 0, None)
+				"set ddrive door open", None, 0, None)
 		
 		try:
 			import winsound #@UnresolvedImport

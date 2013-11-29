@@ -53,7 +53,7 @@ class YencException(Exception):
 
 #------------------------------------------------------------------------------
 
-YDEC_TRANS = ''.join([chr((i + 256 - 42) % 256) for i in range(256)])
+YDEC_TRANS = bytearray(range(256 - 42, 256)) + bytearray(range(256 - 42))
 
 def decode(data, seg_part=False, ignore_crc=False):
 	data = strip(data)
@@ -93,8 +93,9 @@ def decode(data, seg_part=False, ignore_crc=False):
 			else:
 				data = b''.join(data)
 				for i in (0, 9, 10, 13, 27, 32, 46, 61):
-					j = '=%c' % (i + 64)
-					data = data.replace(j, chr(i))
+					j = b'=' + bytearray((i + 64,))
+					i = bytearray((i,))
+					data = data.replace(j, i)
 				decoded_data = data.translate(YDEC_TRANS)
 				if not seg_part:
 					crc = crc32(decoded_data)

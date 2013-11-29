@@ -21,8 +21,8 @@ def show_stored_files_flags(srr_file):
 
        
 def main(options, args):
-#    print options
-#    print args
+#    print(options)
+#    print(args)
     for pdir in args:
         process(pdir)
         
@@ -40,7 +40,7 @@ if __name__ == '__main__':
      
     # no arguments given
     if len(sys.argv) < 2:
-        print parser.format_help()
+        print(parser.format_help())
     else:       
         (options, args) = parser.parse_args()
         main(options, args)

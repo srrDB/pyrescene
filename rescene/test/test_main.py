@@ -214,7 +214,7 @@ class TestAddRemoveFiles(TmpDirSetup):
 		
 		# WITH PATHS
 		root = os.path.join(self.files_dir, "txt")
-		files = map(lambda x: os.path.join(root, x), os.listdir(root))
+		files = list(os.path.join(root, x) for x in os.listdir(root))
 		self.o.events = []
 		add_stored_files(srr, files, self.files_dir, True)
 		
@@ -248,7 +248,7 @@ class TestRename(TmpDirSetup):
 		srr = os.path.join(self.tdir, os.path.basename(orig))
 		_copy(orig, self.tdir)
 #		fname = RarReader(srr).list_files()[0]
-#		print fname
+#		print(fname)
 		
 		rename_stored_file(srr, "store_little/store_little.srr", 
 		                   "store_little/store_little_renamed.srr")

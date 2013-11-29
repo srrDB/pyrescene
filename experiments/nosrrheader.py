@@ -4,22 +4,22 @@ import sys
 import os
 
 def main(options, args):
-#    print options
-#    print args
+#    print(options)
+#    print(args)
 
     def list_files(rootdir):
         for root, _subFolders, files in os.walk(rootdir):
             for ifile in files:
                 if ifile[-4:].lower() == ".srr":
                     fpath = os.path.join(root, ifile)
-                    srrhblock = rar.RarReader(fpath).next()
+                    srrhblock = next(rar.RarReader(fpath))
                     #print(ifile[:-4])
                     #print(srrhblock.appname)
                     try:
                         if srrhblock.appname == "":
-                            print ifile
+                            print(ifile)
                     except:
-                        print ifile
+                        print(ifile)
                 
             if not options.r: # not recursive
                 break
@@ -42,7 +42,7 @@ if __name__ == '__main__':
      
     # no arguments given
     if len(sys.argv) < 2:
-        print parser.format_help()
+        print(parser.format_help())
     else:       
         (options, args) = parser.parse_args()
         main(options, args)

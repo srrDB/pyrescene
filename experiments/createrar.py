@@ -3,6 +3,7 @@
 
 import zlib
 import struct
+import binascii
 
 # !Referenced file not found: 
 #   \Modern.Family.S02E02.1080p.BluRay.X264-7SinS\
@@ -18,12 +19,14 @@ amount = 49999894 # amount of data stored in one volume
 sfv_crc = 0xfa6f96b5
 start = amount * filenb
 end = start + amount
-MARKER = "526172211a0700"
-archive = "f1fb7301000d00000000000000"
-fileh = ("5fbc740301560016f0fa020000605d038dc5d081f192273f14302e00a401"
-		"000000000000000000006d6f6465726e2e66616d696c792e733032653131"
-		"2e31303830702e626c757261792e783236342d6269612e6d6b76")
-arend = "75577b0f40140039e39c7a000000000000000000"
+
+# Python 3.2's binascii.unhexlify() requires a byte string
+MARKER = b"526172211a0700"
+archive = b"f1fb7301000d00000000000000"
+fileh = (b"5fbc740301560016f0fa020000605d038dc5d081f192273f14302e00a401"
+		b"000000000000000000006d6f6465726e2e66616d696c792e733032653131"
+		b"2e31303830702e626c757261792e783236342d6269612e6d6b76")
+arend = b"75577b0f40140039e39c7a000000000000000000"
 
 def extract_part(stored_file, output_file):
 	with open(stored_file, "rb") as af:
@@ -106,17 +109,18 @@ def fix_end_header(end_header, crc_all, file_number):
 #start = amount * filenb
 #end = start + amount
 #
-#MARKER = "526172211a0700"
-#archive = "b2ef7301010d00000000000000"
-#fileh = ("fac074c2905400842c310100a08f0e028044c4d5937c913f14302f0020000000"
-#         "43616c69666f726e69636174696f6e2e5330354530312e4456445343522e5856"
-#         "69442d444f43554d454e542e61766900b00abd02")
-#arend = "0aa67b0f401400351d04bb000000000000000000"
+## Python 3.2's binascii.unhexlify() requires a byte string
+#MARKER = b"526172211a0700"
+#archive = b"b2ef7301010d00000000000000"
+#fileh = (b"fac074c2905400842c310100a08f0e028044c4d5937c913f14302f0020000000"
+#         b"43616c69666f726e69636174696f6e2e5330354530312e4456445343522e5856"
+#         b"69442d444f43554d454e542e61766900b00abd02")
+#arend = b"0aa67b0f401400351d04bb000000000000000000"
 
-MARKER = MARKER.decode('hex')
-archive = archive.decode('hex')
-fileh = fileh.decode('hex')
-arend = arend.decode('hex')
+MARKER = binascii.unhexlify(MARKER)
+archive = binascii.unhexlify(archive)
+fileh = binascii.unhexlify(fileh)
+arend = binascii.unhexlify(arend)
 
 #print("Grabbing data from extracted file.")
 #extract_part(full, part)

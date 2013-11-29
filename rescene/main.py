@@ -28,7 +28,7 @@
 """Facade"""
 
 from __future__ import (with_statement, unicode_literals, print_function,
-	absolute_import)
+	absolute_import, division)
 
 from tempfile import mkstemp
 from glob import glob
@@ -68,6 +68,7 @@ from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.osohash import osohash_from
+from rescene.utility import basestring
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -145,7 +146,7 @@ def can_overwrite(file_path):
 	return not os.path.isfile(file_path)
 
 def change_rescene_name_version(new_name):
-	if not isinstance(new_name, str):
+	if not isinstance(new_name, basestring):
 		raise AttributeError("ReScene name must be a string.")
 	if len(new_name) > 0xFFF6:
 		raise AttributeError("Application name too long.")
@@ -204,9 +205,8 @@ def _extract(block, out_file):
 		# 'store_little/store_little.srr' -> create path
 		try:
 			os.makedirs(os.path.dirname(out_file))
-		except BaseException: # WindowsError: [Error 183]
+		except BaseException as ex: # WindowsError: [Error 183]
 			# cannot create dir because folder(s) already exist
-			ex = sys.exc_info()[1]
 			if _DEBUG: print(ex)
 			_fire(MsgCode.OS_ERROR, message=ex)
 		# what error when we cannot create path? XXX: Subs vs subs
@@ -344,8 +344,8 @@ def remove_stored_files(srr_file, store_files):
 		tmpfile.close()
 		os.remove(srr_file)
 		os.rename(tmpname, srr_file)
-	except:
-		print(sys.exc_info()[1])
+	except BaseException as ex:
+		print(ex)
 		os.unlink(tmpname)
 		raise
 
@@ -384,8 +384,8 @@ def validate_srr(srr_file):
 
 # TODO: test joining SRRs, although it works (exceptions)
 def merge_srrs(srr_files, output_file, application_name=None):
-	"""Merge the given list of srr_files together.
-	srr_files:        list of SRR files to merge (including the path)
+	"""Merge the given iterable of srr_files together.
+	srr_files:        iterable of SRR files to merge (including the path)
 	output_file:	  the merged SRR file; the result
 	application_name: if an other name is wanted for the merged file
 	                  otherwise the first non empty name is used
@@ -564,8 +564,8 @@ def _rarreader_usenet(rarfile, read_retries=7):
 			try:
 				rr = RarReader(rarfile)
 				return rr.read_all()
-			except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError):
-				print(sys.exc_info())
+			except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError) as ex:
+				print(ex)
 				if stop <= read_retries:
 					stop += 1
 					print(stop)
@@ -628,9 +628,9 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 #				try:
 				rarfiles.extend(_handle_sfv(infile))
 					# pointer SFV has changed!
-#				except:
+#				except BaseException as ex:
 #					# NNTPTemporaryError('430 No such article',)
-#					print(sys.exc_info())
+#					print(ex)
 #					raise ValueError("SFV file can't be read.")
 			else: # .rar, .001, .exe, ...?
 				rarfiles.extend(_handle_rar(allfiles[infile], 
@@ -1217,7 +1217,10 @@ def _write_recovery_record(block, rarfs):
 		# Read data one sector at a time.  Pad the last sector with 0's.
 		sector = rarfs.read(512)
 		if len(sector) != 512:
-			sector += str(bytearray(512 - len(sector)))
+			# Before Python 3, crc32() does not accept a
+			# bytearray(), and bytes(int) does not make a string
+			# of zeros
+			sector += bytes(bytearray(512 - len(sector)))
 		# assert len(sector) == 512
 
 		# calculate the crc32 for the sector and store the 2 low-order bytes
@@ -1231,7 +1234,7 @@ def _write_recovery_record(block, rarfs):
 			rs[rs_slice] = bitwise_xor(rs[rs_slice], bytearray(sector))
 		else:
 			for i in range(512):
-				rs[rs_slice][i] ^= ord(sector[i])
+				rs[rs_slice][i] ^= ord(sector[i:i + 1])
 		rs_slice = rs_slice + 1 if (rs_slice + 1) % recovery_sectors else 0
 	# https://lists.ubuntu.com/archives/bazaar/2007q1/023524.html
 	rarfs.seek(0, 2) # prevent IOError: [Errno 0] Error on Windows
@@ -1365,9 +1368,9 @@ def _store_fh(open_file, stream):
 								   file_size=open_file.file_size())
 		stream.write(block.block_bytes())
 		stream.write(data)
-	except Exception:
+	except Exception as ex:
 		# reading data fails, so just skip the file
-		print(sys.exc_info())
+		print(ex)
 
 def _search(files, folder=""):
 	"""Enumerates all files to store. Yields a generator.
@@ -1529,7 +1532,8 @@ class RarRepository(object):
 				after.append(rarexec)
 		#if elements in archived_files, try those versions first!
 		if len(archived_files):
-			previous = [archived_files.values()[-1].good_rar]
+			previous = next(iter(archived_files.values()))
+			previous = [previous.good_rar]
 		before.reverse()
 		if len(after):
 			# one from after first because of betas that can be in use
@@ -1637,7 +1641,7 @@ class RarArguments(object):
 		return int(self.threads[3:])
 	
 	def arglist(self):
-		args = filter(lambda x: x != '', 
+		args = list(filter(lambda x: x != '', 
 			["a", self.compr_level, self.dict_size, 
 			self.solid, self.solid_namesort, self.threads,
 			self.old_naming_flag, # old style volume naming scheme
@@ -1645,7 +1649,7 @@ class RarArguments(object):
 			"-ep", # Exclude paths from names.
 			"-idcd", # Disable messages: copyright string, "Done" string
 			self.split,
-			self.rar_archive])
+			self.rar_archive]))
 		if len(self.store_all_files):
 #			global working_temp_dir
 #			out = os.path.abspath(os.path.join(working_temp_dir, "all_files.txt"))
@@ -1756,8 +1760,8 @@ def compressed_rar_file_factory(block, blocks, src,
 	
 		return CompressedRarFile(block, blocks, src,
 							 nblock, followup_src, solid=False)
-	except (RarNotFound, ValueError):
-		print(sys.exc_info()[1])
+	except (RarNotFound, ValueError) as ex:
+		print(ex)
 		# we have found good RAR versions before
 		if len(archived_files) != 0:
 			regular_method_failed = CompressedRarFileAll(
@@ -1911,7 +1915,7 @@ class CompressedRarFile(io.IOBase):
 		# WinRAR prevents this if it's only one archive, but not with volumes
 		packed_size = get_full_packed_size(first_block, blocks)
 		if (first_block.unpacked_size < packed_size):
-			x = int(packed_size / 2 * 1.1)
+			x = int(packed_size // 2 * 1.1)
 			if x > 4000000000: # FAT32 support
 				x = 2000000000
 			self.good_rar.args.set_split(x)
@@ -1923,11 +1927,9 @@ class CompressedRarFile(io.IOBase):
 		_fire(MsgCode.MSG, message="Compressing %s..." % os.path.basename(src))
 		time.sleep(0.5)
 		compress = subprocess.Popen(self.good_rar.full())
-		stdout, stderr = compress.communicate()
+		compress.communicate()
 		
 		if compress.returncode != 0:
-#			print(stdout)
-#			print(stderr)
 			_fire(MsgCode.MSG, 
 				message="Something went wrong executing Rar.exe:")
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
@@ -1996,7 +1998,7 @@ class CompressedRarFile(io.IOBase):
 			amount = 0
 			# start with 2% increase of the ratio
 			for i in list(range(2, 100, 5)):
-				increase = (float(size_full) / size_compr) + (i / 100.0)
+				increase = (size_full / size_compr) + (i / 100)
 				amount = min(size_full, int(size_min * increase) + window_size)
 				
 				# copy bytes from source to destination
@@ -2006,11 +2008,10 @@ class CompressedRarFile(io.IOBase):
 					break
 				
 				proc = custom_popen([rarexe.path()] + args.arglist())
-				proc.wait()
+				(stdout, _) = proc.communicate()
 				
 				if proc.returncode != 0:
-					print(proc.stdout.read())
-					print(proc.stderr.read())
+					print(stdout)
 					_fire(MsgCode.MSG, message=
 						"Something went wrong executing Rar.exe:")
 					_fire(MsgCode.MSG, message=RETURNCODE[proc.returncode])
@@ -2039,11 +2040,10 @@ class CompressedRarFile(io.IOBase):
 			
 		def try_rar_executable(rar, args, old=False):
 			compress = custom_popen([rar.path()] + args.arglist())
-			stdout, stderr = compress.communicate()
+			stdout, _ = compress.communicate()
 			
 			if compress.returncode != 0:
 				print(stdout)
-				print(stderr)
 				_fire(MsgCode.MSG, message=
 					"Something went wrong executing Rar.exe:")
 				_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])
@@ -2176,11 +2176,9 @@ class CompressedRarFile(io.IOBase):
 		def compress():
 			time.sleep(0.5)
 			compress = subprocess.Popen(self.good_rar.full())
-			stdout, stderr = compress.communicate()
+			compress.communicate()
 			
 			if compress.returncode != 0:
-				print(stdout)
-				print(stderr)
 				_fire(MsgCode.MSG, message=
 					"Something went wrong executing Rar.exe:")
 				_fire(MsgCode.MSG, message=
@@ -2363,11 +2361,9 @@ class CompressedRarFileAll(io.IOBase):
 		time.sleep(0.5)
 		print("Command length: %d" % len(self.good_rar.full()))
 		compress = subprocess.Popen(self.good_rar.full())
-		stdout, stderr = compress.communicate()
+		compress.communicate()
 		
 		if compress.returncode != 0:
-			print(stdout)
-			print(stderr)
 			_fire(MsgCode.MSG, 
 				message="Something went wrong executing Rar.exe:")
 			_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])

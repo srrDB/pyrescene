@@ -32,6 +32,7 @@ import struct
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
+from .mp3 import decode_id3_size
 
 # All numbers are big-endian coded.
 # All numbers are unsigned unless otherwise specified.
@@ -43,6 +44,7 @@ class InvalidDataException(ValueError):
 	
 class Block(object):
 	def __init__(self, size, block_type):
+		"""Block type is either an ASCII text string or an integer"""
 		self.size = size
 		self.type = block_type
 		self.raw_header = b""
@@ -50,10 +52,8 @@ class Block(object):
 		
 	def is_last_block(self):
 		"""Last block before the frame data."""
-		try:
-			return self.type & 0x80
-		except TypeError:
-			return ord(self.type[0]) & 0x80
+		# Never last block when self.type is a decoded string
+		return not isinstance(self.type, str) and self.type & 0x80
 	
 	def is_frame_data(self):
 		"""It isn't actually a block."""
@@ -115,8 +115,7 @@ class FlacReader(object):
 			self.block_type = "ID3"
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			raw_header = self._flac_stream.read(10)
-			size = reduce(lambda x, y: x*128 + y, (ord(i)
-			              for i in raw_header[6:10]))
+			size = decode_id3_size(raw_header[6:10])
 			self.current_block = Block(size, self.block_type)
 			self.current_block.raw_header = raw_header
 			self.current_block.start_pos = block_start_position

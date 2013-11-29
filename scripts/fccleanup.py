@@ -68,8 +68,8 @@ def fix(srr_file):
         raise
        
 def main(options, args):
-#    print options
-#    print args
+#    print(options)
+#    print(args)
     for dir in args:
         process(dir)
         
@@ -89,7 +89,7 @@ if __name__ == '__main__':
      
     # no arguments given
     if len(sys.argv) < 2:
-        print parser.format_help()
+        print(parser.format_help())
     else:       
         (options, args) = parser.parse_args()
         main(options, args)

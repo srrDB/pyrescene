@@ -63,13 +63,14 @@ def main(options, args):
 			sampfiles = list_files(fullreldir)
 			if ((len(sampfiles) > 1 and options.more) or
 				(not len(sampfiles) and options.none) or
-				(options.usenet and len(filter(
-				        lambda x: "usenet" in x, sampfiles)) or
-				(options.capitals and len(filter(lambda x: ".MKV.txt" in x or 
-				        ".AVI.txt" in x or ".MP4.txt" in x or ".WMV.txt" in x, 
-				        sampfiles)))) or
-				(options.empty and not len(filter(lambda x: os.path.getsize(
-				        os.path.join(fullreldir, x)) != 0, sampfiles)))):
+				(options.usenet and any("usenet" in x for x in sampfiles) or
+				(options.capitals and any(
+					".MKV.txt" in x or ".AVI.txt" in x or
+					".MP4.txt" in x or ".WMV.txt" in x
+					for x in sampfiles))) or
+				(options.empty and not any(os.path.getsize(
+				        os.path.join(fullreldir, x)) != 0
+				        for x in sampfiles))):
 				print(reldir)
 				do_move(options.output_dir, fullreldir)
 				

@@ -37,10 +37,7 @@ from threading import Thread
 import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
 from rescene.utility import show_spinner, remove_spinner, sep
-
-# make it work with Python 3 too
-#if sys.hexversion >= 0x3000000:
-#	raw_input = input #@ReservedAssignment
+from rescene.utility import raw_input
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -244,10 +241,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir)
-		except (FileNotFound, RarNotFound):
+		except (FileNotFound, RarNotFound) as err:
 			mthread.done = True
 			mthread.join()
-			print(sys.exc_info()[1])
+			print(err)
 			return 1
 		except EmptyRepository:
 			mthread.done = True
@@ -294,7 +291,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.")
-	except (EnvironmentError, ValueError):
+	except (EnvironmentError, ValueError) as err:
 		# Can not read basic block header
 		# ValueError: compressed SRR
 		# ValueError: The file is too small.
@@ -305,7 +302,7 @@ def create_srr(options, infolder, infiles, working_dir):
 			pass
 		mthread.done = True
 		mthread.join()
-		print(sys.exc_info()[1])
+		print(err)
 		print("SRR creation failed. Aborting.")
 		return 1
 
@@ -418,7 +415,6 @@ def main(argv=None):
 			time.sleep(MessageThread.sleeptime)
 			
 			print("Warning: File %s already exists." % file_path)
-			# http://www.python.org/dev/peps/pep-3111/
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -465,9 +461,9 @@ def main(argv=None):
 		print()
 		print("Ctrl+C pressed. Aborting.")
 		parser.exit(130) # http://tldp.org/LDP/abs/html/exitcodes.html
-	except Exception:
+	except Exception as err:
 		traceback.print_exc()
-		parser.exit(99, "Unexpected Error: %s" % sys.exc_info()[1])
+		parser.exit(99, "Unexpected Error: %s" % err)
 	finally:
 		mthread.done = True
 		mthread.join(0.5)

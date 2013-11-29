@@ -33,6 +33,20 @@ import struct
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
+from functools import reduce
+
+def decode_id3_size(sbytes):
+	# "This size is encoded using 28 bits rather than a multiple of 8,
+	# such as 32 bits, because an ID3 tag can't contain the byte #xff
+	# followed by a byte with the top 3 bits on because that pattern
+	# has a special meaning to MP3 decoders. None of the other fields
+	# in the ID3 header could possibly contain such a byte sequence,
+	# but if you encoded the tag size as a regular unsigned-integer,
+	# it might. To avoid that possibility, the size is encoded using
+	# only the bottom seven bits of each byte, with the top bit always
+	# zero."
+	return reduce(lambda x, y: x*128 + y,
+	              (ord(sbytes[i:i + 1]) for i in range(4)))
 
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 BE_SHORT = struct.Struct('>H')
@@ -83,16 +97,7 @@ class Mp3Reader(object):
 		if first == b"ID3":
 			self._mp3_stream.seek(3, os.SEEK_CUR)
 			sbytes = self._mp3_stream.read(4)
-			# "This size is encoded using 28 bits rather than a multiple of 8, 
-			# such as 32 bits, because an ID3 tag can't contain the byte #xff 
-			# followed by a byte with the top 3 bits on because that pattern 
-			# has a special meaning to MP3 decoders. None of the other fields
-			# in the ID3 header could possibly contain such a byte sequence, 
-			# but if you encoded the tag size as a regular unsigned-integer, 
-			# it might. To avoid that possibility, the size is encoded using 
-			# only the bottom seven bits of each byte, with the top bit always
-			# zero."
-			size = reduce(lambda x, y: x*128 + y, (ord(i) for i in sbytes))
+			size = decode_id3_size(sbytes)
 			
 			begin_main_content = size + 10
 			idv2_block = Block(begin_main_content, "ID3", 0)
@@ -175,7 +180,8 @@ class Mp3Reader(object):
 					(size,) = S_LONG.unpack(self._mp3_stream.read(4))
 				except:
 					raise InvalidDataException("Not enough SRS data")
-				srs_block = Block(size, marker, cur_pos)
+				srs_block = Block(size, marker.decode(),
+					cur_pos)
 				self.blocks.append(srs_block)
 				cur_pos += size
 				if size == 0:
