@@ -658,7 +658,10 @@ def generate_srr(reldir, working_dir, options):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
-	if options.vobsub_srr and unrar_is_available():
+	if options.vobsub_srr and not unrar_is_available():
+		options.vobsub_srr = False
+		logging.warning("Ignoring --vobsub-srr: unrar unavailable")
+	if options.vobsub_srr:
 		unrar = locate_unrar()
 		for esfv in extra_sfvs:
 			# not for Proof RARs that are already stored inside the SRR
