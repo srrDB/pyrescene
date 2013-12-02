@@ -189,6 +189,7 @@ def get_proof_files(reldir):
 	for proof in rar_files:
 		if "proof" in proof.lower():
 			# RAR file must contain image file
+			# Space.Dogs.3D.2010.GERMAN.1080p.BLURAY.x264-HDViSiON (bmp proof)
 			for block in RarReader(proof):
 				if block.rawtype == BlockType.RarPackedFile:
 					if (block.file_name[-4:].lower() in 

@@ -28,6 +28,7 @@ import subprocess
 import inspect
 import os
 import sys
+import tempfile
 from distutils.spawn import find_executable
 from rescene.utility import fsunicode
 
@@ -42,7 +43,29 @@ def fingerprint(file_name):
 	duration = fp = b""
 	bad = False
 	fpcalc = find_fpcalc_executable()
+	temp_cleanup = False
 	
+	try:
+		file_name = file_name.decode('ascii')
+	except:
+		# file has special characters
+		# I don't know how to pass those to fpcalc
+		# => create a temporary file for these rare cases
+		# test release: VA-Tony_Hawks_Pro_Skater_4-Soundtrack-2003-RARNeT
+		# copy the file with a default name and create the fp for that file
+		print("Non-ASCII characters detected: creating temporary file.")
+		temp_cleanup = True
+		nm = "-pyReScene_fpcalc"
+		if file_name.endswith(".flac"):
+			nm += ".flac"
+		else:
+			nm += file_name[-4:]
+		(fd, tmpname) = tempfile.mkstemp(nm)
+		os.close(fd) # we won't use it
+		with open(file_name, "rb") as music_file:
+			with open(tmpname, "wb") as tmpf:
+				tmpf.write(music_file.read())
+		file_name = tmpname
 	fprint = custom_popen([fpcalc, file_name])
 	stdout, _stderr = fprint.communicate()
 			
@@ -63,6 +86,10 @@ def fingerprint(file_name):
 		
 	if not duration or not fp:
 		bad = True
+		
+	if temp_cleanup:
+		print("Removing %s" % tmpname)
+		os.remove(tmpname)
 		
 	if bad:
 		raise ValueError("Fingerprinting failed.")
