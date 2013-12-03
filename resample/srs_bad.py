@@ -42,7 +42,8 @@ def main(options, args):
 		print("Add the parameter -t or -s.")
 		
 	tempdir = tempfile.mkdtemp("pyReScene-srs_bad")
-	for  dirpath, _dirnames, filenames in os.walk(args[0]):
+	for  dirpath, dirnames, filenames in os.walk(args[0]):
+		dirnames.sort()
 		for sfile in filenames:
 			if sfile[-4:].lower() == ".srr":
 				srrf = os.path.join(dirpath, sfile)
@@ -82,6 +83,8 @@ def handle_srr(srr_file, options, temporary_directory):
 	if len(printout):
 		if options.simple:
 			print(basename(srr_file)[:-4])
+		elif options.path:
+			print(dirname(srr_file))
 		else:
 			print(srr_file)
 			for srs in sorted(printout):
@@ -101,6 +104,8 @@ if __name__ == '__main__':
 					help="sample or music txt files are included")
 	parser.add_option("-l", dest="simple", action="store_true",
 					help="list only the release names")
+	parser.add_option("-p", dest="path", action="store_true",
+					help="list only the release paths")
 		
 	# no arguments given
 	if len(sys.argv) < 2:
