@@ -34,22 +34,22 @@ from rescene.utility import is_rar
 from rescene.rarstream import RarStream
 import copy
 
-GUID_HEADER_OBJECT = "\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
-GUID_DATA_OBJECT = "\x36\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
-GUID_STREAM_OBJECT = "\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
-GUID_FILE_OBJECT = "\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
+GUID_HEADER_OBJECT = b"\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+GUID_DATA_OBJECT = b"\x36\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"
+GUID_STREAM_OBJECT = b"\x91\x07\xDC\xB7\xB7\xA9\xCF\x11\x8E\xE6\x00\xC0\x0C\x20\x53\x65"
+GUID_FILE_OBJECT = b"\xA1\xDC\xAB\x8C\x47\xA9\xCF\x11\x8E\xE4\x00\xC0\x0C\x20\x53\x65"
 
 # http://www.famkruithof.net/guid-uuid-make.html
-GUID_SRS_FILE = "SRSFSRSFSRSFSRSF"
-GUID_SRS_TRACK = "SRSTSRSTSRSTSRST"
-GUID_SRS_PADDING = "PADDINGBYTESDATA"
+GUID_SRS_FILE = b"SRSFSRSFSRSFSRSF"
+GUID_SRS_TRACK = b"SRSTSRSTSRSTSRST"
+GUID_SRS_PADDING = b"PADDINGBYTESDATA"
 
 S_LONGLONG = struct.Struct('<Q') # unsigned long long: 8 bytes
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 S_SHORT = struct.Struct('<H') # unsigned short: 2 bytes
 S_BYTE = struct.Struct('<B') # unsigned char: 1 byte
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
 class AsfReadMode(object):
 	WMV, Sample, SRS = list(range(3))
@@ -62,7 +62,7 @@ class Object(object):
 	def __init__(self, size, object_guid):
 		self.size = size
 		self.type = object_guid
-		self.raw_header = ""
+		self.raw_header = b""
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):
@@ -140,7 +140,7 @@ class AsfReader(object):
 			
 			size = len(o.raw_header)
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			rp_offsets = 0
@@ -309,11 +309,11 @@ def asf_data_read_packet_fields(packet, flags, data, length,
 	skip += getlen2b((flags >> 3) & 0x03)
 	
 	# Send time, milliseconds	UINT32	4
-	packet.send_time = S_LONG.unpack(data[skip:skip+4])[0] # 4 bytes
+	packet.send_time = S_LONG.unpack_from(data, skip)[0] # 4 bytes
 	skip += 4
 	
 	# Duration, milliseconds	UINT16	2
-	packet.duration = S_SHORT.unpack(data[skip:skip+2])[0] # 2 bytes
+	packet.duration = S_SHORT.unpack_from(data, skip)[0] # 2 bytes
 	skip += 2
 
 	if _DEBUG:
@@ -350,7 +350,7 @@ def asf_data_get_packet(packet, packet_size, mode=AsfReadMode.Sample):
 	read = 0
 	
 	# Error correction data ---------------------------------------------------
-	flags = S_BYTE.unpack(packet.data[read])[0]
+	flags = S_BYTE.unpack_from(packet.data, read)[0]
 	assert flags == 0x82
 	read += 1
 	
@@ -379,11 +379,11 @@ def asf_data_get_packet(packet, packet_size, mode=AsfReadMode.Sample):
 	
 	# Packet parsing information ----------------------------------------------
 	# Flags	UINT8	1
-	(packet_flags,) = S_BYTE.unpack(packet.data[read])
+	(packet_flags,) = S_BYTE.unpack_from(packet.data, read)
 	read += 1
 	
 	# Segment type ID	UINT8	1
-	(packet_property,) = S_BYTE.unpack(packet.data[read])
+	(packet_property,) = S_BYTE.unpack_from(packet.data, read)
 	read += 1
 	
 	if _DEBUG:
@@ -419,7 +419,7 @@ def asf_data_get_packet(packet, packet_size, mode=AsfReadMode.Sample):
 		if read + 1 > packet.length:
 			raise ValueError("invalid value")
 
-		tmp = S_BYTE.unpack(packet.data[read])[0]
+		tmp = S_BYTE.unpack_from(packet.data, read)[0]
 		read += 1
 
 		packet.payload_count = tmp & 0x3F
@@ -473,8 +473,8 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 		if skip + 1 > datalen and mode != AsfReadMode.SRS:
 			raise ValueError("Invalid length")
 		
-		pl.stream_number = (S_BYTE.unpack(data[skip])[0] & 0x7F)
-		pl.key_frame = bool(S_BYTE.unpack(data[skip])[0] & 0x80)
+		pl.stream_number = (S_BYTE.unpack_from(data, skip)[0] & 0x7F)
+		pl.key_frame = bool(S_BYTE.unpack_from(data, skip)[0] & 0x80)
 		skip += 1
 		pl.header_size += 1
 
@@ -490,7 +490,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			skip += pl.replicated_length
 			pl.header_size += pl.replicated_length
 			
-			pl.pts = S_LONG.unpack(pl.replicated_data[4:8])[0]
+			pl.pts = S_LONG.unpack_from(pl.replicated_data, 4)[0]
 		elif pl.replicated_length == 1:
 			if skip + 1 > datalen:
 				raise ValueError("Not enough data")
@@ -502,7 +502,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			pl.replicated_length = 0
 			pl.replicated_data = None
 			
-			pts_delta = S_BYTE.unpack(data[skip])[0]
+			pts_delta = S_BYTE.unpack_from(data, skip)[0]
 			skip += 1
 			pl.header_size += 1
 			compressed = 1
@@ -521,7 +521,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			# Data length	UINT16	0 or 2
 			if skip + 2 > datalen:
 				raise ValueError("Not enough data")
-			pl.data_length = S_SHORT.unpack(data[skip:skip+2])[0]
+			pl.data_length = S_SHORT.unpack_from(data, skip)[0]
 			skip += 2
 			pl.header_size += 2
 		else:
@@ -535,12 +535,12 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			if mode != AsfReadMode.SRS:
 				while used < pl.data_length:
 					payloads += 1
-					used += (1 + S_BYTE.unpack(data[start+used])[0])
+					used += (1 + S_BYTE.unpack_from(data, start+used))
 			else:
 				used_srs = 0
 				while used < pl.data_length:
 					payloads += 1
-					size = S_BYTE.unpack(data[start+used_srs])[0]
+					size = S_BYTE.unpack_from(data, start+used_srs)[0]
 					used += (1 + size)
 					used_srs += 1
 				
@@ -553,7 +553,8 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 				packet.payloads_size = packet.payload_count
 			
 			while idx < payloads:
-				pl.data_length = S_BYTE.unpack(data[skip])[0]
+				pl.data_length = S_BYTE.unpack_from(
+					data, skip)[0]
 				skip += 1
 				
 				# Set data correctly

@@ -28,15 +28,13 @@ import unittest
 import os
 import io
 import sys
+import locale
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
-	# py2.6 has broken bytes()
-	def bytes(foo, enc): #@ReservedAssignment
-		return str(foo) # XXX: not used?
 else:
 	unicode = str #@ReservedAssignment
 
@@ -110,7 +108,6 @@ class TestSfv(unittest.TestCase):
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)
 		
-		# test __str__ method
 		self.assertEqual(str(entries[0]), 'test.r00 aabb0099')
 		
 		# just supply the data
@@ -217,7 +214,7 @@ class TestUtility(unittest.TestCase):
 #		# _read all nfo files that start with ansi/unicode in memory
 #		contents = {}
 #		for file in os.listdir(txtdir):
-#			if file[:4] in ("ansi",): # "unic"):
+#			if file.startswith(("ansi",)): # "unic")):
 #				path = os.path.join(txtdir, file)
 #				with open(path, "rt") as f:
 #					contents[file] = f._read()
@@ -244,6 +241,12 @@ class TestUtility(unittest.TestCase):
 #			print r, contents[i]
 
 	def test_sep(self):
-		self.assertEquals(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
-		self.assertEquals(sep(1000000, 'English'), "1,000,000")
-		
+		try:
+			self.assertEquals(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
+			self.assertEquals(sep(1000000, 'English'),
+				"1,000,000")
+		except locale.Error as err:
+			fmt = ('"Dutch_Belgium.1252" and "English" locales: '
+				"{0}")
+			# Python 2.6 does not have the skipTest() method
+			self.skipTest(fmt.format(err))  # 2.6 crash expected

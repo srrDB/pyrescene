@@ -64,9 +64,9 @@ def GetEbmlUInt(buff, offset, count):
 	offset: offset start integer in buffer
 	count: Length Descriptor byte"""
 	# length descriptor bytes not wanted: remove those from the first byte
-	size = S_BYTE.unpack(buff[offset:offset+1])[0] & (0xFF >> count) # 255, 127, ...
+	size = S_BYTE.unpack_from(buff, offset)[0] & (0xFF >> count) # 255, 127, ...
 	for i in range(1, count):
-		size = (size << 8) + S_BYTE.unpack(buff[offset+i:offset+i+1])[0]
+		size = (size << 8) + S_BYTE.unpack_from(buff, offset+i)[0]
 
 	return size # integer size
 
@@ -176,7 +176,7 @@ class EbmlElement(object):
 	a descriptor for the size of the element, 
 	and the binary data itself."""
 	def __init__(self):
-		self.raw_header = ""
+		self.raw_header = b""
 		self.element_start_pos = 0
 		self.length = 0
 	
@@ -189,24 +189,24 @@ class BlockElement(EbmlElement):
 
 class EbmlID(object):
 	"""Element IDs (also called EBML IDs)"""
-	EBML = "\x1A\x45\xDF\xA3"
-	SEGMENT = "\x18\x53\x80\x67"
-	TIMECODE_SCALE = "\x2A\xD7\xB1"
+	EBML = b"\x1A\x45\xDF\xA3"
+	SEGMENT = b"\x18\x53\x80\x67"
+	TIMECODE_SCALE = b"\x2A\xD7\xB1"
 
-	CLUSTER = "\x1F\x43\xB6\x75"
-	TIMECODE = "\xE7"
-	BLOCK_GROUP = "\xA0"
-	BLOCK = "\xA1"
-	SIMPLE_BLOCK = "\xA3"
+	CLUSTER = b"\x1F\x43\xB6\x75"
+	TIMECODE = b"\xE7"
+	BLOCK_GROUP = b"\xA0"
+	BLOCK = b"\xA1"
+	SIMPLE_BLOCK = b"\xA3"
 
-	ATTACHMENT_LIST = "\x19\x41\xA4\x69"
-	ATTACHMENT = "\x61\xA7"
-	ATTACHED_FILE_NAME = "\x46\x6E"
-	ATTACHED_FILE_DATA = "\x46\x5C"
+	ATTACHMENT_LIST = b"\x19\x41\xA4\x69"
+	ATTACHMENT = b"\x61\xA7"
+	ATTACHED_FILE_NAME = b"\x46\x6E"
+	ATTACHED_FILE_DATA = b"\x46\x5C"
 
-	RESAMPLE = "\x1F\x69\x75\x76" # Class D - \x1fiuv
-	RESAMPLE_FILE = "\x6A\x75" # ju
-	RESAMPLE_TRACK = "\x6B\x75" # ku
+	RESAMPLE = b"\x1F\x69\x75\x76" # Class D - \x1fiuv
+	RESAMPLE_FILE = b"\x6A\x75" # ju
+	RESAMPLE_TRACK = b"\x6B\x75" # ku
 
 	CRC32 = "\xBF"
 	
@@ -215,7 +215,7 @@ class EbmlReader(object):
 	MKV-SRS files one element at a time."""
 	def __init__(self, read_mode, path=None, stream=None):
 		assert path or stream
-		self.element_header = "" # 12 bytes
+		self.element_header = b"" # 12 bytes
 		
 		self._ebml_stream = None
 		self.mode = None
@@ -347,13 +347,13 @@ class EbmlReader(object):
 
 			# read in time code (2 bytes) and flags (1 byte)
 			blockHeader += self._ebml_stream.read(3)
-			timecode = ((S_BYTE.unpack(blockHeader[
-			                               len(blockHeader) - 3])[0] << 8) + 
-			            S_BYTE.unpack(blockHeader[len(blockHeader) - 2])[0])
+			timecode = ((S_BYTE.unpack_from(blockHeader,
+			                               len(blockHeader) - 3)[0] << 8) + 
+			            S_BYTE.unpack_from(blockHeader, len(blockHeader) - 2)[0])
 
 			# need to grab the flags (last byte of the header) 
 			# to check for lacing
-			lace_type = (S_BYTE.unpack(blockHeader[len(blockHeader) - 1])[0] & 
+			lace_type = (S_BYTE.unpack_from(blockHeader, len(blockHeader) - 1)[0] & 
 					EbmlLaceType.EBML)
 
 			data_length = element_length - len(blockHeader)

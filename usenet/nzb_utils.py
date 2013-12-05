@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+from __future__ import unicode_literals
+
 # https://docs.newzbin2.es/index.php/Newzbin:NZB_Specs
 
 import pynzb # http://pypi.python.org/pypi/pynzb/
@@ -42,13 +44,13 @@ def read_nzb(nzb_file):
 		# Problem with the ampersand.
 		# newsmangler doesn't properly escape the & in the NZB
 		# http://www.powergrep.com/manual/xmpxmlfixentities.html
-		XML_AMP_FIX = "&(?!(?:[a-z]+|#[0-9]+|#x[0-9a-f]+);)"
+		XML_AMP_FIX = b"&(?!(?:[a-z]+|#[0-9]+|#x[0-9a-f]+);)"
 		fixed_nzb = io.BytesIO()
 		for line in open(nzb_file, "r").readlines():
-			line = re.sub(XML_AMP_FIX, "&amp;", line)
-			line = re.sub("&ouml;", "ö", line)
+			line = re.sub(XML_AMP_FIX, b"&amp;", line)
+			line = re.sub(b"&ouml;", "ö".encode("latin-1"), line)
 			# invalid XML characters from NewsLeecher
-			line = re.sub("\00", "", line)
+			line = re.sub(b"\00", b"", line)
 			fixed_nzb.write(line)
 		# do not fail on empty NZB files
 		if fixed_nzb.tell() == 0:

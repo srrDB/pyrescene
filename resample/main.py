@@ -127,13 +127,13 @@ def get_file_type(ifile):
 		size = reduce(lambda x, y: x*128 + y, (ord(i) for i in marker[6:10]))
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(10 + size)
-			if ofile.read(4) == "fLaC":
+			if ofile.read(4) == b"fLaC":
 				return FileType.FLAC
 		return FileType.MP3
-	elif marker.startswith("SRSF"):
+	elif marker.startswith(b"SRSF"):
 		return FileType.MP3
 	else:
-		(sync,) = BE_SHORT.unpack(marker[0:2])
+		(sync,) = BE_SHORT.unpack_from(marker, 0)
 		if sync & 0xFFE0 == 0xFFE0:
 			return FileType.MP3
 		return FileType.Unknown
@@ -169,7 +169,7 @@ class FileData(object):
 			if utility.is_rar(file_name):
 				rs = rarstream.RarStream(file_name)
 				self.size = rs.seek(0, os.SEEK_END)
-				self.sample_name = str(rs.packed_file_name)
+				self.sample_name = rs.packed_file_name
 				rs.close()
 			else:
 				self.sample_name = file_name
@@ -221,7 +221,7 @@ class FileData(object):
 		
 	def serialize_as_riff(self):
 		data = self.serialize()
-		chunk = "SRSF"
+		chunk = b"SRSF"
 		chunk += S_LONG.pack(len(data))
 		chunk += data
 		return chunk
@@ -229,7 +229,7 @@ class FileData(object):
 	def serialize_as_mov(self):
 		data = self.serialize()
 		atom = struct.pack(">L", len(data) + 8)
-		atom += "SRSF"
+		atom += b"SRSF"
 		atom += data
 		return atom
 	
@@ -242,14 +242,14 @@ class FileData(object):
 	
 	def serialize_as_flac(self):
 		data = self.serialize()
-		flack_block = "s" # 0x73
+		flack_block = b"s" # 0x73
 		flack_block += struct.pack(">L", len(data))[1:]
 		flack_block += data
 		return flack_block
 	
 	def serialize_as_mp3(self):
 		data = self.serialize()
-		mp3_block = "SRSF"
+		mp3_block = b"SRSF"
 		mp3_block += S_LONG.pack(len(data) + 4 + 4)
 		mp3_block += data
 		return mp3_block
@@ -270,13 +270,15 @@ class TrackData(object):
 	
 	def __init__(self, buff=None):
 		if buff:
-			(self.flags,) = struct.unpack("<H", buff[0:2])
+			(self.flags,) = struct.unpack_from("<H", buff, 0)
 			
 			if self.flags & self.BIG_TACK_NUMBER:
-				(self.track_number,) = S_LONG.unpack(buff[2:6])
+				(self.track_number,) = S_LONG.unpack_from(
+					buff, 2)
 				e = 2 # extra because of the larger file
 			else:
-				(self.track_number,) = S_SHORT.unpack(buff[2:4])
+				(self.track_number,) = S_SHORT.unpack_from(
+					buff, 2)
 				e = 0
 			
 			if self.flags & self.BIG_FILE:
@@ -287,17 +289,17 @@ class TrackData(object):
 				add = 4
 				
 			(self.data_length, self.match_offset, sig_length) =  \
-				struct.unpack(str("<%sQH" % struct_string), 
-				              buff[e+4:e+4+add+10])
+				struct.unpack_from("<%sQH" % struct_string,
+				              buff, e+4)
 			self.signature_bytes = buff[(e+14+add):(e+14+add+sig_length)]
 		else:
 			self.flags = self.NO_FLAGS
 			self.track_number = 0
 			self.data_length = 0
 			self.match_offset = 0
-			self.signature_bytes = ""
+			self.signature_bytes = b""
 		self.match_length = 0
-		self.check_bytes = ""
+		self.check_bytes = b""
 		self.track_file = None 
 		
 	def __str__(self, *args, **kwargs):
@@ -352,7 +354,7 @@ class TrackData(object):
 	
 	def serialize_as_riff(self):
 		data = self.serialize()
-		chunk = "SRST"
+		chunk = b"SRST"
 		chunk += S_LONG.pack(len(data))
 		chunk += data
 		return chunk	
@@ -360,7 +362,7 @@ class TrackData(object):
 	def serialize_as_mov(self):
 		data = self.serialize()
 		atom = struct.pack(">L", len(data) + 8)
-		atom += "SRST"
+		atom += b"SRST"
 		atom += data
 		return atom
 	
@@ -373,11 +375,11 @@ class TrackData(object):
 	
 	def serialize_as_flac(self):
 		data = self.serialize()
-		flac_block = "t" # 0x74
+		flac_block = b"t" # 0x74
 		flac_block += struct.pack(">L", len(data))[1:]
 		flac_block += data
 		try:
-			fp_block = "u" # 0x75
+			fp_block = b"u" # 0x75
 			fp_block += struct.pack(">L", 4 + 4 + len(self.fingerprint))[1:]
 			fp_block += S_LONG.pack(int(self.duration))
 			fp_block += S_LONG.pack(len(self.fingerprint))
@@ -389,11 +391,11 @@ class TrackData(object):
 	
 	def serialize_as_mp3(self):
 		data = self.serialize()
-		mp3_block = "SRST"
+		mp3_block = b"SRST"
 		mp3_block += S_LONG.pack(8 + len(data))
 		mp3_block += data
 		try:
-			fp_block = "SRSP"
+			fp_block = b"SRSP"
 			fp_block += S_LONG.pack(8 + 4 + 4 + len(self.fingerprint))
 			fp_block += S_LONG.pack(int(self.duration))
 			fp_block += S_LONG.pack(len(self.fingerprint))
@@ -404,8 +406,8 @@ class TrackData(object):
 			return mp3_block
 		
 def read_fingerprint_data(track, data):
-	(track.duration,) = S_LONG.unpack(data[:4])
-	(fp_length,) = S_LONG.unpack(data[4:8])
+	(track.duration,) = S_LONG.unpack_from(data)
+	(fp_length,) = S_LONG.unpack_from(data, 4)
 	track.fingerprint = data[8:8+fp_length]
 	return track
 
@@ -577,12 +579,12 @@ def mp4_load_srs(infile):
 	tracks = {}
 	mr = MovReader(MovReadMode.SRS, infile)
 	while mr.read():
-		if mr.atom_type == "SRSF":
+		if mr.atom_type == b"SRSF":
 			srs_data = FileData(mr.read_contents())
-		elif mr.atom_type == "SRST":
+		elif mr.atom_type == b"SRST":
 			track = TrackData(mr.read_contents())
 			tracks[track.track_number] = track
-		elif mr.atom_type == "mdat":
+		elif mr.atom_type == b"mdat":
 			mr.move_to_child()
 		else:
 			mr.skip_contents()	
@@ -901,9 +903,9 @@ def profile_mp4(mp4_data): # FileData object
 		mp4_data.crc32 = crc32(a.raw_header, mp4_data.crc32)
 	
 		# 2) doing body
-		if atype in ("moov", "trak", "mdia", "minf", "stbl"):
+		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
-		elif atype == "mdat":
+		elif atype == b"mdat":
 			data = mr.read_contents()
 #			data_length = len(data)
 			mp4_data.crc32 = crc32(data, mp4_data.crc32)
@@ -912,9 +914,9 @@ def profile_mp4(mp4_data): # FileData object
 			meta_length += len(data)
 			mp4_data.crc32 = crc32(data, mp4_data.crc32)
 		
-		if atype in ("tkhd",):
+		if atype in (b"tkhd",):
 			# grab track id 
-			(track_id,) = BE_LONG.unpack(data[12:16])
+			(track_id,) = BE_LONG.unpack_from(data, 12)
 			assert not tracks.has_key(track_id)
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
@@ -927,30 +929,30 @@ def profile_mp4(mp4_data): # FileData object
 			track_processed = False
 #			print(track_id)
 			
-		elif atype in ("stco", "co64"):
+		elif atype in (b"stco", b"co64"):
 			# exactly one variant must be present
 			assert current_track != None
-			(entry_count,) = BE_LONG.unpack(data[4:8])
-			if atype == "stco":
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
+			if atype == b"stco":
 				size = 4
 				structunp = BE_LONG
-			else: # "co64"
+			else: # b"co64"
 				size = 8
 				structunp = BE_LONGLONG
 			for i in range(entry_count):
 				j = 8 + i * size
-				(offset,) = structunp.unpack(data[j:j+size])
+				(offset,) = structunp.unpack_from(data, j)
 				current_track.chunk_offsets.append(offset)	
 #			print(current_track.chunk_offsets)
 				
-		elif atype == "stsc": # Sample To Chunk Box
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+		elif atype == b"stsc": # Sample To Chunk Box
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			for i in range(entry_count):
 				j = 8 + i * 12
 				# first_chunk
 				# samples_per_chunk
 				# sample_description_index
-				result_tuple = struct.unpack(">LLL", data[j:j+12])
+				result_tuple = struct.unpack_from(">LLL", data, j)
 				current_track.chunk_lengths.append(result_tuple)
 				
 			# enlarge compactly coded tables
@@ -958,13 +960,13 @@ def profile_mp4(mp4_data): # FileData object
 
 #			print(current_track.chunk_lengths)
 				
-		elif atype in ("stsz", "stz2"): # Sample Size Boxes
-			(sample_size,) = BE_LONG.unpack(data[4:8])
-			(sample_count,) = BE_LONG.unpack(data[8:12])
+		elif atype in (b"stsz", b"stz2"): # Sample Size Boxes
+			(sample_size,) = BE_LONG.unpack_from(data, 4)
+			(sample_count,) = BE_LONG.unpack_from(data, 8)
 			if sample_size == 0:
 				for i in range(sample_count):
 					j = 12 + i * 4
-					(out,) = BE_LONG.unpack(data[j:j+4])
+					(out,) = BE_LONG.unpack_from(data, j)
 					current_track.sample_lengths.append(out)
 			else:
 				for i in range(sample_count):
@@ -1058,7 +1060,7 @@ def mp4_signature_bytes(track, mp4_file):
 	"""Returns the signature bytes for a track. The signature bytes are
 	the 256 first bytes in the track."""
 	previous_samples = 0
-	signature_bytes = ""
+	signature_bytes = b""
 	# iterate different offsets in the file where data of current track
 	# can be found
 	for chnb, chunk_offset in enumerate(track.chunk_offsets):
@@ -1074,7 +1076,7 @@ def mp4_signature_bytes(track, mp4_file):
 		chunk_size = sum(track.sample_lengths[previous_samples:
 		                 previous_samples+samples_in_chunk])
 		
-		chunk_content = ""
+		chunk_content = b""
 		with open(mp4_file, "rb") as mov:
 			mov.seek(chunk_offset)
 			chunk_content = mov.read(chunk_size)
@@ -1108,9 +1110,9 @@ def profile_wmv(wmv_data): # FileData object
 			ar.move_to_child()
 		elif oguid == GUID_DATA_OBJECT:
 			padding_amount = 0
-			padding_bytes = ""
+			padding_bytes = b""
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -1182,7 +1184,7 @@ def profile_wmv(wmv_data): # FileData object
 		if oguid == GUID_STREAM_OBJECT:
 			# grab track id 
 			i = 16 + 16 + 8 + 4 + 4
-			(flags,) = S_SHORT.unpack(data[i:i+2])
+			(flags,) = S_SHORT.unpack_from(data, i)
 			track_id = flags & 0xF
 			assert not tracks.has_key(track_id)
 			tracks[track_id] = TrackData()
@@ -1191,7 +1193,7 @@ def profile_wmv(wmv_data): # FileData object
 		if oguid == GUID_FILE_OBJECT:
 			# exact size is stored in one of the header objects
 			i = 16
-			(file_size,) = S_LONGLONG.unpack(data[i:i+8])
+			(file_size,) = S_LONGLONG.unpack_from(data, i)
 			if (file_size != wmv_data.size):
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected: %s" % sep(file_size),
@@ -1418,7 +1420,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 					assert file_chunk
 					srsf.write(file_chunk)
 					if len(file_chunk) % 2 == 1:
-						srsf.write("\0")
+						srsf.write(b"\0")
 						
 					for track in tracks.values():
 						if big_file:
@@ -1426,7 +1428,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 						track_chunk = track.serialize_as_riff()
 						srsf.write(track_chunk)
 						if len(track_chunk) % 2 == 1:
-							srsf.write("\0")
+							srsf.write(b"\0")
 						
 				rr.move_to_child()
 			else:
@@ -1528,7 +1530,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 			
 			if o.type == GUID_DATA_OBJECT:
 				i = 16 + 8 + 16
-				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
 				psize = (o.size - len(o.raw_header)) / total_data_packets
 				start = o.start_pos + len(o.raw_header)
@@ -1562,7 +1564,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 					
 				# padding object
 				if (sample_data.padding_bytes != 
-					"\x00" * sample_data.padding_amount):
+				bytearray(sample_data.padding_amount)):
 					size = 16 + 8 + len(sample_data.padding_bytes)
 					print("Larger (%dB) SRS file because of irregular"
 					      " padding bytes." % size)
@@ -1657,9 +1659,9 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 			# It's possible the sample didn't require or contain data
 			# for all tracks in the main file. If that happens, 
 			# we obviously don't want to try to match the data
-			if track.signature_bytes != "":
-				if (track.check_bytes != "" and 
-				len(track.check_bytes) < len(track.signature_bytes)):
+			if track.signature_bytes:
+				if (0 < len(track.check_bytes) <
+				len(track.signature_bytes)):
 					lcb = min(len(track.signature_bytes),
 								rr.current_chunk.length + 
 								len(track.check_bytes))
@@ -1668,11 +1670,11 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 					                                  len(track.check_bytes)]
 					
 					# track found!
-					if track.signature_bytes[:len(check_bytes)] == check_bytes:
+					if track.signature_bytes.startswith(check_bytes):
 						track.check_bytes = check_bytes
 					else:
 						# It was only a partial match. Start over.
-						track.check_bytes = ""
+						track.check_bytes = b""
 						track.match_offset = 0
 						track.match_length = 0
 			
@@ -1681,7 +1683,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 				# to see if it's the start of a new match 
 				# (probably will never happen with AVI, 
 				# but it does in MKV, so just in case...)	
-				if track.check_bytes == "":
+				if not track.check_bytes:
 					chunk_bytes = rr.read_contents()
 					
 					search_byte = track.signature_bytes[0]
@@ -1693,7 +1695,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 						check_bytes = chunk_bytes[found_pos:found_pos+lcb]
 						
 						# track found!
-						if track.signature_bytes[:len(check_bytes)] == check_bytes:
+						if track.signature_bytes.startswith(check_bytes):
 							track.check_bytes = check_bytes
 							track.match_offset = (
 							                rr.current_chunk.chunk_start_pos
@@ -1761,7 +1763,7 @@ def _mkv_block_find(tracks, er, done):
 	# it's possible the sample didn't require 
 	# or contain data for all tracks in the main file
 	# if that happens, we obviously don't want to try to match the data
-	if track.signature_bytes != "" and (track.match_offset == 0 or
+	if track.signature_bytes and (track.match_offset == 0 or
 		(len(track.check_bytes) < len(track.signature_bytes))):
 		# here, the data we're looking for might not start in the first frame 
 		# (lace) of the block, so we need to check them all
@@ -1769,7 +1771,7 @@ def _mkv_block_find(tracks, er, done):
 		offset = 0
 		for i in range(len(er.current_element.frame_lengths)):
 			# see if a false positive match was detected
-			if track.check_bytes != "" and (len(track.check_bytes) < 
+			if (0 < len(track.check_bytes) <
 			                                len(track.signature_bytes)):
 				lcb = min(len(track.signature_bytes), 
 				          er.current_element.frame_lengths[i] + 
@@ -1777,11 +1779,11 @@ def _mkv_block_find(tracks, er, done):
 				check_bytes = track.check_bytes
 				check_bytes += buff[offset:offset+lcb-len(track.check_bytes)]
 				
-				if track.signature_bytes[:len(check_bytes)] == check_bytes:
+				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 				else:
 					# It was only a partial match. Start over.
-					track.check_bytes = ""
+					track.check_bytes = b""
 					track.match_offset = 0
 					track.match_length = 0
 			# this is a bit weird, but if we had a false positive match going 
@@ -1789,12 +1791,12 @@ def _mkv_block_find(tracks, er, done):
 			# to see if it's the start of a new match 
 			# (rare problem, but it can happen with subtitles especially)
 			
-			if track.check_bytes == "":
+			if not track.check_bytes:
 				lcb = min(len(track.signature_bytes), 
 				              er.current_element.frame_lengths[i])
 				check_bytes = buff[offset:offset+lcb] 
 				
-				if track.signature_bytes[:len(check_bytes)] == check_bytes:
+				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 					track.match_offset = (er.current_element.element_start_pos
 					                      + len(er.current_element.raw_header) 
@@ -2012,7 +2014,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 		
 		if o.type == GUID_DATA_OBJECT:
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(
+				o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -2042,8 +2045,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 						# It's possible the sample didn't require or contain data
 						# for all tracks in the main file. If that happens, 
 						# we obviously don't want to try to match the data
-						if track.signature_bytes != "":
-							if (track.check_bytes != "" and 
+						if track.signature_bytes:
+							if (0 <
 							    len(track.check_bytes) 
 							    < len(track.signature_bytes)):
 								lcb = min(len(track.signature_bytes),
@@ -2054,12 +2057,12 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 								                        len(track.check_bytes)]
 								
 								# track found!
-								if (track.signature_bytes[:len(check_bytes)] 
-								    == check_bytes):
+								if track.signature_bytes.startswith(
+								    check_bytes):
 									track.check_bytes = check_bytes
 								else:
 									# It was only a partial match. Start over.
-									track.check_bytes = ""
+									track.check_bytes = b""
 									track.match_offset = 0
 									track.match_length = 0
 						
@@ -2068,7 +2071,7 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 						# to see if it's the start of a new match 
 						# (probably will never happen with AVI 
 						# but it does in MKV, so just in case...)	
-						if track.check_bytes == "":
+						if not track.check_bytes:
 							payload_bytes = payload.data
 							
 							search_byte = track.signature_bytes[0]
@@ -2081,8 +2084,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 								                          found_pos+lcb]
 								
 								# track found!
-								if (track.signature_bytes[:len(check_bytes)] 
-								    == check_bytes):
+								if track.signature_bytes.startswith(
+								    check_bytes):
 									track.check_bytes = check_bytes
 									track.match_offset = (
 									    packet.data_file_offset +
@@ -2392,7 +2395,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 		
 		if oguid == GUID_DATA_OBJECT:
 			i = 16 + 8 + 16
-			(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
 			psize = (o.size - len(o.raw_header)) / total_data_packets
 			start = o.start_pos + len(o.raw_header)
@@ -2507,8 +2510,8 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 		while rr.read():
 			# skip over our custom chunks in rebuild mode 
 			# (only read it in load mode)
-			if (rr.current_chunk.fourcc == "SRSF" or 
-			    rr.current_chunk.fourcc == "SRST"):
+			if (rr.current_chunk.fourcc == b"SRSF" or 
+			    rr.current_chunk.fourcc == b"SRST"):
 				rr.skip_contents()
 				continue
 			
@@ -2642,14 +2645,14 @@ def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	with open(sample_file, "wb") as sample:
 		while mr.read():
 			# we don't want the SRS elements copied into the new sample.
-			if mr.atom_type in ("SRSF", "SRST"):
+			if mr.atom_type in (b"SRSF", b"SRST"):
 				mr.skip_contents()
 				continue
 			
 			sample.write(mr.current_atom.raw_header)
 			crc = crc32(mr.current_atom.raw_header, crc) & 0xFFFFFFFF
 			
-			if mr.atom_type == "mdat":
+			if mr.atom_type == b"mdat":
 				mr.move_to_child()
 				
 				# order the interleaved chunks
@@ -2690,16 +2693,16 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		atype = mr.atom_type
 		
 		# doing body
-		if atype in ("moov", "trak", "mdia", "minf", "stbl"):
+		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
-		elif atype == "mdat":
+		elif atype == b"mdat":
 			mr.move_to_child()
 		else:
 			data = mr.read_contents()
 		
-		if atype in ("tkhd",):
+		if atype in (b"tkhd",):
 			# grab track id 
-			(track_id,) = BE_LONG.unpack(data[12:16])
+			(track_id,) = BE_LONG.unpack_from(data, 12)
 			current_track = tracks[track_id]
 			
 			# initialization
@@ -2707,39 +2710,39 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 			current_track.chunk_lengths = []
 			current_track.sample_lengths = []
 			track_processed = False
-		elif atype in ("stco", "co64"):
+		elif atype in (b"stco", b"co64"):
 			# exactly one variant must be present
 			assert current_track != None
-			(entry_count,) = BE_LONG.unpack(data[4:8])
-			if atype == "stco":
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
+			if atype == b"stco":
 				size = 4
 				structunp = BE_LONG
-			else: # "co64"
+			else: # b"co64"
 				size = 8
 				structunp = BE_LONGLONG
 			for i in range(entry_count):
 				j = 8 + i * size
-				(offset,) = structunp.unpack(data[j:j+size])
+				(offset,) = structunp.unpack_from(data, j)
 				current_track.chunk_offsets.append(offset)	
-		elif atype == "stsc": # Sample To Chunk Box
-			(entry_count,) = BE_LONG.unpack(data[4:8])
+		elif atype == b"stsc": # Sample To Chunk Box
+			(entry_count,) = BE_LONG.unpack_from(data, 4)
 			for i in range(entry_count):
 				j = 8 + i * 12
 				# first_chunk
 				# samples_per_chunk
 				# sample_description_index
-				result_tuple = struct.unpack(">LLL", data[j:j+12])
+				result_tuple = struct.unpack_from(">LLL", data, j)
 				current_track.chunk_lengths.append(result_tuple)
 				
 			# enlarge compactly coded tables
 			current_track.chunk_lengths = stsc(current_track.chunk_lengths)
-		elif atype in ("stsz", "stz2"): # Sample Size Boxes
-			(sample_size,) = BE_LONG.unpack(data[4:8])
-			(sample_count,) = BE_LONG.unpack(data[8:12])
+		elif atype in (b"stsz", b"stz2"): # Sample Size Boxes
+			(sample_size,) = BE_LONG.unpack_from(data, 4)
+			(sample_count,) = BE_LONG.unpack_from(data, 8)
 			if sample_size == 0:
 				for i in range(sample_count):
 					j = 12 + i * 4
-					(out,) = BE_LONG.unpack(data[j:j+4])
+					(out,) = BE_LONG.unpack_from(data, j)
 					current_track.sample_lengths.append(out)
 			else:
 				for i in range(sample_count):
@@ -2785,7 +2788,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			# 2) body
 			if oguid == GUID_DATA_OBJECT:
 				i = 16 + 8 + 16
-				(total_data_packets,) = S_LONGLONG.unpack(o.raw_header[i:i+8])
+				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
 				psize = (o.osize - len(o.raw_header)) / total_data_packets
 				rp_offsets = 0
@@ -2830,7 +2833,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 						crc = crc32(data, crc) & 0xFFFFFFFF
 						padding_index += packet.padding_length
 					except AttributeError:
-						data = "\x00" * packet.padding_length
+						data = b"\x00" * packet.padding_length
 						sample.write(data)
 						crc = crc32(data, crc) & 0xFFFFFFFF
 			
@@ -2861,8 +2864,8 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			assert not fr.read_done
 			
 			if fr.block_type == "fLaC":
-				flac.write("fLaC")
-				crc = crc32("fLaC", crc)
+				flac.write(b"fLaC")
+				crc = crc32(b"fLaC", crc)
 				fr.skip_contents()
 			elif ((fr.block_type == ord("s") or 
 				  fr.block_type == ord("t") or

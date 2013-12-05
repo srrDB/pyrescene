@@ -29,10 +29,6 @@
 #   RarFileNameComparer.cs, RarFileNameFinder.cs, SfvReader.cs
 # Everything else: MIT license
 
-# from __future__ import unicode_literals
-# http://www.rmi.net/~lutz/strings30.html
-# works with 3.2 and 2.6+
-
 import re
 import sys
 import difflib
@@ -49,7 +45,7 @@ except ImportError:
 	sys.exc_clear()
 	win32api_available = False
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
@@ -69,9 +65,6 @@ if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
-	# py2.6 has broken bytes()
-	def bytes(foo, enc): #@ReservedAssignment
-		return str(foo) # XXX: not used?
 else:
 	unicode = str #@ReservedAssignment
 
@@ -107,11 +100,8 @@ class SfvEntry(object):
 		# .part1.rar < .part2.rar, r99 < s00, 001 < 002
 		return self.file_name < other.file_name
 		
-	def __str__(self):
-		return self.file_name + " " + str(self.crc32)
-	
 	def __repr__(self):
-		return self.__str__()
+		return self.file_name + " " + self.crc32
 	
 	def __eq__(self, other) : 
 		return self.__dict__ == other.__dict__
@@ -214,12 +204,12 @@ def first_rars(file_list):
 		if (re.match(".*\.rar$", rar, re.IGNORECASE) and 
 		    not re.match(".*part\d+\.rar$", rar, re.IGNORECASE)):
 			return True
-		if rar[-4:] == ".000" or rar[-4:] == ".001":
+		if rar.endswith((".000", ".001")):
 			return True
 		return False
 	firsts = list(filter(isfirst, file_list))
 	# .000? then no .001
-	for first in filter(lambda x: x[-4:] == ".000", firsts):
+	for first in filter(lambda x: x.endswith(".000"), firsts):
 		firsts.remove(first[:-1] + "1")
 	return firsts
 

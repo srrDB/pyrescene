@@ -48,7 +48,7 @@ class Atom(object):
 	def __init__(self, size, object_guid):
 		self.size = size
 		self.type = object_guid
-		self.raw_header = ""
+		self.raw_header = b""
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):
@@ -82,7 +82,7 @@ class MovReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again")
 		assert self.read_done or (self.mode == MovReadMode.SRS and
-		                          self.atom_type == "mdat")
+		                          self.atom_type == b"mdat")
 		
 		
 		atom_start_position = self._mov_stream.tell()
@@ -95,7 +95,7 @@ class MovReader(object):
 		
 		self._atom_header = self._mov_stream.read(8)
 		# 4 bytes for atom length, 4 bytes for atom type
-		(atom_length,) = BE_LONG.unpack(self._atom_header[:4])
+		(atom_length,) = BE_LONG.unpack_from(self._atom_header)
 		self.atom_type = self._atom_header[4:]
 		
 		# special sizes
@@ -112,7 +112,7 @@ class MovReader(object):
 			# null bytes. This is the case if it is followed by an mdat
 			# try to make it work with those samples too
 			# https://code.google.com/p/mp4parser/ can not open these files!
-			if self.atom_type == "\x00\x00\x00\x00":
+			if self.atom_type == b"\x00\x00\x00\x00":
 				atom_length = 8
 			else:
 				# the atom extends to the end of the file
@@ -123,7 +123,7 @@ class MovReader(object):
 		# This is only applied on samples,
 		# since a partial movie might still be useful.
 		end_offset = atom_start_position + atom_length
-		if (self.mode == MovReadMode.Sample and self.atom_type != "mdat" and 
+		if (self.mode == MovReadMode.Sample and self.atom_type != b"mdat" and 
 			end_offset > self._file_length):
 			raise InvalidDataException("Invalid box length at 0x%08X" % 
 			                           atom_start_position)
@@ -147,12 +147,12 @@ class MovReader(object):
 			                      os.SEEK_SET)
 
 		self.read_done = True
-		buff = ""
+		buff = b""
 
 		# do always when it's not a SRS file
 		# else skip it when encountering removed data
 		if (self.mode != MovReadMode.SRS or 
-			self.atom_type != "mdat"):
+			self.atom_type != b"mdat"):
 			# skip header bytes
 			hl = len(self.current_atom.raw_header)
 			self._mov_stream.seek(hl, os.SEEK_CUR)
@@ -165,7 +165,7 @@ class MovReader(object):
 			# do always when it's not a SRS file
 			# else skip it when encountering removed data
 			if (self.mode != MovReadMode.SRS 
-				or self.atom_type != "mdat"):
+				or self.atom_type != b"mdat"):
 				self._mov_stream.seek(self.current_atom.start_pos + 
 				                      self.current_atom.size, 
 				                      os.SEEK_SET)

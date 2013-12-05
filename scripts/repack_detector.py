@@ -30,13 +30,13 @@ from rescene import info
 
 def main(options, args):
 	for lfile in os.listdir(args[0]):
-		if lfile[-4:] != ".srr":
+		if not lfile.endswith(".srr"):
 			continue
 		srr = info(lfile)
 		
 		has_nfo = False
 		for sfile in srr['stored_files']:
-			if sfile[-4:] == ".nfo":
+			if sfile.endswith(".nfo"):
 				has_nfo = True
 				
 		if not options.nonfo:

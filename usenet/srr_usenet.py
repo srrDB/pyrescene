@@ -250,12 +250,12 @@ def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
 		line_amount = 0
 		while line_amount < max_nb_lines:
 			line = self.getline()
-			if line == '.':
+			if line == b'.':
 				break
-			if line[:2] == '..':
+			if line.startswith(b'..'):
 				line = line[1:]
 			if ofile:
-				ofile.write(line + "\n")
+				ofile.write(line + b"\n")
 			else:
 				data_list.append(line)
 			line_amount += 1
@@ -649,7 +649,7 @@ class NNTPFile(io.IOBase):
 		elif self._inactive: # grab the first few bytes
 			self._first_inactive_grab()
 		if self._current_position == self._file_size:
-			return ""
+			return b""
 		
 		def is_not_edge_segment(segment_nb):
 			return segment_nb != 1 and segment_nb != self.nb_segments
@@ -701,13 +701,13 @@ class NNTPFile(io.IOBase):
 			shead = get_basic_header(offset)
 			if len(shead) != 7:
 				return 0xFF # not a block type
-			return struct.unpack(str("<HBHH"), shead)[1]
+			return struct.unpack("<HBHH", shead)[1]
 		def get_flags_basic_header(offset):
 			shead = get_basic_header(offset)
 			if len(shead) != 7:
 				# not a header
 				return 0x0
-			return struct.unpack(str("<HBHH"), shead)[2]
+			return struct.unpack("<HBHH", shead)[2]
 		def is_rar_block(block_type):
 			# will fail for P0W4 0x00 RAR end blocks
 			return block_type in range(0x72, 0x7B + 1)
@@ -760,9 +760,9 @@ class NNTPFile(io.IOBase):
 		# download in between segments if necessary
 		# +1: end segment needs to be grabbed too (is excluded in range())
 		for i in range(spart_nb, end_part + 1):
-			try: # do we already have it or not?
-				self.data[i]
-			except KeyError: # download the segment
+			# do we already have it or not?
+			if i not in self.data:
+				# download the segment
 				# not all the data for first segment RAR files
 				if (self.is_rar and spart_nb == 1):
 					amount = DEFAULT_LINES
@@ -933,7 +933,7 @@ class NNTPFile(io.IOBase):
 		
 		# 2) handle the following segments to get data from
 		next_segment = spart_nb + 1
-		data = ""
+		data = b""
 		while size > 0:
 			# the (theoretical) decoded segment size; the expected size
 			segment_size = self.segments[next_segment].decoded_size
@@ -1003,7 +1003,7 @@ class NNTPFile(io.IOBase):
 			try:
 				(resp, _nr, _id) = self.server.stat("<%s>" % 
 			                   self.segments[self.nb_segments].message_id)
-				success = "223 " == resp[:4]
+				success = resp.startswith("223 ")
 			except nntplib.NNTPTemporaryError:
 				success = False
 			if not success:
@@ -1024,7 +1024,8 @@ class NNTPFile(io.IOBase):
 							
 							(resp, _nr, _id) = self.server.stat("<%s>" % 
 								self.segments[self.nb_segments].message_id)
-							if "223 " == resp[:4]:
+							if resp.startswith(
+							"223 "):
 								s.quit()
 								return True
 							break
@@ -1178,14 +1179,14 @@ def create_srr(nzb_path, options):
 	
 	for afile in to_store:
 		# remove automated sample screen shots: _s.jpg
-		if afile.name[-6:] == "_s.jpg":
+		if afile.name.endswith("_s.jpg"):
 			print("_s.jpg image removed.")
 			continue
 		if afile.name == "UsenetSpaceCowboys.nfo":
 			print("UsenetSpaceCowboys.nfo file removed!")
 			continue
 		# remove small IMDb images
-		if afile.name[-4:] in (".jpg",) and "proof" not in afile.name.lower():
+		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
 			print("JPG check:"),
 			size = sum([f.bytes for f in afile.segments.itervalues()])
 			# check the resolution? -> no, IMDb raised the resolution
@@ -1203,14 +1204,14 @@ def create_srr(nzb_path, options):
 			if "_s.jpg" in afile.name:
 				print("_s.jpg file removed.")
 				continue
-		if afile.name[-4:] in (".png",):
+		if afile.name.endswith((".png",)):
 			print("Checking PNG files.")
 			if afile.file_size() == 592451:
 				print("Discarding PNG file. Greetings to kere.ws!")
 				continue
 			else:
 				print(".png file with size %d kept." % afile.file_size())
-		if afile.name[-4:] == ".nfo":
+		if afile.name.endswith(".nfo"):
 			nfos.append(afile)
 		else:
 			storefiles.append(afile)
@@ -1517,7 +1518,7 @@ def main(options, args):
 	
 	amount = 0
 	for element in args:
-		if os.path.isfile(element) and element[-4:] == ".nzb":
+		if os.path.isfile(element) and element.endswith(".nzb"):
 			amount += 1
 			create_srr_nzbmove(element)
 		elif os.path.isdir(element):

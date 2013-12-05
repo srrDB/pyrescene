@@ -22,7 +22,7 @@ import re
 def main(options, args):
 	nzbdir = args[0]
 	for nzbfile in os.listdir(nzbdir):
-		if nzbfile[-4:] != ".nzb":
+		if not nzbfile.endswith(".nzb"):
 			continue
 		
 		for line in open(os.path.join(nzbdir, nzbfile), "r").readlines():

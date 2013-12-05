@@ -33,11 +33,17 @@ import pprint
 from filecmp import cmp
 from os.path import join
 from tempfile import mkdtemp
+import sys
 
 import rescene
 from rescene.main import *
 from rescene.main import _handle_rar, _flag_check_srr, _auto_locate_renamed
 from rescene.rar import ArchiveNotFoundError
+
+try:  # Python < 3
+	from StringIO import StringIO  # Supports writing non-Unicode strings
+except ImportError:  # Python 3
+	from io import StringIO
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -117,14 +123,16 @@ class TestExtract(TmpDirSetup):
 		                        "store_little_srrfile_with_path_backslash.srr")
 		
 		extract_files(srr_file, self.tdir)
-		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		self.assertTrue(os.path.isfile(efile),
+			"{0!r} should be a file".format(efile))
 		self.assertEqual(self.o.last_event().code, MsgCode.MSG)
+		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		
 		extract_files(srr_file, self.tdir)
 		self.assertEqual(self.o.last_event().code, MsgCode.NO_OVERWRITE)
 		self.assertEqual(self.o.last_event().message[:15], 
 		                 "Overwrite operation aborted"[:15])
-		self.assertTrue(os.path.isfile(efile))
-		
+	
 	def test_extract_srr_utf8(self):
 		utf8 = "Κείμενο στην ελληνική γλώσσα.txt"
 		temputf = os.path.join(self.tdir, utf8)
@@ -152,17 +160,17 @@ class TestExtract(TmpDirSetup):
 class TestAddRemoveRenameError(TestInit):
 	"""Tests the errors of adding and removing stored files."""	
 	def test_error_unknown_srr_file(self):
-		self.assertRaises(ArchiveNotFoundError, add_stored_files, None, None)
+		self.assertRaises(ArchiveNotFoundError, add_stored_files, None, ())
 		self.assertRaises(ArchiveNotFoundError,
 		                  remove_stored_files, None, None)
 		self.assertRaises(ArchiveNotFoundError,
-		                  rename_stored_file, None, None, None)
+		                  rename_stored_file, None, "dummy", "dummy")
 	
 	def test_error_rar_for_srr(self):
 		rar = os.path.join(self.little, "store_little.rar")
-		self.assertRaises(NotSrrFile, add_stored_files, rar, None)
+		self.assertRaises(NotSrrFile, add_stored_files, rar, ())
 		self.assertRaises(NotSrrFile, remove_stored_files, rar, None)
-		self.assertRaises(NotSrrFile, rename_stored_file, rar, None, None)
+		self.assertRaises(NotSrrFile, rename_stored_file, rar, "dummy", "dummy")
 
 	def test_error_dupe(self):
 		srrp = os.path.join(self.little, "store_little_srrfile_with_path.srr")
@@ -210,8 +218,8 @@ class TestAddRemoveFiles(TmpDirSetup):
 		self.o.events = []
 		add_stored_files(srr, files, self.files_dir, True)
 		
-		files = map(lambda x: os.path.relpath(x, 
-					self.files_dir).replace(os.sep, "/"), files)  
+		files = sorted(os.path.relpath(x, 
+					self.files_dir).replace(os.sep, "/") for x in files)  
 		files_srr = info(srr)["stored_files"]
 		s = [v.file_name for _, v in files_srr.items()]
 		s.sort()
@@ -338,6 +346,17 @@ class TestDisplayInfo(TestInit):
 				#"win_comment.rar"
 #		info(comment)
 #		print_details(comment)
+	
+	def test_details(self):
+		"""Exercise main.print_details()"""
+		srr = os.path.join(os.pardir, os.pardir, "test_files",
+			"other", "house.713.hdtv-lol.srr")
+		orig_stdout = sys.stdout
+		try:
+			sys.stdout = StringIO()
+			print_details(srr)
+		finally:
+			sys.stdout = orig_stdout
 
 class TestCreate(TmpDirSetup):
 	"""Tests the creation of SRR files."""
@@ -408,20 +427,19 @@ class TestCreate(TmpDirSetup):
 
 	def test_compressed(self):
 		rar = os.path.join(self.compression, "best_little.rar")
-		dest = os.path.join(self.test_dir, "compression.srr")
+		dest = os.path.join(self.tdir, "compression.srr")
 #		self.assertRaises(ValueError, create_srr, dest, rar)
 #		self.assertEqual(MsgCode.FBLOCK, self.o.last_event().code)
-		create_srr(dest, rar, compressed=True)
+		self.assertTrue(create_srr(dest, rar, compressed=True))
 		#self._print_events()
 		self.assertEqual(MsgCode.BLOCK, self.o.last_event().code)
-		os.unlink(dest)
 
 def _copy(cfile, destination_dir):
 	"""Copies 'cfile' to 'destination_dir'. Returns path of new file.
 	Removes read-only tag to enable cleanup afterwards."""
 	shutil.copy(cfile, destination_dir)
 	origcopy = os.path.join(destination_dir, os.path.basename(cfile))
-	os.chmod(origcopy, 700) # remove read-only flag
+	os.chmod(origcopy, 0o700) # remove read-only flag
 	return origcopy
 		
 class TestRebuild(TmpDirSetup):
@@ -494,7 +512,7 @@ class TestRebuild(TmpDirSetup):
 	
 	def test_compressed(self):
 		rar = os.path.join(self.compression, "best_little.rar")
-		dest = os.path.join(self.test_dir, "compression.srr")
+		dest = os.path.join(self.tdir, "compression.srr")
 		
 		
 

@@ -93,7 +93,7 @@ def check_availability_stored_files(srr_file):
 def check_for_no_ext(srr_file, extention):
 	for block in RarReader(srr_file):
 		if (block.rawtype == BlockType.SrrStoredFile and
-			block.file_name.lower()[-4:] == extention):
+			block.file_name.lower().endswith(extention)):
 			return False
 	return True
 		
@@ -165,7 +165,7 @@ def main(options, args):
 		if os.path.isdir(element):
 			for srr_file in glob.iglob(element + "/*.srr"):
 				check(srr_file)
-		elif os.path.isfile(element) and element[-4:] == ".srr":
+		elif os.path.isfile(element) and element.endswith(".srr"):
 			check(element)
 		else:
 			print("WTF are you supplying me?")

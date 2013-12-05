@@ -216,10 +216,10 @@ class RarStream(io.IOBase):
 		
 		# Nothing to read anymore. We are through all archives in the list.
 		if not self._current_volume:
-			return ""
+			return b""
 
 		file_bytes_read = 0
-		dbuffer = ""
+		dbuffer = b""
 		size_set = True if size >= 0 else False
 
 		while True:
@@ -359,7 +359,7 @@ class FakeFile(io.IOBase):
 			Returns an empty string at EOF.
 		"""
 		def gennull(size):
-			return bytes("\x00" * size)
+			return bytearray(size)
 		
 		if size < 0:
 			old = self._current_position

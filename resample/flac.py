@@ -45,7 +45,7 @@ class Block(object):
 	def __init__(self, size, block_type):
 		self.size = size
 		self.type = block_type
-		self.raw_header = ""
+		self.raw_header = b""
 		self.start_pos = -1
 		
 	def is_last_block(self):
@@ -102,16 +102,16 @@ class FlacReader(object):
 		# <24>   Length (in bytes) of metadata to follow 
 		#        (does not include the size of the METADATA_BLOCK_HEADER)
 		
-		if self._block_header == "fLaC":
+		if self._block_header == b"fLaC":
 			self.block_type = "fLaC"
 			self.current_block = Block(0, self.block_type)
-			self.current_block.raw_header = "fLaC"
+			self.current_block.raw_header = b"fLaC"
 			self.current_block.start_pos = block_start_position
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			return True
 		
 		# ID3v2
-		if self._block_header[:3] == "ID3":
+		if self._block_header.startswith(b"ID3"):
 			self.block_type = "ID3"
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			raw_header = self._flac_stream.read(10)
@@ -124,24 +124,25 @@ class FlacReader(object):
 			return True
 		
 		# ID3v1
-		if self._block_header[:3] == "TAG":
+		if self._block_header.startswith(b"TAG"):
 			self.block_type = "TAG"
 			self.current_block = Block(128, self.block_type)
-			self.current_block.raw_header = ""
+			self.current_block.raw_header = b""
 			self.current_block.start_pos = block_start_position
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			return True
 
-		(self.block_type,) = BE_BYTE.unpack(self._block_header[0])
+		(self.block_type,) = BE_BYTE.unpack_from(self._block_header,
+			0)
 		if self.block_type & 0xFF == 0xFF: # frame data
 			block_length = self._file_length - block_start_position
 			# check for ID3v1 tag
 			self._flac_stream.seek(self._file_length - 128)
-			if self._flac_stream.read(3) == "TAG":
+			if self._flac_stream.read(3) == b"TAG":
 				block_length -= 128
-			self._block_header = ""
+			self._block_header = b""
 		else:
-			(block_length,) = BE_LONG.unpack("\x00" + self._block_header[1:])
+			(block_length,) = BE_LONG.unpack(b"\x00" + self._block_header[1:])
 		
 		# sanity check on block length
 		end_offset = block_start_position + block_length

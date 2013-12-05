@@ -22,7 +22,7 @@ class ExpatNZBParser(BaseNZBParser):
         elif name == 'group':
             self.current_file.add_group(self.current_data)
         elif name == 'segment':
-            self.current_segment.message_id(self.current_data)
+            self.current_segment.set_message_id(self.current_data)
             self.current_file.add_segment(self.current_segment)
     
     def char_data(self, data):

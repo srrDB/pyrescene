@@ -581,8 +581,7 @@ def generate_srr(reldir, working_dir, options):
 		except:
 			pass
 
-		is_music = (sample.lower().endswith(".mp3") or
-		            sample.lower().endswith(".flac"))
+		is_music = sample.lower().endswith((".mp3", ".flac"))
 		
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
