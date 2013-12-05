@@ -49,7 +49,7 @@ def folder_join_mapping(folder):
 		srr_files = []
 		releasename = os.path.split(dirpath)[1]
 		for file in filenames:
-			if file[-4:] == ".srr":
+			if file.endswith(".srr"):
 				srr_files.append(os.path.join(releasename, file))
 		if len(srr_files):
 			return_mapping[releasename] = srr_files
@@ -85,10 +85,8 @@ def main(options, args):
 					print(subject.encode('utf-8'))
 			else:
 				relname = relname.strip()
-				try:
-					relFileMapping[relname] += [srr] 
-				except:
-					relFileMapping[relname] = [srr]
+				relFileMapping.setdefault(relname,
+					[]).append(srr)
 				fileRelMapping[srr] = relname
 					
 				# show info while parsing
@@ -98,7 +96,8 @@ def main(options, args):
 					print(srr)
 					
 				# create new nzb files to download samples/srrs/...
-				if options.separate and relname[0:4] != "Con.":
+				if (options.separate and
+				not relname.startswith("Con.")):
 					# Con.Artist, Con.Air folders are not possible in Windows
 					newdoc = Document()
 					top_element = doc.createElementNS(
@@ -136,8 +135,9 @@ def main(options, args):
 		# try to rename all available files in the directory
 		# for single SRR files
 		for file in os.listdir(options.rename_dir):
-			if fileRelMapping.has_key(file):
-				bad = renameSrr(options.rename_dir, file, fileRelMapping[file])
+			releaseName = fileRelMapping.get(file)
+			if releaseName is not None:
+				bad = renameSrr(options.rename_dir, file, releaseName)
 				if bad:
 					failed.append(bad)
 			else:

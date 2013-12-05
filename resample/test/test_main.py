@@ -35,32 +35,32 @@ class TestGetFileType(unittest.TestCase):
 	http://archive.org/details/2012.10.samples.mplayerhq.hu"""
 	def test_mkv(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("\x1A\x45\xDF\xA3\x93\x42\x82\x88"
-		        "\x6D\x61\x74\x72\x6F\x73\x6B\x61\x42")
+		f.write(b"\x1A\x45\xDF\xA3\x93\x42\x82\x88"
+		        b"\x6D\x61\x74\x72\x6F\x73\x6B\x61\x42")
 		f.close()
 		self.assertEqual(FileType.MKV, get_file_type(f.name))
 		os.unlink(f.name)
 		
 	def test_avi(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("\x52\x49\x46\x46\x10\xF6\x6E\x01"
-		        "\x41\x56\x49\x20\x4C\x49\x53\x54\x7E")
+		f.write(b"\x52\x49\x46\x46\x10\xF6\x6E\x01"
+		        b"\x41\x56\x49\x20\x4C\x49\x53\x54\x7E")
 		f.close()
 		self.assertEqual(FileType.AVI, get_file_type(f.name))
 		os.unlink(f.name)
 		
 	def test_mp4(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("\x00\x00\x00\x18\x66\x74\x79\x70"
-		        "\x6D\x70\x34\x31\x00\x00\x00\x00\x6D")
+		f.write(b"\x00\x00\x00\x18\x66\x74\x79\x70"
+		        b"\x6D\x70\x34\x31\x00\x00\x00\x00\x6D")
 		f.close()
 		self.assertEqual(FileType.MP4, get_file_type(f.name))
 		os.unlink(f.name)
 		
 	def test_wmv(self):
 		f = tempfile.NamedTemporaryFile(delete=False)
-		f.write("\x30\x26\xB2\x75\x8E\x66\xCF\x11"
-		        "\xA6\xD9\x00\xAA\x00\x62\xCE\x6C")
+		f.write(b"\x30\x26\xB2\x75\x8E\x66\xCF\x11"
+		        b"\xA6\xD9\x00\xAA\x00\x62\xCE\x6C")
 		f.close()
 		self.assertEqual(FileType.WMV, get_file_type(f.name))
 		os.unlink(f.name)

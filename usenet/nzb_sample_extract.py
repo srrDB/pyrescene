@@ -138,6 +138,13 @@ class TestRegex(unittest.TestCase):
 		file_name = nzb_utils.parse_name(avi)
 		self.assertEqual(file_name, 
 						"ucl.2010.2011.playoffs.salzburg.tel.aviv-ifh.r00")
+		
+		global options
+		options = optparse.Values()
+		options.__dict__.update(
+			avisample=True, mkvsample=True, mp4sample=True,
+			wmvsample=True, vobsample=True, m2tssample=True,
+		)
 		self.assertFalse(is_sample(file_name), "detected as sample")
 		
 		

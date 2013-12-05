@@ -203,7 +203,7 @@ def get_files(path, cwdsolo, options):
             for line in fileinput.input([folder + filename]):
             #for line in open(folder+filename, 'r').readlines(): #alternative way, reads entire sfv into memory
                 line = line.strip()
-                if not len(line) < 10 and not line[0:1] == ";":
+                if not len(line) < 10 and not line.startswith(";"):
                     f = line[:-9]
                     
                     if not os.path.exists(folder + str(f)):
@@ -1251,7 +1251,7 @@ if __name__ == '__main__':
     for path in args:
         #file = open(r"E:\DOWNLOAD\xvid.txt", 'a')
         #file.write(path + '\n')
-        #file.write(str(options.unrar_dir) + '\n')
+        #file.write(options.unrar_dir + '\n')
         #file.write('\n')
         #file.close()
         

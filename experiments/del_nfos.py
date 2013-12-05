@@ -8,7 +8,7 @@ good = "beauty.and.the.beast.2012.s01e02.720p.hdtv.x264-immerse.nfo"
 i = rescene.info(srr)
 i["stored_files"].pop(good)
 for sfile in  i["stored_files"].keys():
-	if sfile[-4:] != ".nfo":
+	if not sfile.endswith(".nfo"):
 		i["stored_files"].pop(sfile)
 rescene.remove_stored_files(srr, i["stored_files"])
 print("Done!")

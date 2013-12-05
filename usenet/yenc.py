@@ -68,49 +68,48 @@ def decode(data, seg_part=False, ignore_crc=False):
 			print("Non yEnc encoded data found!")
 			found = False
 			for i in range(10):
-				if data[i].startswith('begin '):
+				if data[i].startswith(b'begin '):
 					found = True
 					break
 			if found:
 				for _ in range(i):
 					data.pop(0)
-			if data[-1] == 'end':
+			if data[-1] == b'end':
 				data.pop()
-				if data[-1] == '`':
+				if data[-1] == b'`':
 					data.pop()
 
-			decoded_data = '\r\n'.join(data)
+			decoded_data = b'\r\n'.join(data)
 
 		#Deal with yenc encoded posts
 		elif (ybegin and (yend or (not yend and seg_part))):
-			if not 'name' in ybegin:
+			if not b'name' in ybegin:
 				logging.debug("Possible corrupt header detected " + \
 							  "=> ybegin: %s", ybegin)
 			# Decode data
 			if HAVE_YENC:
-				decoded_data, crc = _yenc.decode_string(''.join(data))[:2] #@UndefinedVariable
-				partcrc = '%08X' % ((crc ^ -1) & 0xFFFFFFFF)
+				decoded_data, crc = _yenc.decode_string(b''.join(data))[:2] #@UndefinedVariable
+				partcrc = (crc ^ -1) & 0xFFFFFFFF
 			else:
-				data = ''.join(data)
+				data = b''.join(data)
 				for i in (0, 9, 10, 13, 27, 32, 46, 61):
 					j = '=%c' % (i + 64)
 					data = data.replace(j, chr(i))
 				decoded_data = data.translate(YDEC_TRANS)
 				if not seg_part:
 					crc = crc32(decoded_data)
-					partcrc = '%08X' % (crc & 0xFFFFFFFF)
+					partcrc = crc & 0xFFFFFFFF
 
 			# we don't need to check all the CRC stuff if it isn't there
 			if not seg_part and not ignore_crc:
 				if ypart:
-					crcname = 'pcrc32'
+					crcname = b'pcrc32'
 				else:
-					crcname = 'crc32'
+					crcname = b'crc32'
 
-				if crcname in yend:
-					_partcrc = ('0' * (8 - len(yend[crcname])) + 
-					            yend[crcname].upper())
-				else:
+				try:
+					_partcrc = int(yend[crcname], 16)
+				except (LookupError, ValueError):
 					_partcrc = None
 					logging.debug("Corrupt header detected " + \
 								  "=> yend: %s", yend)
@@ -127,14 +126,11 @@ def decode(data, seg_part=False, ignore_crc=False):
 		
 		# '=ypart begin=400001 end=500000' line can be omitted
 		if not ypart: # fill it in ourselves
-			ypart = {'begin': 1, 'end': ybegin['size']}
+			ypart = {b'begin': 1, b'end': ybegin[b'size']}
 			# in this case are 2 =ybegin parameters 'missing' too:
 			# =ybegin line=128 size=3566 name=k-9-vrs.sfv
 			# part= and total= (but these are optional according to the spec)
-			try:
-				ybegin['part']
-			except KeyError:
-				ybegin['part'] = 1
+			ybegin.setdefault(b'part', 1)
 		
 		#print(ybegin, ypart, yend)
 		# ({'line': '128', 'part': '1', 'name': 
@@ -145,11 +141,11 @@ def decode(data, seg_part=False, ignore_crc=False):
 		return {
 			'data': decoded_data,
 			# KeyError: 'part'
-			'part_number': int(ybegin['part']),
-			'part_begin': int(ypart['begin']), # in the the joined file
-			'part_end': int(ypart['end']), # counts from 1 onwards
-			'part_size': int(ypart['end']) - int(ypart['begin']) + 1,
-			'file_size': int(ybegin['size']),
+			'part_number': int(ybegin[b'part']),
+			'part_begin': int(ypart[b'begin']), # in the the joined file
+			'part_end': int(ypart[b'end']), # counts from 1 onwards
+			'part_size': int(ypart[b'end']) - int(ypart[b'begin']) + 1,
+			'file_size': int(ybegin[b'size']),
 		}
 
 def yCheck(data):
@@ -160,16 +156,16 @@ def yCheck(data):
 	## Check head
 	for i in range(10):
 		try:
-			if data[i].startswith('=ybegin '):
+			if data[i].startswith(b'=ybegin '):
 				splits = 3
-				if data[i].find(' part=') > 0:
+				if data[i].find(b' part=') > 0:
 					splits += 1
-				if data[i].find(' total=') > 0:
+				if data[i].find(b' total=') > 0:
 					splits += 1
 
 				ybegin = ySplit(data[i], splits)
 
-				if data[i+1].startswith('=ypart '):
+				if data[i+1].startswith(b'=ypart '):
 					ypart = ySplit(data[i+1])
 					data = data[i+2:]
 					break
@@ -182,7 +178,7 @@ def yCheck(data):
 	## Check tail
 	for i in range(-1, -11, -1):
 		try:
-			if data[i].startswith('=yend '):
+			if data[i].startswith(b'=yend '):
 				yend = ySplit(data[i])
 				data = data[:i]
 				break
@@ -192,7 +188,7 @@ def yCheck(data):
 	return ((ybegin, ypart, yend), data)
 
 # Example: =ybegin part=1 line=128 size=123 name=-=DUMMY=- abc.par
-YSPLIT_RE = re.compile(r'([a-zA-Z0-9]+)=')
+YSPLIT_RE = re.compile(br'([a-zA-Z0-9]+)=')
 
 def ySplit(line, splits = None):
 	fields = {}
@@ -223,7 +219,7 @@ def strip(data):
 	# when a line is sent - and to detect a double dot (and remove one of them)
 	# when receiving a line.
 	for i in range(len(data)):
-		if data[i][:2] == '..':
+		if data[i].startswith(b'..'):
 			data[i] = data[i][1:]
 	return data
 

@@ -73,9 +73,6 @@ from rescene.osohash import osohash_from
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behavior
 	range = xrange #@ReservedAssignment
-	# py2.6 has broken bytes()
-	def bytes(foo, enc): #@ReservedAssignment
-		return str(foo)
 
 callbacks = []
 
@@ -515,9 +512,9 @@ def create_srr(srr_name, infiles, in_folder="",
 							os.unlink(srr_name)
 							raise ValueError("Archive uses unsupported "
 							           "compression method: %s" % rarfile)
-					elif not oso_dict.has_key(block.file_name):
+					else:
 						# store first RAR where we encounter the stored file
-						oso_dict[block.file_name] = rarfile
+						oso_dict.setdefault(block.file_name, rarfile)
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -647,10 +644,8 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		# saves bandwidth on failure
 		if not harddisk:
 			for rarfile in rarfiles:
-				try:
-					allfiles[rarfile]
-				except KeyError:
-					# try again because the rars could have capitals while it
+				if rarfile not in allfiles:
+					# the rars could have capitals while it
 					# is all lower in the sfv
 					# the opposite can be true too
 					found = False
@@ -724,9 +719,9 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 	#					os.unlink(srr_name)
 	#					raise ValueError("Archive uses unsupported compression "
 	#									 "method: %s", rarfile)
-					elif not oso_dict.has_key(block.file_name):
+					else:
 						# store first RAR where we encounter the stored file
-						oso_dict[block.file_name] = rarfile
+						oso_dict.setdefault(block.file_name, rarfile)
 				elif _is_recovery(block):
 					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
 						  packed_size=block.packed_size,
@@ -900,7 +895,8 @@ def info(srr_file):
 			                                block.header_size)
 			rar_files[key] = current_rar
 		elif block.rawtype == BlockType.RarPackedFile:
-			if not block.unicode_filename in archived_files:
+			f = archived_files.get(block.unicode_filename)
+			if f is None:
 				f = FileInfo()
 				f.file_name = block.file_name
 				f.file_size = block.unpacked_size
@@ -909,8 +905,6 @@ def info(srr_file):
 				f.compression = block.is_compressed()
 				if f.compression:
 					compression = True
-			else:
-				f = archived_files[block.unicode_filename]
 			# crc of the file is the crc stored in
 			# the last archive that has the file
 			f.crc32 = "%X" % block.file_crc
@@ -959,7 +953,7 @@ def info(srr_file):
 		elif block.rawtype == BlockType.RarOldAuthenticity76 or  \
 			 block.rawtype == BlockType.RarOldAuthenticity79:
 			msg = "Old Authenticity block found. (%s)"  \
-				% str(hex(block.rawtype))
+				% hex(block.rawtype)
 			if _DEBUG: print(msg)
 			_fire(MsgCode.AUTHENTCITY, message=msg)
 			
@@ -980,8 +974,9 @@ def info(srr_file):
 	def add_info_to_rar(sfv_entry):
 		"""Add SFV crc32 hashes to the right RAR info block"""
 		key = os.path.basename(sfv_entry.file_name).lower()		  
-		if key in rar_files:
-			rar_files[key].crc32 = sfv_entry.crc32.upper()
+		rar = rar_files.get(key)
+		if rar is not None:
+			rar.crc32 = sfv_entry.crc32.upper()
 			return True
 		return False
 	sfv_entries[:] = [e for e in sfv_entries if not add_info_to_rar(e)]
@@ -1257,9 +1252,8 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 			   on file size and extension
 	"""
 	# if file has been renamed, use renamed file name
-	if block.file_name in hints.keys():
-		src = hints.get(block.file_name)
-	else:
+	src = hints.get(block.file_name)
+	if src is None:
 		src = block.file_name
 	src = os.path.abspath(os.path.join(in_folder, src))
 	
@@ -1268,7 +1262,7 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 #			  message="Could not locate data file: %s" % src)
 		if auto_locate_renamed:
 			src = _auto_locate_renamed(block.file_name, 
-									   block.unpacked_size, in_folder)
+				block.unpacked_size, in_folder) or src
 		if not os.path.isfile(src):
 			raise FileNotFound("The file does not exist: %s." % src)
 		
@@ -1391,7 +1385,8 @@ def _search(files, folder=""):
 
 	for file_name in files:
 		# use path relative to folder if the path isn't relative or absolute 
-		if os.path.isabs(file_name) or file_name[:2] == os.pardir:
+		if (os.path.isabs(file_name) or
+		file_name.startswith(os.pardir)):
 			search_name = file_name
 		else:
 			search_name = os.path.join(folder, file_name)
@@ -1434,14 +1429,12 @@ class FileInfo(object):
 		self.crc = ""
 		# usable Unicode name (files in rar archive)
 		self.unicode_filename = ""
-		self.orig_filename = ""
+		self.orig_filename = b""
 		# use the same sorting used for the sfv entries
 		self.__lt__ = SfvEntry.__lt__
-	def __str__(self):
-		return (str(self.file_name) + " " + str(self.file_size)
-				+ " " + str(self.crc))
 	def __repr__(self): # if possible evaluable representation of an object
-		return self.__str__()
+		return (repr(self.file_name) + " " + str(self.file_size)
+				+ " " + self.crc)
 
 ### Compressed RAR stuff ######################################################
 

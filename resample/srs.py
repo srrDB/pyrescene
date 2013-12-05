@@ -37,7 +37,7 @@ from rescene.utility import sep
 from resample.main import FileType
 from resample import fpcalc
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG", "")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
 def can_overwrite(file_path, yes_option=False):
 	if not yes_option and os.path.isfile(file_path):

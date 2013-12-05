@@ -65,7 +65,7 @@ REGEX = TEEVEE
 #		file_name = nzb_utils.parse_name(nzb_file.subject)
 #		ln = longest_name(nzb_file.subject, file_name)
 #
-#		if len(file_name): # and file_name[-4:] == ".nfo":
+#		if len(file_name): # and file_name.endswith(".nfo"):
 #			# decide which of the three options is the best
 #			try:
 #				base = grab_base_name(file_name)
@@ -147,7 +147,7 @@ def main(options, args):
 		file_name = nzb_utils.parse_name(nzb_file.subject)
 		ln = longest_name(nzb_file.subject, file_name)
 
-		if len(file_name): # and file_name[-4:] == ".nfo":
+		if len(file_name): # and file_name.endswith(".nfo"):
 			# decide which of the three options is the best
 			try:
 				base = grab_base_name(file_name)

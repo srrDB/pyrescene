@@ -28,6 +28,7 @@ import unittest
 import io
 import os
 from os.path import join
+from errno import ENOENT
 
 from rescene.osohash import compute_hash, osohash_from
 
@@ -44,7 +45,14 @@ class TestHash(unittest.TestCase):
 	"""
 	def test_files(self):
 		breakdance = join("..", "..", "test_files", "media", "breakdance.avi")
-		(osohash, file_size) = compute_hash(breakdance)
+		try:
+			(osohash, file_size) = compute_hash(breakdance)
+		except EnvironmentError as ex:
+			if ex.errno != ENOENT:
+				raise
+			url = "http://www.opensubtitles.org/addons/avi/breakdance.avi"
+			msg = "Need {0} from {1}".format(breakdance, url)
+			self.fail(msg)
 		self.assertEqual("8e245d9679d31e12", osohash)
 		self.assertEqual(12909756, file_size)
 		#self.assertEqual("61f7751fc2a72bfb", compute_hash("D:\dummy.bin")[0])
