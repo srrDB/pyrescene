@@ -31,7 +31,8 @@ def read_nzb(nzb_file):
 	print("Reading %s." % os.path.basename(nzb_file))
 	def parse(pnzb_file):
 		try: # file on disk
-			return pynzb.nzb_parser.parse(open(pnzb_file).read())
+			with open(pnzb_file) as file:
+				return pynzb.nzb_parser.parse(file.read())
 		except: # an open file object
 			return pynzb.nzb_parser.parse(pnzb_file.read())
 
@@ -46,12 +47,14 @@ def read_nzb(nzb_file):
 		# http://www.powergrep.com/manual/xmpxmlfixentities.html
 		XML_AMP_FIX = b"&(?!(?:[a-z]+|#[0-9]+|#x[0-9a-f]+);)"
 		fixed_nzb = io.BytesIO()
-		for line in open(nzb_file, "rb").readlines():
-			line = re.sub(XML_AMP_FIX, b"&amp;", line)
-			line = re.sub(b"&ouml;", "ö".encode("latin-1"), line)
-			# invalid XML characters from NewsLeecher
-			line = re.sub(b"\00", b"", line)
-			fixed_nzb.write(line)
+		with open(nzb_file, "rb") as file:
+			for line in file.readlines():
+				line = re.sub(XML_AMP_FIX, b"&amp;", line)
+				ouml = "ö".encode("latin-1")
+				line = re.sub(b"&ouml;", ouml, line)
+				# invalid XML characters from NewsLeecher
+				line = re.sub(b"\00", b"", line)
+				fixed_nzb.write(line)
 		# do not fail on empty NZB files
 		if fixed_nzb.tell() == 0:
 			print("Empty NZB file: %s" % os.path.basename(nzb_file))

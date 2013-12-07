@@ -38,11 +38,12 @@ def main(options, args):
 			continue
 		date = None
 		# not parsing the whole file, just what we need
-		for line in open(os.path.join(process_dir, nzbfile), "r").readlines():
-			match = re.match(".* date=\"(\d+)\".*", line)
-			if match:	
-				date = datetime.datetime.fromtimestamp(int(match.group(1)))
-				break
+		with open(os.path.join(process_dir, nzbfile), "r") as file:
+			for line in file.readlines():
+				match = re.match(".* date=\"(\d+)\".*", line)
+				if match:
+					date = datetime.datetime.fromtimestamp(int(match.group(1)))
+					break
 		if date:
 			diff = datetime.datetime.now() - date
 			if start < diff.days < end:

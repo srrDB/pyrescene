@@ -25,11 +25,13 @@ def main(options, args):
 		if not nzbfile.endswith(".nzb"):
 			continue
 		
-		for line in open(os.path.join(nzbdir, nzbfile), "r").readlines():
-			match = re.match(".* poster=\".*uncle eric.*", line)
-			if match:	
-				print(nzbfile)
-				break
+		with open(os.path.join(nzbdir, nzbfile), "r") as file:
+			for line in file.readlines():
+				match = re.match(
+					".* poster=\".*uncle eric.*", line)
+				if match:
+					print(nzbfile)
+					break
 		
 if __name__ == '__main__':
 	parser = optparse.OptionParser(

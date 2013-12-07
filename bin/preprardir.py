@@ -246,14 +246,21 @@ def custom_popen(cmd):
 		_in = null
 		_err = null
 	except IOError:
+		null = None
 		_in = subprocess.PIPE
 		_err = subprocess.STDOUT
 
-	# run command
-	return subprocess.Popen(cmd, stdout=subprocess.PIPE, 
-							stdin=_in, stderr=_err, 
-							creationflags=creationflags)
-		
+	try:
+		# run command
+		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+								stdin=_in, stderr=_err,
+								creationflags=creationflags)
+		if not null:
+			proc.stdin.close()  # Emulate null device
+	finally:
+		if null:
+			null.close()
+
 if __name__ == '__main__':
 	parser = OptionParser(
 	usage=("Usage: %prog [input dir] [output dir]\n"
