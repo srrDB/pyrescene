@@ -27,8 +27,15 @@
 import unittest
 import os
 import tempfile
+import shutil
 
 from resample.main import get_file_type, stsc, FileType
+
+class TempDirTest(unittest.TestCase):
+	def setUp(self):
+		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
+	def tearDown(self):
+		shutil.rmtree(self.dir)
 
 class TestGetFileType(unittest.TestCase):
 	"""http://samples.mplayerhq.hu/
