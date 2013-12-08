@@ -24,11 +24,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import division
+
 import unittest
 import os
 import tempfile
+import shutil
+import os.path
+import struct
 
 from resample.main import get_file_type, stsc, FileType
+import resample.srs
 
 class TestGetFileType(unittest.TestCase):
 	"""http://samples.mplayerhq.hu/
@@ -78,6 +84,61 @@ class TestStsc(unittest.TestCase):
 		expected = [(1, 4, 0), (2, 4, 7), (3, 4, 7), (4, 4, 7), (5, 8, 0), 
 		            (6, 8, 0), (7, 4, 0), ]
 		self.assertEquals(expected, outlist)
+
+class TestMp4CreateSrs(unittest.TestCase):
+	def setUp(self):
+		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
+	def tearDown(self):
+		shutil.rmtree(self.dir)
+	
+	def runTest(self):
+		ftyp = (b"ftyp", b"")
+		mdat = (b"mdat", bytearray(100 * 100))
+		tkhd = (b"tkhd", struct.pack(">LLLL", 0, 0, 0, 1))
+		stsc = (b"stsc", struct.pack(">LL LLL", 0, 1, 1, 1, 1))
+		stsz = (b"stsz", struct.pack(">LLL", 0, 100, 100))
+		stco = (b"stco", struct.pack(">LL", 0, 100) +
+			struct.pack(">L", 0) * 100)
+		data = serialise_atoms((
+			ftyp,
+			mdat,
+			(b"moov", (
+				(b"trak", (
+					tkhd,
+					(b"mdia", (
+						(b"minf", (
+							(b"stbl", (
+								stsc,
+								stsz,
+								stco,
+							)),
+						)),
+					)),
+				)),
+			)),
+		))
+		
+		sample = os.path.join(self.dir, "sample.mp4")
+		with open(sample, "wb") as f:
+			f.write(data)
+		
+		argv = [sample, "-y", "-o", self.dir]
+		resample.srs.main(argv, no_exit=True)
+		
+		size = os.path.getsize(os.path.join(self.dir, "sample.srs"))
+		msg = "SRS size {0} should be much less than sample size {1}"
+		msg = msg.format(size, len(data))
+		self.assertTrue(size < len(data) / 2, msg)
+
+def serialise_atoms(atoms):
+	buffer = bytearray()
+	for atom in atoms:
+		(type, data) = atom
+		if not isinstance(data, (bytes, bytearray)):
+			data = serialise_atoms(data)
+		buffer.extend(struct.pack("> L 4s", 8 + len(data), type))
+		buffer.extend(data)
+	return buffer
 
 if __name__ == "__main__":
 	unittest.main()
