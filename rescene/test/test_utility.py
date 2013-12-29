@@ -89,18 +89,18 @@ class TestSfv(unittest.TestCase):
 		self.assertRaises(ValueError, SfvEntry, "file_name", "11aa11aa  ")
 		
 	def test_parse_sfv(self):
-		output = io.StringIO()
-		output.write(str("  ; sfv raped by teh skilled thugs\n"
-		"test.r00 aabb0099  \n"
-		"test.r01	  AABBCCDD\n"
-		"test.rar	AABBCCDD\n" # \t only
-		"test.rar\tAABBDD\n"
-		"test name with spaces.rar AABBCCDD\n"
-		"test name with more spaces.rar	   AABBCCDD\n"
-		"test name with ;.rar AABBCCDD\n"
-		"  \n"
-		"----------------------------------\n"))
-		output.write(str("illegal.rar AABBCCDD ; comment\n"))
+		output = io.BytesIO()
+		output.write(b"  ; sfv raped by teh skilled thugs\n"
+		b"test.r00 aabb0099  \n"
+		b"test.r01	  AABBCCDD\n"
+		b"test.rar	AABBCCDD\n" # \t only
+		b"test.rar\tAABBDD\n"
+		b"test name with spaces.rar AABBCCDD\n"
+		b"test name with more spaces.rar	   AABBCCDD\n"
+		b"test name with ;.rar AABBCCDD\n"
+		b"  \n"
+		b"----------------------------------\n")
+		output.write(b"illegal.rar AABBCCDD ; comment\n")
 		
 		(entries, comments, errors) = parse_sfv_file(output)
 		print([str(e) for e in entries])
@@ -138,13 +138,13 @@ class TestSfv(unittest.TestCase):
 		self.assertFalse(one == two)
 	
 	def test_sfv_quotes(self):
-		output = io.StringIO() # De.Gelukkige.Huisvrouw.2010.DVDRip.XviD-FloW
-		output.write(str("; sfv created by SFV Checker\n"
-		";\n"
-		""""gh-flow.subs.rar" 83a20923\n"""
-		";\n"
-		"; Total 1 File(s)	Combined CRC32 Checksum: 83a20923\n"
-		))
+		output = io.BytesIO() # De.Gelukkige.Huisvrouw.2010.DVDRip.XviD-FloW
+		output.write(b"; sfv created by SFV Checker\n"
+		b";\n"
+		b""""gh-flow.subs.rar" 83a20923\n"""
+		b";\n"
+		b"; Total 1 File(s)	Combined CRC32 Checksum: 83a20923\n"
+		)
 		(entries, comments, errors) = parse_sfv_file(output)
 		print([str(e) for e in entries])
 		print(comments)

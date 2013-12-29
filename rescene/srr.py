@@ -38,6 +38,7 @@ import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
 from rescene.utility import show_spinner, remove_spinner, sep
 from rescene.utility import raw_input
+from rescene.utility import encodeerrors
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -129,7 +130,7 @@ def display_info(srr_file):
 	if len(info["sfv_comments"]):
 		print("SFV comments:")
 		for sfvline in info["sfv_comments"]:
-			print("\t%s" % sfvline)
+			print("\t%s" % encodeerrors(sfvline, sys.stdout))
 		print("")
 
 def verify_extracted_files(srr, in_folder, auto_locate):
