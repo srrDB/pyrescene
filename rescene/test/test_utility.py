@@ -136,7 +136,17 @@ class TestSfv(unittest.TestCase):
 		two, _, _ = parse_sfv_file(os.path.join(txtdir, "checksum_copy.sfv"))
 		one.append(SfvEntry("name"))
 		self.assertFalse(one == two)
-		
+	
+	def test_encoding_error(self):
+		"""Should not crash parsing garbage or non-ASCII SFV file"""
+		sfv = io.BytesIO(
+			b"; \x80 garbage comment\n"
+			b"\xFF garbage name 12345678\n"
+			b"garbage CRC \xA02345678\n"
+			b"--- \x9F garbage error line ---\n"
+		)
+		parse_sfv_file(sfv)
+
 class TestUtility(unittest.TestCase):
 	def test_is_rar_file(self):
 		self.assertTrue(is_rar(".rar"))
