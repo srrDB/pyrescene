@@ -38,26 +38,26 @@ class ExecutableNotFound(Exception):
 	"""The fpcalc.exe executable isn't found."""
 	
 def fingerprint(file_name):
-	duration = fp = ""
+	duration = fp = b""
 	bad = False
 	fpcalc = find_fpcalc_executable()
 	
 	fprint = custom_popen([fpcalc, file_name])
 	stdout, _stderr = fprint.communicate()
 			
-	lines = stdout.split(os.linesep)
+	lines = stdout.split(os.linesep.encode("ascii"))
 	for line in lines:
-		if line.startswith("DURATION="):
-			duration = line[len("DURATION="):]
-		elif line.startswith("FINGERPRINT="):
-			fp = line[len("FINGERPRINT="):]
+		if line.startswith(b"DURATION="):
+			duration = line[len(b"DURATION="):]
+		elif line.startswith(b"FINGERPRINT="):
+			fp = line[len(b"FINGERPRINT="):]
 #		ERROR: couldn't open the file
 #		ERROR: unable to calculate fingerprint for file
-		elif line.startswith("ERROR: couldn't open the file"):
+		elif line.startswith(b"ERROR: couldn't open the file"):
 			bad = True
 #		ERROR: couldn't find stream information in the file
 #		ERROR: unable to calculate fingerprint for file X.srs, skipping
-		elif line.startswith("ERROR: couldn't find stream"):
+		elif line.startswith(b"ERROR: couldn't find stream"):
 			bad = True
 		
 	if not duration or not fp:

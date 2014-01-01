@@ -273,7 +273,7 @@ def main(argv=None, no_exit=False):
 				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
 					try:
 						print("Duration: %d" % track.duration)
-						print("AcoustID fingerprint: %s" % track.fingerprint)
+						print("AcoustID fingerprint: %s" % track.fingerprint.decode("ascii"))
 					except AttributeError:
 						pass # SRS without fingerprint information
 			
