@@ -69,6 +69,7 @@ from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.osohash import osohash_from
 from rescene.utility import basestring
+from rescene.utility import decodetext, encodeerrors
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -1571,7 +1572,7 @@ class RarExecutable(object):
 			return self.threads
 		p = custom_popen(self.path())
 		(stdout, _stderr) = p.communicate()
-		self.threads = "mt<threads>" in stdout
+		self.threads = b"mt<threads>" in stdout
 		return self.threads
 	
 	def __lt__(self, other):
@@ -2011,7 +2012,10 @@ class CompressedRarFile(io.IOBase):
 				(stdout, _) = proc.communicate()
 				
 				if proc.returncode != 0:
-					print(stdout)
+					stdout = decodetext(stdout,
+						errors="replace")
+					print(encodeerrors(stdout,
+						sys.stdout))
 					_fire(MsgCode.MSG, message=
 						"Something went wrong executing Rar.exe:")
 					_fire(MsgCode.MSG, message=RETURNCODE[proc.returncode])
@@ -2043,7 +2047,8 @@ class CompressedRarFile(io.IOBase):
 			stdout, _ = compress.communicate()
 			
 			if compress.returncode != 0:
-				print(stdout)
+				stdout = decodetext(stdout, errors="replace")
+				print(encodeerrors(stdout, sys.stdout))
 				_fire(MsgCode.MSG, message=
 					"Something went wrong executing Rar.exe:")
 				_fire(MsgCode.MSG, message=RETURNCODE[compress.returncode])

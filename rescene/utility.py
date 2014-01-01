@@ -37,6 +37,7 @@ import warnings
 import locale
 import os
 import shutil
+from io import TextIOWrapper, BytesIO
 
 try:
 	import win32api
@@ -368,6 +369,10 @@ def encodeerrors(text, textio, errors="replace"):
 	except UnicodeEncodeError:
 		text = text.encode(encoding, errors).decode(encoding)
 	return text
+
+def decodetext(bytes, *pos, **kw):
+	"""Decode a string using TextIOWrapper"""
+	return TextIOWrapper(BytesIO(bytes), *pos, **kw).read()
 
 
 """Example SFV files:

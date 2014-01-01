@@ -73,6 +73,7 @@ from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 from rescene.utility import raw_input
+from rescene.utility import decodetext, encodeerrors
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -464,7 +465,8 @@ def extract_rar(unrar, rarfile, destination):
 			
 	if extract.returncode != 0:
 		print("Some unrar error occurred:")
-		print(stdout)
+		stdout = decodetext(stdout, errors="replace")
+		print(encodeerrors(stdout, sys.stdout))
 		return False
 	return True
 			
