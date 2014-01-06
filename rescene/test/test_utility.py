@@ -40,7 +40,8 @@ if sys.hexversion < 0x3000000:
 else:
 	unicode = str #@ReservedAssignment
 
-from rescene.utility import (SfvEntry, parse_sfv_file, same_sfv, is_rar, 
+from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
+from rescene.utility import (same_sfv, is_rar, 
 							next_archive, is_good_srr, first_rars, sep)
 
 # for running nose tests
@@ -114,7 +115,7 @@ class TestSfv(unittest.TestCase):
 		
 		# just supply the data
 		output.seek(0)
-		(entries, comments, errors) = parse_sfv_file(output.read())
+		(entries, comments, errors) = parse_sfv_data(output.read())
 		self.assertTrue(len(entries) == 7)
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)

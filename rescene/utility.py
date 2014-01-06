@@ -117,9 +117,9 @@ class SfvEntry(object):
 		return self.__dict__ == other.__dict__
 	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
-def parse_sfv_file(sfv_file):
+def parse_sfv_data(file_data):
 	"""Returns a tuple of three lists: (entries, comments, errors).
-	Accepts an open binary file object, a file name, or a byte string.
+	Accepts SFV file data as a byte string.
 	
 	The "comments" and "errors" lists contain
 	lines decoded from the file as text strings.
@@ -130,47 +130,46 @@ def parse_sfv_file(sfv_file):
 	comments = list() # and unrecognized stuff
 	errors = list()
 	
-	def parse(file_data):
-		for line in file_data.split(b"\n"):
-			# empty line, comments or useless text for whatever reason
-			if not (line).strip():
-				pass # blank line detected
-			elif (line).lstrip().startswith(b";"):
-			# or len(line) < 10:
+	for line in file_data.split(b"\n"):
+		# empty line, comments or useless text for whatever reason
+		if not (line).strip():
+			pass # blank line detected
+		elif (line).lstrip().startswith(b";"): # or len(line) < 10:
+			line = line.decode("ascii", "replace")
+			comments.append(line)
+		else:
+			line = (line.rstrip())
+			try:
+				text = line.decode("ascii")
+				text = text.replace("\t", "    ") # convert tabs
+				index = text.rindex(" ") # ValueError: substring not found
+				filename = text[:index]
+				# A SFV can contain multiple white spaces
+				crc = text[index+1:].lstrip()
+				# ValueError: bad CRC e.g. char > F
+				entries.append(SfvEntry(filename, crc))
+			except ValueError:
 				line = line.decode("ascii", "replace")
-				comments.append(line)
-			else:
-				line = (line.rstrip())
-				try:
-					text = line.decode("ascii")
-					text = text.replace("\t", "    ") # convert tabs
-					index = text.rindex(" ") # ValueError: substring not found
-					filename = text[:index]
-					# A SFV can contain multiple white spaces
-					crc = text[index+1:].lstrip()
-					# ValueError: bad CRC e.g. char > F
-					entries.append(SfvEntry(filename, crc))
-				except ValueError:
-					line = line.decode("ascii", "replace")
-					errors.append(line)
+				errors.append(line)
+		
+	return entries, comments, errors
+
+def parse_sfv_file(sfv_file):
+	"""Parses an SFV file with parse_sfv_data().
+	Accepts an open binary file object or a file name."""
 	try:
 		sfv_file.seek(0) # start at the beginning of the stream
 		sfv_data = sfv_file.read()
 	except AttributeError:
 		try:
-			try:
-				with open(sfv_file, mode='rb') as fsock:
-					sfv_data = fsock.read()
-			except IOError:
-				if not isinstance(sfv_file, basestring):
-					raise
-				with open("\\\\?\\" + sfv_file, mode='rb') as fsock:
-					sfv_data = fsock.read()
+			with open(sfv_file, mode='rb') as fsock:
+				sfv_data = fsock.read()
 		except IOError:
-			sfv_data = sfv_file
-	parse(sfv_data)
-		
-	return entries, comments, errors
+			if not isinstance(sfv_file, basestring):
+				raise
+			with open("\\\\?\\" + sfv_file, mode='rb') as fsock:
+				sfv_data = fsock.read()
+	return parse_sfv_data(sfv_data)
 
 def same_sfv(one, two):
 	"""Only based on actual content, not comments."""
