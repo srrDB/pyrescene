@@ -560,10 +560,9 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 				# Set data correctly
 				if idx == 0:
 					pl.header_size += 1
-					pl.header_data = data[skip-pl.header_size:skip]
 				else:
-					pl.header_data = data[skip-1]
 					pl.header_size = 1
+				pl.header_data = data[skip-pl.header_size:skip]
 				pl.data = data[skip:skip+pl.data_length]
 				if mode != AsfReadMode.SRS:
 					skip += pl.data_length

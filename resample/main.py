@@ -536,9 +536,10 @@ def avi_load_srs(infile):
 		if rr.chunk_type == RiffChunkType.List:
 			rr.move_to_child()
 		else:
-			if rr.current_chunk.fourcc == "SRSF": # resample file
+			if rr.current_chunk.fourcc == b"SRSF":
+				# resample file
 				srs_data = FileData(rr.read_contents())
-			elif rr.current_chunk.fourcc == "SRST": # resample track
+			elif rr.current_chunk.fourcc == b"SRST": # resample track
 				track = TrackData(rr.read_contents())
 				tracks[track.track_number] = track
 			elif rr.chunk_type == RiffChunkType.Movi:
@@ -664,7 +665,7 @@ def avi_profile_sample(avi_data): # FileData object
 		
 		if rr.chunk_type == RiffChunkType.List:
 			fsize = c.chunk_start_pos + len(c.raw_header) + c.length
-			if c.list_type == "RIFF" and fsize > avi_data.size:
+			if c.list_type == b"RIFF" and fsize > avi_data.size:
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected at least: %s" % sep(fsize),
 				      "\t Found            : %s\n" % sep(avi_data.size), 
@@ -1416,7 +1417,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 				# as the first child of LIST movi
 				# we put them after the avi headers 
 				# so mediainfo can still read them from the SRS
-				if c.list_type == "LIST" and c.fourcc == "movi":
+				if c.list_type == b"LIST" and c.fourcc == b"movi":
 					file_chunk = sample_data.serialize_as_riff()
 					assert file_chunk
 					srsf.write(file_chunk)

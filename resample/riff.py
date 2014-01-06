@@ -108,7 +108,7 @@ class RiffReader(object):
 		# might not keep this check
 		# the length check should catch corruption on its own...
 		if not fourCCValidator.match(fourcc):
-			raise InvalidDataException("Invalid FourCC value (%s) at 0x%08X" % 
+			raise InvalidDataException("Invalid FourCC value (%r) at 0x%08X" % 
 			                           (fourcc, chunk_start_position))
 		
 		# sanity check on chunk length
@@ -139,8 +139,7 @@ class RiffReader(object):
 			self.current_chunk.chunk_start_pos = chunk_start_position
 		else: # Chunks
 			# Chunk containing video, audio or subtitle data
-			if (chunk_header[0].isdigit() and 
-				chunk_header[1].isdigit()):
+			if chunk_header[:2].isdigit():
 				self.current_chunk = MoviChunk()
 				self.current_chunk.stream_number =  int(fourcc[:2])
 				self.chunk_type = RiffChunkType.Movi
