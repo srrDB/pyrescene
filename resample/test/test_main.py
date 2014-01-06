@@ -33,8 +33,15 @@ import shutil
 import os.path
 import struct
 
-from resample.main import get_file_type, stsc, FileType
+from resample.main import get_file_type, stsc, FileType, sample_class_factory
 import resample.srs
+import rescene
+
+class TempDirTest(unittest.TestCase):
+	def setUp(self):
+		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
+	def tearDown(self):
+		shutil.rmtree(self.dir)
 
 class TestGetFileType(unittest.TestCase):
 	"""http://samples.mplayerhq.hu/
@@ -85,12 +92,7 @@ class TestStsc(unittest.TestCase):
 		            (6, 8, 0), (7, 4, 0), ]
 		self.assertEqual(expected, outlist)
 
-class TestMp4CreateSrs(unittest.TestCase):
-	def setUp(self):
-		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
-	def tearDown(self):
-		shutil.rmtree(self.dir)
-	
+class TestMp4CreateSrs(TempDirTest):
 	def runTest(self):
 		ftyp = (b"ftyp", b"")
 		mdat = (b"mdat", bytearray(100 * 100))
@@ -139,6 +141,37 @@ def serialise_atoms(atoms):
 		buffer.extend(struct.pack("> L 4s", 8 + len(data), type))
 		buffer.extend(data)
 	return buffer
+
+class TestLoad(TempDirTest):
+	def runTest(self):
+		srr = os.path.join(
+			os.path.dirname(__file__),
+			os.pardir, os.pardir, "test_files",
+			"bug_detected_as_being_different3",
+"Akte.2012.08.01.German.Doku.WS.dTV.XViD-FiXTv_f4n4t.srr",
+		)
+		srs = os.path.join("sample",
+			"fixtv-akte.2012.08.01.sample.srs")
+		((srs, success),) = rescene.extract_files(srr, self.dir,
+			packed_name=srs)
+		self.assertTrue(success)
+		
+		type = get_file_type(srs)
+		self.assertEqual(FileType.AVI, type)
+		
+		sample = sample_class_factory(type)
+		srs_data, tracks = sample.load_srs(srs)
+		
+		self.assertEqual("MKV/AVI ReSample 1.2", srs_data.appname)
+		self.assertEqual("fixtv-akte.2012.08.01.sample.avi",
+			srs_data.name)
+		self.assertEqual(4375502, srs_data.size)
+		self.assertEqual(0xC7FB72A8, srs_data.crc32)
+		
+		self.assertEqual(3385806, tracks[0].data_length)
+		self.assertFalse(tracks[0].match_offset)
+		self.assertEqual(917376, tracks[1].data_length)
+		self.assertFalse(tracks[1].match_offset)
 
 if __name__ == "__main__":
 	unittest.main()
