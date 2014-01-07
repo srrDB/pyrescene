@@ -34,11 +34,13 @@ from filecmp import cmp
 from os.path import join
 from tempfile import mkdtemp
 import sys
+import struct
 
 import rescene
 from rescene.main import *
 from rescene.main import _handle_rar, _flag_check_srr, _auto_locate_renamed
 from rescene.rar import ArchiveNotFoundError
+from rescene import rar
 
 try:  # Python < 3
 	from StringIO import StringIO  # Supports writing non-Unicode strings
@@ -433,6 +435,52 @@ class TestCreate(TmpDirSetup):
 		self.assertTrue(create_srr(dest, rar, compressed=True))
 		#self._print_events()
 		self.assertEqual(MsgCode.BLOCK, self.o.last_event().code)
+	
+	def test_osohash_path(self):
+		"""Test OSO hash calculation of file with path"""
+		
+		# Create a test Rar file storing an uncompressed data file.
+		# The data file must be at least 64 KiB
+		# for OSO hashing to work.
+		rarpath = os.path.join(self.tdir, "test.rar")
+		with open(rarpath, "wb") as file:
+			file.write(rar.RAR_MARKER_BLOCK)
+			
+			block = rar.RarBlock.__new__(rar.RarBlock)
+			block.crc = 0  # Dummy value; not verified
+			
+			block.rawtype = rar.BlockType.RarVolumeHeader
+			block.flags = 0
+			block._write_header(rar.HEADER_LENGTH)
+			file.write(block.block_bytes())
+			
+			block.rawtype = rar.BlockType.RarPackedFile
+			block.flags = 0
+			datasize = 128 * 1024
+			datapath = "dir\\datafile"
+			pathbytes = datapath.encode("ascii")
+			header = struct.pack(str("<IIBIIBBHI"),
+				datasize, datasize,  # Packed, unpacked
+				0, 0, 0,  # OS, CRC, timestamp
+				0,  # Rar version
+				rar.COMPR_STORING,
+				len(pathbytes),
+				0,  # File attributes
+			)
+			header += pathbytes
+			block._write_header(rar.HEADER_LENGTH + len(header))
+			file.write(block.block_bytes())
+			file.write(header)
+			file.write(bytearray(datasize))
+		
+		# Create an SRR file from the Rar file
+		srr = os.path.join(self.tdir, "test.srr")
+		self.assertTrue(create_srr(srr, rarpath, oso_hash=True))
+		
+		# Verify that the correct OSO hash is stored,
+		# and that just the base name of the file is recorded
+		expected = ("datafile", "0000000000020000", datasize)
+		self.assertEqual([expected], info(srr)["oso_hashes"])
 
 def _copy(cfile, destination_dir):
 	"""Copies 'cfile' to 'destination_dir'. Returns path of new file.
