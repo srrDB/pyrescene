@@ -25,7 +25,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import subprocess
+from distutils.spawn import find_executable
 
 try:
 	# renamed to winreg in Python 3
@@ -88,11 +88,7 @@ def try_registry():
 		return None
 
 def locate_unix():
-	process = subprocess.Popen("which unrar", shell=True, bufsize=0,
-								stdout=subprocess.PIPE,
-								stdin=subprocess.PIPE,
-								stderr=subprocess.STDOUT)
-	return process.communicate()[0]
+	return find_executable("unrar")
 
 def unrar_is_available():
 	return os.path.isfile(os.path.abspath(locate_unrar()))
