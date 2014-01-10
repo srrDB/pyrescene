@@ -32,8 +32,11 @@ import tempfile
 import shutil
 import os.path
 import struct
+from os import SEEK_CUR
 
 from resample.main import get_file_type, stsc, FileType, sample_class_factory
+from resample.main import profile_wmv, FileData
+from resample import asf
 import resample.srs
 import rescene
 
@@ -91,6 +94,76 @@ class TestStsc(unittest.TestCase):
 		expected = [(1, 4, 0), (2, 4, 7), (3, 4, 7), (4, 4, 7), (5, 8, 0), 
 		            (6, 8, 0), (7, 4, 0), ]
 		self.assertEqual(expected, outlist)
+
+class TestProfileWmv(TempDirTest):
+	def runTest(self):
+		wmv = os.path.join(self.dir, "sample.wmv")
+		with open(wmv, "w+b") as f:
+			f.write(asf.GUID_HEADER_OBJECT)
+			f.write(struct.pack("< Q 6x", 0))  # Dummy size
+			
+			f.write(asf.GUID_FILE_OBJECT)
+			f.write(struct.pack("< Q 16x", 24 + 16 + 8))
+			size_fixup = f.tell()
+			f.seek(+8, SEEK_CUR)
+			
+			for track in range(2):
+				f.write(asf.GUID_STREAM_OBJECT)
+				void = 16 + 16 + 8 + 4 + 4
+				f.write(struct.pack("<Q", 24 + void + 2))
+				f.write(bytearray(void))
+				f.write(struct.pack("<H", 1 + track))
+			
+			f.write(asf.GUID_DATA_OBJECT)
+			header = struct.Struct("< Q 16x Q")
+			f.write(header.pack(24 + 26 + 100 * 100, 100))
+			f.write(bytearray(8 + 26 - header.size))
+			for packet in range(100):
+				header = struct.Struct("< B 2x BB BLH B")
+				payload1 = struct.Struct("< B BLB 8x H 20x")
+				payload2 = struct.Struct("< B BLB 1x H B30x")
+				padding = (100 - header.size -
+					payload1.size - payload2.size)
+				
+				f.write(header.pack(
+					0x82,
+					0x09,  # Byte for padding size field
+					0x5D,
+					padding,
+					0, 0,
+					0x82,  # 2 payloads
+				))
+				f.write(payload1.pack(
+					0x01,  # Track 1
+					0, 0,
+					8,
+					20,
+				))
+				f.write(payload2.pack(
+					0x02,  # Track 2
+					0, 0,
+					1,
+					1 + 30,
+					30,
+				))
+				f.write(bytearray(padding))
+			
+			size = f.tell()
+			f.seek(size_fixup)
+			f.write(struct.pack("<Q", size))
+		
+		file_data = FileData(file_name=wmv)
+		tracks = profile_wmv(file_data)
+		
+		self.assertEqual(5276, file_data.other_length)
+		self.assertEqual(10276, file_data.size)
+		self.assertEqual(0x4BCABBC7, file_data.crc32 & 0xFFFFFFFF)
+		
+		self.assertEqual(2, len(tracks))
+		self.assertEqual(1, tracks[1].track_number)
+		self.assertEqual(2000, tracks[1].data_length)
+		self.assertEqual(2, tracks[2].track_number)
+		self.assertEqual(3000, tracks[2].data_length)
 
 class TestMp4CreateSrs(TempDirTest):
 	def runTest(self):
