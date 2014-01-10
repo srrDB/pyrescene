@@ -535,7 +535,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			if mode != AsfReadMode.SRS:
 				while used < pl.data_length:
 					payloads += 1
-					used += (1 + S_BYTE.unpack_from(data, start+used))
+					used += (1 + S_BYTE.unpack_from(data, start+used)[0])
 			else:
 				used_srs = 0
 				while used < pl.data_length:
