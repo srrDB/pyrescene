@@ -174,7 +174,7 @@ class TestMp4CreateSrs(TempDirTest):
 		stsz = (b"stsz", struct.pack(">LLL", 0, 100, 100))
 		stco = (b"stco", struct.pack(">LL", 0, 100) +
 			struct.pack(">L", 0) * 100)
-		data = serialise_atoms((
+		data = serialize_atoms((
 			ftyp,
 			mdat,
 			(b"moov", (
@@ -205,12 +205,12 @@ class TestMp4CreateSrs(TempDirTest):
 		msg = msg.format(size, len(data))
 		self.assertTrue(size < len(data) / 2, msg)
 
-def serialise_atoms(atoms):
+def serialize_atoms(atoms):
 	buffer = bytearray()
 	for atom in atoms:
 		(type, data) = atom
 		if not isinstance(data, (bytes, bytearray)):
-			data = serialise_atoms(data)
+			data = serialize_atoms(data)
 		buffer.extend(struct.pack("> L 4s", 8 + len(data), type))
 		buffer.extend(data)
 	return buffer
