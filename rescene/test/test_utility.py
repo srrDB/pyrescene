@@ -255,10 +255,8 @@ class TestUtility(unittest.TestCase):
 	def test_sep(self):
 		try:
 			self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
-			self.assertEqual(sep(1000000, 'English'),
-				"1,000,000")
+			self.assertEqual(sep(1000000, 'English'), "1,000,000")
 		except locale.Error as err:
-			fmt = ('"Dutch_Belgium.1252" and "English" locales: '
-				"{0}")
+			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
 			self.skipTest(fmt.format(err))  # 2.6 crash expected

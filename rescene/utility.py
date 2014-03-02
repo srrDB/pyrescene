@@ -151,8 +151,7 @@ def parse_sfv_file(sfv_file):
 					# ValueError: bad CRC e.g. char > F
 					entries.append(SfvEntry(filename, crc))
 				except ValueError:
-					line = line.decode("ascii",
-						"replace")
+					line = line.decode("ascii", "replace")
 					errors.append(line)
 	try:
 		sfv_file.seek(0) # start at the beginning of the stream
