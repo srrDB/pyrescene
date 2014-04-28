@@ -375,7 +375,7 @@ def main(argv=None):
 					 "isn't found (e.g. no extras) "
 					 "this option implies --no-autocrc")
 	recon.add_option("-u", "--no-autocrc", 
-					 action="store_false", dest="no_auto_crc", default=True,
+					 action="store_true", dest="no_auto_crc", default=False,
 					 help="disable automatic CRC checking during reconstruction")
 	recon.add_option("-H", help="<oldname:newname list>: Specify alternate "
 					"names for extracted files.  ex: srr example.srr -h "
