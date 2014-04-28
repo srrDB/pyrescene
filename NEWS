@@ -5,6 +5,8 @@ pyReScene 0.6
  * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
  * pyReScene Auto: stored SRR and RAR files above their SFV in list
  * pyReScene Auto: crash fixed when path of SRR to create was too long
+ * ReSample: MemoryError on large MP4s fixed and 
+             skipping crc32 calculation when possible
  * ReSample: KeyError fixed for RIFF mp3
  * ReSample: construct SRS for some bad MP3 files too + print warning
  * ReSample: "OverflowError: Python int too large to convert to C long"
