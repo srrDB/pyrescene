@@ -1,4 +1,22 @@
-pyReScene 0.5 (2013-04-)
+pyReScene 0.6
+=============
+
+ * pyReScene Auto: don't create SRR meta data for proof images in RAR
+ * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
+ * pyReScene Auto: stored SRR and RAR files above their SFV in list
+ * pyReScene Auto: crash fixed when path of SRR to create was too long
+ * ReSample: KeyError fixed for RIFF mp3
+ * ReSample: construct SRS for some bad MP3 files too + print warning
+ * ReSample: "OverflowError: Python int too large to convert to C long"
+             on a bad MP3 file fixed
+ * ReScene: SRR was stored in subfolder instead of output folder
+
+pyReScene 0.5.1 (2013-07-14)
+===============
+
+ * "SRRs for vobsubs" is disabled due to a bug.
+
+pyReScene 0.5 (2013-07-14)
 =============
 
  * ReScene: initialization bug fixed (compressed RARs issue)
@@ -9,6 +27,10 @@ pyReScene 0.5 (2013-04-)
  * ReScene: support for compression failures
             (larger packed size than unpacked size)
  * ReScene: provided -t folder does not need to be empty
+ * ReScene: support for padding at the end of the RAR files
+            Never.on.Sunday.1960.DVDRip.XviD-AEN and recent DAA, Ltu releases
+ * ReScene: don't leave a broken SRR file when a 0-byte RAR file is encountered
+ * ReScene: -r parameter to locate renamed files when using  -q, --verify
  * ReSample: FLAC and MP3 support: backing up tags to SRS file
              + AcoustID fingerprint and duration
           	 MP3 tags: ID3v1, ID3v2, Lyrics3v1, Lyrics3v2, APEv1, APEv2
@@ -20,8 +42,14 @@ pyReScene 0.5 (2013-04-)
              2001.A.Space.Odyssey.1968.1080p.MULTI.BluRay.x264-1080
              (KeyNotFoundException error in .NET version)
  * pyReScene Auto: DVDx and DISCx subfolders added
+ * pyReScene Auto: support for music releases
+ * pyReScene Auto: stores complete RARs of small fix releases
+ * pyReScene Auto: support for music video releases with multiple files
+ * pyReScene Auto: --list-releases, --missing-nfos, --missing-samples
+ * pyReScene Auto: SRRs for vobsubs
  * preprardir.py: bug with copying license file on Linux fixed
  * preprardir.py: Python 2.6 and Python 3 support
+ * awescript.py: update to version 0.7 by gooober
 
 pyReScene 0.4 (2013-02-28)
 =============

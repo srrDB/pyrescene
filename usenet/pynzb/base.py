@@ -1,6 +1,11 @@
 import datetime
 import time
 
+try:  #  Python < 3
+    basestring = basestring
+except NameError:  # Python 3
+    basestring = str
+
 def parse_date(date):
     if isinstance(date, basestring):
         date = int(date)

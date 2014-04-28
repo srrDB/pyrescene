@@ -8,6 +8,6 @@ for srr_file in os.listdir(folder):
 	sf = rescene.info(srrf)['stored_files']
 	for sfile in sf:
 		if sf[sfile].file_size == 592451 and sf[sfile].file_name.endswith(".png"):
-			print sf[sfile].file_name
+			print(sf[sfile].file_name)
 			rescene.remove_stored_files(srrf, sf[sfile].file_name)
 			break

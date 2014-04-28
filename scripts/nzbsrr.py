@@ -25,6 +25,8 @@ will be thrown:
 	http://search.cpan.org/~mirod/XML-Twig-3.39/
 """
 
+from __future__ import print_function
+
 from xml.dom.minidom import parse, Document
 import optparse
 import sys
@@ -82,7 +84,7 @@ def main(options, args):
 			if srr == None: 
 				unknown.append(subject)
 				if options.unknowns:
-					print(subject.encode('utf-8'))
+					print(subject)
 			else:
 				relname = relname.strip()
 				relFileMapping.setdefault(relname,
@@ -111,7 +113,7 @@ def main(options, args):
 						print("Writing nzb %s" % os.path.basename(f))
 						with open(f, "ab") as nzb_file:
 							nzb_file.write(newdoc.toxml("utf-8"))
-					except Exception, e:
+					except Exception as e:
 						print(e)
 
 	if options.folderjoin:
@@ -124,7 +126,7 @@ def main(options, args):
 				for path in glob.glob(nzb):
 					print("Reading %s" % os.path.basename(path))
 					read_nzb(path)
-			except Exception, e:
+			except Exception as e:
 				print("Reading NZB file(s) failed. Trying SQL.")
 				print("Reading %s" % os.path.basename(nzb))
 #				read_tvbinz(nzb)
@@ -204,7 +206,7 @@ def renameSrr(dir, file, releaseName):
 	old = os.path.join(dir, file)
 	new = os.path.join(dir, "renamed", releaseName + ".srr")
 	try:
-		print(("Renaming %s to %s..." % (old, new))),
+		print("Renaming %s to %s..." % (old, new), end=" ")
 		try:
 			os.renames(old, new)
 			print("done!")
@@ -227,7 +229,7 @@ def joinSrr(dir, release, files):
 	except: pass # Path already exists
 	
 	try:
-		merge_srrs([os.path.join(dir, f) for f in files], 
+		merge_srrs((os.path.join(dir, f) for f in files),
 					os.path.join(dir, "joined", release + ".srr"),
 					"pyReScene Merge Script")
 		# move original unjoined files

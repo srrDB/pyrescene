@@ -36,6 +36,8 @@ config_dict = {
 		"Development Status :: 4 - Beta",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.2",
+        "Programming Language :: Python :: 3.3",
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: End Users/Desktop",
@@ -56,7 +58,7 @@ pyReScene consists of multiple related tools.
 
 # for creating Windows EXE files
 if 'py2exe' in sys.argv:
-	import py2exe
+	import py2exe #@UnresolvedImport
 	config_dict["options"] = {
 		'py2exe': {'bundle_files': 1,
 	               'optimize': 2,

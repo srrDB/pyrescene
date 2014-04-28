@@ -33,6 +33,20 @@ import struct
 
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
+from functools import reduce
+
+def decode_id3_size(sbytes):
+	# "This size is encoded using 28 bits rather than a multiple of 8,
+	# such as 32 bits, because an ID3 tag can't contain the byte #xff
+	# followed by a byte with the top 3 bits on because that pattern
+	# has a special meaning to MP3 decoders. None of the other fields
+	# in the ID3 header could possibly contain such a byte sequence,
+	# but if you encoded the tag size as a regular unsigned-integer,
+	# it might. To avoid that possibility, the size is encoded using
+	# only the bottom seven bits of each byte, with the top bit always
+	# zero."
+	return reduce(lambda x, y: x*128 + y,
+	              (ord(sbytes[i:i + 1]) for i in range(4)))
 
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 BE_SHORT = struct.Struct('>H')
@@ -83,16 +97,7 @@ class Mp3Reader(object):
 		if first == b"ID3":
 			self._mp3_stream.seek(3, os.SEEK_CUR)
 			sbytes = self._mp3_stream.read(4)
-			# "This size is encoded using 28 bits rather than a multiple of 8, 
-			# such as 32 bits, because an ID3 tag can't contain the byte #xff 
-			# followed by a byte with the top 3 bits on because that pattern 
-			# has a special meaning to MP3 decoders. None of the other fields
-			# in the ID3 header could possibly contain such a byte sequence, 
-			# but if you encoded the tag size as a regular unsigned-integer, 
-			# it might. To avoid that possibility, the size is encoded using 
-			# only the bottom seven bits of each byte, with the top bit always
-			# zero."
-			size = reduce(lambda x, y: x*128 + y, (ord(i) for i in sbytes))
+			size = decode_id3_size(sbytes)
 			
 			begin_main_content = size + 10
 			idv2_block = Block(begin_main_content, "ID3", 0)
@@ -161,12 +166,10 @@ class Mp3Reader(object):
 			
 		# in between is SRS or MP3 data
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
-		(sync,) = BE_SHORT.unpack(self._mp3_stream.read(2))
+		marker = self._mp3_stream.read(4)
+		(sync,) = BE_SHORT.unpack(marker[:2])
 		main_size = end_meta_data_offset - begin_main_content
-		if sync & 0xFFE0 == 0xFFE0:
-			mp3_data_block = Block(main_size, "MP3", begin_main_content)
-			self.blocks.append(mp3_data_block)
-		else: # SRS data blocks
+		if marker[:3] == b"SRS": # SRS data blocks
 			cur_pos = begin_main_content
 			while(cur_pos < begin_main_content + main_size):
 				self._mp3_stream.seek(cur_pos, os.SEEK_SET)
@@ -174,18 +177,25 @@ class Mp3Reader(object):
 				try:
 					marker = self._mp3_stream.read(4)
 					# size includes the 8 bytes header
-					if marker == b"fLaC": # FLAC with ID3 tags
-						size = end_meta_data_offset - cur_pos
-					else:
-						(size,) = S_LONG.unpack(self._mp3_stream.read(4))
+					(size,) = S_LONG.unpack(self._mp3_stream.read(4))
 				except:
 					raise InvalidDataException("Not enough SRS data")
-				srs_block = Block(size, marker, cur_pos)
+				srs_block = Block(size, marker.decode(),
+					cur_pos)
 				self.blocks.append(srs_block)
 				cur_pos += size
 				if size == 0:
 					raise InvalidDataException("SRS size field is zero")
-			
+				if size > begin_main_content + main_size:
+					raise InvalidDataException("Broken SRS")
+		elif sync & 0xFFE0 == 0xFFE0 or marker == b"RIFF":
+			mp3_data_block = Block(main_size, "MP3", begin_main_content)
+			self.blocks.append(mp3_data_block)
+		else:
+			print("WARNING: MP3 file is not valid!")
+			data_block = Block(main_size, "MP3", begin_main_content)
+			self.blocks.append(data_block)
+						
 		# the order of which we add blocks doesn't matter this way
 		self.blocks.sort(key=lambda block: block.start_pos)
 			
