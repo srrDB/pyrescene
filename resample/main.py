@@ -93,7 +93,7 @@ class FileType(object):
 
 def get_file_type(ifile):
 	"""Decide the type of file based on the magic marker"""
-	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eߣ
+	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eß£
 	MARKER_AVI = b"\x52\x49\x46\x46" # RIFF
 	MARKER_RAR = b"\x52\x61\x72\x21\x1A\x07\x00" # Rar!...
 	MARKER_MP4 = b"\x66\x74\x79\x70" # ....ftyp
@@ -885,9 +885,12 @@ def mkv_profile_sample(mkv_data): # FileData object
 	
 	return tracks, attachments
 
-def profile_mp4(mp4_data): # FileData object
+def profile_mp4(mp4_data, calculate_crc32=True): # FileData object
 	"""Reads the necessary track header data 
-	and constructs track signatures"""
+	and constructs track signatures
+	
+	Having calculate_crc32 set to True isn't necessary when profiling
+	a main movie file."""
 	tracks = odict()
 	
 	meta_length = 0
@@ -908,14 +911,18 @@ def profile_mp4(mp4_data): # FileData object
 		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
 		elif atype == b"mdat":
-			data = mr.read_contents()
-#			data_length = len(data)
-			mp4_data.crc32 = crc32(data, mp4_data.crc32)
+			# crc32 calculation isn't used in all cases (optimization)
+			if calculate_crc32:
+				for data_piece in mr.read_contents_chunks():
+					mp4_data.crc32 = crc32(data_piece, mp4_data.crc32)
+#					data_length += len(data_piece)
+			else:
+				mr.skip_contents()
 		else:
 			data = mr.read_contents()
 			meta_length += len(data)
 			mp4_data.crc32 = crc32(data, mp4_data.crc32)
-		
+
 		if atype in (b"tkhd",):
 			# grab track id 
 			(track_id,) = BE_LONG.unpack_from(data, 12)
@@ -1015,7 +1022,7 @@ def stsc(samples_chunk):
 	return new
 		
 def mp4_profile_sample(mp4_data):
-	tracks = profile_mp4(mp4_data)
+	tracks = profile_mp4(mp4_data, calculate_crc32=True)
 	# everything except stream data that will be removed
 	total_size = mp4_data.other_length
 	for _, track in tracks.items():
@@ -1993,7 +2000,8 @@ class TrackChunk(object):
 		return count
 
 def mp4_find_sample_streams(tracks, main_mp4_file):
-	mtracks = profile_mp4(FileData(file_name=main_mp4_file))
+	mtracks = profile_mp4(FileData(file_name=main_mp4_file),
+	                      calculate_crc32=False)
 	
 	# check for each movie track if it contains the sample data
 	for mtrack in mtracks.values():
@@ -2357,7 +2365,8 @@ def _mkv_block_extract(tracks, er, done):
 	return tracks, done
 
 def mp4_extract_sample_streams(tracks, main_mp4_file):
-	mtracks = profile_mp4(FileData(file_name=main_mp4_file))
+	mtracks = profile_mp4(FileData(file_name=main_mp4_file),
+	                      calculate_crc32=False)
 	
 	for track_nb, track in tracks.items():
 		mtrack = mtracks[track_nb]
