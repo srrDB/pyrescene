@@ -76,6 +76,12 @@ class MessageThread(Thread):
 			time.sleep(self.sleeptime) # in seconds
 		return
 	
+	def wait_for_output(self):
+		"""We've got response back from the rescene functions.
+		Wait until all those messages are printed before continuing."""
+		while len(o.events):
+			time.sleep(self.sleeptime)
+	
 mthread = MessageThread()
 
 def report_error(status, message):

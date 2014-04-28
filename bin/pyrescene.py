@@ -481,7 +481,7 @@ def mk_long_dir(destination):
 			except OSError as e:
 				print(e)
 
-def generate_srr(reldir, working_dir, options):
+def generate_srr(reldir, working_dir, options, mthread):
 	if os.listdir(working_dir) != []:
 		# Can happen with PyPy and long dirs: create new working dir
 		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
@@ -569,6 +569,8 @@ def generate_srr(reldir, working_dir, options):
 	for cue in get_files(reldir, "*.cue"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, cue))
 
+	mthread.wait_for_output()
+	
 	# Create SRS files
 	for sample in get_sample_files(reldir) + get_music_files(reldir):
 		# avoid copying samples
@@ -1037,7 +1039,7 @@ def main(argv=None):
 		for reldir in indirs:
 			reldir = os.path.abspath(reldir)
 			if not options.recursive:
-				result = generate_srr(reldir, working_dir, options)
+				result = generate_srr(reldir, working_dir, options, mthread)
 				if not result:
 					missing.append(reldir)
 					logging.warning("%s: SRR could not be created." % 
@@ -1045,7 +1047,8 @@ def main(argv=None):
 			else:
 				for release_dir in get_release_directories(reldir):
 					try:
-						result = generate_srr(release_dir, working_dir, options)
+						result = generate_srr(release_dir, working_dir,
+						                      options, mthread)
 					except FileNotFound:
 						result = False
 					if not result:
