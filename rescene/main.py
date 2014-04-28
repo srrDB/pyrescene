@@ -1252,7 +1252,7 @@ def _write_recovery_record(block, rarfs):
 	rarfs.write(block.block_bytes())  # write the backed-up block header,
 	rarfs.write(bytearray(crc))	      # CRC data and
 	for sector in rs:                 # recovery sectors
-		rarfs.write(sector)
+		rarfs.write(bytearray(sector))
 
 def _locate_file(block, in_folder, hints, auto_locate_renamed):
 	"""
