@@ -911,6 +911,7 @@ def profile_mp4(mp4_data, calculate_crc32=True): # FileData object
 		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
 		elif atype == b"mdat":
+			meta_length += a.size
 			# crc32 calculation isn't used in all cases (optimization)
 			if calculate_crc32:
 				for data_piece in mr.read_contents_chunks():
