@@ -82,7 +82,7 @@ def find_fpcalc_executable():
 	bin_dir = os.path.join(script_dir, "..", "bin")
 	
 	path = os.pathsep.join([script_dir, bin_dir, module_path(),
-	                       "C:\\", "D:\\", os.getenv('PATH', "")])
+	                        os.getenv('PATH', "")])
 	result = find_executable("fpcalc", path=path)
 
 	if result:
