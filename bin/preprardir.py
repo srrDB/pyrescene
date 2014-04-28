@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 from optparse import OptionParser
 from datetime import datetime
 import sys
@@ -37,46 +39,36 @@ from contextlib import closing # used for tarfile on Python 2.6
 try:
 	import _preamble
 except ImportError:
-	sys.exc_clear()
-	
+	pass
+
 import rescene
 from rescene.rar import RarReader
-from rescene.main import RETURNCODE 
+from rescene.main import RETURNCODE
+from rescene.unrar import locate_unrar
 
 def main(options, args):
-	for element in args:
-		if not os.path.isdir(element):
-			print("One of the arguments isn't a folder.")
-			return 1
-		
 	input_dir = args[0]
 	output_dir = args[1]
 	
-	extract_rarbin(input_dir, output_dir)
-	copy_license_file(output_dir)
-
-def locate_unrar():
-	"""locating installed unrar"""
-	if(os.name == "nt"):
+	if not os.path.isdir(input_dir):
+		print("The input argument must be a directory.")
+		return 1
+	
+	if not os.path.isdir(output_dir):
 		try:
-			unrar = os.environ["ProgramW6432"] + "\\WinRAR\\UnRAR.exe"
-			if not os.path.exists(unrar):
-				raise KeyError
-		except KeyError:
-			try:
-				unrar = os.environ["ProgramFiles(x86)"] + "\\WinRAR\\UnRAR.exe"
-				if not os.path.exists(unrar):
-					raise KeyError
-			except KeyError:
-				print("Install WinRAR to use all the functionalities.")
-				unrar = "UnRAR.exe" 
-				
-		# define your own path to a program to unrar: (uncomment)
-		#unrar = "C:\Program Files\7z.exe"
-	else:
-		unrar = "/usr/bin/env unrar"
-		
-	return unrar
+			os.makedirs(output_dir)
+		except OSError:
+			pass
+		if not os.path.isdir(output_dir):
+			print("The output argument must be a directory.")
+			return 1
+	
+	try:
+		extract_rarbin(input_dir, output_dir)
+	except OSError:
+		print("Could not find installed UnRAR version.")
+		return 1
+	copy_license_file(output_dir)
 
 def copy_license_file(output_dir):
 	"""From WinRAR order.htm:
@@ -133,7 +125,7 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 		if date and name:
 			if tarfile.is_tarfile(archive_name):
 				new_name = date + "_rar%s" % tag
-				print("Extracting %s..." % new_name),
+				print("Extracting %s..." % new_name, end=" ")
 				with closing(tarfile.open(archive_name)) as tf:
 					exe = tf.getmember("rar/rar")
 					tf.extract(exe, path=dest)
@@ -151,25 +143,35 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 				if ".sfx" in fname:
 					# no extension for Linux executables
 					new_name = new_name[:-4]
-				print("Extracting %s..." % new_name),
+				print("Extracting %s..." % new_name, end=" ")
 				args = [unrar, "e", archive_name, name, dest]
 				extract = custom_popen(args)
-				if extract.wait() == 0:
+				if extract.wait() in (0, 1):
+					# Error code 1: when there is some corruption in the file
+					# Verifying authenticity information ...  Failed
+					# has been seen on wrar260.exe
 					try:
 						# for rarln271.sfx and others
 						name = os.path.basename(name)
 						os.rename(os.path.join(dest, name), 
 								  os.path.join(dest, new_name))
-						print("done.")
+						if extract.wait() == 1:
+							print("done. (Non fatal error(s) occurred)")
+						else:
+							print("done.")
 					except: # WindowsError: # [Error 183]
 						# ERROR_ALREADY_EXISTS
 						os.unlink(os.path.join(dest, name))
 						print("failed.")
 				else:
-					# Error 2 for example when there is a corrupt exe
-					# Verifying authenticity information ...  Failed
-					# Invalid authenticity information
 					print(RETURNCODE[extract.wait()])
+					# not sure the following is necessary
+					# but if the file is extracted to disk,
+					# remove it so the next steps can continue successfully
+					try:
+						os.unlink(os.path.join(dest, name))
+					except:
+						pass
 		else:
 			print("error: %s" % fname)
 

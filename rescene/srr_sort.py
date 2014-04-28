@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import division
+
 import optparse
 import sys
 import os
@@ -65,7 +67,7 @@ def check_repack(srr_file):
 	for block in RarReader(srr_file):
 		if block.rawtype == BlockType.SrrRarFile:
 			matchf = lambda keyword: keyword in block.file_name 
-			if len(filter(matchf, tmatch)):
+			if any(map(matchf, tmatch)):
 				return True
 	return False
 
@@ -155,10 +157,10 @@ def check(srr_file):
 			os.renames(srr_file, os.path.join(options.output_dir, srr_name))
 		if result:
 			print(os.path.basename(srr_file))
-	except (EnvironmentError, Exception):
+	except (EnvironmentError, Exception) as err:
 		# the storing of a srr_file failed -> corrupt SRR
 		print("Something wrong with reading %s" % srr_file)
-		print(sys.exc_info())
+		print(err)
 		
 def main(options, args):
 	for element in args:
@@ -172,10 +174,10 @@ def main(options, args):
 
 	if rar_sizes:
 		print("%d bytes" % rar_sizes)
-		print("%.2f KiB" % (rar_sizes / 1024.0))
-		print("%.2f MiB" % (rar_sizes / 1024.0 / 1024.0))
-		print("%.2f GiB" % (rar_sizes / 1024.0 / 1024.0 / 1024.0))
-		print("%.2f TiB" % (rar_sizes / 1024.0 / 1024.0 / 1024.0 / 1024.0))
+		print("%.2f KiB" % (rar_sizes / 1024))
+		print("%.2f MiB" % (rar_sizes / 1024 / 1024))
+		print("%.2f GiB" % (rar_sizes / 1024 / 1024 / 1024))
+		print("%.2f TiB" % (rar_sizes / 1024 / 1024 / 1024 / 1024))
 			
 if __name__ == '__main__':
 	parser = optparse.OptionParser(

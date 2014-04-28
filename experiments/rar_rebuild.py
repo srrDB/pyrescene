@@ -6,6 +6,7 @@ import zlib
 import struct
 import rescene
 import os
+from binascii import hexlify
 
 #filenb = 12 # r11
 
@@ -123,16 +124,16 @@ def fix_file_header():
 	with open(extract, "rb") as data:
 		crc = calc_crc(data.read())
 		
-#	print crc # 4229429904
-#	print 0x034e3c88
+#	print(crc) # 4229429904
+#	print(0x034e3c88)
 #	assert hex(crc) == 0x034e3c88 #FAILS!
 	
 	fixed_data = b""
 	rr = rar.RarReader(hbefore)
-	block = rr.next()
+	block = next(rr)
 	while block.rawtype != rar.BlockType.RarPackedFile:
 		fixed_data += block.bytes()
-		block = rr.next()
+		block = next(rr)
 	
 	# the block to fix
 	data = block.bytes()
@@ -187,7 +188,7 @@ def calculate_recovery_record():
 		if block.rawtype == rar.BlockType.RarNewSub:
 			r10bytes = block.bytes()
 			r10block = block
-			print block.explain()
+			print(block.explain())
 	"""Block: RAR New-format subblock; offset: 0xDE0D68 (14552424 bytes)
 	|Header bytes: d2437a00c036000ed406000ed4060002cd298b1a000000001d30020000000000525250726f746563742bfb020000076f000000000000
 	|HEAD_CRC:   0x43D2
@@ -213,8 +214,8 @@ def calculate_recovery_record():
 	+Protect+
 	"""
 #	print("Changes in the Recovery Record headers:")
-#	print(r09bytes.encode('hex'))
-#	print(r10bytes.encode('hex'))
+#	print(hexlify(r09bytes).decode('ascii'))
+#	print(hexlify(r10bytes).decode('ascii'))
 #	print(r10bytes.encode('utf8'))
 	
 	# beforerr: all data, fixed, before the Recovery Record
@@ -261,8 +262,8 @@ def calculate_recovery_record():
 #	print("add size: %d" % block.add_size)
 #	assert size + block.header_size + block.add_size + 20 == 15000000
 #	assert block.data_sectors*2 + block.recovery_sectors*512 == block.add_size
-#	print "data sectors: %d" % block.data_sectors
-#	print "data sectors*2: %d" % (block.data_sectors*2)
+#	print("data sectors: %d" % block.data_sectors)
+#	print("data sectors*2: %d" % (block.data_sectors*2))
 #	# should be \xCD\x29\x8B\x1A hex(struct.unpack('<I', h)[0])
 	
 #	crc = calc_crc(hgenstuff[-block.add_size+(block.data_sectors*2):])
@@ -279,9 +280,9 @@ def calculate_recovery_record():
 ##		for i in range(0, 55):
 ##			c = calc_crc(hgenstuff[-block.add_size-i:])
 ##			if c == 0x1a8b29cd:
-##				print "FOUND!" + c
+##				print("FOUND!" + c)
 #	if crc == 0x1a8b29cd:
-#		print "FOUND!" + crc
+#		print("FOUND!" + crc)
 #	print("%x" % (~crc & 0xffffffff))
 #	print("%x" % (crc & 0xffffffff))
 #	print("%x" % ~crc)
@@ -306,7 +307,7 @@ def calculate_recovery_record():
 		gen.seek(size)
 		gen.write(bytes)
 		
-	print(bytes[:block.header_size].encode('hex'))
+	print(hexlify(bytes[:block.header_size]).decode('ascii'))
 
 		
 def create_result():
@@ -324,15 +325,15 @@ create_result()
 
 
 #for block in rar.RarReader(dir + "empty.rar").read_all():
-#	print block.explain()
+#	print(block.explain())
 
 # CD 29 8B 1A
 
 #for block in rar.RarReader(dir + "hashtest/10meg_1percent.rar").read_all():
-#	print block.explain()
+#	print(block.explain())
 #
 #for block in rar.RarReader(dir + "hashtest/10meg_2percent.rar").read_all():
-#	print block.explain()
+#	print(block.explain())
 
 #d0a5bdcd empty20
 #f121d696 empty

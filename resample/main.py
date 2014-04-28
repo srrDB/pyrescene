@@ -55,6 +55,7 @@ from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT,
 from resample.fpcalc import fingerprint
 from resample.flac import FlacReader
 from resample.mp3 import Mp3Reader
+from resample.mp3 import decode_id3_size
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -124,7 +125,7 @@ def get_file_type(ifile):
 		return FileType.FLAC
 	elif marker.startswith(MARKER_ID3):
 		# can be MP3 or FLAC
-		size = reduce(lambda x, y: x*128 + y, (ord(i) for i in marker[6:10]))
+		size = decode_id3_size(marker[6:10])
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(10 + size)
 			if ofile.read(4) == b"fLaC":
@@ -181,9 +182,10 @@ class FileData(object):
 			# crc: uint32
 			(self.flags,) = S_SHORT.unpack_from(buff, 0)
 			(applength,) = S_SHORT.unpack_from(buff, 2)
-			self.appname = buff[4:4+applength]
+			self.appname = buff[4:4+applength].decode()
 			(namelength,) = S_SHORT.unpack_from(buff, 4+applength)
 			self.sample_name = buff[4+applength+2:4+applength+2+namelength]
+			self.sample_name = self.sample_name.decode()
 			self.name = self.sample_name
 			offset = 4+applength+2+namelength
 			(self.size,) = S_LONGLONG.unpack_from(buff, offset)
@@ -192,9 +194,8 @@ class FileData(object):
 			raise AttributeError("Buffer or file expected.")
 		
 	def serialize(self):
-		#"".encode("utf-8")
-		app_name = resample.APPNAME
-		file_name = basename(self.sample_name)
+		app_name = resample.APPNAME.encode()
+		file_name = basename(self.sample_name).encode()
 		data_length = 18 + len(app_name) + len(file_name)
 	
 		buff = io.BytesIO()
@@ -535,9 +536,10 @@ def avi_load_srs(infile):
 		if rr.chunk_type == RiffChunkType.List:
 			rr.move_to_child()
 		else:
-			if rr.current_chunk.fourcc == "SRSF": # resample file
+			if rr.current_chunk.fourcc == b"SRSF":
+				# resample file
 				srs_data = FileData(rr.read_contents())
-			elif rr.current_chunk.fourcc == "SRST": # resample track
+			elif rr.current_chunk.fourcc == b"SRST": # resample track
 				track = TrackData(rr.read_contents())
 				tracks[track.track_number] = track
 			elif rr.chunk_type == RiffChunkType.Movi:
@@ -663,7 +665,7 @@ def avi_profile_sample(avi_data): # FileData object
 		
 		if rr.chunk_type == RiffChunkType.List:
 			fsize = c.chunk_start_pos + len(c.raw_header) + c.length
-			if c.list_type == "RIFF" and fsize > avi_data.size:
+			if c.list_type == b"RIFF" and fsize > avi_data.size:
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected at least: %s" % sep(fsize),
 				      "\t Found            : %s\n" % sep(avi_data.size), 
@@ -677,7 +679,7 @@ def avi_profile_sample(avi_data): # FileData object
 					show_spinner(blockcount)
 				
 				track_number = c.stream_number
-				if not tracks.has_key(track_number):
+				if track_number not in tracks:
 					tracks[track_number] = TrackData()
 				
 				track = tracks[track_number]
@@ -734,7 +736,7 @@ def avi_profile_sample(avi_data): # FileData object
 	
 	if avi_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, attachments
@@ -878,7 +880,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 	
 	if mkv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, attachments
@@ -896,7 +898,7 @@ def profile_mp4(mp4_data): # FileData object
 	while mr.read():
 		a = mr.current_atom
 		atype = mr.atom_type
-#		print(atype)
+#		print(repr(atype))
 		
 		# 1) doing header
 		meta_length += len(a.raw_header)
@@ -917,7 +919,7 @@ def profile_mp4(mp4_data): # FileData object
 		if atype in (b"tkhd",):
 			# grab track id 
 			(track_id,) = BE_LONG.unpack_from(data, 12)
-			assert not tracks.has_key(track_id)
+			assert track_id not in tracks
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
 			current_track = tracks[track_id]
@@ -1051,7 +1053,7 @@ def mp4_profile_sample(mp4_data):
 	
 	if mp4_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, {} #attachments
@@ -1114,7 +1116,7 @@ def profile_wmv(wmv_data): # FileData object
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				data = ar.read_data_part(start + i * psize, psize)
@@ -1186,7 +1188,7 @@ def profile_wmv(wmv_data): # FileData object
 			i = 16 + 16 + 8 + 4 + 4
 			(flags,) = S_SHORT.unpack_from(data, i)
 			track_id = flags & 0xF
-			assert not tracks.has_key(track_id)
+			assert track_id not in tracks
 			tracks[track_id] = TrackData()
 			tracks[track_id].track_number = track_id
 			
@@ -1243,7 +1245,7 @@ def wmv_profile_sample(wmv_data):
 	
 	if wmv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"
-		       "       The sample is likely corrupted or incomplete.") 
+		       "       The sample is likely corrupted or incomplete.\n") 
 		raise IncompleteSample(msg)
 	
 	return tracks, {} #attachments
@@ -1323,8 +1325,11 @@ def flac_profile_sample(flac_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(flac_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def mp3_profile_sample(mp3_data): # FileData object
@@ -1392,8 +1397,11 @@ def mp3_profile_sample(mp3_data): # FileData object
 	# create a finger print of the file
 	duration, fp = fingerprint(mp3_data.name)
 	
-	tracks[1].duration = duration
-	tracks[1].fingerprint = fp
+	try:
+		tracks[1].duration = duration
+		tracks[1].fingerprint = fp
+	except KeyError:
+		pass
 	return tracks, {}
 
 def avi_create_srs(tracks, sample_data, sample, srs, big_file):
@@ -1409,7 +1417,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 				# as the first child of LIST movi
 				# we put them after the avi headers 
 				# so mediainfo can still read them from the SRS
-				if c.list_type == "LIST" and c.fourcc == "movi":
+				if c.list_type == b"LIST" and c.fourcc == b"movi":
 					file_chunk = sample_data.serialize_as_riff()
 					assert file_chunk
 					srsf.write(file_chunk)
@@ -1492,7 +1500,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 		while(mr.read()):
 			atom = mr.current_atom
 			
-			if atom.type == "mdat":
+			if atom.type == b"mdat":
 				# in store mode, create and write our custom atoms
 				# as atom child in the root
 				file_atom = sample_data.serialize_as_mov()
@@ -1506,7 +1514,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 					
 			movf.write(atom.raw_header)
 			
-			if atom.type == "mdat":
+			if atom.type == b"mdat":
 				# don't copy stream data
 				mr.skip_contents()
 			else:
@@ -1526,7 +1534,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 				i = 16 + 8 + 16
 				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
-				psize = (o.size - len(o.raw_header)) / total_data_packets
+				psize = (o.size - len(o.raw_header)) // total_data_packets
 				start = o.start_pos + len(o.raw_header)
 				for i in range(total_data_packets):
 					data = ar.read_data_part(start + i * psize, psize)
@@ -1643,7 +1651,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 			
 		# grab track or create new track
 		track_number = rr.current_chunk.stream_number
-		if not tracks.has_key(track_number):
+		if track_number not in tracks:
 			tracks[track_number] = TrackData()
 		track = tracks[track_number]
 		track.track_number = track_number
@@ -1749,7 +1757,7 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 def _mkv_block_find(tracks, er, done):
 	# grab track or create new track
 	track_number = er.current_element.track_number
-	if not tracks.has_key(track_number):
+	if track_number not in tracks:
 		tracks[track_number] = TrackData()
 		tracks[track_number].track_number = track_number
 	track = tracks[track_number]
@@ -1829,16 +1837,17 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	mtrack.trackstream.stream = open_main(main_mp4_file)
 	
 	data = mtrack.trackstream.read(len(track.signature_bytes))
-#	print(data[:].encode('hex'))
+#	from binascii import hexlify
+#	print(hexlify(data).decode('ascii'))
 #	print(mtrack.trackstream.current_offset())
-#	print(track.signature_bytes[:].encode('hex'))
+#	print(hexlify(track.signature_bytes).decode('ascii'))
 	if data == track.signature_bytes:
 		track.match_offset = mtrack.trackstream.current_offset()
 	next_chunk = True
 	
 	# walk through the stream one sample at the time
 	while(data != track.signature_bytes and next_chunk):
-		next_chunk = mtrack.trackstream.next()
+		next_chunk = next(mtrack.trackstream)
 		data = mtrack.trackstream.read(len(track.signature_bytes))
 		if data == track.signature_bytes:
 			# this indicates that we have the track found
@@ -1933,7 +1942,7 @@ class TrackStream(object):
 				firstb += bytes_read
 			return firstb
 	
-	def next(self):
+	def __next__(self):
 		# are there still samples left in the chunk?
 		if self._current_sample + 1 < self._current_chunk.samples_in_chunk:
 			self._current_sample += 1
@@ -1948,6 +1957,7 @@ class TrackStream(object):
 			else:
 				return False
 		return True
+	next = __next__  # Python < 3 compatibility
 
 class TrackChunk(object):
 	"""MP4 data block that consists of samples."""
@@ -2011,7 +2021,7 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 			(total_data_packets,) = S_LONGLONG.unpack_from(
 				o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				if i % 15 == 0:
@@ -2029,7 +2039,7 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 				for payload in packet.payloads:
 					# grab track or create new track
 					track_number = payload.stream_number
-					if not tracks.has_key(track_number):
+					if track_number not in tracks:
 						tracks[track_number] = TrackData()
 					track = tracks[track_number]
 					track.track_number = track_number
@@ -2212,7 +2222,7 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 		
 		# grab track or create new track
 		track_number = rr.current_chunk.stream_number
-		if not tracks.has_key(track_number):
+		if track_number not in tracks:
 			tracks[track_number] = TrackData()
 			tracks[track_number].track_number = track_number
 		track = tracks[track_number]
@@ -2283,7 +2293,7 @@ def mkv_extract_sample_streams(tracks, movie):
 				er.move_to_child()
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
-			if not attachments.has_key(current_attachment):
+			if current_attachment not in attachments:
 				att = AttachmentData(current_attachment)
 				attachments[current_attachment] = att
 		elif er.element_type == EbmlElementType.AttachedFileData:
@@ -2391,7 +2401,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
 				# don't do unnecessary processing
@@ -2415,7 +2425,7 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 				for payload in packet.payloads:
 					# grab track or create new track
 					track_number = payload.stream_number
-					if not tracks.has_key(track_number):
+					if track_number not in tracks:
 						tracks[track_number] = TrackData()
 						tracks[track_number].track_number = track_number
 					track = tracks[track_number]
@@ -2784,7 +2794,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				i = 16 + 8 + 16
 				(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 				# data packet/media object size
-				psize = (o.osize - len(o.raw_header)) / total_data_packets
+				psize = (o.osize - len(o.raw_header)) // total_data_packets
 				rp_offsets = 0
 				start = o.start_pos + len(o.raw_header)
 				for i in range(total_data_packets):

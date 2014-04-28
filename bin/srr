@@ -6,7 +6,7 @@ import sys
 try:
 	import _preamble
 except ImportError:
-	sys.exc_clear()
+	pass
 
 from rescene.srr import main
 main(sys.argv[1:])

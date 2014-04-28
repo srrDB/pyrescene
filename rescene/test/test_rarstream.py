@@ -59,7 +59,7 @@ class TestRarStream(unittest.TestCase):
 			rs.read(2)
 			rs.seek(0, os.SEEK_END)
 			self.assertRaises(IndexError, rs.seek, -1)
-		self.assertEquals(rs.list_files(), 
+		self.assertEqual(rs.list_files(), 
 						  ["txt\\empty_file.txt", 
 						   "txt\\little_file.txt", 
 						   "txt\\users_manual4.00.txt"])
@@ -71,7 +71,7 @@ class TestRarStream(unittest.TestCase):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		txt_file = os.path.join(self.path, "txt", "little_file.txt")
 		rs = RarStream(rar_file)
-		with open(txt_file) as tfile:
+		with open(txt_file, "rb") as tfile:
 			self.assertEqual(rs.read(), tfile.read())
 			
 		rar_file = os.path.join(self.path, 
@@ -96,7 +96,7 @@ class TestRarStream(unittest.TestCase):
 	
 		txt_file = os.path.join(self.path, "txt", "unicode_mac.nfo")
 		rs = RarStream(rar_file, "unicode_mac.nfo")
-		with open(txt_file) as tfile:
+		with open(txt_file, "rb") as tfile:
 			tfile.seek(3000)
 			tfile.read()
 			tfile.seek(333)
@@ -106,7 +106,7 @@ class TestRarStream(unittest.TestCase):
 	def test_read_nothing(self):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		rs = RarStream(rar_file)
-		self.assertEquals(b"", rs.read(0))
+		self.assertEqual(b"", rs.read(0))
 		
 	def test_not_first_rar(self):
 		# AttributeError: You must start with the first volume from a RAR set

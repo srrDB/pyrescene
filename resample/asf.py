@@ -66,7 +66,7 @@ class Object(object):
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):
-		return "<Object type=%s size=%d start_pos=%d>" % (self.type, 
+		return "<Object type=%r size=%d start_pos=%d>" % (self.type, 
 		                                self.size, self.start_pos)
 		
 class AsfReader(object):
@@ -142,7 +142,7 @@ class AsfReader(object):
 			i = 16 + 8 + 16
 			(total_data_packets,) = S_LONGLONG.unpack_from(o.raw_header, i)
 			# data packet/media object size
-			psize = (o.size - len(o.raw_header)) / total_data_packets
+			psize = (o.size - len(o.raw_header)) // total_data_packets
 			rp_offsets = 0
 			start = o.start_pos + len(o.raw_header)
 			for i in range(total_data_packets):
@@ -535,7 +535,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			if mode != AsfReadMode.SRS:
 				while used < pl.data_length:
 					payloads += 1
-					used += (1 + S_BYTE.unpack_from(data, start+used))
+					used += (1 + S_BYTE.unpack_from(data, start+used)[0])
 			else:
 				used_srs = 0
 				while used < pl.data_length:
@@ -560,10 +560,9 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 				# Set data correctly
 				if idx == 0:
 					pl.header_size += 1
-					pl.header_data = data[skip-pl.header_size:skip]
 				else:
-					pl.header_data = data[skip-1]
 					pl.header_size = 1
+				pl.header_data = data[skip-pl.header_size:skip]
 				pl.data = data[skip:skip+pl.data_length]
 				if mode != AsfReadMode.SRS:
 					skip += pl.data_length

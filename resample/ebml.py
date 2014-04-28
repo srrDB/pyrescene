@@ -25,6 +25,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 import struct
 import os
 
@@ -116,7 +118,7 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 		if lace_type == EbmlLaceType.NONE:
 			frame_sizes[i] = data_length
 		elif lace_type == EbmlLaceType.FIXED:
-			frame_sizes[i] = data_length / lace_frame_count
+			frame_sizes[i] = data_length // lace_frame_count
 		elif lace_type == EbmlLaceType.XIPH:
 			if (i < lace_frame_count - 1):
 				nextByte = 0xFF
@@ -136,9 +138,9 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 			elif i < lace_frame_count - 1:
 				# convert UInt to SInt then add to previous
 				length, bc = GetEbmlUIntStream(stream)
-#				print "i", i
-#				print "lace frame count", lace_frame_count
-#				print "bytes consumed", bc
+#				print("i", i)
+#				print("lace frame count", lace_frame_count)
+#				print("bytes consumed", bc)
 				assert bc
 				length -= ((1 << (bc * 8 - (bc + 1))) - 1)
 				frame_sizes[i] = frame_sizes[i - 1] + length
@@ -208,7 +210,7 @@ class EbmlID(object):
 	RESAMPLE_FILE = b"\x6A\x75" # ju
 	RESAMPLE_TRACK = b"\x6B\x75" # ku
 
-	CRC32 = "\xBF"
+	CRC32 = b"\xBF"
 	
 class EbmlReader(object):
 	"""Implements a simple Reader class that reads through MKV or 

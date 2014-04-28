@@ -148,6 +148,8 @@ and SRR could contain the RAR data multiple times.
 Bug in rare cases for version 1.1.
 """
 
+from __future__ import print_function
+
 import nntplib
 import optparse
 import sys
@@ -167,12 +169,15 @@ import yenc
 import nzb_utils
 from os.path import abspath, join, dirname, basename,realpath
 
+#from binascii import hexlify
+
 # for running the script directly from command line
 sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
 import rescene
 from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
+from rescene.utility import basestring
 
 __version_info__ = ('1', '5')
 __version__ = '.'.join(__version_info__)
@@ -236,7 +241,7 @@ def _getlongresp(self, ofile=None, max_nb_lines=DEFAULT_LINES):
 	try:
 		# If a string was passed then open a file with that name
 		if isinstance(ofile, str):
-			openedFile = ofile = open(ofile, "w")
+			openedFile = ofile = open(ofile, "wb")
 
 		resp = self.getresp()
 		try:
@@ -408,19 +413,19 @@ class NNTPFile(io.IOBase):
 										continue
 									except KeyboardInterrupt:
 										raise
-									except nntplib.NNTPTemporaryError:
-										print(sys.exc_info()[1])
+									except nntplib.NNTPTemporaryError as error:
+										print(error)
 							# closes socket
 							return s.body_little(article_id, nb_lines)
 						except KeyboardInterrupt:
 							raise
-						except:
-							print(sys.exc_info()[1])
+						except BaseException as error:
+							print(error)
 							print("Small article not on '%s'." % server[0])
 					except KeyboardInterrupt:
 						raise
-					except nntplib.NNTPError:
-						print(sys.exc_info()[1])
+					except nntplib.NNTPError as error:
+						print(error)
 						print("Connecting to '%s' failed." % server[0])
 			else:
 				return server.body(article_id)
@@ -445,15 +450,15 @@ class NNTPFile(io.IOBase):
 				try:
 					self.server.group(group)
 					break
-				except nntplib.NNTPTemporaryError:
+				except nntplib.NNTPTemporaryError as error:
 					# too many messages for some servers
-					#print(sys.exc_info()[1])
+					#print(error)
 					#traceback.print_exc()
 					pass
-				except nntplib.NNTPPermanentError:
+				except nntplib.NNTPPermanentError as error:
 					# NNTPPermanentError: 501 newsgroup
 					# NNTPPermanentError: 502 Authentication Failed
-					print(sys.exc_info()[1])
+					print(error)
 					pass
 		
 		ydata = None
@@ -464,8 +469,8 @@ class NNTPFile(io.IOBase):
 			# id is the message id (enclosed in '<' and '>').)
 			dpart = decode_yenc_body(ydata[3])
 			# Exception: ('CRC32 checksum failed', 2821898260L, 1224983450)
-		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError):
-			print("Main server: " + str(sys.exc_info()[1]))
+		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError) as error:
+			print("Main server: " + str(error))
 			
 			# try to get the part on one of the other servers
 			for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
@@ -482,23 +487,24 @@ class NNTPFile(io.IOBase):
 								try:
 									s.group(group)
 									continue
-								except nntplib.NNTPTemporaryError:
+								except nntplib.NNTPTemporaryError as error:
 									pass
-									# print(sys.exc_info()[1])
+									# print(error)
 						ydata = receive_body(s, "<%s>" % message_id)
 						dpart = decode_yenc_body(ydata[3])
 						break
 					except (yenc.YencException, yenc.CrcError):
 						ydata = None
 						print("Problem with article on '%s' too." % server[0])
-					except nntplib.NNTPError:
-						print(sys.exc_info()[1])
+					except nntplib.NNTPError as error:
+						print(error)
 						print("Article not found on '%s' either." % server[0])
 						
 					s.quit()
-				except (nntplib.NNTPError, socket.error):
+				except (nntplib.NNTPError, socket.error) as \
+				error:
 					# what causes socket.error here?
-					print(sys.exc_info()[1])
+					print(error)
 					print("Connecting to '%s' failed." % server[0])
 			if not ydata:
 				print("Grab failed for <%s> (%s)" % (message_id, self.name))
@@ -603,7 +609,7 @@ class NNTPFile(io.IOBase):
 		# the offset starts somewhere in this part
 		# parts start counting from 1
 		fix = 1
-		nb_times = offset / self._segment_size_first
+		nb_times = offset // self._segment_size_first
 		
 		# exact amount of times? result one time less, except for zero
 		if (offset % self._segment_size_first) == 0 and nb_times != 0:
@@ -726,7 +732,7 @@ class NNTPFile(io.IOBase):
 			# we can go 6 bytes back (and forward) "without problem"
 			if self.new_server and amount == 7:
 				amount = 19
-			test_range = [0] + range(-1, -amount, -1) + range(1, amount)
+			test_range = [0] + list(range(-1, -amount, -1)) + list(range(1, amount))
 		
 			for hoffset in test_range:
 				# we do have a correct RAR data block?
@@ -787,17 +793,17 @@ class NNTPFile(io.IOBase):
 							lines = int(match.group(1))
 							break
 					if lines > 10: # arbitrary number
-						line_size = (self.segments[i].bytes / lines)
+						line_size = (self.segments[i].bytes // lines)
 						# yEnc overhead (around 2%)
 						new_line_size = line_size
 						new_line_size -= new_line_size * 0.07
 						if int(new_line_size) <= 0:
-							new_line_size = (line_size if int(line_size) > 0
+							new_line_size = (line_size if line_size > 0
 							                           else 1)
-						amount = int(end_offset / int(new_line_size) + 1)
+						amount = end_offset // int(new_line_size) + 1
 						# but always more than 2 lines! otherwise no new data
 						amount = amount if amount > 2 else 3
-					#print lines, line_size, end_offset, amount
+					#print(lines, line_size, end_offset, amount)
 				self.grab_segment(message_id, amount)
 				
 				# try to fix one (or more) byte off yEnc (CRC) errors here
@@ -834,8 +840,8 @@ class NNTPFile(io.IOBase):
 					number += 7
 				if flags & rar.RarEndArchiveBlock.VOLNUMBER:
 					number += 2
-#				print(self.data[spart_nb][-7-6:].encode('hex'))
-#				if self.data[spart_nb][-7-6:].encode('hex') == "00" * 13:
+#				print(hexlify(self.data[spart_nb][-7-6:]).decode('ascii'))
+#				if self.data[spart_nb].endswith(bytearray(7 + 6)):
 #					# for some old RARs (7 + 6 exra bytes are zeros)
 #					print("Trying to fix some RARE case.")
 #					number += 6
@@ -877,21 +883,18 @@ class NNTPFile(io.IOBase):
 		# will never be used because rarreader reads the 3rd byte fist?
 		if (is_rar(self.name) and self._current_position == 0):
 #			print("Is RAR and reading from the start!")
-#			print(self.data[1][0:6].encode('hex'))
-			size_before_magic = len(self.data[1])
-			if self.data[1][0:6] == "6172211a0700".decode('hex'):
-				# only part of the magic marker is detected
-				# add the known missing byte
-				self.data[1] = "R" + self.data[1]
-			elif self.data[1][0:5] == "72211a0700".decode('hex'):
-				self.data[1] = "Ra" + self.data[1]
-			elif self.data[1][0:4] == "211a0700".decode('hex'):
-				self.data[1] = "Rar" + self.data[1]
-			elif self.data[1][0:3] == "1a0700".decode('hex'):
-				self.data[1] = "Rar!" + self.data[1]
-			if size_before_magic != len(self.data[1]):
-				print("MAGIC2: Adding first missing RAR byte(s)!")
-				
+#			print(hexlify(self.data[1][0:6]).decode('ascii'))
+			marker = b"Rar!\x1a\x07\x00"
+			for missing in range(1, len(b"Rar!") + 1):
+				if self.data[1].startswith(marker[missing:]):
+					# Only part of the magic marker is
+					# detected. Add the known missing
+					# bytes.
+					self.data[1] = (marker[:missing] +
+						self.data[1])
+					print("MAGIC2: Adding first missing RAR byte(s)!")
+					break
+		
 		# MAGIC for all other cases (for RAR volumes with many files)
 		# we are probably reading a rar basic header block	
 		if (is_rar(self.name) and size == 7 and self._did_seek):
@@ -924,7 +927,7 @@ class NNTPFile(io.IOBase):
 		dsize = len(data_begin)
 		if dsize > size:
 			self._current_position += size
-#			print(data_begin[:size].encode('hex'))
+#			print(hexlify(data_begin[:size]).decode('ascii'))
 			return data_begin[:size]
 		else:
 			self._current_position += dsize
@@ -949,12 +952,12 @@ class NNTPFile(io.IOBase):
 		assert self._current_position <= self._file_size
 		
 		self._inactive = False
-#		print((data_begin + data).encode('hex'))
+#		print(hexlify(data_begin + data).decode('ascii'))
 		return data_begin + data
 	
 	def __eq__(self, other):
 		# for sorting
-		if isinstance(other, (str, unicode)):
+		if isinstance(other, basestring):
 			return self.name == other
 		try:
 			# simple check to see if we are talking about the same file
@@ -970,7 +973,8 @@ class NNTPFile(io.IOBase):
 		except AttributeError: # fails on nb_segments
 			# it compares with a real file in rescene lib
 			return self.name == other
-		
+	__hash__ = None  # Avoid DeprecationWarning in Python < 3
+	
 	def __lt__(self, other):
 		"""The sort routines are guaranteed to use __lt__ when making 
 		   comparisons between two objects."""
@@ -1018,9 +1022,9 @@ class NNTPFile(io.IOBase):
 									try:
 										self.server.group(group)
 										continue
-									except nntplib.NNTPTemporaryError:
+									except nntplib.NNTPTemporaryError as error:
 										pass
-										# print(sys.exc_info()[1])
+										# print(error)
 							
 							(resp, _nr, _id) = self.server.stat("<%s>" % 
 								self.segments[self.nb_segments].message_id)
@@ -1037,8 +1041,9 @@ class NNTPFile(io.IOBase):
 					except KeyboardInterrupt:
 						raise
 					except (nntplib.NNTPPermanentError,
-					        nntplib.NNTPTemporaryError):
-						print(sys.exc_info()[1])
+					        nntplib.NNTPTemporaryError) \
+					        as error:
+						print(error)
 						print("Connecting to '%s' failed." % server[0])
 					
 				print("%s has no last segment." % self.name)
@@ -1077,10 +1082,10 @@ def create_srr(nzb_path, options):
 	server = connect_server()
 #	try:
 #		server = connect_server()
-#	except socket.error:
+#	except socket.error as error:
 #		# (<class 'socket.error'>, error(10061, '
 #		# first always fails with an ipv6 server, unless -d 1 is used
-#		print(sys.exc_info())
+#		print(error)
 #		#options.nntp_debug_level = 1 # results in a more spammy console
 #		options.nntp_debug_level = 0
 #		server = connect_server()
@@ -1117,7 +1122,7 @@ def create_srr(nzb_path, options):
 				sfvs.append(nfile)
 				
 	# fail if one of the RAR files doesn't have the first segment
-	for nfile in nntp_files.itervalues():
+	for nfile in nntp_files.values():
 		if is_rar(nfile.name) and not nfile.has_first_segment():
 			server.quit()
 			print("Incomplete RAR file found: %s" % nfile.name)
@@ -1157,8 +1162,8 @@ def create_srr(nzb_path, options):
 					uniqfile[index] = sfile
 			except KeyboardInterrupt:
 				raise
-			except:
-				print(sys.exc_info())
+			except BaseException as error:
+				print(error)
 				traceback.print_exc()
 	sfvs = uniqfile
 	#TODO: do the same for other files? (no duplicate nfos ect.)
@@ -1187,8 +1192,8 @@ def create_srr(nzb_path, options):
 			continue
 		# remove small IMDb images
 		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
-			print("JPG check:"),
-			size = sum([f.bytes for f in afile.segments.itervalues()])
+			print("JPG check:", end=" ")
+			size = sum(f.bytes for f in afile.segments.values())
 			# check the resolution? -> no, IMDb raised the resolution
 			if size < 9000: # I have seen valid 10KiB images
 				print("image not added.")
@@ -1256,8 +1261,8 @@ STAT last segment of lg-le.de.le.2.r00"""
 					result = True
 				except Repack:
 					raise
-				except ValueError:
-					print(sys.exc_info()[1])
+				except ValueError as error:
+					print(error)
 					result = False # SRR creation failed
 				except RuntimeError: pass
 			except Repack:
@@ -1320,7 +1325,7 @@ STAT last segment of lg-le.de.le.2.r00"""
 				return
 			rescene.add_stored_files(srrf, to_store + sfvs, usenet=True)
 	finally:
-		print("QUIT sent to main server."),
+		print("QUIT sent to main server.", end=" ")
 		if result:
 			print("SRR file ======== CREATED ========.")
 		else:
@@ -1356,32 +1361,31 @@ def create_srr_nzbmove(nzb_file):
 	except AssertionError:
 		traceback.print_exc()
 		sys.exit(1)
-	except (IncompleteNzb, rescene.FileNotFound):
-		print(sys.exc_info()[1])
+	except (IncompleteNzb, rescene.FileNotFound) as error:
+		print(error)
 		#if not options.dry_run:
 		new = join(dirname(nzb_file), "bad", basename(nzb_file))
 		os.renames(nzb_file, new)
 	except Repack:
 		new = join(dirname(nzb_file), "repacks", basename(nzb_file))
 		os.renames(nzb_file, new)
-	except nntplib.NNTPPermanentError:
+	except nntplib.NNTPPermanentError as error:
 		# for when you reached the download limit
 		# you might want to try these nzbs again
-		print(sys.exc_info()[1])
+		print(error)
 		faildir = "5xxerror"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
 			os.renames(nzb_file, new)
-	except (nntplib.NNTPError, yenc.YencException):
+	except (nntplib.NNTPError, yenc.YencException) as error:
 		# the problem was the news server
 		print("%s failed." % nzb_file)
-		print(sys.exc_info()[1])
-		error = sys.exc_info()[1]
+		print(error)
 #		traceback.print_exc()
 		
 		faildir = "failure"
 		try:
-			ename = error[0]
+			ename = error.args[0]
 		except KeyError:
 			ename = ""
 		if ename == "Failure on all servers." or "430" in str(ename):
@@ -1391,7 +1395,6 @@ def create_srr_nzbmove(nzb_file):
 			os.renames(nzb_file, new)
 	except Exception:
 		print("Unknown failure")
-		error = sys.exc_info()[1]
 		traceback.print_exc()
 		
 		faildir = "unknownerror"
@@ -1467,7 +1470,8 @@ def main(options, args):
 	if create_config_file:
 		config = ConfigParser()
 		if len(EXTRA_SERVERS): # write old hardcoded servers to file
-			print("Writing hard coded servers to config file..."),
+			print("Writing hard coded servers to config file...",
+				end=" ")
 			for server in EXTRA_SERVERS:
 				sname = "server_" + server[0] # second part is arbitrary
 				config.add_section(sname)
@@ -1483,10 +1487,11 @@ def main(options, args):
 				else:
 					config.set(sname, "readermode", False)
 		else: # Example template
-			print("Writing {template} in the config file..."),
+			print("Writing {template} in the config file...",
+				end=" ")
 			config = create_template(config)
 
-		with open(options.config_file, "wb") as configfile:
+		with open(options.config_file, "wt") as configfile:
 			config.write(configfile)
 		print("Done.")
 		sys.exit(1)

@@ -52,7 +52,7 @@ class Atom(object):
 		self.start_pos = -1
 		
 	def __repr__(self, *args, **kwargs):
-		return "<Atom type=%s size=%d start_pos=%d>" % (self.type, 
+		return "<Atom type=%r size=%d start_pos=%d>" % (self.type, 
 		                                self.size, self.start_pos)
 		
 class MovReader(object):

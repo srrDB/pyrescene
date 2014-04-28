@@ -24,6 +24,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
+
 import unittest
 import os
 import io
@@ -68,11 +70,11 @@ class TestSfv(unittest.TestCase):
 		correct = [e.file_name for e in self.sorted_list]
 		# sorted(): yields sorted list
 		test = [e.file_name for e in sorted(self.unsorted_list)]
-		self.assertEquals(correct, test, "Sorting does not work.")
+		self.assertEqual(correct, test, "Sorting does not work.")
 		# sort(): in-place sort
 		self.unsorted_list.sort()
 		test = [e.file_name for e in self.unsorted_list]
-		self.assertEquals(correct, test, "Sorting does not work.")
+		self.assertEqual(correct, test, "Sorting does not work.")
 		
 	def test_sort_bug(self):
 		# multiple .rar files from different sets
@@ -80,25 +82,25 @@ class TestSfv(unittest.TestCase):
 				SfvEntry("group-begin.r00", "00000000"),
 				SfvEntry("group-other.rar", "00000000"),
 				SfvEntry("group-other.r00", "00000000"),]
-		self.assertEquals(slist, sorted(slist), "Sorting does not work.")
+		self.assertEqual(slist, sorted(slist), "Sorting does not work.")
 		
 	def test_sfv_entry(self):
 		self.assertRaises(ValueError, SfvEntry, "file_name", "11aa33XX")
 		self.assertRaises(ValueError, SfvEntry, "file_name", "11aa11aa  ")
 		
 	def test_parse_sfv(self):
-		output = io.StringIO()
-		output.write(str("  ; sfv raped by teh skilled thugs\n"
-		"test.r00 aabb0099  \n"
-		"test.r01	  AABBCCDD\n"
-		"test.rar	AABBCCDD\n" # \t only
-		"test.rar\tAABBDD\n"
-		"test name with spaces.rar AABBCCDD\n"
-		"test name with more spaces.rar	   AABBCCDD\n"
-		"test name with ;.rar AABBCCDD\n"
-		"  \n"
-		"----------------------------------\n"))
-		output.write(str("illegal.rar AABBCCDD ; comment\n"))
+		output = io.BytesIO()
+		output.write(b"  ; sfv raped by teh skilled thugs\n"
+		b"test.r00 aabb0099  \n"
+		b"test.r01	  AABBCCDD\n"
+		b"test.rar	AABBCCDD\n" # \t only
+		b"test.rar\tAABBDD\n"
+		b"test name with spaces.rar AABBCCDD\n"
+		b"test name with more spaces.rar	   AABBCCDD\n"
+		b"test name with ;.rar AABBCCDD\n"
+		b"  \n"
+		b"----------------------------------\n")
+		output.write(b"illegal.rar AABBCCDD ; comment\n")
 		
 		(entries, comments, errors) = parse_sfv_file(output)
 		print([str(e) for e in entries])
@@ -134,7 +136,34 @@ class TestSfv(unittest.TestCase):
 		two, _, _ = parse_sfv_file(os.path.join(txtdir, "checksum_copy.sfv"))
 		one.append(SfvEntry("name"))
 		self.assertFalse(one == two)
-		
+	
+	def test_sfv_quotes(self):
+		output = io.BytesIO() # De.Gelukkige.Huisvrouw.2010.DVDRip.XviD-FloW
+		output.write(b"; sfv created by SFV Checker\n"
+		b";\n"
+		b""""gh-flow.subs.rar" 83a20923\n"""
+		b";\n"
+		b"; Total 1 File(s)	Combined CRC32 Checksum: 83a20923\n"
+		)
+		(entries, comments, errors) = parse_sfv_file(output)
+		print([str(e) for e in entries])
+		print(comments)
+		print(errors)
+		self.assertTrue(len(entries) == 1)
+		self.assertTrue(len(comments) == 4)
+		self.assertTrue(len(errors) == 0)
+		self.assertEqual("gh-flow.subs.rar", entries[0].file_name)
+	
+	def test_encoding_error(self):
+		"""Should not crash parsing garbage or non-ASCII SFV file"""
+		sfv = io.BytesIO(
+			b"; \x80 garbage comment\n"
+			b"\xFF garbage name 12345678\n"
+			b"garbage CRC \xA02345678\n"
+			b"--- \x9F garbage error line ---\n"
+		)
+		parse_sfv_file(sfv)
+
 class TestUtility(unittest.TestCase):
 	def test_is_rar_file(self):
 		self.assertTrue(is_rar(".rar"))
@@ -190,7 +219,7 @@ class TestUtility(unittest.TestCase):
 		"""
 		a, b = (a,), (b,)
 		
-		#print diff_lists(a, b)
+		#print(diff_lists(a, b))
 		
 #	def test_nfo_diff(self):
 #		txtdir = os.path.join(os.pardir, "test_files", "txt")
@@ -210,7 +239,7 @@ class TestUtility(unittest.TestCase):
 #			else:
 #				r = diff_lists(old[1].splitlines(), v.splitlines())
 #				self.assertTrue(r)
-#				print r, old[0], k
+#				print(r, old[0], k)
 #				old = (k, v)
 #				
 #		self.assertFalse(diff_lists(("one",), ("one", "two")))
@@ -221,15 +250,13 @@ class TestUtility(unittest.TestCase):
 #				break
 #			r = diff_lists(contents.[i].splitlines(), 
 #						   contents[i+1].splitlines())
-#			print r, contents[i]
+#			print(r, contents[i])
 
 	def test_sep(self):
 		try:
-			self.assertEquals(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
-			self.assertEquals(sep(1000000, 'English'),
-				"1,000,000")
+			self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
+			self.assertEqual(sep(1000000, 'English'), "1,000,000")
 		except locale.Error as err:
-			fmt = ('"Dutch_Belgium.1252" and "English" locales: '
-				"{0}")
+			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
 			self.skipTest(fmt.format(err))  # 2.6 crash expected
