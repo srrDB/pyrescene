@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012-2013 pyReScene
+# Copyright (c) 2012-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -911,7 +911,6 @@ def profile_mp4(mp4_data, calculate_crc32=True): # FileData object
 		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
 		elif atype == b"mdat":
-			meta_length += a.size
 			# crc32 calculation isn't used in all cases (optimization)
 			if calculate_crc32:
 				for data_piece in mr.read_contents_chunks():
