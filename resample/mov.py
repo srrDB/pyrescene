@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,6 +46,8 @@ class InvalidDataException(ValueError):
 	
 class Atom(object):
 	def __init__(self, size, object_guid):
+		"""size: full size of the atom (including 2 first header fields)
+		object_guid: the type of the atom (moov, mdat,...)"""
 		self.size = size
 		self.type = object_guid
 		self.raw_header = b""
@@ -83,7 +85,6 @@ class MovReader(object):
 		# SkipContents() must be called before Read() can be called again")
 		assert self.read_done or (self.mode == MovReadMode.SRS and
 		                          self.atom_type == b"mdat")
-		
 		
 		atom_start_position = self._mov_stream.tell()
 		self.current_atom = None
