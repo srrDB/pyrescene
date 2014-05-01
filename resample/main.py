@@ -105,6 +105,11 @@ def get_file_type(ifile):
 	with open(ifile, 'rb') as ofile:
 		marker = ofile.read(14)
 		
+	# the file is too small (probably empty)
+	# don't let this function throw an error
+	if len(marker) < 14:
+		return FileType.Unknown
+		
 	if marker.startswith(MARKER_RAR):
 		# Read first file from the RAR archive
 		rs = rarstream.RarStream(ifile)
