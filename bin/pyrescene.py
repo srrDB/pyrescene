@@ -619,10 +619,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 					copied_files.append(os.path.join(dest_dir, 
 						os.path.basename(sample))[:-4] + ".srs")
 			except ValueError as e:
-				keep_txt = True
-				copied_files.append(txt_error_file)
-				logging.info("%s: Could not create SRS file for %s." %
-				             (reldir, os.path.basename(sample)))
+				# do not keep txt files for empty files
+				if os.path.getsize(sample) > 0:
+					keep_txt = True
+					copied_files.append(txt_error_file)
+					logging.info("%s: Could not create SRS file for %s." %
+					             (reldir, os.path.basename(sample)))
 				
 				# fpcalc executable isn't found
 				if str(e).endswith(MSG_NOTFOUND):

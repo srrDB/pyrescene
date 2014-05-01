@@ -273,7 +273,8 @@ def main(argv=None, no_exit=False):
 				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
 					try:
 						print("Duration: %d" % track.duration)
-						print("AcoustID fingerprint: %s" % track.fingerprint.decode("ascii"))
+						print("AcoustID fingerprint: %s" % 
+						      track.fingerprint.decode("ascii"))
 					except AttributeError:
 						pass # SRS without fingerprint information
 			
@@ -390,7 +391,7 @@ def main(argv=None, no_exit=False):
 		if _DEBUG:
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-				str(err).strip('\n'))
+		      str(err).strip('\n').rstrip('.')) # prevent double dots
 	except fpcalc.ExecutableNotFound as err:
 		pexit(3, str(err))
 	except AttributeError as err:
