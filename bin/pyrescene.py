@@ -1004,7 +1004,8 @@ def main(argv=None):
 						"pyReScene_report_%s.txt" % now.strftime("%Y-%m-%d"))
 		# log will append by default
 		logging.basicConfig(filename=fn, level=logging.INFO,
-		                    format="%(levelname)s:%(message)s")
+		                    format="%(asctime)s %(levelname)s:%(message)s",
+		                    datefmt='%H:%M:%S')
 		
 	# create temporary working dir
 	if options.temp_dir and len(options.temp_dir):
