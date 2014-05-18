@@ -225,7 +225,7 @@ def calculate_recovery_record():
 	
 	# calculates + writes headers
 	with open(beforerr, "r+b") as rarfs:
-		rescene._write_recovery_record(r10block, rarfs) # appends the data
+		rescene.main._write_recovery_record(r10block, rarfs)  # appends the data
 
 	# fix
 	with open(beforerr, "rb") as gen:	
