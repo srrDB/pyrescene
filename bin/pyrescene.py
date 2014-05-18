@@ -195,18 +195,46 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 	wanted_sfvs = []
 	for sfv in sfv_list:
 		sfv_name = os.path.basename(sfv)
-		if ("subs" in sfv_name.lower() or "vobsub" in sfv_name.lower() or
-			"subtitle" in sfv_name.lower()):
-			# False positives: 
-			# The.Substitute.4.2001.Failure.Is.Not.An.Option.iNT.DVDRip.XVID-vRs
-			# the.substitute.4.vrs.cd1.rar 92341f72
-			# RV800-Subsync-(FORM001)-READNFO-VINYL-FLAC-2012-dL
-			# 00-rv800-subsync-(form001)-vinyl-flac-2012.sfv
-			if ("subs" in sfv_name.lower() and 
-				re.match(".*(cd\d|flac).*", sfv_name, re.IGNORECASE)):
-				pass
-			else:
-				continue
+		lcrelease_name = os.path.basename(release_dir).lower()
+		
+		# Not for actual subpack releases:
+		# The.Terminator.1984.MULTi.SUBPACK.For.720p.DEFiNiTiON-KOENiG
+		#     koe.the.terminator.720p.multi.vobsubs.sfv
+		# A.Beautiful.Mind.VOBSUBS.DVDRip.DivX-FIXRUS
+		#     vobsub_abm.sfv
+		# Monster.Inc.DiVX.SUB.PACK-SVENNE
+		#     svn-mi.sub.pack.sfv
+		# Bitch.Slap.2009.NORDiC.SUBS.XviD-CULTSUBS
+		#     bs.nordicsubs-cultsubs.sfv
+		if (("vobsub" in sfv_name.lower() or "subtitle" in sfv_name.lower())
+			and ("subpack" not in lcrelease_name and
+				"vobsub" not in lcrelease_name and
+				"subtitle" not in lcrelease_name and
+				"sub.pack" not in lcrelease_name)):
+			continue # SFV won't be appended to wanted_sfvs
+		
+		# False positives: 
+		# The.Substitute.4.2001.Failure.Is.Not.An.Option.iNT.DVDRip.XVID-vRs
+		#     the.substitute.4.vrs.cd1.rar 92341f72
+		# RV800-Subsync-(FORM001)-READNFO-VINYL-FLAC-2012-dL
+		#     00-rv800-subsync-(form001)-vinyl-flac-2012.sfv
+		# Many music releases didn't create at all:
+		# Substantial-Art_Is_Where_The_Home_Is-2014-FTD
+		#     00-substantial-art_is_where_the_home_is-2014-ftd.sfv
+		# The.Dark.Knight.DVDRip.XviD.SUBFIX-DoNE
+		#     tdk-subs-done.sfv
+		if ("subs" in sfv_name.lower() and 
+			# music or release with multiple CDs (xvid)
+			(re.match("^000?-|.*(cd\d|flac).*", sfv_name, re.IGNORECASE) or
+				"subs" in lcrelease_name or
+				"subpack" in lcrelease_name or
+				"vobsub" in lcrelease_name or
+				"subtitle" in lcrelease_name or
+				"sub.pack" in lcrelease_name)):
+			pass # continue to the next checks
+		elif "subs" in sfv_name.lower():
+			continue # SFV won't be appended to wanted_sfvs
+		
 		# subs not in filename, but the folder is called subs, vobsubs,...
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
 		if ("subs" == pardir or "vobsubs" == pardir or "vobsub" == pardir or
@@ -244,14 +272,14 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			continue
 		
 		# subpack inside release dir not, but subpack release itself yes
-		if "subpack" in pardir and not "subpack" in release_dir.lower():
+		if "subpack" in pardir and not "subpack" in lcrelease_name:
 			continue
-		if "subfix" in pardir and not "subfix" in release_dir.lower():
+		if "subfix" in pardir and not "subfix" in lcrelease_name:
 			continue
 		
 		# Two.Weeks.Notice.DVDRiP.XviD.FIX-FIXRUS inside release dir
 		# Mr.Fix.It.2006.PROPER.REPACK.DVDRip.XviD-VoMiT release dir
-		if "fix" in pardir and not "fix" in release_dir.lower():
+		if "fix" in pardir and not "fix" in lcrelease_name:
 			continue
 		
 		wanted_sfvs.append(sfv)
