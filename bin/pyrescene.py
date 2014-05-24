@@ -193,9 +193,9 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 	Remove SFVs from subs and certain rarred proof files.
 	"""
 	wanted_sfvs = []
+	lcrelease_name = os.path.basename(release_dir).lower()
 	for sfv in sfv_list:
 		sfv_name = os.path.basename(sfv)
-		lcrelease_name = os.path.basename(release_dir).lower()
 		
 		# Not for actual subpack releases:
 		# The.Terminator.1984.MULTi.SUBPACK.For.720p.DEFiNiTiON-KOENiG
@@ -230,6 +230,7 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 				"subpack" in lcrelease_name or
 				"vobsub" in lcrelease_name or
 				"subtitle" in lcrelease_name or
+				"subfix" in lcrelease_name or
 				"sub.pack" in lcrelease_name)):
 			pass # continue to the next checks
 		elif "subs" in sfv_name.lower():
@@ -283,6 +284,34 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			continue
 		
 		wanted_sfvs.append(sfv)
+	
+	# If there is no SFV wanted because of 'subs' in the file name
+	# Sub.Sam.2012.FESTiVAL.DVDRip.XviD-EXViD exvid-subsam.sfv
+	# - Choose the SFV for music
+	# - Choose the SFVs for more than 1 archive volume
+	# (Vobsubs in a release are most of the time 1 SFV and 1 RAR.
+	#  If there are more RARs, there are often more SFVs too.
+	#  One SFV with two RAR files does exist in the wild, but
+	#  extremely rare.)
+	# + 'subs' in sfv names even more so. In that case the vobsubs
+	# will be seen as main archive volumes.
+	def has_music(sfv_file_lines):
+		for sfv_file_line in sfv_file_lines:
+			if sfv_file_line.file_name.endswith((".mp3", ".flac")):
+				return True
+		return False
+	
+	if len(wanted_sfvs) == 0:
+		for sfv in sfv_list:
+			sfvfiles = rescene.utility.parse_sfv_file(sfv)[0]
+			if len(sfvfiles) > 1 or has_music(sfvfiles):
+				wanted_sfvs.append(sfv)
+	
+	# Still nothing? 
+	if len(wanted_sfvs) == 0:
+		logging.info("%s might be missing an SFV file." %
+		             os.path.basename(release_dir))
+				
 	return wanted_sfvs
 
 def get_unwanted_sfvs(allsfvs, wantedsfvs):
@@ -530,10 +559,6 @@ def generate_srr(reldir, working_dir, options, mthread):
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
 	main_rars = get_start_rar_files(main_sfvs)
-	# we still want to do subpacks as main SRR
-	if (not len(main_sfvs) and 
-		("subpack" in relname.lower() or "subfix" in relname.lower())):
-		main_sfvs = sfvs
 	extra_sfvs = get_unwanted_sfvs(sfvs, main_sfvs)
 		
 	# create SRR from RARs or from .mp3 or .flac SFV
