@@ -41,7 +41,7 @@ Sorting isn't how we want it in this case:
 
 from __future__ import unicode_literals
 
-from optparse import OptionParser, OptionGroup
+from optparse import OptionParser, OptionGroup # argparse new in version 2.7
 from tempfile import mkdtemp
 from datetime import datetime
 import sys
@@ -938,6 +938,9 @@ def main(argv=None):
 	parser.add_option("-r", "--recursive", dest="recursive", default=False,
 					action="store_true",
 					help="recursively create SRR files")
+	parser.add_option("--best", dest="best_settings", default=False,
+					action="store_true",
+					help="same as -csv (compressed, sample verify and vobsubs")
 	parser.add_option("-c", "--compressed",
 					action="store_true", dest="compressed",
 					help="allow SRR creation for compressed RAR files")
@@ -945,7 +948,7 @@ def main(argv=None):
 					action="store_true", dest="sample_verify",
 					help="verifies sample agains main movie files")
 	parser.add_option("-v", "--vobsub-srr", dest="vobsub_srr",
-					action="store_true", help="create SRRs for vobsubs")
+					action="store_true", help="include SRRs for vobsubs")
 	parser.add_option("-o", "--output", dest="output_dir", metavar="DIR",
 					default=".",
 					help="<path>: Specify output file or directory path. "
@@ -990,6 +993,11 @@ def main(argv=None):
 		return 0
 	
 	(options, indirs) = parser.parse_args(args=argv)
+	
+	if options.best_settings:
+		options.compressed = True
+		options.sample_verify = True
+		options.vobsub_srr = True
 	
 	if (options.list_releases or options.missing_nfos or 
 		options.missing_samples):

@@ -6,6 +6,7 @@ pyReScene 0.6
  * pyReScene Auto: stored SRR and RAR files above their SFV in list
  * pyReScene Auto: crash fixed when path of SRR to create was too long
  * pyReScene Auto: failed to create SRRs when 'subs' was found in file names
+ * pyReScene Auto: --best option added (same as -c -s -v)
  * ReSample: MemoryError on large MP4s fixed and 
              skipping crc32 calculation when possible
  * ReSample: KeyError fixed for RIFF mp3
