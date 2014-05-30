@@ -1043,7 +1043,7 @@ def print_details(file_path):
 			
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
-				rar_executable_dir=None, tmp_dir=None):
+				rar_executable_dir=None, tmp_dir=None, extract_files=True):
 	"""
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
@@ -1056,6 +1056,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	              reconstructing. It speeds up the process.
 	auto_locate_renamed: if set, start looking in sub folders and guess based
 	                     on file size and extension of the file to pack
+	extract_files: if set, extract additional files stored in the srr
 	"""
 	rar_name = ""
 	ofile = ""
@@ -1084,7 +1085,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			# of the application that created the SRR file.
 			_fire(MsgCode.MSG, message="SRR file created with %s." % 
 				  block.appname)
-		elif block.rawtype == BlockType.SrrStoredFile:
+		elif block.rawtype == BlockType.SrrStoredFile and extract_files:
 			_flag_check_srr(block)
 			# There is a file stored within the SRR file. Extract it.
 			_extract(block, _opath(block, extract_paths, out_folder))
@@ -2505,4 +2506,3 @@ def copy_data(source_file, destination_file, offset_amount):
 		with open(destination_file, 'wb') as destination:
 			destination.write(source.read(offset_amount))
 
-	
