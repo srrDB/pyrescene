@@ -106,8 +106,16 @@ def get_files(release_dir, extention):
 		return matches
 
 def get_sample_files(reldir):
+	# .m4v is used for some non scene samples and music releases
+	# It is the same file format as MP4
+	# VA-Anjunabeats_Vol_7__Mixed_By_Above_And_Beyond-(ANJCD014D)-2CD-2009-TT/
+	#     301-va-anjunabeats_vol_7__bonus_dvd-tt.m4v
+	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
+	#     05_g3_makingofst-xardas.wmv
+	#     06_g3_makingofst-xardas.m4v
 	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 
-	                get_files(reldir, "*.mp4") + get_files(reldir, "*.wmv"))
+	                get_files(reldir, "*.mp4") + get_files(reldir, "*.m4v") +
+	                get_files(reldir, "*.wmv"))
 	result = []
 	not_samples = []
 	for sample in sample_files:
