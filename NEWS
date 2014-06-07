@@ -14,6 +14,7 @@ pyReScene 0.6
  * ReSample: "OverflowError: Python int too large to convert to C long"
              on a bad MP3 file fixed
  * ReScene: SRR was stored in subfolder instead of output folder
+ * ReScene: Reconstruction error fixed (when unpack size is set to 4294967295)
 
 pyReScene 0.5.1 (2013-07-14)
 ===============

@@ -1267,18 +1267,26 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 	src = os.path.abspath(os.path.join(in_folder, src))
 	
 	if not os.path.isfile(src):
-#		_fire(MsgCode.FILE_NOT_FOUND, 
-#			  message="Could not locate data file: %s" % src)
 		if auto_locate_renamed:
 			src = _auto_locate_renamed(block.os_file_name(),
 				block.unpacked_size, in_folder) or src
 		if not os.path.isfile(src):
 			raise FileNotFound("The file does not exist: %s." % src)
 		
-	if os.path.getsize(src) != block.unpacked_size:
-		raise InvalidFileSize("Data file is not the correct size: %s."
-			"Found: %d. Expected: %d." % 
-			(src, os.path.getsize(src), block.unpacked_size));
+	file_size_candidate = os.path.getsize(src)
+	if (file_size_candidate != block.unpacked_size and
+		block.unpacked_size != 4294967295):
+		raise InvalidFileSize("Data file is not the correct size: %s.\n"
+			"Found: %d bytes.\nExpected: %d bytes.\n" % 
+			(src, os.path.getsize(src), block.unpacked_size))
+	elif block.unpacked_size == 4294967295:
+		# Edward.Scissorhands.1990.PROPER.1080p.BluRay.x264-PHOBOS
+		# The.Apartment.1960.iNTERNAL.BDRip.x264-MARS
+		# Pulling.Strings.2013.LIMITED.DVDRiP.X264-TASTE
+		print("Probably bad RAR files used. (4294967295 byte archived file)")
+		print("Ignoring expected unpacked size for reconstruction.")
+		print("Using %s. (%d bytes)" % (os.path.basename(src),
+		                                file_size_candidate))
 	return src
 	
 def _auto_locate_renamed(name, size, in_folder):
