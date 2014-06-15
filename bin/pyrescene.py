@@ -623,7 +623,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
-		if log.lower() in ("rushchk.log", ".upchk.log"):
+		if log.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log"):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
 		
