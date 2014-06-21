@@ -562,7 +562,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
 	if options.always_no and os.path.exists(srr):
 		logging.info("%s: Skipping. SRR already exists." % relname)
-		return False
+		return True
 	
 	sfvs = get_files(reldir, "*.sfv")
 	main_sfvs = remove_unwanted_sfvs(sfvs, reldir)
@@ -1101,7 +1101,7 @@ def main(argv=None):
 	
 	drive_letters = []
 	aborted = False
-	missing = []
+	missing = [] # --always-no: existing SRRs are excluded
 	try:
 		mthread = MessageThread()
 		msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
@@ -1149,7 +1149,7 @@ def main(argv=None):
 	if len(missing):
 		print("")
 		print("------------------------------------")
-		print("Warning: some SRRs were not created!")
+		print("Warning: some SRRs failed to create!")
 		for item in missing:
 			print(item)
 		print("------------------------------------")
