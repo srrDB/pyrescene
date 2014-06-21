@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,7 +27,6 @@
 from __future__ import division
 
 import unittest
-import os
 import tempfile
 import shutil
 import os.path
@@ -118,7 +117,7 @@ class TestProfileWmv(TempDirTest):
 			header = struct.Struct("< Q 16x Q")
 			f.write(header.pack(24 + 26 + 100 * 100, 100))
 			f.write(bytearray(8 + 26 - header.size))
-			for packet in range(100):
+			for _packet in range(100):
 				header = struct.Struct("< B 2x BB BLH B")
 				payload1 = struct.Struct("< B BLB 8x H 20x")
 				payload2 = struct.Struct("< B BLB 1x H B30x")
@@ -206,14 +205,14 @@ class TestMp4CreateSrs(TempDirTest):
 		self.assertTrue(size < len(data) / 2, msg)
 
 def serialize_atoms(atoms):
-	buffer = bytearray()
+	abuffer = bytearray()
 	for atom in atoms:
-		(type, data) = atom
+		(atom_type, data) = atom
 		if not isinstance(data, (bytes, bytearray)):
 			data = serialize_atoms(data)
-		buffer.extend(struct.pack("> L 4s", 8 + len(data), type))
-		buffer.extend(data)
-	return buffer
+		abuffer.extend(struct.pack("> L 4s", 8 + len(data), atom_type))
+		abuffer.extend(data)
+	return abuffer
 
 class TestLoad(TempDirTest):
 	def runTest(self):
@@ -229,10 +228,10 @@ class TestLoad(TempDirTest):
 			packed_name=srs)
 		self.assertTrue(success)
 		
-		type = get_file_type(srs)
-		self.assertEqual(FileType.AVI, type)
+		ftype = get_file_type(srs)
+		self.assertEqual(FileType.AVI, ftype)
 		
-		sample = sample_class_factory(type)
+		sample = sample_class_factory(ftype)
 		srs_data, tracks = sample.load_srs(srs)
 		
 		self.assertEqual("MKV/AVI ReSample 1.2", srs_data.appname)

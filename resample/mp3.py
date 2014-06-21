@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013 pyReScene
+# Copyright (c) 2013-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -86,6 +86,9 @@ class Mp3Reader(object):
 		self.blocks = []
 		begin_main_content = 0
 		
+		# easier for corner case ("ID3" multiple times before sync)
+		id3v2_block = None
+		
 		# parse the whole file immediately!
 		# 1) check for ID3v2 (beginning of mp3 file)
 		#The ID3v2 tag size is the size of the complete tag after
@@ -93,15 +96,17 @@ class Mp3Reader(object):
 		#excluding the extended header (total tag size - 10). Only 28 bits
 		#(representing up to 256MB) are used in the size description to avoid
 		#the introduction of 'false syncsignals'.
+		# http://id3.org/id3v2.4.0-structure
 		first = self._mp3_stream.read(3)
 		if first == b"ID3":
+			# skip ID3v2 version (2 bytes) and flags (1 byte)
 			self._mp3_stream.seek(3, os.SEEK_CUR)
 			sbytes = self._mp3_stream.read(4)
 			size = decode_id3_size(sbytes)
 			
-			begin_main_content = size + 10
-			idv2_block = Block(begin_main_content, "ID3", 0)
-			self.blocks.append(idv2_block)
+			begin_main_content = size + 10 # 3 + 3 + 4
+			id3v2_block = Block(begin_main_content, "ID3", 0)
+			self.blocks.append(id3v2_block)
 			
 		# 2) check for ID3v1 (last 128 bytes of mp3 file)
 		end_meta_data_offset = self._file_length
@@ -163,10 +168,44 @@ class Mp3Reader(object):
 			                    "APE%s" % version, start_block)
 			self.blocks.append(apev2_block)
 			end_meta_data_offset -= apev2_block.size
-			
+		
+		def marker_has_issues(marker):
+			if not len(marker) or len(marker) != 4:
+				return True
+			(sync,) = BE_SHORT.unpack(marker[:2])
+			if sync & 0xFFE0 != 0xFFE0 and marker != b"RIFF":
+				return True
+					
 		# in between is SRS or MP3 data
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
 		marker = self._mp3_stream.read(4)
+
+		if id3v2_block and marker_has_issues(marker):
+			# problem with (angelmoon)-hes_all_i_want_cd_pg2k-bmi
+			# The .mp3 files contain ID3+nfo before the real ID3 starts
+			# And it's also a RIFF mp3, so it won't play without removing
+			# the bad initial tag first.
+			# This can cause the space between the "ID3" and the end tag
+			# to be empty. (or just wrong)
+			# This does not handle repeating of ID3v2 tags.
+			last_id3 = last_id3v2_before_sync(self._mp3_stream,
+			                                  self._file_length)
+			if last_id3 != 0: # dupe ID3 string
+				self._mp3_stream.seek(last_id3 + 3 + 3, os.SEEK_SET)
+				sbytes = self._mp3_stream.read(4)
+				size = decode_id3_size(sbytes)
+				
+				begin_main_content = last_id3 + 10 + size # 3 + 3 + 4
+				id3v2_block.size = begin_main_content
+		
+		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
+		marker = self._mp3_stream.read(4)
+		
+		if not len(marker):
+			# there still is something horribly wrong
+			# (unless you think that an mp3 without any music data is possible)
+			raise InvalidDataException("Tagging fucked up big time.")
+		
 		(sync,) = BE_SHORT.unpack(marker[:2])
 		main_size = end_meta_data_offset - begin_main_content
 		if marker[:3] == b"SRS": # SRS data blocks
@@ -189,6 +228,7 @@ class Mp3Reader(object):
 				if size > begin_main_content + main_size:
 					raise InvalidDataException("Broken SRS")
 		elif sync & 0xFFE0 == 0xFFE0 or marker == b"RIFF":
+			# first 11 bits all 1 for MP3 frame marker
 			mp3_data_block = Block(main_size, "MP3", begin_main_content)
 			self.blocks.append(mp3_data_block)
 		else:
@@ -228,3 +268,35 @@ class Mp3Reader(object):
 		except:
 			pass
 			
+def last_id3v2_before_sync(stream, length):
+	last_good_id3 = 0
+	current = 0
+	
+	# loop will probably run only once before encountering the sync bytes
+	while current < length:
+		stream.seek(current, os.SEEK_SET)
+		bytespart = stream.read(0x10000 + 3) # +3 for border cases
+		
+		# search for first frame marker
+		sync = -1
+		c = bytespart.find(b"\xFF", 0)
+		while -1 < c < (0x10000 + 3):
+			if BE_SHORT.unpack(bytespart[c:c+2])[0] & 0xFFE0 == 0xFFE0:
+				sync = c
+				break
+			c = bytespart.find(b"\xFF", c)
+		riff = bytespart.find(b"RIFF")
+		if sync != -1 or riff != -1:
+			sync = max(sync, riff)
+			
+		id3 = bytespart.rfind(b"ID3")
+		if id3 > last_good_id3 and sync != -1 and id3 < sync:
+			last_good_id3 = id3
+			
+		if sync != -1:
+			return last_good_id3
+		
+		current += 0x10000 # 64KiB batches
+	
+	# when no frame marker is found
+	return last_good_id3
