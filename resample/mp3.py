@@ -173,7 +173,9 @@ class Mp3Reader(object):
 			if not len(marker) or len(marker) != 4:
 				return True
 			(sync,) = BE_SHORT.unpack(marker[:2])
-			if sync & 0xFFE0 != 0xFFE0 and marker != b"RIFF":
+			if (sync & 0xFFE0 != 0xFFE0 and 
+			    marker != b"RIFF" and
+			    marker != b"SRSF"):
 				return True
 					
 		# in between is SRS or MP3 data
@@ -188,6 +190,8 @@ class Mp3Reader(object):
 			# This can cause the space between the "ID3" and the end tag
 			# to be empty. (or just wrong)
 			# This does not handle repeating of ID3v2 tags.
+			# Mickey_K.-Distracted-(DNR019F8)-WEB-2008-B2R has the 'ID3' string
+			# in the ID3v2 tag for 02-mickey_k.-distracted_-_dub_mix.mp3
 			last_id3 = last_id3v2_before_sync(self._mp3_stream,
 			                                  self._file_length)
 			if last_id3 != 0: # dupe ID3 string
