@@ -451,8 +451,10 @@ class TestCreate(TmpDirSetup):
 			
 			block.rawtype = rar.BlockType.RarVolumeHeader
 			block.flags = 0
-			block._write_header(rar.HEADER_LENGTH)
+			res = bytearray(2 + 4)
+			block._write_header(rar.HEADER_LENGTH + len(res))
 			file.write(block.block_bytes())
+			file.write(res)
 			
 			block.rawtype = rar.BlockType.RarPackedFile
 			block.flags = 0

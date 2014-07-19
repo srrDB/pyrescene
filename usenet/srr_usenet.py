@@ -276,12 +276,10 @@ def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
 	return yenc.decode(data, partial_data, crc_behaviour)
 	
 class IncompleteNzb(Exception): 
-	def __init__(self):
-		Exception.__init__(self)
+	pass
 		
 class Repack(Exception): 
-	def __init__(self):
-		Exception.__init__(self)
+	pass
 	
 class NNTPFile(io.IOBase):
 	""" Represents a logical file posted to Usenet. """
