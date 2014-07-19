@@ -53,15 +53,15 @@ class TestDoubleId3v2(unittest.TestCase):
 		# test if parsing succeeds
 		mr = mp3.Mp3Reader(stream=mp3stream)
 		generator = mr.read()
-		id3 = generator.next()
+		id3 = next(generator)
 		self.assertEqual(0, id3.start_pos)
 		self.assertEqual(10 + 20, id3.size)
 		
-		mp3data = generator.next()
+		mp3data = next(generator)
 		self.assertEqual(30, mp3data.start_pos)
 		self.assertEqual(10, mp3data.size)
 		
-		self.assertRaises(StopIteration, generator.next)
+		self.assertRaises(StopIteration, next, generator)
 		
 if __name__ == "__main__":
 	unittest.main()
