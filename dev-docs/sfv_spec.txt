@@ -1,0 +1,25 @@
+Unofficial SFV file format specification
+========================================
+
+SFV stands for Simple File Verification
+
+draft
+
+This is how SFV software MUST create the files:
+
+OK:
+; is a comment line
+NOT OK:
+  ; is a comment line with spaces before
+  
+one space in between
+must accept multiple spaces
+
+8 chars for crc32
+must accept less too
+
+no comments on the same line as crc
+
+accept all line endings
+accept spaces in file name
+accept ; in file name

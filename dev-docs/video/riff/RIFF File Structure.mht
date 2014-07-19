@@ -1,0 +1,379 @@
+Content-Type: multipart/related; start=<op.mhtml.1341498722407.c6e454710c6a9b4b@192.168.0.177>; boundary=----------Tp0Zs3XSwSwu7sBAl27nBd
+Content-Location: http://www.johnloomis.org/cpe102/asgn/asgn1/riff.html
+Subject: =?utf-8?Q?RIFF=20File=20Structure?=
+MIME-Version: 1.0
+
+------------Tp0Zs3XSwSwu7sBAl27nBd
+Content-Disposition: inline; filename=riff.html
+Content-Type: text/html; name=riff.html
+Content-ID: <op.mhtml.1341498722407.c6e454710c6a9b4b@192.168.0.177>
+Content-Location: http://www.johnloomis.org/cpe102/asgn/asgn1/riff.html
+Content-Transfer-Encoding: 8bit
+
+<html>
+<head>
+<title>RIFF File Structure</title>
+</head>
+<body>
+<h1>RIFF File Structure</h1>
+
+<p>The Resource Interchange File Format (RIFF) is a tagged-file
+specification designed for the storage of multimedia data. Data types
+ranging from C++ objects to full-motion video can be stored based on
+the RIFF specification, and new data types can be added. 
+
+<p>The zip file
+<a href="riff.zip">riff.zip</a> contains several examples of RIFF files,
+a Microsoft-provided executable program for displaying RIFF file structures, and a simple
+C++ program that also displays RIFF file chunks. 
+
+
+
+<p>Table 1 shows several file formats based on the RIFF specification.
+
+<center>
+<h3>Table 1: Form types.</h3>
+
+<p><table border>
+<tr><th>Form<th>Description</tr>                                         
+<tr><td>    CPPO <td>   APPS Software International C++ Object Format </tr>
+<tr><td>    PAL <td>    Palette File Format </tr> 
+<tr><td>    RDIB <td>   Device Independent Bitmap Format </tr>
+<tr><td>    RMID <td>   MIDI Audio Format </tr> 
+<tr><td>    RMMP <td>   Multimedia Movie File Format</tr> 
+<tr><td>    WAVE <td>   Waveform Audio Format</tr>
+</table>
+</center>
+ 
+<p>RIFF provides a standard storage method for different types of
+multimedia data. Applications can ignore types of data in a RIFF file
+that they can't process, preventing software from becoming obsolete
+because of the introduction of a new variation of a data type. The
+specification's only major limitation is that, in its current
+version, the data area of a RIFF file may not exceed four gigabytes.
+Given the current state of the art of most PCs, this limitation isn't
+serious, but it may become so in a future that promises giant files
+such as those of full-length digital HDTV movies. Already, four
+gigabytes will only hold a few hours of uncompressed CD-quality
+audio. 
+
+
+<h2>RIFF Internals </h2>
+
+<p>The basis of the RIFF specification is a data structure known as
+the "chunk," which contains a unique chunk-type identifier, an
+integer value that holds the size of the chunk's data area and the
+data itself.
+
+
+<p>The following C data structures describes the organization of a chunk.
+
+<pre>
+typedef unsigned long DWORD; 
+typedef unsigned char BYTE; 
+typedef DWORD FOURCC;    // Four-character code 
+typedef struct { 
+     FOURCC ckID;        // The unique chunk identifier 
+     DWORD ckSize;       // The size of field &lt;ckData&gt; 
+     BYTE ckData[ckSize];     // The actual data of the chunk 
+} CK; 
+</pre>
+
+<p align=center><img src="riff1.gif">
+
+
+<p>RIFF and LIST chunks have an extra field at the beginning of their data area.
+ 
+<pre> 
+typedef struct { 
+     FOURCC ckID; 
+     DWORD ckSize; 
+     union { 
+          FOURCC fccType;          // RIFF form type 
+          BYTE ckData[ckSize]; 
+     } ckData; 
+} RIFFCK;
+</pre>
+
+<p align=center><img src="riff2.gif">
+
+<p> These examples
+assume that there is no padding between fields in either structure.
+Therefore, chunk data in a non-RIFF or LIST chunk starts at an offset
+of 8 bytes into the chunk (12 bytes in the case of RIFF or LIST
+chunks). Chunks are padded at the end to WORD (16-bit) boundaries,
+however. 
+
+<p>Chunks contain data such as ASCII text, waveform data, or bitmaps;
+certain chunks (currently only RIFF or LIST chunks) may contain
+nested subchunks. The data-area size includes the size of these
+subchunks (if any). By splitting a file into several variable-length
+chunks, RIFF allows for greater flexibility than file formats defined
+around fixed-length and position fields.  
+
+<p>The first chunk in a RIFF file must be a RIFF chunk with a chunk
+ID consisting of the four-character code RIFF. The first chunk may
+alternatively be a RIFX chunk--the X indicates that all integers in
+the file are in Motorola format. In the present version of the RIFF
+specification, only one RIFF or RIFX chunk is allowed per file. 
+
+<p>The RIFF chunk contains at least one other chunk, with the number
+of chunks varying depending on the form type (file format) of the
+file and on the number of optional chunks that are present in the
+file. These chunks are known as "subchunks" of the RIFF chunk. 
+
+<p>RIFF chunks have a special code at the start of the data area that
+specifies the form type--the type of data in the file and its format.
+A RIFF form is also defined by: 
+
+<p><ul>
+
+<p><li>A list of mandatory chunks (which must be present to make up a
+valid file of the aforementioned form type). 
+<p><li>A list of optional chunks, some or all of which may be present. 
+<p><li>Optionally, an order in which to store some or all of the chunks.
+</ul>
+
+<h2>LIST Chunks</h2> 
+
+<p>LIST chunks are the only chunks apart from RIFF chunks that may
+contain their own subchunks (although this may change). LIST chunks
+are usually subchunks of RIFF chunks themselves. Like RIFF chunks,
+LIST chunks have a four-character code in the first four bytes of
+their data area. This code specifies the list type (analogous to a
+RIFF chunk's form type) of the LIST chunk.  
+
+<p>For example, a LIST chunk of list type INFO may contain subchunks
+such as INAM (the name of the data stored in the file) and ICRD
+(creation date). LIST chunks of type INFO are optional in current
+RIFF forms, but their use is recommended. The LIST chunks' subchunks
+can store much more information about the file than is available from
+the filename and date stamp. These LIST subchunks share a common
+format: Each contains one ASCIIZ (NULL terminated) string. 
+
+<p>As long as LIST chunks are stored in the correct place (according
+to the applicable RIFF form), correctly written applications that
+cannot process LIST chunks will ignore their presence. Table 2
+describes the layout of a typical RIFF file containing a LIST chunk. 
+The table shows the layout of a simple WAVE
+form file as stored on disk. The "fmt" and "data" chunks are
+subchunks of the RIFF chunk. 
+
+<center>
+<h3>Table 2: Example RIFF file.</h3>
+<p><table border>
+<tr><th>    Data type   <th>       Description  </tr>                                    
+<tr><td>    FOURCC      <td>       Chunk type (for example, "RIFF") </tr>
+<tr><td>    DWORD       <td>       Chunk size </tr>
+<tr><td>    FOURCC      <td>       Form type (for example, "WAVE") </tr>
+<tr><td>    FOURCC       <td>      Chunk type (for example, "fmt") </tr>
+<tr><td>    DWORD        <td>      Chunk size </tr>
+<tr><td>    BYTE[Chunk size] <td>  Chunk contents (for example, waveform format)</tr> 
+<tr><td>    FOURCC         <td>    Chunk type (for example, "data") </tr>
+<tr><td>    DWORD         <td>     Chunk size </tr>
+<tr><td>    BYTE[Chunk size] <td>  Chunk contents (for example, waveform data) </tr>
+</table>
+</center>
+
+<p><hr>
+
+<p>Maintained by <a href="http://www.johnloomis.org"> John
+Loomis</a>, last updated <i>5 Jan 2001 </i></p>
+
+</body>
+</html>
+
+------------Tp0Zs3XSwSwu7sBAl27nBd
+Content-Disposition: inline; filename=riff1.gif
+Content-Type: image/gif; name=riff1.gif
+Content-Location: http://www.johnloomis.org/cpe102/asgn/asgn1/riff1.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODlhTwHqAPf/AAAAAIAAAACAAICAAAAAgIAAgACAgMDAwMDcwKbK8AQEBAgI
+CAwMDBERERYWFhwcHCIiIikpKVVVVU1NTUJCQjk5Of98gP9QUNYAk8zs/+/Wxufn
+1q2pkDMAAGYAAJkAAMwAAAAzADMzAGYzAJkzAMwzAP8zAABmADNmAGZmAJlmAMxm
+AP9mAACZADOZAGaZAJmZAMyZAP+ZAADMADPMAGbMAJnMAMzMAP/MAGb/AJn/AMz/
+AAAAMzMAM2YAM5kAM8wAM/8AMwAzMzMzM2YzM5kzM8wzM/8zMwBmMzNmM2ZmM5lm
+M8xmM/9mMwCZMzOZM2aZM5mZM8yZM/+ZMwDMMzPMM2bMM5nMM8zMM//MMzP/M2b/
+M5n/M8z/M///MwAAZjMAZmYAZpkAZswAZv8AZgAzZjMzZmYzZpkzZswzZv8zZgBm
+ZjNmZmZmZplmZsxmZgCZZjOZZmaZZpmZZsyZZv+ZZgDMZjPMZpnMZszMZv/MZgD/
+ZjP/Zpn/Zsz/Zv8AzMwA/wCZmZkzmZkAmcwAmQAAmTMzmWYAmcwzmf8AmQBmmTNm
+mWYzmZlmmcxmmf8zmTOZmWaZmZmZmcyZmf+ZmQDMmTPMmWbMZpnMmczMmf/MmQD/
+mTP/mWbMmZn/mcz/mf//mQAAzDMAmWYAzJkAzMwAzAAzmTMzzGYzzJkzzMwzzP8z
+zABmzDNmzGZmmZlmzMxmzP9mmQCZzDOZzGaZzJmZzMyZzP+ZzADMzDPMzGbMzJnM
+zMzMzP/MzAD/zDP/zGb/mZn/zMz/zP//zDMAzGYA/5kA/wAzzDMz/2Yz/5kz/8wz
+//8z/wBm/zNm/2ZmzJlm/8xm//9mzACZ/zOZ/2aZ/5mZ/8yZ//+Z/wDM/zPM/2bM
+/5nM/8zM///M/zP//2b/zJn//8z///9mZmb/Zv//ZmZm//9m/2b//6UAIV9fX3d3
+d4aGhpaWlsvLy7KystfX193d3ePj4+rq6vHx8fj4+P/78KCgpICAgP8AAAD/AP//
+AAAA//8A/wD//////yH5BAEAAP8ALAAAAABPAeoAAAj/AP8JHEiwoMGDCBMqXMiw
+4T8AAB5GhEgxokCIEilmxMjRIsGKFz06DDmypMmTKFOqXMmypcuXKDtKHIhxZk2S
+NCeKnGlzp8ObMIMKHUq0qNGjJ2XerCkz50edTw02ZQqVKk6kWLNq3cqV61KLTa8q
+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
+
+------------Tp0Zs3XSwSwu7sBAl27nBd
+Content-Disposition: inline; filename=riff2.gif
+Content-Type: image/gif; name=riff2.gif
+Content-Location: http://www.johnloomis.org/cpe102/asgn/asgn1/riff2.gif
+Content-Transfer-Encoding: Base64
+
+R0lGODlhngFxAff/AAAAAIAAAACAAICAAAAAgIAAgACAgMDAwMDcwKbK8AQEBAgI
+CAwMDBERERYWFhwcHCIiIikpKVVVVU1NTUJCQjk5Of98gP9QUNYAk8zs/+/Wxufn
+1q2pkDMAAGYAAJkAAMwAAAAzADMzAGYzAJkzAMwzAP8zAABmADNmAGZmAJlmAMxm
+AP9mAACZADOZAGaZAJmZAMyZAP+ZAADMADPMAGbMAJnMAMzMAP/MAGb/AJn/AMz/
+AAAAMzMAM2YAM5kAM8wAM/8AMwAzMzMzM2YzM5kzM8wzM/8zMwBmMzNmM2ZmM5lm
+M8xmM/9mMwCZMzOZM2aZM5mZM8yZM/+ZMwDMMzPMM2bMM5nMM8zMM//MMzP/M2b/
+M5n/M8z/M///MwAAZjMAZmYAZpkAZswAZv8AZgAzZjMzZmYzZpkzZswzZv8zZgBm
+ZjNmZmZmZplmZsxmZgCZZjOZZmaZZpmZZsyZZv+ZZgDMZjPMZpnMZszMZv/MZgD/
+ZjP/Zpn/Zsz/Zv8AzMwA/wCZmZkzmZkAmcwAmQAAmTMzmWYAmcwzmf8AmQBmmTNm
+mWYzmZlmmcxmmf8zmTOZmWaZmZmZmcyZmf+ZmQDMmTPMmWbMZpnMmczMmf/MmQD/
+mTP/mWbMmZn/mcz/mf//mQAAzDMAmWYAzJkAzMwAzAAzmTMzzGYzzJkzzMwzzP8z
+zABmzDNmzGZmmZlmzMxmzP9mmQCZzDOZzGaZzJmZzMyZzP+ZzADMzDPMzGbMzJnM
+zMzMzP/MzAD/zDP/zGb/mZn/zMz/zP//zDMAzGYA/5kA/wAzzDMz/2Yz/5kz/8wz
+//8z/wBm/zNm/2ZmzJlm/8xm//9mzACZ/zOZ/2aZ/5mZ/8yZ//+Z/wDM/zPM/2bM
+/5nM/8zM///M/zP//2b/zJn//8z///9mZmb/Zv//ZmZm//9m/2b//6UAIV9fX3d3
+d4aGhpaWlsvLy7KystfX193d3ePj4+rq6vHx8fj4+P/78KCgpICAgP8AAAD/AP//
+AAAA//8A/wD//////yH5BAEAAP8ALAAAAACeAXEBAAj/AP8JHEiwoMGDCBMqXMiw
+ocOHAwEA+CeRosSLESderGgRY0WOGTmChDgSosmTKFOqXMmypcuXMGPKdPlR40SB
+Im0WHFmTYE6LKEvOHEq0qNGjSJMqLdoT5M+SPHXivOlT6lOrN4Uu3cq1q9evYMM6
+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
+qrOutiaZfDHGnTrXRVY1tOFM1kZru9ycTrO6Nd3pIRs30so+tod5TWFWW9vc8Tbo
+uyVa7FqbG5cf1ea3LfTsunJ52OzmM2qcglJPgxmY3a6pb27Z7c3USlU5HjZ0+xxu
+AJO5xwpKDYQvHpRieZng9P/WsIwp5JmmNNXldwnNRzN+XHg7GmTcPfh1Ih6ZzwS6
+LTXBTVkkrfB5dzzKMXYTiOgMm6H3xudB79TJBZ5yKft6QXVujc9jDnS1YPmR3hk4
+1Y++ZXL7p+sTj0rT0z70gk66wFVP+ldsjqWm/uXGUMfx3dkec6LjGdUFf21+oeNP
+mG924jJf+wzzzfHWovjjK/dx0RkUePzqHHVT93bceRx5M7/d6I5387gvbV2xa57s
+hbZ36RnPwIpPnr+bh7zSOcz6L0O3vpW/5+VDl/nFNxzvpYY96nsN8iTXnrXrlujf
+ka/L++re7K7rvd/3ee7LxX7VV0+t6X2/bYnjBc04d37/QHePOem7Pd0Jt1yqPY79
+4lP5+Oz7t/K1muXh1zv7Cd7+ryVT06eAv/mP136dZ3yfR3nXN3qq12X6JyK5N36M
+pF4vJ2f9d2+e93oYdoAG94C1JmTYRoEEaIGAh4GCF0UQGGYdyEi0V4CNF34BiICt
+tlH6R3csYn6p04AXNUXExn84WIHLh3JkBz7NRVyMIoMhQoPDY4MktYPzh2s3934q
+eIH2p3LotoRDxn0f2INjF3riloH7dzERp4ROCILgpoXs54Lup33wl4UsKHpcmIC0
+Y4Svg4QwNXhJA4dDIodoRX6LY4cugodwtX9Y2INEuHQLWIMiaHkvSIXnN4VhGIil
+/7F+SMd5k+Zp+2YVazaIFcKHveOHgrWIXIdttCZvjshcaXh6ZBiJsld0xoZ+6qZx
+qVV9oLeGWziCHohrq0hxNoKJS8eBMsOJiLWI/caK6vWE59VsznaIz3dvlagYD7ci
+usgwyAGJZfdFxMaMtwhpMvVUuxaFVneGr0iM1vd17MWNcldUM1aKOiZqvIWMDkh6
+CoiOXzZa2MWON6iHpAiOTyaP43iK09gYrieGiciDG5dl+jho5CiJLoaNbHaO+LiQ
+yCZeB5mKZQVJgrZntYiGDflBD7mOESmAk+huTGiFjTiQ+WOCYkaPSRiQGwmLKCh5
+o2hB4miQ/Jh6CBdsEQiGGP8JkGoIgGxIiy3Jiks4hAypk6Yoi2XYhnkGcADXd343
+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
+
+------------Tp0Zs3XSwSwu7sBAl27nBd--

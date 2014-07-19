@@ -1,0 +1,52 @@
+@ECHO OFF
+SET srr="D:\Downloads\SRR\pyReScene\bin\srr.py"
+SET srs="D:\Downloads\SRR\pyReScene\bin\srs.py"
+SET output="C:\srr_output\"
+SET parameters=-s *.nfo -s Sample\*.srs -s Sample\*.txt -s Proof\*.jpg -s Subs\*.sfv -s Vobsubs\*.sfv -y -p -d
+
+cd "%1"
+
+goto start
+
+:createsrr
+FOR /F "usebackq tokens=*" %%G IN (`dir /B *.sfv`) DO SET SFVFILE=%%G
+%srr% "%SFVFILE%" %parameters%
+IF EXIST Sample del Sample\*.srs
+IF EXIST Sample del Sample\*.txt
+cd..
+goto finish
+
+:createsrs
+SET temp=%1
+SET temp2=%temp:~1,-1%
+SET currentSAMPLE=%temp:~1,-5%
+%srs% "%temp2%" 2> "%temp2%.txt" -y
+IF EXIST "%currentSAMPLE%.srs" del "%temp2%.txt"
+goto eof
+
+:getsamples
+cd Sample
+FOR /F "usebackq tokens=*" %%G IN (`dir /B *.avi *.mkv *.mp4`) DO CALL :createsrs "%%G"
+cd..
+goto createsrr
+
+:checksrr
+IF EXIST Sample goto getsamples
+goto createsrr
+
+:start
+IF EXIST *.sfv goto checksrr
+goto error
+
+:finish
+echo Done!
+goto eof
+
+:error
+SET currentFolder=%cd%
+cd..
+echo Something went wrong... (%currentFolder%)
+echo Something went wrong... (%currentFolder%) 2> error.txt
+goto eof
+
+:eof

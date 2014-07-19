@@ -1,0 +1,2739 @@
+Content-Type: multipart/related; start=<op.mhtml.1365294413009.416671681552fb37@192.168.0.177>; boundary=----------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Location: http://flac.sourceforge.net/format.html
+Subject: =?utf-8?Q?FLAC=20-=20format?=
+MIME-Version: 1.0
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Disposition: inline; filename=format.html
+Content-Type: text/html; charset=iso-8859-1; name=format.html
+Content-ID: <op.mhtml.1365294413009.416671681552fb37@192.168.0.177>
+Content-Location: http://flac.sourceforge.net/format.html
+Content-Transfer-Encoding: Quoted-Printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://w=
+ww.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- Copyright (c) 2000,2001,2002,2003,2004,2005,2006,2007,2008  Josh Co=
+alson -->
+<!-- Permission is granted to copy, distribute and/or modify this docume=
+nt -->
+<!-- under the terms of the GNU Free Documentation License, Version 1.1 =
+-->
+<!-- or any later version published by the Free Software Foundation; -->=
+
+<!-- with no invariant sections. -->
+<!-- A copy of the license can be found at http://www.gnu.org/copyleft/f=
+dl.html -->
+<html>
+<head>
+	<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3DISO-8=
+859-1" />
+	<meta name=3D"author" content=3D"Josh Coalson" />
+	<meta name=3D"description" content=3D"A free, open source codec for los=
+sless audio compression and decompression" />
+	<meta name=3D"keywords" content=3D"free,lossless,audio,codec,encoder,de=
+coder,compression,compressor,archival,archive,archiving,backup,music" />=
+
+	<link rel=3D"shortcut icon" type=3D"image/x-icon" href=3D"favicon.ico" =
+/>
+	<link rel=3D"stylesheet" type=3D"text/css" href=3D"flac.css" />
+    <link rel=3D"alternate" type=3D"application/atom+xml" title=3D"FLAC =
+News" href=3D"feeds/news-atom1.xml"/>
+	<title>FLAC - format</title>
+</head>
+
+<body>
+
+<div class=3D"logo">
+	<a href=3D"index.html"><img src=3D"images/logo130.gif" alt=3D"FLAC Logo=
+" align=3D"middle" border=3D"0" hspace=3D"0" /></a>
+</div>
+
+<div class=3D"above_nav"></div>
+
+<div class=3D"navbar">
+	&nbsp;<a href=3D"index.html">home</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"faq.html">faq</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"news.html">news</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"download.html">download</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"documentation.html">documentation</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"comparison.html">comparison</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"changelog.html">changelog</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"links.html">links</a>&nbsp;&nbsp;|
+	&nbsp;<a href=3D"developers.html">developers</a>&nbsp;
+</div>
+
+<div class=3D"langbar">
+	&nbsp;english&nbsp;&nbsp;|
+	&nbsp;<a href=3D"ru/format.html">russian</a>&nbsp;
+</div>
+
+<div class=3D"below_nav"></div>
+
+<div class=3D"box">
+	<div class=3D"box_title">
+		format
+	</div>
+	<div class=3D"box_header"></div>
+	<div class=3D"box_body">
+		This is a detailed description of the FLAC format.  There is also a co=
+mpanion document that describes <a href=3D"ogg_mapping.html">FLAC-to-Ogg=
+ mapping</a>.<br />
+		<br />
+		For a user-oriented overview, see <a href=3D"documentation_format_over=
+view.html">About the FLAC Format</a>.<br />
+		<br />
+		<a name=3D"toc"><font size=3D"+1"><b><u>Table of Contents</u></b></fon=
+t></a>
+		<ul>
+			<li><a href=3D"#acknowledgments">Acknowledgments</a></li>
+			<li><a href=3D"#scope">Scope</a></li>
+			<li><a href=3D"#architecture">Architecture</a></li>
+			<li><a href=3D"#definitions">Definitions</a></li>
+			<li><a href=3D"#blocking">Blocking</a></li>
+			<li><a href=3D"#interchannel">Interchannel Decorrelation</a></li>
+			<li><a href=3D"#prediction">Prediction</a></li>
+			<li><a href=3D"#residualcoding">Residual Coding</a></li>
+			<li><a href=3D"#format_overview">Format</a></li>
+			<li><a href=3D"#subset">FLAC Subset</a></li>
+			<li>Specification
+				<ul>
+					<li><a href=3D"#stream">STREAM</a>
+						<ul>
+							<li><a href=3D"#metadata_block">METADATA_BLOCK</a>
+								<ul>
+									<li><a href=3D"#metadata_block_header">METADATA_BLOCK_HEADER</a=
+></li>
+									<li><a href=3D"#metadata_block_data">METADATA_BLOCK_DATA</a>
+										<ul>
+											<li><a href=3D"#metadata_block_streaminfo">METADATA_BLOCK_STR=
+EAMINFO</a></li>
+											<li><a href=3D"#metadata_block_padding">METADATA_BLOCK_PADDIN=
+G</a></li>
+											<li><a href=3D"#metadata_block_application">METADATA_BLOCK_AP=
+PLICATION</a></li>
+											<li><a href=3D"#metadata_block_seektable">METADATA_BLOCK_SEEK=
+TABLE</a>
+												<ul>
+													<li><a href=3D"#seekpoint">SEEKPOINT</a></li>
+												</ul>
+											</li>
+											<li><a href=3D"#metadata_block_vorbis_comment">METADATA_BLOCK=
+_VORBIS_COMMENT</a></li>
+											<li><a href=3D"#metadata_block_cuesheet">METADATA_BLOCK_CUESH=
+EET</a>
+												<ul>
+													<li><a href=3D"#cuesheet_track">CUESHEET_TRACK</a>
+														<ul>
+															<li><a href=3D"#cuesheet_track_index">CUESHEET_TRACK_INDE=
+X</a></li>
+														</ul>
+													</li>
+												</ul>
+											</li>
+											<li><a href=3D"#metadata_block_picture">METADATA_BLOCK_PICTUR=
+E</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li>
+						<ul>
+							<li><a href=3D"#frame">FRAME</a>
+								<ul>
+									<li><a href=3D"#frame_header">FRAME_HEADER</a></li>
+									<li><a href=3D"#frame_footer">FRAME_FOOTER</a></li>
+									<li><a href=3D"#subframe">SUBFRAME</a>
+										<ul>
+											<li><a href=3D"#subframe_header">SUBFRAME_HEADER</a></li>
+											<li><a href=3D"#subframe_constant">SUBFRAME_CONSTANT</a></li>=
+
+											<li><a href=3D"#subframe_fixed">SUBFRAME_FIXED</a></li>
+											<li><a href=3D"#subframe_lpc">SUBFRAME_LPC</a></li>
+											<li><a href=3D"#subframe_verbatim">SUBFRAME_VERBATIM</a>
+												<ul>
+													<li><a href=3D"#residual">RESIDUAL</a>
+														<ul>
+															<li><a href=3D"#partitioned_rice">RESIDUAL_CODING_METHOD_=
+PARTITIONED_RICE</a>
+																<ul>
+																	<li><a href=3D"#rice_partition">RICE_PARTITION</a></li>=
+
+																</ul>
+															</li>
+															<li><a href=3D"#partitioned_rice2">RESIDUAL_CODING_METHOD=
+_PARTITIONED_RICE2</a>
+																<ul>
+																	<li><a href=3D"#rice2_partition">RICE2_PARTITION</a></l=
+i>
+																</ul>
+															</li>
+														</ul>
+													</li>
+												</ul>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</li>
+		</ul>
+		<a name=3D"acknowledgments"><font size=3D"+1"><b><u>Acknowledgments</u=
+></b></font></a><br />
+		<br />
+		FLAC owes much to the many people who have advanced the audio compress=
+ion field so freely.  For instance:
+		<ul>
+			<li>
+				<a href=3D"http://svr-www.eng.cam.ac.uk/~ajr/">A. J. Robinson</a> fo=
+r his work on <a href=3D"http://svr-www.eng.cam.ac.uk/reports/abstracts/=
+robinson_tr156.html">Shorten</a>; his paper is a good starting point on =
+some of the basic methods used by FLAC.  FLAC trivially extends and impr=
+oves the fixed predictors, LPC coefficient quantization, and Rice coding=
+ used in Shorten.
+			</li>
+			<li>
+				<a href=3D"http://commsci.usc.edu/faculty/golomb.html">S. W. Golomb<=
+/a> and Robert F. Rice; their universal codes are used by FLAC's entropy=
+ coder.
+			</li>
+			<li>
+				N. Levinson and J. Durbin; the reference encoder uses an algorithm d=
+eveloped and refined by them for determining the LPC coefficients from t=
+he autocorrelation coefficients.
+			</li>
+			<li>
+				And of course, <a href=3D"http://en.wikipedia.org/wiki/Claude_Shanno=
+n">Claude Shannon</a>
+			</li>
+		</ul>
+		<a name=3D"scope"><font size=3D"+1"><b><u>Scope</u></b></font></a><br =
+/>
+		<br />
+		It is a known fact that no algorithm can losslessly compress all possi=
+ble input, so most compressors restrict themselves to a useful domain an=
+d try to work as well as possible within that domain.  FLAC's domain is =
+audio data.  Though it can losslessly <b>code</b> any input, only certai=
+n kinds of input will get smaller.  FLAC exploits the fact that audio da=
+ta typically has a high degree of sample-to-sample correlation.<br />
+		<br />
+		Within the audio domain, there are many possible subdomains.  For exam=
+ple: low bitrate speech, high-bitrate multi-channel music, etc.  FLAC it=
+self does not target a specific subdomain but many of the default parame=
+ters of the reference encoder are tuned to CD-quality music data (i.e. 4=
+4.1kHz, 2 channel, 16 bits per sample).  The effect of the encoding para=
+meters on different kinds of audio data will be examined later.<br />
+		<br />
+		<a name=3D"architecture"><font size=3D"+1"><b><u>Architecture</u></b><=
+/font></a><br />
+		<br />
+		Similar to many audio coders, a FLAC encoder has the following stages:=
+
+		<ul>
+			<li>
+				<a href=3D"#blocking">Blocking</a>.  The input is broken up into man=
+y contiguous blocks.  With FLAC, the blocks may vary in size.  The optim=
+al size of the block is usually affected by many factors, including the =
+sample rate, spectral characteristics over time, etc.  Though FLAC allow=
+s the block size to vary within a stream, the reference encoder uses a f=
+ixed block size.
+			</li>
+			<li>
+				<a href=3D"#interchannel">Interchannel Decorrelation</a>.  In the ca=
+se of stereo streams, the encoder will create mid and side signals based=
+ on the average and difference (respectively) of the left and right chan=
+nels.  The encoder will then pass the best form of the signal to the nex=
+t stage.
+			</li>
+			<li>
+				<a href=3D"#prediction">Prediction</a>.  The block is passed through=
+ a prediction stage where the encoder tries to find a mathematical descr=
+iption (usually an approximate one) of the signal.  This description is =
+typically much smaller than the raw signal itself.  Since the methods of=
+ prediction are known to both the encoder and decoder, only the paramete=
+rs of the predictor need be included in the compressed stream.  FLAC cur=
+rently uses four different classes of predictors (described in the <a hr=
+ef=3D"#prediction">prediction</a> section), but the format has reserved =
+space for additional methods.  FLAC allows the class of predictor to cha=
+nge from block to block, or even within the channels of a block.
+			</li>
+			<li>
+				<a href=3D"#residualcoding">Residual coding</a>.  If the predictor d=
+oes not describe the signal exactly, the difference between the original=
+ signal and the predicted signal (called the error or residual signal) m=
+ust be coded losslessy.  If the predictor is effective, the residual sig=
+nal will require fewer bits per sample than the original signal.  FLAC c=
+urrently uses only one method for encoding the residual (see the <a href=
+=3D"#residualcoding">Residual coding</a> section), but the format has re=
+served space for additional methods.  FLAC allows the residual coding me=
+thod to change from block to block, or even within the channels of a blo=
+ck.
+			</li>
+		</ul>
+		In addition, FLAC specifies a metadata system, which allows arbitrary =
+information about the stream to be included at the beginning of the stre=
+am.<br />
+		<br />
+		<a name=3D"definitions"><font size=3D"+1"><b><u>Definitions</u></b></f=
+ont></a><br />
+		<br />
+		Many terms like "block" and "frame" are used to mean different things =
+in differenct encoding schemes.  For example, a frame in MP3 corresponds=
+ to many samples across several channels, whereas an S/PDIF frame repres=
+ents just one sample for each channel.  The definitions we use for FLAC =
+follow.  Note that when we talk about blocks and subblocks we are referr=
+ing to the raw unencoded audio data that is the input to the encoder, an=
+d when we talk about frames and subframes, we are referring to the FLAC-=
+encoded data.
+		<ul>
+			<li>
+				<b>Block</b>: One or more audio samples that span several channels.
+			</li>
+			<li>
+				<b>Subblock</b>: One or more audio samples within a channel.  So a b=
+lock contains one subblock for each channel, and all subblocks contain t=
+he same number of samples.
+			</li>
+			<li>
+				<b>Blocksize</b>: The number of samples in any of a block's subblock=
+s.  For example, a one second block sampled at 44.1KHz has a blocksize o=
+f 44100, regardless of the number of channels.
+			</li>
+			<li>
+				<b>Frame</b>: A frame header plus one or more subframes.
+			</li>
+			<li>
+				<b>Subframe</b>: A subframe header plus one or more encoded samples =
+from a given channel.  All subframes within a frame will contain the sam=
+e number of samples.
+			</li>
+		</ul>
+		<a name=3D"blocking"><font size=3D"+1"><b><u>Blocking</u></b></font></=
+a><br />
+		<br />
+		The size used for blocking the audio data has a direct effect on the c=
+ompression ratio.  If the block size is too small, the resulting large n=
+umber of frames mean that excess bits will be wasted on frame headers.  =
+If the block size is too large, the characteristics of the signal may va=
+ry so much that the encoder will be unable to find a good predictor.  In=
+ order to simplify encoder/decoder design, FLAC imposes a minimum block =
+size of 16 samples, and a maximum block size of 65535 samples.  This ran=
+ge covers the optimal size for all of the audio data FLAC supports.<br /=
+>
+		<br />
+		Currently the reference encoder uses a fixed block size, optimized on =
+the sample rate of the input.  Future versions may vary the block size d=
+epending on the characteristics of the signal.<br />
+		<br />
+		Blocked data is passed to the predictor stage one subblock (channel) a=
+t a time.  Each subblock is independently coded into a subframe, and the=
+ subframes are concatenated into a frame.  Because each channel is coded=
+ separately, it means that one channel of a stereo frame may be encoded =
+as a constant subframe, and the other an LPC subframe.<br />
+		<br />
+		<a name=3D"interchannel"><font size=3D"+1"><b><u>Interchannel Decorrel=
+ation</u></b></font></a><br />
+		<br />
+		In stereo streams, many times there is an exploitable amount of correl=
+ation between the left and right channels.  FLAC allows the frames of st=
+ereo streams to have different channel assignments, and an encoder may c=
+hoose to use the best representation on a frame-by-frame basis.
+		<ul>
+			<li>
+				<b>Independent</b>.  The left and right channels are coded independe=
+ntly.
+			</li>
+			<li>
+				<b>Mid-side</b>.  The left and right channels are transformed into m=
+id and side channels.  The mid channel is the midpoint (average) of the =
+left and right signals, and the side is the difference signal (left minu=
+s right).
+			</li>
+			<li>
+				<b>Left-side</b>.  The left channel and side channel are coded.
+			</li>
+			<li>
+				<b>Right-side</b>.  The right channel and side channel are coded
+			</li>
+		</ul>
+		Surprisingly, the left-side and right-side forms can be the most effic=
+ient in many frames, even though the raw number of bits per sample neede=
+d for the original signal is slightly more than that needed for independ=
+ent or mid-side coding.<br />
+		<br />
+		<a name=3D"prediction"><font size=3D"+1"><b><u>Prediction</u></b></fon=
+t></a><br />
+		<br />
+		FLAC uses four methods for modeling the input signal:
+		<ul>
+			<li>
+				<b>Verbatim</b>.  This is essentially a zero-order predictor of the =
+signal.  The predicted signal is zero, meaning the residual is the signa=
+l itself, and the compression is zero.  This is the baseline against whi=
+ch the other predictors are measured.  If you feed random data to the en=
+coder, the verbatim predictor will probably be used for every subblock. =
+ Since the raw signal is not actually passed through the residual coding=
+ stage (it is added to the stream 'verbatim'), the encoding results will=
+ not be the same as a zero-order linear predictor.
+			</li>
+			<li>
+				<b>Constant</b>.  This predictor is used whenever the subblock is pu=
+re DC ("digital silence"), i.e. a constant value throughout.  The signal=
+ is run-length encoded and added to the stream.
+			</li>
+			<li>
+				<b>Fixed linear predictor</b>.  FLAC uses a class of computationally=
+-efficient fixed linear predictors (for a good description, see <a href=3D=
+"http://www.hpl.hp.com/techreports/1999/HPL-1999-144.pdf">audiopak</a> a=
+nd <a href=3D"http://svr-www.eng.cam.ac.uk/~ajr/GroupPubs/Robinson94-tr1=
+56/index.html">shorten</a>).  FLAC adds a fourth-order predictor to the =
+zero-to-third-order predictors used by Shorten.  Since the predictors ar=
+e fixed, the predictor order is the only parameter that needs to be stor=
+ed in the compressed stream.  The error signal is then passed to the res=
+idual coder.
+			</li>
+			<li>
+				<b>FIR Linear prediction</b>.  For more accurate modeling (at a cost=
+ of slower encoding), FLAC supports up to 32nd order FIR linear predicti=
+on (again, for information on linear prediction, see <a href=3D"http://w=
+ww.hpl.hp.com/techreports/1999/HPL-1999-144.pdf">audiopak</a> and <a hre=
+f=3D"http://svr-www.eng.cam.ac.uk/~ajr/GroupPubs/Robinson94-tr156/index.=
+html">shorten</a>).  The reference encoder uses the Levinson-Durbin meth=
+od for calculating the LPC coefficients from the autocorrelation coeffic=
+ients, and the coefficients are quantized before computing the residual.=
+  Whereas encoders such as Shorten used a fixed quantization for the ent=
+ire input, FLAC allows the quantized coefficient precision to vary from =
+subframe to subframe.  The FLAC reference encoder estimates the optimal =
+precision to use based on the block size and dynamic range of the origin=
+al signal.
+			</li>
+		</ul>
+		<a name=3D"residualcoding"><font size=3D"+1"><b><u>Residual Coding</u>=
+</b></font></a><br />
+		<br />
+		FLAC currently defines two similar methods for the coding of the error=
+ signal from the prediction stage.  The error signal is coded using Rice=
+ codes in one of two ways: 1) the encoder estimates a single Rice parame=
+ter based on the variance of the residual and Rice codes the entire resi=
+dual using this parameter; 2) the residual is partitioned into several e=
+qual-length regions of contiguous samples, and each region is coded with=
+ its own Rice parameter based on the region's mean.  (Note that the firs=
+t method is a special case of the second method with one partition, exce=
+pt the Rice parameter is based on the residual variance instead of the m=
+ean.)<br />
+		<br />
+		The FLAC format has reserved space for other coding methods.  Some pos=
+siblities for volunteers would be to explore better context-modeling of =
+the Rice parameter, or Huffman coding.  See <a href=3D"http://www.hpl.hp=
+.com/techreports/98/HPL-98-193.html">LOCO-I</a> and <a href=3D"http://ww=
+w.cs.tut.fi/~albert/Dev/pucrunch/packing.html">pucrunch</a> for descript=
+ions of several universal codes.<br />
+		<br />
+		<a name=3D"format_overview"><font size=3D"+1"><b><u>Format</u></b></fo=
+nt></a><br />
+		<br />
+		This section specifies the FLAC bitstream format.  FLAC has no format =
+version information, but it does contain reserved space in several place=
+s.  Future versions of the format may use this reserved space safely wit=
+hout breaking the format of older streams.  Older decoders may choose to=
+ abort decoding or skip data encoded with newer methods.  Apart from res=
+erved patterns, in places the format specifies invalid patterns, meaning=
+ that the patterns may never appear in any valid bitstream, in any prior=
+, present, or future versions of the format.  These invalid patterns are=
+ usually used to make the synchronization mechanism more robust.<br />
+		<br />
+		All numbers used in a FLAC bitstream are integers; there are no floati=
+ng-point representations.  All numbers are big-endian coded.  All number=
+s are unsigned unless otherwise specified.<br />
+		<br />
+		Before the formal description of the stream, an overview might be help=
+ful.
+		<ul>
+			<li>
+				A FLAC bitstream consists of the "fLaC" marker at the beginning of t=
+he stream, followed by a mandatory metadata block (called the STREAMINFO=
+ block), any number of other metadata blocks, then the audio frames.
+			</li>
+			<li>
+				FLAC supports up to 128 kinds of metadata blocks; currently the foll=
+owing are defined:
+				<ul>
+					<li><a name=3D"def_STREAMINFO"><b>STREAMINFO</b></a>: This block ha=
+s information about the whole stream, like sample rate, number of channe=
+ls, total number of samples, etc.  It must be present as the first metad=
+ata block in the stream.  Other metadata blocks may follow, and ones tha=
+t the decoder doesn't understand, it will skip.</li>
+					<li><a name=3D"def_APPLICATION"><b>APPLICATION</b></a>: This block =
+is for use by third-party applications.  The only mandatory field is a 3=
+2-bit identifier.  This ID is granted upon request to an application by =
+the FLAC maintainers.  The remainder is of the block is defined by the r=
+egistered application.  Visit the <a href=3D"id.html">registration page<=
+/a> if you would like to register an ID for your application with FLAC.<=
+/li>
+					<li><a name=3D"def_PADDING"><b>PADDING</b></a>: This block allows f=
+or an arbitrary amount of padding.  The contents of a PADDING block have=
+ no meaning.  This block is useful when it is known that metadata will b=
+e edited after encoding; the user can instruct the encoder to reserve a =
+PADDING block of sufficient size so that when metadata is added, it will=
+ simply overwrite the padding (which is relatively quick) instead of hav=
+ing to insert it into the right place in the existing file (which would =
+normally require rewriting the entire file).</li>
+					<li><a name=3D"def_SEEKTABLE"><b>SEEKTABLE</b></a>: This is an opti=
+onal block for storing seek points.  It is possible to seek to any given=
+ sample in a FLAC stream without a seek table, but the delay can be unpr=
+edictable since the bitrate may vary widely within a stream.  By adding =
+seek points to a stream, this delay can be significantly reduced.  Each =
+seek point takes 18 bytes, so 1% resolution within a stream adds less th=
+an 2k.  There can be only one SEEKTABLE in a stream, but the table can h=
+ave any number of seek points.  There is also a special 'placeholder' se=
+ekpoint which will be ignored by decoders but which can be used to reser=
+ve space for future seek point insertion.</li>
+					<li><a name=3D"def_VORBIS_COMMENT"><b>VORBIS_COMMENT</b></a>: This =
+block is for storing a list of human-readable name/value pairs.  Values =
+are encoded using UTF-8.  It is an implementation of the <a href=3D"http=
+://xiph.org/vorbis/doc/v-comment.html">Vorbis comment specification</a> =
+(without the framing bit).  This is the only officially supported taggin=
+g mechanism in FLAC.  There may be only one VORBIS_COMMENT block in a st=
+ream.  In some external documentation, Vorbis comments are called FLAC t=
+ags to lessen confusion.</li>
+					<li><a name=3D"def_CUESHEET"><b>CUESHEET</b></a>: This block is for=
+ storing various information that can be used in a cue sheet.  It suppor=
+ts track and index points, compatible with Red Book CD digital audio dis=
+cs, as well as other CD-DA metadata such as media catalog number and tra=
+ck ISRCs.  The CUESHEET block is especially useful for backing up CD-DA =
+discs, but it can be used as a general purpose cueing mechanism for play=
+back.</li>
+					<li><a name=3D"def_PICTURE"><b>PICTURE</b></a>: This block is for s=
+toring pictures associated with the file, most commonly cover art from C=
+Ds.  There may be more than one PICTURE block in a file.  The picture fo=
+rmat is similar to the <a href=3D"http://www.id3.org/id3v2.4.0-frames.tx=
+t">APIC frame in ID3v2</a>.  The PICTURE block has a type, MIME type, an=
+d UTF-8 description like ID3v2, and supports external linking via URL (t=
+hough this is discouraged).  The differences are that there is no unique=
+ness constraint on the description field, and the MIME type is mandatory=
+.  The FLAC PICTURE block also includes the resolution, color depth, and=
+ palette size so that the client can search for a suitable picture witho=
+ut having to scan them all.</li>
+				</ul>
+			</li>
+			<li>
+				The audio data is composed of one or more audio frames.  Each frame =
+consists of a frame header, which contains a sync code, information abou=
+t the frame like the block size, sample rate, number of channels, et cet=
+era, and an 8-bit CRC.  The frame header also contains either the sample=
+ number of the first sample in the frame (for variable-blocksize streams=
+), or the frame number (for fixed-blocksize streams).  This allows for f=
+ast, sample-accurate seeking to be performed.  Following the frame heade=
+r are encoded subframes, one for each channel, and finally, the frame is=
+ zero-padded to a byte boundary.  Each subframe has its own header that =
+specifies how the subframe is encoded.
+			</li>
+			<li>
+				Since a decoder may start decoding in the middle of a stream, there =
+must be a method to determine the start of a frame.  A 14-bit sync code =
+begins each frame.  The sync code will not appear anywhere else in the f=
+rame header.  However, since it may appear in the subframes, the decoder=
+ has two other ways of ensuring a correct sync.  The first is to check t=
+hat the rest of the frame header contains no invalid data.  Even this is=
+ not foolproof since valid header patterns can still occur within the su=
+bframes.  The decoder's final check is to generate an 8-bit CRC of the f=
+rame header and compare this to the CRC stored at the end of the frame h=
+eader.
+			</li>
+			<li>
+				Again, since a decoder may start decoding at an arbitrary frame in t=
+he stream, each frame header must contain some basic information about t=
+he stream because the decoder may not have access to the STREAMINFO meta=
+data block at the start of the stream.  This information includes sample=
+ rate, bits per sample, number of channels, etc.  Since the frame header=
+ is pure overhead, it has a direct effect on the compression ratio.  To =
+keep the frame header as small as possible, FLAC uses lookup tables for =
+the most commonly used values for frame parameters.  For instance, the s=
+ample rate part of the frame header is specified using 4 bits.  Eight of=
+ the bit patterns correspond to the commonly used sample rates of 8/16/2=
+2.05/24/32/44.1/48/96 kHz.  However, odd sample rates can be specified b=
+y using one of the 'hint' bit patterns, directing the decoder to find th=
+e exact sample rate at the end of the frame header.  The same method is =
+used for specifying the block size and bits per sample.  In this way, th=
+e frame header size stays small for all of the most common forms of audi=
+o data.
+			</li>
+			<li>
+				Individual subframes (one for each channel) are coded separately wit=
+hin a frame, and appear serially in the stream.  In other words, the enc=
+oded audio data is NOT channel-interleaved.  This reduces decoder comple=
+xity at the cost of requiring larger decode buffers.  Each subframe has =
+its own header specifying the attributes of the subframe, like predictio=
+n method and order, residual coding parameters, etc.  The header is foll=
+owed by the encoded audio data for that channel.
+			</li>
+			<li>
+				<a name=3D"subset">FLAC</a> specifies a subset of itself as the Subs=
+et format.  The purpose of this is to ensure that any streams encoded ac=
+cording to the Subset are truly "streamable", meaning that a decoder tha=
+t cannot seek within the stream can still pick up in the middle of the s=
+tream and start decoding.  It also makes hardware decoder implementation=
+s more practical by limiting the encoding parameters such that decoder b=
+uffer sizes and other resource requirements can be easily determined.  <=
+span class=3D"commandname">flac</span> generates Subset streams by defau=
+lt unless the "--lax" command-line option is used.  The Subset makes the=
+ following limitations on what may be used in the stream:
+				<ul>
+				<li>
+					The blocksize bits in the <a href=3D"#frame_header">frame header</a=
+> must be 0001-1110.  The blocksize must be &lt;=3D16384; if the sample =
+rate is &lt;=3D 48000Hz, the blocksize must be &lt;=3D4608.
+				</li>
+				<li>
+					The sample rate bits in the <a href=3D"#frame_header">frame header<=
+/a> must be 0001-1110.
+				</li>
+				<li>
+					The bits-per-sample bits in the <a href=3D"#frame_header">frame hea=
+der</a> must be 001-111.
+				</li>
+				<li>
+					If the sample rate is &lt;=3D 48000Hz, the filter order in <a href=3D=
+"#subframe_lpc">LPC subframes</a> must be less than or equal to 12, i.e.=
+ the subframe type bits in the <a href=3D"#subframe_header">subframe hea=
+der</a> may not be 101100-111111.
+				</li>
+				<li>
+					The Rice partition order in a <a href=3D"#partitioned_rice">Rice-co=
+ded residual section</a> must be less than or equal to 8.
+				</li>
+				</ul>
+			</li>
+		</ul>
+
+		The following tables constitute a formal description of the FLAC forma=
+t.  Numbers in angle brackets indicate how many bits are used for a give=
+n field.<br />
+	</div>
+	<div class=3D"box_footer"></div>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"stream"><font size=3D"+1"><b>STREAM</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				"fLaC", the FLAC stream marker in ASCII, meaning byte 0 of the strea=
+m is 0x66, followed by 0x4C 0x61 0x43
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#metadata_block_streaminfo"><i>METADATA_BLOCK</i></a>
+			</td>
+			<td>
+				This is the mandatory STREAMINFO metadata block that has the basic p=
+roperties of the stream
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#metadata_block"><i>METADATA_BLOCK</i></a>*
+			</td>
+			<td>
+				Zero or more metadata blocks
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#frame"><i>FRAME</i></a>+
+			</td>
+			<td>
+				One or more audio frames
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block"><font size=3D"+1"><b>METADATA_BLOCK</b></=
+font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#metadata_block_header"><i>METADATA_BLOCK_HEADER</i></a>
+			</td>
+			<td>
+				A block header that specifies the type and size of the metadata bloc=
+k data.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#metadata_block_data"><i>METADATA_BLOCK_DATA</i></a>
+			</td>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_header"><font size=3D"+1"><b>METADATA_BLOC=
+K_HEADER</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				Last-metadata-block flag: '1' if this block is the last metadata blo=
+ck before the audio blocks, '0' otherwise.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;7&gt;
+			</td>
+			<td>
+				BLOCK_TYPE<br />
+				<ul>
+				<li>
+					<tt>0</tt> : STREAMINFO
+				</li>
+				<li>
+					<tt>1</tt> : PADDING
+				</li>
+				<li>
+					<tt>2</tt> : APPLICATION
+				</li>
+				<li>
+					<tt>3</tt> : SEEKTABLE
+				</li>
+				<li>
+					<tt>4</tt> : VORBIS_COMMENT
+				</li>
+				<li>
+					<tt>5</tt> : CUESHEET
+				</li>
+				<li>
+					<tt>6</tt> : PICTURE
+				</li>
+				<li>
+					<tt>7-126</tt> : reserved
+				</li>
+				<li>
+					<tt>127</tt> : invalid, to avoid confusion with a frame sync code
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;24&gt;
+			</td>
+			<td>
+				Length (in bytes) of metadata to follow (does not include the size o=
+f the METADATA_BLOCK_HEADER)
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_data"><font size=3D"+1"><b>METADATA_BLOCK_=
+DATA</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#metadata_block_streaminfo"><i>METADATA_BLOCK_STREAMINFO<=
+/i></a><br />
+				|| <a href=3D"#metadata_block_padding"><i>METADATA_BLOCK_PADDING</i>=
+</a><br />
+				|| <a href=3D"#metadata_block_application"><i>METADATA_BLOCK_APPLICA=
+TION</i></a><br />
+				|| <a href=3D"#metadata_block_seektable"><i>METADATA_BLOCK_SEEKTABLE=
+</i></a><br />
+				|| <a href=3D"#metadata_block_vorbis_comment"><i>METADATA_BLOCK_VORB=
+IS_COMMENT</i></a><br />
+				|| <a href=3D"#metadata_block_cuesheet"><i>METADATA_BLOCK_CUESHEET</=
+i></a><br />
+				|| <a href=3D"#metadata_block_picture"><i>METADATA_BLOCK_PICTURE</i>=
+</a>
+			</td>
+			<td>
+				The block data must match the block type in the block header.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_streaminfo"><font size=3D"+1"><b>METADATA_=
+BLOCK_STREAMINFO</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;16&gt;
+			</td>
+			<td>
+				The minimum block size (in samples) used in the stream.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;16&gt;
+			</td>
+			<td>
+				The maximum block size (in samples) used in the stream.  (Minimum bl=
+ocksize =3D=3D maximum blocksize) implies a fixed-blocksize stream.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;24&gt;
+			</td>
+			<td>
+				The minimum frame size (in bytes) used in the stream.  May be 0 to i=
+mply the value is not known.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;24&gt;
+			</td>
+			<td>
+				The maximum frame size (in bytes) used in the stream.  May be 0 to i=
+mply the value is not known.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;20&gt;
+			</td>
+			<td>
+				Sample rate in Hz.  Though 20 bits are available, the maximum sample=
+ rate is limited by the structure of frame headers to 655350Hz.  Also, a=
+ value of 0 is invalid.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;3&gt;
+			</td>
+			<td>
+				(number of channels)-1.  FLAC supports from 1 to 8 channels
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;5&gt;
+			</td>
+			<td>
+				(bits per sample)-1.  FLAC supports from 4 to 32 bits per sample.  C=
+urrently the reference encoder and decoders only support up to 24 bits p=
+er sample.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;36&gt;
+			</td>
+			<td>
+				Total samples in stream.  'Samples' means inter-channel sample, i.e.=
+ one second of 44.1Khz audio will have 44100 samples regardless of the n=
+umber of channels.  A value of zero here means the number of total sampl=
+es is unknown.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;128&gt;
+			</td>
+			<td>
+				MD5 signature of the unencoded audio data.  This allows the decoder =
+to determine if an error exists in the audio data even when the error do=
+es not result in an invalid bitstream.
+			</td>
+		</tr>
+		<tr>
+			<td>
+			</td>
+			<td bgcolor=3D"#F4F4CC">
+				<font size=3D"+1">NOTES</font><br />
+				<ul>
+				<li>
+					FLAC specifies a minimum block size of 16 and a maximum block size =
+of 65535, meaning the bit patterns corresponding to the numbers 0-15 in =
+the minimum blocksize and maximum blocksize fields are invalid.
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_padding"><font size=3D"+1"><b>METADATA_BLO=
+CK_PADDING</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				n '0' bits (n must be a multiple of 8)
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_application"><font size=3D"+1"><b>METADATA=
+_BLOCK_APPLICATION</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				Registered application ID.  (Visit the <a href=3D"id.html">registrat=
+ion page</a> to register an ID with FLAC.)
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Application data (n must be a multiple of 8)
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_seektable"><font size=3D"+1"><b>METADATA_B=
+LOCK_SEEKTABLE</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#seekpoint"><i>SEEKPOINT</i></a>+
+			</td>
+			<td>
+				One or more seek points.
+			</td>
+		</tr>
+		<tr>
+			<td>
+			</td>
+			<td bgcolor=3D"#F4F4CC">
+				<font size=3D"+1">NOTE</font><br />
+				<ul>
+				<li>
+					The number of seek points is implied by the metadata header 'length=
+' field, i.e. equal to length / 18.
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"seekpoint"><font size=3D"+1"><b>SEEKPOINT</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;64&gt;
+			</td>
+			<td>
+				Sample number of first sample in the target frame, or 0xFFFFFFFFFFFF=
+FFFF for a placeholder point.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;64&gt;
+			</td>
+			<td>
+				Offset (in bytes) from the first byte of the first frame header to t=
+he first byte of the target frame's header.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;16&gt;
+			</td>
+			<td>
+				Number of samples in the target frame.
+			</td>
+		</tr>
+		<tr>
+			<td>
+			</td>
+			<td bgcolor=3D"#F4F4CC">
+				<font size=3D"+1">NOTES</font><br />
+				<ul>
+				<li>
+					For placeholder points, the second and third field values are undef=
+ined.
+				</li>
+				<li>
+					Seek points within a table must be sorted in ascending order by sam=
+ple number.
+				</li>
+				<li>
+					Seek points within a table must be unique by sample number, with th=
+e exception of placeholder points.
+				</li>
+				<li>
+					The previous two notes imply that there may be any number of placeh=
+older points, but they must all occur at the end of the table.
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_vorbis_comment"><font size=3D"+1"><b>METAD=
+ATA_BLOCK_VORBIS_COMMENT</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Also known as FLAC tags, the contents of a vorbis comment packet as =
+specified <a href=3D"http://www.xiph.org/vorbis/doc/v-comment.html">here=
+</a> (without the framing bit).  Note that the vorbis comment spec allow=
+s for on the order of 2 ^ 64 bytes of data where as the FLAC metadata bl=
+ock is limited to 2 ^ 24 bytes.  Given the stated purpose of vorbis comm=
+ents, i.e. human-readable textual information, this limit is unlikely to=
+ be restrictive.  Also note that the 32-bit field lengths are little-end=
+ian coded according to the vorbis spec, as opposed to the usual big-endi=
+an coding of fixed-length integers in the rest of FLAC.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_cuesheet"><font size=3D"+1"><b>METADATA_BL=
+OCK_CUESHEET</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;128*8&gt;
+			</td>
+			<td>
+				Media catalog number, in ASCII printable characters 0x20-0x7e.  In g=
+eneral, the media catalog number may be 0 to 128 bytes long; any unused =
+characters should be right-padded with NUL characters.  For CD-DA, this =
+is a thirteen digit number, followed by 115 NUL bytes.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;64&gt;
+			</td>
+			<td>
+				The number of lead-in samples.  This field has meaning only for CD-D=
+A cuesheets; for other uses it should be 0.  For CD-DA, the lead-in is t=
+he TRACK 00 area where the table of contents is stored; more precisely, =
+it is the number of samples from the first sample of the media to the fi=
+rst sample of the first index point of the first track.  According to th=
+e Red Book, the lead-in must be silence and CD grabbing software does no=
+t usually store it; additionally, the lead-in must be at least two secon=
+ds but may be longer.  For these reasons the lead-in length is stored he=
+re so that the absolute position of the first track can be computed.  No=
+te that the lead-in stored here is the number of samples up to the first=
+ index point of the first track, not necessarily to INDEX 01 of the firs=
+t track; even the first track may have INDEX 00 data.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				<tt>1</tt> if the CUESHEET corresponds to a Compact Disc, else <tt>0=
+</tt>.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;7+258*8&gt;
+			</td>
+			<td>
+				Reserved.  All bits must be set to zero.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;8&gt;
+			</td>
+			<td>
+				The number of tracks.  Must be at least 1 (because of the requisite =
+lead-out track).  For CD-DA, this number must be no more than 100 (99 re=
+gular tracks and one lead-out track).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#cuesheet_track"><i>CUESHEET_TRACK</i></a>+
+			</td>
+			<td>
+				One or more tracks.  A CUESHEET block is required to have a lead-out=
+ track; it is always the last track in the CUESHEET.  For CD-DA, the lea=
+d-out track number must be 170 as specified by the Red Book, otherwise i=
+s must be 255.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"cuesheet_track"><font size=3D"+1"><b>CUESHEET_TRACK</b></=
+font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;64&gt;
+			</td>
+			<td>
+				Track offset in samples, relative to the beginning of the FLAC audio=
+ stream.  It is the offset to the first index point of the track.  (Note=
+ how this differs from CD-DA, where the track's offset in the TOC is tha=
+t of the track's INDEX 01 even if there is an INDEX 00.)  For CD-DA, the=
+ offset must be evenly divisible by 588 samples (588 samples =3D 44100 s=
+amples/sec * 1/75th of a sec).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;8&gt;
+			</td>
+			<td>
+				Track number.  A track number of 0 is not allowed to avoid conflicti=
+ng with the CD-DA spec, which reserves this for the lead-in.  For CD-DA =
+the number must be 1-99, or 170 for the lead-out; for non-CD-DA, the tra=
+ck number must for 255 for the lead-out.  It is not required but encoura=
+ged to start with track 1 and increase sequentially.  Track numbers must=
+ be unique within a CUESHEET.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;12*8&gt;
+			</td>
+			<td>
+				Track ISRC.  This is a 12-digit alphanumeric code; see <a href=3D"ht=
+tp://www.ifpi.org/isrc/isrc_handbook.html">here</a> and <a href=3D"http:=
+//www.disctronics.co.uk/technology/cdaudio/cdaud_isrc.htm">here</a>.  A =
+value of 12 ASCII NUL characters may be used to denote absence of an ISR=
+C.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				The track type: 0 for audio, 1 for non-audio.  This corresponds to t=
+he CD-DA Q-channel control bit 3.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				The pre-emphasis flag: 0 for no pre-emphasis, 1 for pre-emphasis.  T=
+his corresponds to the CD-DA Q-channel control bit 5; see <a href=3D"htt=
+p://www.chipchapin.com/CDMedia/cdda9.php3">here</a>.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;6+13*8&gt;
+			</td>
+			<td>
+				Reserved.  All bits must be set to zero.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;8&gt;
+			</td>
+			<td>
+				The number of track index points.  There must be at least one index =
+in every track in a CUESHEET except for the lead-out track, which must h=
+ave zero.  For CD-DA, this number may be no more than 100.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#cuesheet_track_index"><i>CUESHEET_TRACK_INDEX</i></a>+
+			</td>
+			<td>
+				For all tracks except the lead-out track, one or more track index po=
+ints.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"cuesheet_track_index"><font size=3D"+1"><b>CUESHEET_TRACK=
+_INDEX</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;64&gt;
+			</td>
+			<td>
+				Offset in samples, relative to the track offset, of the index point.=
+  For CD-DA, the offset must be evenly divisible by 588 samples (588 sam=
+ples =3D 44100 samples/sec * 1/75th of a sec).  Note that the offset is =
+from the beginning of the track, not the beginning of the audio data.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;8&gt;
+			</td>
+			<td>
+				The index point number.  For CD-DA, an index number of 0 corresponds=
+ to the track pre-gap.  The first index in a track must have a number of=
+ 0 or 1, and subsequently, index numbers must increase by 1.  Index numb=
+ers must be unique within a track.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;3*8&gt;
+			</td>
+			<td>
+				Reserved.  All bits must be set to zero.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"metadata_block_picture"><font size=3D"+1"><b>METADATA_BLO=
+CK_PICTURE</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The picture type according to the ID3v2 APIC frame:<br />
+				<ul>
+					<li>0 - Other</li>
+					<li>1 - 32x32 pixels 'file icon' (PNG only)</li>
+					<li>2 - Other file icon</li>
+					<li>3 - Cover (front)</li>
+					<li>4 - Cover (back)</li>
+					<li>5 - Leaflet page</li>
+					<li>6 - Media (e.g. label side of CD)</li>
+					<li>7 - Lead artist/lead performer/soloist</li>
+					<li>8 - Artist/performer</li>
+					<li>9 - Conductor</li>
+					<li>10 - Band/Orchestra</li>
+					<li>11 - Composer</li>
+					<li>12 - Lyricist/text writer</li>
+					<li>13 - Recording Location</li>
+					<li>14 - During recording</li>
+					<li>15 - During performance</li>
+					<li>16 - Movie/video screen capture</li>
+					<li>17 - A bright coloured fish</li>
+					<li>18 - Illustration</li>
+					<li>19 - Band/artist logotype</li>
+					<li>20 - Publisher/Studio logotype</li>
+				</ul>
+				Others are reserved and should not be used.  There may only be one e=
+ach of picture type 1 and 2 in a file.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The length of the MIME type string in bytes.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n*8&gt;
+			</td>
+			<td>
+				The MIME type string, in printable ASCII characters 0x20-0x7e.  The =
+MIME type may also be <tt>--&gt;</tt> to signify that the data part is a=
+ URL of the picture instead of the picture data itself.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The length of the description string in bytes.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n*8&gt;
+			</td>
+			<td>
+				The description of the picture, in UTF-8.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The width of the picture in pixels.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The height of the picture in pixels.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The color depth of the picture in bits-per-pixel.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				For indexed-color pictures (e.g. GIF), the number of colors used, or=
+ <tt>0</tt> for non-indexed pictures.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;32&gt;
+			</td>
+			<td>
+				The length of the picture data in bytes.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n*8&gt;
+			</td>
+			<td>
+				The binary picture data.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"frame"><font size=3D"+1"><b>FRAME</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#frame_header"><i>FRAME_HEADER</i></a>
+			</td>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#subframe"><i>SUBFRAME</i></a>+
+			</td>
+			<td>
+				One SUBFRAME per channel.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				Zero-padding to byte alignment.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#frame_footer"><i>FRAME_FOOTER</i></a>
+			</td>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"frame_header"><font size=3D"+1"><b>FRAME_HEADER</b></font=
+></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;14&gt;
+			</td>
+			<td>
+				Sync code '<tt>11111111111110</tt>'
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				Reserved:<br />
+				<ul>
+				<li>
+					<tt>0</tt> : mandatory value
+				</li>
+				<li>
+					<tt>1</tt> : reserved for future use
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				Blocking strategy:<br />
+				<ul>
+				<li>
+					<tt>0</tt> : fixed-blocksize stream; frame header encodes the frame=
+ number
+				</li>
+				<li>
+					<tt>1</tt> : variable-blocksize stream; frame header encodes the sa=
+mple number
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				Block size in inter-channel samples:<br />
+				<ul>
+				<li>
+					<tt>0000</tt> : reserved
+				</li>
+				<li>
+					<tt>0001</tt> : 192 samples
+				</li>
+				<li>
+					<tt>0010-0101</tt> : 576 * (2^(n-2)) samples, i.e. 576/1152/2304/46=
+08
+				</li>
+				<li>
+					<tt>0110</tt> : get 8 bit (blocksize-1) from end of header
+				</li>
+				<li>
+					<tt>0111</tt> : get 16 bit (blocksize-1) from end of header
+				</li>
+				<li>
+					<tt>1000-1111</tt> : 256 * (2^(n-8)) samples, i.e. 256/512/1024/204=
+8/4096/8192/16384/32768
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				Sample rate:<br />
+				<ul>
+				<li>
+					<tt>0000</tt> : get from STREAMINFO metadata block
+				</li>
+				<li>
+					<tt>0001</tt> : 88.2kHz
+				</li>
+				<li>
+					<tt>0010</tt> : 176.4kHz
+				</li>
+				<li>
+					<tt>0011</tt> : 192kHz
+				</li>
+				<li>
+					<tt>0100</tt> : 8kHz
+				</li>
+				<li>
+					<tt>0101</tt> : 16kHz
+				</li>
+				<li>
+					<tt>0110</tt> : 22.05kHz
+				</li>
+				<li>
+					<tt>0111</tt> : 24kHz
+				</li>
+				<li>
+					<tt>1000</tt> : 32kHz
+				</li>
+				<li>
+					<tt>1001</tt> : 44.1kHz
+				</li>
+				<li>
+					<tt>1010</tt> : 48kHz
+				</li>
+				<li>
+					<tt>1011</tt> : 96kHz
+				</li>
+				<li>
+					<tt>1100</tt> : get 8 bit sample rate (in kHz) from end of header
+				</li>
+				<li>
+					<tt>1101</tt> : get 16 bit sample rate (in Hz) from end of header
+				</li>
+				<li>
+					<tt>1110</tt> : get 16 bit sample rate (in tens of Hz) from end of =
+header
+				</li>
+				<li>
+					<tt>1111</tt> : invalid, to prevent sync-fooling string of 1s
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				Channel assignment
+				<ul>
+				<li>
+					<tt>0000-0111</tt> : (number of independent channels)-1.  Where def=
+ined, the channel order follows SMPTE/ITU-R recommendations.  The assign=
+ments are as follows:
+					<ul>
+						<li>1 channel: mono</li>
+						<li>2 channels: left, right</li>
+						<li>3 channels: left, right, center</li>
+						<li>4 channels: front left, front right, back left, back right</li=
+>
+						<li>5 channels: front left, front right, front center, back/surrou=
+nd left, back/surround right</li>
+						<li>6 channels: front left, front right, front center, LFE, back/s=
+urround left, back/surround right</li>
+						<li>7 channels: front left, front right, front center, LFE, back c=
+enter, side left, side right</li>
+						<li>8 channels: front left, front right, front center, LFE, back l=
+eft, back right, side left, side right</li>
+					</ul>
+				</li>
+				<li>
+					<tt>1000</tt> : left/side stereo: channel 0 is the left channel, ch=
+annel 1 is the side(difference) channel
+				</li>
+				<li>
+					<tt>1001</tt> : right/side stereo: channel 0 is the side(difference=
+) channel, channel 1 is the right channel
+				</li>
+				<li>
+					<tt>1010</tt> : mid/side stereo: channel 0 is the mid(average) chan=
+nel, channel 1 is the side(difference) channel
+				</li>
+				<li>
+					<tt>1011-1111</tt> : reserved
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;3&gt;
+			</td>
+			<td>
+				Sample size in bits:<br />
+				<ul>
+				<li>
+					<tt>000</tt> : get from STREAMINFO metadata block
+				</li>
+				<li>
+					<tt>001</tt> : 8 bits per sample
+				</li>
+				<li>
+					<tt>010</tt> : 12 bits per sample
+				</li>
+				<li>
+					<tt>011</tt> : reserved
+				</li>
+				<li>
+					<tt>100</tt> : 16 bits per sample
+				</li>
+				<li>
+					<tt>101</tt> : 20 bits per sample
+				</li>
+				<li>
+					<tt>110</tt> : 24 bits per sample
+				</li>
+				<li>
+					<tt>111</tt> : reserved
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				Reserved:<br />
+				<ul>
+				<li>
+					<tt>0</tt> : mandatory value
+				</li>
+				<li>
+					<tt>1</tt> : reserved for future use
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				if(variable blocksize)<br />
+				&nbsp;&nbsp;&nbsp;&lt;8-56&gt;:"UTF-8" coded sample number (decoded =
+number is 36 bits)<br />
+				else<br />
+				&nbsp;&nbsp;&nbsp;&lt;8-48&gt;:"UTF-8" coded frame number (decoded n=
+umber is 31 bits)
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				if(blocksize bits =3D=3D 011x)<br />
+				&nbsp;&nbsp;&nbsp;8/16 bit (blocksize-1)
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				if(sample rate bits =3D=3D 11xx)<br />
+				&nbsp;&nbsp;&nbsp;8/16 bit sample rate
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;8&gt;
+			</td>
+			<td>
+				CRC-8 (polynomial =3D x^8 + x^2 + x^1 + x^0, initialized with 0) of =
+everything before the crc, including the sync code
+			</td>
+		</tr>
+		<tr>
+			<td>
+			</td>
+			<td bgcolor=3D"#F4F4CC">
+				<font size=3D"+1">NOTES</font><br />
+				<ul>
+				<li>
+					The "blocking strategy" bit must be the same throughout the entire =
+stream.
+				</li>
+				<li>
+					The "blocking strategy" bit determines how to calculate the sample =
+number of the first sample in the frame.  If the bit is <tt>0</tt> (fixe=
+d-blocksize), the frame header encodes the frame number as above, and th=
+e frame's starting sample number will be the frame number times the bloc=
+ksize.  If it is <tt>1</tt> (variable-blocksize), the frame header encod=
+es the frame's starting sample number itself.  (In the case of a fixed-b=
+locksize stream, only the last block may be shorter than the stream bloc=
+ksize; its starting sample number will be calculated as the frame number=
+ times the previous frame's blocksize, or zero if it is the first frame)=
+.
+				</li>
+				<li>
+					The "UTF-8" coding used for the sample/frame number is the same var=
+iable length code used to store compressed UCS-2, extended to handle lar=
+ger input.
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"frame_footer"><font size=3D"+1"><b>FRAME_FOOTER</b></font=
+></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;16&gt;
+			</td>
+			<td>
+				CRC-16 (polynomial =3D x^16 + x^15 + x^2 + x^0, initialized with 0) =
+of everything before the crc, back to and including the frame header syn=
+c code
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe"><font size=3D"+1"><b>SUBFRAME</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#subframe_header"><i>SUBFRAME_HEADER</i></a>
+			</td>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#subframe_constant"><i>SUBFRAME_CONSTANT</i></a><br />|| =
+<a href=3D"#subframe_fixed"><i>SUBFRAME_FIXED</i></a><br />|| <a href=3D=
+"#subframe_lpc"><i>SUBFRAME_LPC</i></a><br />|| <a href=3D"#subframe_ver=
+batim"><i>SUBFRAME_VERBATIM</i></a>
+			</td>
+			<td valign=3D"top">
+				The SUBFRAME_HEADER specifies which one.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe_header"><font size=3D"+1"><b>SUBFRAME_HEADER</b>=
+</font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1&gt;
+			</td>
+			<td>
+				Zero bit padding, to prevent sync-fooling string of 1s
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;6&gt;
+			</td>
+			<td>
+				Subframe type:
+				<ul>
+				<li>
+					<tt>000000</tt> : <a href=3D"#subframe_constant">SUBFRAME_CONSTANT<=
+/a>
+				</li>
+				<li>
+					<tt>000001</tt> : <a href=3D"#subframe_verbatim">SUBFRAME_VERBATIM<=
+/a>
+				</li>
+				<li>
+					<tt>00001x</tt> : reserved
+				</li>
+				<li>
+					<tt>0001xx</tt> : reserved
+				</li>
+				<li>
+					<tt>001xxx</tt> : if(xxx &lt;=3D 4) <a href=3D"#subframe_fixed">SUB=
+FRAME_FIXED</a>, xxx=3Dorder ; else reserved
+				</li>
+				<li>
+					<tt>01xxxx</tt> : reserved
+				</li>
+				<li>
+					<tt>1xxxxx</tt> : <a href=3D"#subframe_lpc">SUBFRAME_LPC</a>, xxxxx=
+=3Dorder-1
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;1+k&gt;
+			</td>
+			<td>
+				'Wasted bits-per-sample' flag:
+				<ul>
+				<li>
+					<tt>0</tt> : no wasted bits-per-sample in source subblock, k=3D0
+				</li>
+				<li>
+					<tt>1</tt> : k wasted bits-per-sample in source subblock, k-1 follo=
+ws, unary coded; e.g. k=3D3 =3D&gt; 001 follows, k=3D7 =3D&gt; 0000001 f=
+ollows.
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe_constant"><font size=3D"+1"><b>SUBFRAME_CONSTANT=
+</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Unencoded constant value of the subblock, n =3D frame's bits-per-sam=
+ple.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe_fixed"><font size=3D"+1"><b>SUBFRAME_FIXED</b></=
+font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Unencoded warm-up samples (n =3D frame's bits-per-sample * predictor=
+ order).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#residual"><i>RESIDUAL</i></a>
+			</td>
+			<td>
+				Encoded residual
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe_lpc"><font size=3D"+1"><b>SUBFRAME_LPC</b></font=
+></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Unencoded warm-up samples (n =3D frame's bits-per-sample * lpc order=
+).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				(Quantized linear predictor coefficients' precision in bits)-1 (1111=
+ =3D invalid).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;5&gt;
+			</td>
+			<td>
+				Quantized linear predictor coefficient shift needed in bits (NOTE: t=
+his number is signed two's-complement).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n&gt;
+			</td>
+			<td>
+				Unencoded predictor coefficients (n =3D qlp coeff precision * lpc or=
+der) (NOTE: the coefficients are signed two's-complement).
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#residual"><i>RESIDUAL</i></a>
+			</td>
+			<td>
+				Encoded residual
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"subframe_verbatim"><font size=3D"+1"><b>SUBFRAME_VERBATIM=
+</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;n*i&gt;
+			</td>
+			<td>
+				Unencoded subblock; n =3D frame's bits-per-sample, i =3D frame's blo=
+cksize.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"residual"><font size=3D"+1"><b>RESIDUAL</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;2&gt;
+			</td>
+			<td>
+				Residual coding method:<br />
+				<ul>
+				<li>
+					<tt>00</tt> : partitioned Rice coding with 4-bit Rice parameter; RE=
+SIDUAL_CODING_METHOD_PARTITIONED_RICE follows
+				</li>
+				<li>
+					<tt>01</tt> : partitioned Rice coding with 5-bit Rice parameter; RE=
+SIDUAL_CODING_METHOD_PARTITIONED_RICE2 follows
+				</li>
+				<li>
+					<tt>10-11</tt> : reserved
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#partitioned_rice"><i>RESIDUAL_CODING_METHOD_PARTITIONED_=
+RICE</i></a>&nbsp;||<br />
+				<a href=3D"#partitioned_rice2"><i>RESIDUAL_CODING_METHOD_PARTITIONED=
+_RICE2</i></a>
+			</td>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"partitioned_rice"><font size=3D"+1"><b>RESIDUAL_CODING_ME=
+THOD_PARTITIONED_RICE</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				Partition order.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#rice_partition"><i>RICE_PARTITION</i></a>+
+			</td>
+			<td>
+				There will be 2^order partitions.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"rice_partition"><font size=3D"+1"><b>RICE_PARTITION</b></=
+font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4(+5)&gt;
+			</td>
+			<td>
+				Encoding parameter:<br />
+				<ul>
+				<li>
+					<tt>0000-1110</tt> : Rice parameter.
+				</li>
+				<li>
+					<tt>1111</tt> : Escape code, meaning the partition is in unencoded =
+binary form using n bits per sample; n follows as a 5-bit number.
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				Encoded residual.  The number of samples (n) in the partition is det=
+ermined as follows:<br />
+				<ul>
+				<li>
+					if the partition order is zero, n =3D frame's blocksize - predictor=
+ order
+				</li>
+				<li>
+					else if this is not the first partition of the subframe, n =3D (fra=
+me's blocksize / (2^partition order))
+				</li>
+				<li>
+					else n =3D (frame's blocksize / (2^partition order)) - predictor or=
+der
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"partitioned_rice2"><font size=3D"+1"><b>RESIDUAL_CODING_M=
+ETHOD_PARTITIONED_RICE2</b></font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;4&gt;
+			</td>
+			<td>
+				Partition order.
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				<a href=3D"#rice2_partition"><i>RICE2_PARTITION</i></a>+
+			</td>
+			<td>
+				There will be 2^order partitions.
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+<br />
+
+<div class=3D"box">
+	<table width=3D"100%" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" =
+bgcolor=3D"#EEEED4"><tr><td>
+	<table width=3D"100%" border=3D"1" bgcolor=3D"#EEEED4">
+		<tr>
+			<td colspan=3D"2" bgcolor=3D"#D3D4C5">
+				<a name=3D"rice2_partition"><font size=3D"+1"><b>RICE2_PARTITION</b>=
+</font></a>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;5(+5)&gt;
+			</td>
+			<td>
+				Encoding parameter:<br />
+				<ul>
+				<li>
+					<tt>00000-11110</tt> : Rice parameter.
+				</li>
+				<li>
+					<tt>11111</tt> : Escape code, meaning the partition is in unencoded=
+ binary form using n bits per sample; n follows as a 5-bit number.
+				</li>
+				</ul>
+			</td>
+		</tr>
+		<tr>
+			<td align=3D"right" valign=3D"top" bgcolor=3D"#F4F4CC">
+				&lt;?&gt;
+			</td>
+			<td>
+				Encoded residual.  The number of samples (n) in the partition is det=
+ermined as follows:<br />
+				<ul>
+				<li>
+					if the partition order is zero, n =3D frame's blocksize - predictor=
+ order
+				</li>
+				<li>
+					else if this is not the first partition of the subframe, n =3D (fra=
+me's blocksize / (2^partition order))
+				</li>
+				<li>
+					else n =3D (frame's blocksize / (2^partition order)) - predictor or=
+der
+				</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+	</td></tr></table>
+</div>
+
+
+<div class=3D"copyright">
+	<!-- @@@ oh so hacky -->
+	<table>
+		<tr>
+			<td align=3D"left">
+				Copyright (c) 2000,2001,2002,2003,2004,2005,2006,2007,2008  Josh Coa=
+lson
+			</td>
+			<td width=3D"1%" align=3D"right">
+				<a href=3D"http://validator.w3.org/check?uri=3Dreferer"><img src=3D"=
+http://www.w3.org/Icons/valid-xhtml10" alt=3D"Valid XHTML 1.0!" height=3D=
+"31" width=3D"88" border=3D"0" hspace=3D"0" /></a>
+			</td>
+		</tr>
+	</table>
+</div>
+
+</body>
+</html>
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Disposition: inline; filename=favicon.ico
+Content-Type: image/x-icon; name=favicon.ico
+Content-Location: http://flac.sourceforge.net/favicon.ico
+Content-Transfer-Encoding: Base64
+
+AAABAAEAEBAAAAEACABoBQAAFgAAACgAAAAQAAAAIAAAAAEACAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAOd9CAFpVUgAAnpwAAAClAAgwEAB7fXsAe3l7AHN1
+cwBzcXMAa21rAGtpawBaXVoAWllaAFJVUgBKTUoAvbq9ACFtGAC1trUAtbK1AK2u
+rQAAALUAraqtAKWmpQAAAP8AnJqcAAAoKQCUlpQAlJKUAIyOjAAAMDEAGCQhAP//
+/wAA//8AMTQxADEwMQDe294AKSgpANbT1gAhICEAGBwYAAgwCAAprjEACCgIAAAk
+AAAIDAgAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALgAREQAREQAAJyUoLgAAAAwj
+AQEAAQEAAB0mJg0AAAAIIwEBAAEBLgASICAIAAAACCMsKQAFKwAAEyAgCQAAAAgj
+KioAKioAABMgIAkAAAAIIwEBAAEBAAATICAJAAAACCMBAQABAQAAFCAgCgAAAAgj
+Gh4AHhoAABYgIAsAAAAIIwMDAAMDHyAgICAgICUACCMhIQAhIQAgICAgICAlAAgj
+ISEAISEAAiQgIBMGLQAIIwAAAAAAAAAbICASAAAAGSMEBAAAAAAAIyAgICAQABwj
+GBgAAAAAAAAZICAgGwAXHAQVIyMjIyMjIg4WFg8AJBcXBwgICAgICAgICCMjAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAA=
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Disposition: inline; filename=flac.css
+Content-Type: text/css; name=flac.css
+Content-Location: http://flac.sourceforge.net/flac.css
+Content-Transfer-Encoding: 8bit
+
+/*
+ * Copyright (c)  2005,2006,2007  Josh Coalson
+ * Permission is granted to copy, distribute and/or modify this document
+ * under the terms of the GNU Free Documentation License, Version 1.1
+ * or any later version published by the Free Software Foundation;
+ * with no invariant sections.
+ * A copy of the license can be found at http://www.gnu.org/copyleft/fdl.html
+ */
+
+body
+{
+	background-color: #99CC99;
+	color: black;
+	margin: 0px;
+	padding: 0px;
+}
+
+div
+{
+	background-color: #99CC99;
+	margin: 0px;
+	padding: 0px;
+}
+
+div.logo
+{
+	background-color: black;
+	padding: 1px;
+	text-align: center;
+}
+
+div.navbar
+{
+	border-width: 2px 0px 2px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #D3D4C5;
+	padding: 3px;
+	text-align: center;
+}
+
+div.langbar
+{
+	border-width: 0px 0px 2px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #EEEED4;
+	padding: 3px;
+	text-align: center;
+}
+
+div.above_nav
+{
+	height: 25px;
+}
+
+div.below_nav
+{
+	height: 25px;
+}
+
+div.body_with_sidebar
+{
+/*	text-align: left; */
+}
+
+div.box
+{
+	text-align: left;
+	margin: 0px 8px 0px 8px;
+	background-color: #EEEED4;
+}
+
+div.box_title
+{
+	border-width: 1px 0px 0px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #D3D4C5;
+	padding: 3px;
+	font-family: lucida, verdana, helvetica, arial, sans-serif;
+	font-weight: bold;
+	font-size: 150%;
+}
+
+div.box_header
+{
+	border-width: 1px 0px 0px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #EEEED4;
+	padding: 3px;
+}
+
+div.box_footer
+{
+	border-width: 0px 0px 1px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #EEEED4;
+	padding: 3px;
+}
+
+div.box_body
+{
+	background-color: #EEEED4;
+	padding: 0px 3px 0px 3px;
+	font-family: lucida, verdana, helvetica, arial, sans-serif;
+	font-weight: normal;
+	font-size: 100%;
+}
+
+#newsbox h3
+{
+	margin: 5px 0 0 0; 
+	font-size: 0.9em; 
+}
+
+#newsbox p
+{
+	margin: 0 0 5px 0;
+}
+
+div.smallbox
+{
+	text-align: left;
+	margin: 0px 8px 0px 0px;
+	background-color: #EEEED4;
+}
+
+div.smallbox_title
+{
+	text-align: center;
+	border-width: 1px 0px 0px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #D3D4C5;
+	padding: 3px;
+	font-family: lucida, verdana, helvetica, arial, sans-serif;
+	font-weight: bold;
+	font-size: 100%;
+}
+
+div.smallbox_header
+{
+	border-width: 1px 0px 0px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #EEEED4;
+	padding: 3px;
+}
+
+div.smallbox_footer
+{
+	border-width: 0px 0px 1px 0px;
+	border-style: solid;
+	border-color: black;
+	background-color: #EEEED4;
+	padding: 3px;
+}
+
+div.smallbox_body
+{
+	background-color: #EEEED4;
+	padding: 0px 3px 0px 3px;
+	font-family: lucida, verdana, helvetica, arial, sans-serif;
+	font-weight: normal;
+	font-size: 80%;
+}
+
+div.copyright
+{
+	text-align: left;
+	margin: 10px;
+}
+
+span.commandname
+{
+	font-family: monospace;
+	font-weight: bold;
+}
+
+span.command
+{
+	font-family: monospace;
+	font-weight: bold;
+}
+
+span.argument
+{
+	font-family: monospace;
+}
+
+span.code
+{
+	font-family: monospace;
+}
+
+a:link    {color:#336699; background-color:transparent}
+a:visited {color:#336699; background-color:transparent}
+a:active  {color:#336699; background-color:transparent}
+a:hover   {color:#336699; background-color:transparent}
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Disposition: inline; filename=logo130.gif
+Content-Type: image/gif; name=logo130.gif
+Content-Location: http://flac.sourceforge.net/images/logo130.gif
+Content-Transfer-Encoding: Base64
+
+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
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd
+Content-Disposition: inline; filename=valid-xhtml10.png
+Content-Type: image/png; name=valid-xhtml10.png
+Content-Location: http://www.w3.org/Icons/valid-xhtml10
+Content-Transfer-Encoding: Base64
+
+iVBORw0KGgoAAAANSUhEUgAAAFgAAAAfCAMAAABUFvrSAAADAFBMVEUBAAAIBgMM
+CQQLCwsSDgYXEgkaFQoUFBQcHBwlHQ4rIhEwJhM2KxU7Lxc9MBgjIyMoKCg0MzI7
+OztBNBpOPh5OSz9TQiFeSyVkUChqVCpuWCx1Rzl0XC5+ZDFOTk5ST0tWUk1VVVVc
+XFxqXUplZWVra2twcHB7e3sAWpwIX58JYJ8OY6ERZaIVaKQaa6Yebaghb6klcqop
+dawxea82fbE4frI+grRFhrZMi7pVkb1alL9dlsBkm8NoncRtocZ0pcl8qsyWBAOZ
+AACcCASIIBmdNiegDge3PB6mPiqBZzODaDSKbjaOcTiUdjuXeDyaez26QiG/TCaA
+eWihclPATifBUCjIXy/QbzfWej3Yfj+KgWWjgkGui0WxjUa0gVi3kkm6lEq+mEyj
+kmuzn2e7pnLFnU7eikXOpFHRp1PVqlXarlfesVjjlUrmm03poFDtqVTitFrmuFzq
+u13ywWD7xWL+y2WDg4OXl5eYmJippZ61rZisrKy0tLS/v7+Crs6FsNCLtNKQt9SW
+u9aYvNebvtifwdqjw9uox92ryd6yzeG20OPCwsLMzMzU1NTA1ufG2ujN3+zT4+7d
+6fL/7Mbn5+fs7Ozl7vXp8fbu9Pj09PTy9/r1+Pv+/v7MzMwAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADn4rtgAAAA
+nnRSTlP/////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////AD6H4/gAAAABYktHRP+lB/LFAAAACXBIWXMAAABI
+AAAASABGyWs+AAADSUlEQVRIx+2WaU8TURSGzyCLQEUxiFYtCEo8Da3sYglQbDUa
+luISV6pYFdsyop1Or8ElSgg2RSjgArSZ63/13JkOXRBZgn7yTXpmyzwz857lFhb3
+XW9/CsEi317f2c71/OnZ/+C9gSdDKmNySI2GorQNxiaDpFA4FgrS+WgoxFhwck/g
+MTjBwmCJ+WCYMQso5SBUoQCcZKwGgClg2QSOt7jp7pnWGQFJ2e0tpFYX5+k3TUn+
+QTOsqAV/hRRmJngiYAVrYILAkipT+C34GzqJ+AW7BDiBhga4VgdwIFmdNMBKMcAQ
+I3Ctz1cOCmPD4hEKVBX5TpdYfg/m7bhC0YHrFHvQtbY2h840fw9Hzh8tO7CaSZ6V
+3k2AdWXBNdaKosGtwG78SLED4xSd+I1rbWK37ii5cO58pirCUglYBXhIjVlywWGQ
+oluBl7CT83VE8nUZ28lu3ZUycUlLZ8CVUrgGnpgeR7JgZrUxHVzh9/tjAuzxbFRF
+M7nwGbGZ8wF083UHLlPqDuZWxSAZrBSXqmbyGBuBEQNM0sFCUQJf8QiyAXbRp7uw
+A5fI7iXei9ifotzlgiMy3R+NqKpMRiv6gUwVzfTAlAiLyUJkxVWPUAYcR5fWfCGB
+7jV00GOciJ0an95T5133GDLAKXTMY1/K3j6HPeJ42YEJvrAX8M0M1+y8LvJhnnej
+URmc92HvH2aFGtuWa4I/Ido1qgbElH48j235YNkiwbhxc6QKpJN56NiN18bOnQ2u
+CV5BvCRaEC8aqAS2rBp76bSRPFutCT4No8chkMu95vG+ynIve3KHUAvO6i04w2d7
+dCu6Fwxy00LGCpsJrixlQbAVfL/35Qb3VN5068M1vQW/UrG5U3EHxrXGH4IrJTfA
+xluqUMWicCjLva/zvC8Mf72388fmfIeIS61UIU60o2jFxbKGxsMwzQvfuKScyTRE
+cxz2ZOV9XDCPtY/6ZoB+X/udzl6Rw2RDWfV7ngceonFxXIqMgj83eXey3Fe7HfRh
+0bAlondZQJKgXM2rsrsmd2rXK4j6ZHx8PMAmhM/y2CO1oH7vmdx9X0wfZLj7v0q/
+8Orcv7D8T039s/8VH7bVu2c718NbJrhuBzq2leo3nTlTX62DfwGZkKiGotSUXQAA
+AABJRU5ErkJggg==
+
+------------mQ8bVZSkhwp4mHZ9JZDYDd--
