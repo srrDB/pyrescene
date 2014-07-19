@@ -673,7 +673,7 @@ SRR RAR Padding
   have padded bytes after the end of the RAR Archive End Block.
   This block will include those padded bytes into the SRR file.
   
-    [SRR OSO Hash Block
+    [SRR RAR Padding Block
         - HEAD_CRC: 0x6C6C                                  2 bytes
         - HEAD_TYPE: 0x6C                                   1 byte
         - HEAD_FLAGS                                        2 bytes

@@ -1506,6 +1506,8 @@ class RarReader(object):
 		if (self._rar_end_block_encountered and self._readmode == self.RAR):
 			return SrrRarPaddingBlock(
 				padding_bytes=header_buffer + self._rarstream.read())
+		if btype == BlockType.RarMax:
+			self._rar_end_block_encountered = True
 		
 		# one more sanity check on the length before continuing
 		if (hsize < HEADER_LENGTH or 
@@ -1593,9 +1595,6 @@ class RarReader(object):
 			self._readmode in (self.RAR, self.SFX)):
 			self._rarstream.seek(block_start_position + hsize)
 			self._rarstream.seek(rar_block.packed_size, os.SEEK_CUR)
-			
-		if btype == BlockType.RarMax:
-			self._rar_end_block_encountered = True
 		
 		return rar_block
 	
