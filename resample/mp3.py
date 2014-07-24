@@ -47,6 +47,14 @@ def decode_id3_size(sbytes):
 	# zero."
 	return reduce(lambda x, y: x*128 + y,
 	              (ord(sbytes[i:i + 1]) for i in range(4)))
+	
+def encode_id3_size(size):
+	result = b""
+	# adds groups of last 7 bytes to the result
+	for i in range(4):
+		byte = (size >> (i*7)) & 0x7F
+		result = chr(byte) + result
+	return result
 
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 BE_SHORT = struct.Struct('>H')
@@ -125,29 +133,32 @@ class Mp3Reader(object):
 		# descriptor and the string "LYRICS200". The size value includes the 
 		# "LYRICSBEGIN" string, but does not include the 6 character size 
 		# descriptor and the trailing "LYRICS200" string.
-		self._mp3_stream.seek(end_meta_data_offset - 6 - 9, os.SEEK_SET)
-		lyrics_footer = self._mp3_stream.read(6 + 9)
-		if lyrics_footer[6:] == b"LYRICS200":
-			lyrics_size = int(lyrics_footer[:6]) # only header + body
-			lyrics3v2_block = Block(lyrics_size + 6 + 9, "LYRICS200",
-			                     end_meta_data_offset - (lyrics_size + 6 + 9))
-			self.blocks.append(lyrics3v2_block)
-			end_meta_data_offset -= (lyrics_size + 6 + 9)
+		if end_meta_data_offset - 6 - 9 >= 0:
+			self._mp3_stream.seek(end_meta_data_offset - 6 - 9, os.SEEK_SET)
+			lyrics_footer = self._mp3_stream.read(6 + 9)
+			if lyrics_footer[6:] == b"LYRICS200":
+				lyrics_size = int(lyrics_footer[:6]) # only header + body
+				lyrics3v2_block = Block(lyrics_size + 6 + 9, "LYRICS200",
+				                        end_meta_data_offset -
+				                        (lyrics_size + 6 + 9))
+				self.blocks.append(lyrics3v2_block)
+				end_meta_data_offset -= (lyrics_size + 6 + 9)
 		
 		# 4) check for http://id3.org/Lyrics3
-		self._mp3_stream.seek(end_meta_data_offset - 9, os.SEEK_SET)
-		if b"LYRICSEND" == self._mp3_stream.read(9):
-			self._mp3_stream.seek(end_meta_data_offset - 5100, os.SEEK_SET)
-			lyrics_data = self._mp3_stream.read(5100)
-			index = lyrics_data.find(b"LYRICSBEGIN")
-			if index == -1:
-				raise InvalidDataException(
-						"Unable to find start of LyricsV1 block")
-			start_block = end_meta_data_offset - 5100 + index
-			lyrics3_block = Block(end_meta_data_offset - start_block,
-			                      "LYRICS", start_block)
-			self.blocks.append(lyrics3_block)
-			end_meta_data_offset -= lyrics3_block.size
+		if end_meta_data_offset - 9 >= 0:
+			self._mp3_stream.seek(end_meta_data_offset - 9, os.SEEK_SET)
+			if b"LYRICSEND" == self._mp3_stream.read(9):
+				self._mp3_stream.seek(end_meta_data_offset - 5100, os.SEEK_SET)
+				lyrics_data = self._mp3_stream.read(5100)
+				index = lyrics_data.find(b"LYRICSBEGIN")
+				if index == -1:
+					raise InvalidDataException(
+							"Unable to find start of LyricsV1 block")
+				start_block = end_meta_data_offset - 5100 + index
+				lyrics3_block = Block(end_meta_data_offset - start_block,
+				                      "LYRICS", start_block)
+				self.blocks.append(lyrics3_block)
+				end_meta_data_offset -= lyrics3_block.size
 			
 		# 5) APE tags
 		# "Tag size in bytes including footer and all tag items excluding 
@@ -155,19 +166,20 @@ class Mp3Reader(object):
 		# "An APEv1 tag at the end of a file must have at least a footer, APEv1 
 		# tags may never be used at the beginning of a file 
 		# (unlike APEv2 tags)."
-		self._mp3_stream.seek(end_meta_data_offset - 32, os.SEEK_SET)
-		if b"APETAGEX" == self._mp3_stream.read(8):
-			(version,) = S_LONG.unpack(self._mp3_stream.read(4))
-			if version == 2000:
-				header = 32
-			else: # 1000
-				header = 0
-			(size,) = S_LONG.unpack(self._mp3_stream.read(4))
-			start_block = end_meta_data_offset - size - header
-			apev2_block = Block(end_meta_data_offset - start_block,
-			                    "APE%s" % version, start_block)
-			self.blocks.append(apev2_block)
-			end_meta_data_offset -= apev2_block.size
+		if end_meta_data_offset - 32 >= 0:
+			self._mp3_stream.seek(end_meta_data_offset - 32, os.SEEK_SET)
+			if b"APETAGEX" == self._mp3_stream.read(8):
+				(version,) = S_LONG.unpack(self._mp3_stream.read(4))
+				if version == 2000:
+					header = 32
+				else: # 1000
+					header = 0
+				(size,) = S_LONG.unpack(self._mp3_stream.read(4))
+				start_block = end_meta_data_offset - size - header
+				apev2_block = Block(end_meta_data_offset - start_block,
+				                    "APE%s" % version, start_block)
+				self.blocks.append(apev2_block)
+				end_meta_data_offset -= apev2_block.size
 		
 		def marker_has_issues(marker):
 			if len(marker) != 4:
@@ -207,7 +219,7 @@ class Mp3Reader(object):
 		if not len(marker):
 			# there still is something horribly wrong
 			# (unless you think that an mp3 without any music data is possible)
-			raise InvalidDataException("Tagging fucked up big time.")
+			raise InvalidDataException("Tagging fucked up big time!")
 		
 		(sync,) = BE_SHORT.unpack(marker[:2])
 		main_size = end_meta_data_offset - begin_main_content
@@ -272,8 +284,13 @@ class Mp3Reader(object):
 			pass
 			
 def last_id3v2_before_sync(stream, length):
+	"""Return the index of the last ID3v2 marker found before any
+	mp3 sync bytes or RIFF container.
+	The stream is assumed to contain an "ID3" marker.
+	length: the maximum length of the stream to search"""
 	last_good_id3 = 0
 	current = 0
+	id3 = 0
 	
 	# loop will probably run only once before encountering the sync bytes
 	while current < length:
@@ -284,16 +301,23 @@ def last_id3v2_before_sync(stream, length):
 		sync = -1
 		c = bytespart.find(b"\xFF", 0)
 		while -1 < c < (0x10000 + 3):
-			if BE_SHORT.unpack(bytespart[c:c+2])[0] & 0xFFE0 == 0xFFE0:
+			match = bytespart[c:c+2]
+			if (len(match) == 2 and # last byte could match
+				BE_SHORT.unpack(match)[0] & 0xFFE0 == 0xFFE0):
 				sync = c
 				break
+			else:
+				c += 1 # prevent infinite loop
 			c = bytespart.find(b"\xFF", c)
 		riff = bytespart.find(b"RIFF")
 		if sync != -1 or riff != -1:
 			sync = max(sync, riff)
 			
-		id3 = bytespart.rfind(b"ID3")
-		if id3 > last_good_id3 and sync != -1 and id3 < sync:
+		imatch = bytespart.rfind(b"ID3")
+		if imatch > 0:
+			imatch += current
+		id3 = max(imatch, id3)
+		if id3 > last_good_id3 and sync != -1 and id3 < current + sync:
 			last_good_id3 = id3
 			
 		if sync != -1:
