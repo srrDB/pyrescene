@@ -55,8 +55,9 @@ from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
 	RarPackedFileBlock, SrrOsoHashBlock)
 from rescene.rarstream import RarStream, FakeFile
-from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
+from rescene.utility import (SfvEntry, is_rar, _DEBUG,
                              first_rars, next_archive, empty_folder)
+from rescene.utility import parse_sfv_file, parse_sfv_data
 from rescene.osohash import osohash_from
 from rescene.utility import basestring
 from rescene.utility import decodetext, encodeerrors
@@ -882,11 +883,10 @@ def info(srr_file):
 			# get the CRC32 hashes from the sfv file
 			# not stored anywhere -> retrieve from sfv or we do not have it
 			if block.file_name[-4:].lower() == ".sfv":
-				sfvfile = io.BytesIO()
 				with open(srr_file, "rb") as sfv:
 					sfv.seek(block.block_position + block.header_size)
-					sfvfile.write(sfv.read(block.file_size))
-				(entries, comments, errors) = parse_sfv_file(sfvfile)
+					sfvdata = sfv.read(block.file_size)
+				(entries, comments, errors) = parse_sfv_data(sfvdata)
 				sfv_entries.extend(entries)
 				sfv_comments.extend(comments)
 				# TODO: let user know that there is a bad SFV
