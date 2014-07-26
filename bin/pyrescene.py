@@ -468,7 +468,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 						for line in idx:
 							if line.startswith("id: "):
 								language_lines.append(line)
-					with open(idx_lang, "a") as diz:
+					with open(idx_lang, "ab") as diz:
 						diz.write("# %s\n" % efile)
 						for line in language_lines:
 							diz.write(line)
