@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2011-2012 pyReScene
+# Copyright (c) 2011-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -918,7 +918,7 @@ def info(srr_file):
 					compression = True
 			# crc of the file is the crc stored in
 			# the last archive that has the file
-			f.crc32 = "%X" % block.file_crc
+			f.crc32 = "%08X" % block.file_crc
 			archived_files[block.file_name] = f
 			
 		# new-style Recovery Records
@@ -993,14 +993,14 @@ def info(srr_file):
 	sfv_entries[:] = [e for e in sfv_entries if not add_info_to_rar(e)]
 	
 	return {"appname": appname, 
-			"stored_files": stored_files, 
-			"rar_files": rar_files, 
-			"archived_files": archived_files, 
-			"recovery": recovery,
-			"sfv_entries": sfv_entries, 
-			"sfv_comments": sfv_comments,
-			"compression": compression,
-			"oso_hashes": oso_hashes}
+	        "stored_files": stored_files,
+	        "rar_files": rar_files,
+	        "archived_files": archived_files,
+	        "recovery": recovery,
+	        "sfv_entries": sfv_entries,
+	        "sfv_comments": sfv_comments,
+	        "compression": compression,
+	        "oso_hashes": oso_hashes}
 
 def content_hash(srr_file, algorithm='sha1'):
 	"""Returns a Sha1 hash for comparing SRR files.
@@ -2506,8 +2506,8 @@ def custom_popen(cmd):
 	# run command
 	if _DEBUG: print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
-							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
-							creationflags=creationflags)	
+	                        stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
+	                        creationflags=creationflags)	
 	
 def copy_data(source_file, destination_file, offset_amount):
 	with open(source_file, 'rb') as source:
