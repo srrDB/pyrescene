@@ -715,9 +715,20 @@ def generate_srr(reldir, working_dir, options, mthread):
 			pass
 
 	# stores the main RARs of DVDR fixes
+	# these RARs contain cracked .exe files and are not wanted on srrdb.com
 	false_positives = [
 		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM",
-		"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED"]
+		"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED",
+		"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.3.PATCH.FIX.CRACKED-DEViANCE",
+		"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.4.TIMER.FIX.CRACKED-DEViANCE",
+		"CHROME.CRACK.FIX-DEViANCE",
+		"F1.Racing.Championship.FIX.READ.NFO-HOTDOX",
+		"Hunting_Unlimited_3_V1.1_NOCD_CRACK_NFOFIX-RVL",
+		"LMA.Manager.2007.FiX-RELOADED",
+		"MSC.PATRAN.V2001.R2A.FIX.FOR.RISE-TFL",
+		"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
+		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS", #contains vobsubs
+		]
 	if (is_storable_fix(os.path.split(reldir)[1]) and 
 		len(main_sfvs) == 1 and len(main_rars) == 1 and 
 		len(parse_sfv_file(main_sfvs[0])[0]) == 1 and

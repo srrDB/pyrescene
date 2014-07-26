@@ -1742,7 +1742,7 @@ def compressed_rar_file_factory(block, blocks, src,
 				else:
 					raise
 			return CompressedRarFile(block, blocks, src, 
-										followup, followup_src, solid=True)
+			                         followup, followup_src, solid=True)
 			
 		if block.flags & block.SOLID:
 			# get first file from archive
