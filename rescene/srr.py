@@ -217,6 +217,12 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	elif options.extract: # -x
 		status = 0
 		mthread.set_messages([])
+		
+		# append release name to the output path for all extracted files
+		if options.parent: # -d (additional usage for this option)
+			srr = os.path.basename(infiles[0])
+			out_folder = os.path.join(out_folder, srr.rstrip(".srr"))
+		
 		# extract ALL possible files
 		files = rescene.extract_files(infiles[0], out_folder, save_paths)
 		
@@ -369,7 +375,9 @@ def main(argv=None):
 						"Use this switch to recreate the paths.",
 						action="store_true", dest="paths", default=False)
 	creation.add_option("-d", help="Use parent directory name as "
-						"basis for generated .srr file name.",
+						"basis for generated .srr file name. Also extracts to "
+						"directory named after .srr file when used together "
+						"with -x.",
 						action="store_true", dest="parent", default=False)
 	creation.add_option("-o", dest="output_dir", metavar="DIRECTORY",
 					help="<path>: Specify output file or directory path.")
