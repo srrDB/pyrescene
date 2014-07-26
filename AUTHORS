@@ -1,5 +1,9 @@
+List ordered by time of first contributions.
+
 umlaut (original .NET implementation)
 gooober (awescript)
 Gfy <pyrescene@gmail.com> (porting to Python + everything new)
 Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
 mechtex (Fix commandline arguments for rar 2.xx archivers)
+Martin 'vadmium' Panter (Python 3 port, improvements)
+Peter 'sticki' Shayt (small improvement)
