@@ -65,6 +65,7 @@ if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
+	unicode = unicode  # Export to other modules
 else:
 	unicode = str #@ReservedAssignment
 
