@@ -66,8 +66,15 @@ if sys.hexversion < 0x3000000:
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
 	unicode = unicode  # Export to other modules
+	
+	def fsunicode(path):
+		"""Converts a file system "str" object to Unicode"""
+		encoding = sys.getfilesystemencoding()
+		return path.decode(encoding or sys.getdefaultencoding())
 else:
 	unicode = str #@ReservedAssignment
+	def fsunicode(path):
+		return path
 
 try:  # Python < 3
 	raw_input = raw_input

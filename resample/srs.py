@@ -36,7 +36,7 @@ import resample
 from rescene.utility import sep
 from resample.main import FileType
 from resample import fpcalc
-from rescene.utility import raw_input
+from rescene.utility import raw_input, unicode
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
@@ -260,7 +260,8 @@ def main(argv=None, no_exit=False):
 			
 			print("SRS Type   : {0}".format(ftype_arg0))
 			print("SRS App    : {0}".format(srs_data.appname))
-			print("Sample Name: {0}".format(srs_data.name))
+			msg = unicode("Sample Name: {0}")
+			print(msg.format(srs_data.name))
 			print("Sample Size: {0}".format(sep(srs_data.size)))
 			print("Sample CRC : {0:08X}".format(srs_data.crc32))
 			for track in tracks.values():
