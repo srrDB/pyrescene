@@ -58,7 +58,7 @@ from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, parse_sfv_file, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.osohash import osohash_from
-from rescene.utility import basestring
+from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
 
 # compatibility with 2.x
@@ -1361,6 +1361,7 @@ def _store(sfile, stream, save_paths, in_folder):
 	file_name = os.path.basename(sfile)
 	if save_paths: # AttributeError: 'NoneType' object has no attr...
 		file_name = os.path.relpath(sfile, in_folder)
+	file_name = fsunicode(file_name)
 	_fire(MsgCode.STORING, message="Storing file: %s" % file_name)
 	
 	block = SrrStoredFileBlock(file_name=file_name, 
