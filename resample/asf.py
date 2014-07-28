@@ -473,7 +473,7 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 		if skip + 1 > datalen and mode != AsfReadMode.SRS:
 			raise ValueError("Invalid length")
 		
-		pl.stream_number = (S_BYTE.unpack_from(data, skip)[0] & 0x7F)
+		pl.stream_number = S_BYTE.unpack_from(data, skip)[0] & 0x7F
 		pl.key_frame = bool(S_BYTE.unpack_from(data, skip)[0] & 0x80)
 		skip += 1
 		pl.header_size += 1
@@ -535,20 +535,20 @@ def asf_data_read_payloads(packet, multiple, flags, data, datalen,
 			if mode != AsfReadMode.SRS:
 				while used < pl.data_length:
 					payloads += 1
-					used += (1 + S_BYTE.unpack_from(data, start+used)[0])
+					used += 1 + S_BYTE.unpack_from(data, start+used)[0]
 			else:
 				used_srs = 0
 				while used < pl.data_length:
 					payloads += 1
 					size = S_BYTE.unpack_from(data, start+used_srs)[0]
-					used += (1 + size)
+					used += 1 + size
 					used_srs += 1
 				
 			if used != pl.data_length:
 				raise ValueError("invalid compressed data size")
 			
 			# add additional payloads excluding the already allocated one
-			packet.payload_count += (payloads - 1)
+			packet.payload_count += payloads - 1
 			if packet.payload_count > packet.payloads_size:
 				packet.payloads_size = packet.payload_count
 			

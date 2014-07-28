@@ -42,7 +42,7 @@ import resample
 
 from rescene import rarstream
 from rescene import utility
-from rescene.utility import sep, show_spinner, remove_spinner
+from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            MakeEbmlUInt, EbmlID)
@@ -178,7 +178,7 @@ class FileData(object):
 				self.sample_name = rs.packed_file_name
 				rs.close()
 			else:
-				self.sample_name = file_name
+				self.sample_name = fsunicode(file_name)
 				self.size = os.path.getsize(file_name)
 		elif buff:
 			# flags: unsigned integer 16
@@ -187,10 +187,10 @@ class FileData(object):
 			# crc: uint32
 			(self.flags,) = S_SHORT.unpack_from(buff, 0)
 			(applength,) = S_SHORT.unpack_from(buff, 2)
-			self.appname = buff[4:4+applength].decode()
+			self.appname = buff[4:4+applength].decode("utf-8")
 			(namelength,) = S_SHORT.unpack_from(buff, 4+applength)
 			self.sample_name = buff[4+applength+2:4+applength+2+namelength]
-			self.sample_name = self.sample_name.decode()
+			self.sample_name = self.sample_name.decode("utf-8")
 			self.name = self.sample_name
 			offset = 4+applength+2+namelength
 			(self.size,) = S_LONGLONG.unpack_from(buff, offset)
@@ -199,8 +199,8 @@ class FileData(object):
 			raise AttributeError("Buffer or file expected.")
 		
 	def serialize(self):
-		app_name = resample.APPNAME.encode()
-		file_name = basename(self.sample_name).encode()
+		app_name = resample.APPNAME.encode("utf-8")
+		file_name = basename(self.sample_name).encode("utf-8")
 		data_length = 18 + len(app_name) + len(file_name)
 	
 		buff = io.BytesIO()
@@ -1208,7 +1208,7 @@ def profile_wmv(wmv_data): # FileData object
 			# exact size is stored in one of the header objects
 			i = 16
 			(file_size,) = S_LONGLONG.unpack_from(data, i)
-			if (file_size != wmv_data.size):
+			if file_size != wmv_data.size:
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected: %s" % sep(file_size),
 				      "\t Found   : %s\n" % sep(wmv_data.size), 
@@ -1858,7 +1858,7 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	next_chunk = True
 	
 	# walk through the stream one sample at the time
-	while(data != track.signature_bytes and next_chunk):
+	while data != track.signature_bytes and next_chunk:
 		next_chunk = next(mtrack.trackstream)
 		data = mtrack.trackstream.read(len(track.signature_bytes))
 		if data == track.signature_bytes:
