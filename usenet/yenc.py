@@ -82,9 +82,9 @@ def decode(data, seg_part=False, ignore_crc=False):
 			decoded_data = b'\r\n'.join(data)
 
 		#Deal with yenc encoded posts
-		elif (ybegin and (yend or (not yend and seg_part))):
+		elif ybegin and (yend or (not yend and seg_part)):
 			if not b'name' in ybegin:
-				logging.debug("Possible corrupt header detected " + \
+				logging.debug("Possible corrupt header detected "
 							  "=> ybegin: %s", ybegin)
 			# Decode data
 			if HAVE_YENC:
@@ -112,7 +112,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 					_partcrc = int(yend[crcname], 16)
 				except (LookupError, ValueError):
 					_partcrc = None
-					logging.debug("Corrupt header detected " + \
+					logging.debug("Corrupt header detected "
 								  "=> yend: %s", yend)
 	
 				if not (_partcrc == partcrc):

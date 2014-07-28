@@ -92,10 +92,10 @@ def check_availability_stored_files(srr_file):
 			return False
 	return True
 
-def check_for_no_ext(srr_file, extention):
+def check_for_no_ext(srr_file, extension):
 	for block in RarReader(srr_file):
 		if (block.rawtype == BlockType.SrrStoredFile and
-			block.file_name.lower().endswith(extention)):
+			block.file_name.lower().endswith(extension)):
 			return False
 	return True
 		
