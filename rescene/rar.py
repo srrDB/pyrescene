@@ -1476,7 +1476,7 @@ class RarReader(object):
 		#   otherwise you would get this error:
 		#   error: unpack requires a string argument of length 7
 		if block_start_position + HEADER_LENGTH > self._file_length:
-			if (self._rar_end_block_encountered and self._readmode == self.RAR):
+			if self._rar_end_block_encountered and self._readmode == self.RAR:
 				return SrrRarPaddingBlock(padding_bytes=self._rarstream.read())
 			else:
 				raise EnvironmentError("Cannot read basic block header.")
@@ -1503,7 +1503,7 @@ class RarReader(object):
 		(_crc, btype, flags, hsize) = struct.unpack(fmt, header_buffer)
 		
 		# detect padding bytes
-		if (self._rar_end_block_encountered and self._readmode == self.RAR):
+		if self._rar_end_block_encountered and self._readmode == self.RAR:
 			return SrrRarPaddingBlock(
 				padding_bytes=header_buffer + self._rarstream.read())
 		if btype == BlockType.RarMax:

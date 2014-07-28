@@ -1165,8 +1165,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			# then grab the correct amount of data from the extracted file
 			running_crc = _repack(block, rarfs, in_folder, srcfs, running_crc, 
 								 skip_rar_crc)
-		elif block.rawtype >= BlockType.RarMin and  \
-				block.rawtype <= BlockType.RarMax or  \
+		elif BlockType.RarMin <= block.rawtype <= BlockType.RarMax or \
 				(block.rawtype == 0x00 and block.header_size == 20): #TODO:test
 			# copy any other RAR blocks to the destination unmodified
 			rarfs.write(block.block_bytes())
@@ -2135,7 +2134,7 @@ class CompressedRarFile(io.IOBase):
 			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
-				while(args.increase_thread_count()):
+				while args.increase_thread_count():
 					if try_rar_executable(rar, args, old):
 						found = True
 						break
@@ -2157,7 +2156,7 @@ class CompressedRarFile(io.IOBase):
 					args.set_extra_files_before([prev_file.source_files[-1]])
 					
 					if rar.supports_setting_threads():
-						while(args.increase_thread_count()):
+						while args.increase_thread_count():
 							if try_rar_executable(rar, args, old):
 								found = True
 								break
@@ -2309,7 +2308,7 @@ def calculate_size_volume(blocks):
 	"""Calculates the size of the first volume."""
 	size = 0
 	for block in blocks:
-		if (block.rawtype == BlockType.RarMin and size != 0):
+		if block.rawtype == BlockType.RarMin and size != 0:
 			return size # when there is no archive end block
 		elif block.rawtype == BlockType.RarMax:
 			size += block.header_size
