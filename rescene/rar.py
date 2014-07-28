@@ -644,7 +644,7 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 		
 		self._write_header(length)
 		# ADD_SIZE field: unsigned integer (4 bytes)
-		self._rawdata += (struct.pack("<I", file_size))
+		self._rawdata += struct.pack("<I", file_size)
 		self._rawdata += file_name_data
 
 	def srr_data(self):
@@ -897,8 +897,8 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 			out += self.flag_format(self.SOLID) + "MHD_SOLID "  \
 				"(Solid attribute (solid archive))\n"
 		if self.flags & self.NEW_NUMBERING:
-			out += self.flag_format(self.NEW_NUMBERING) + "MHD_NEWNUMBERING" + \
-				", MHD_PACK_COMMENT " +  \
+			out += self.flag_format(self.NEW_NUMBERING) + "MHD_NEWNUMBERING" \
+				", MHD_PACK_COMMENT "  \
 				"(New volume naming scheme ('volname.partN.rar'))\n"
 		if self.flags & self.AUTHENTICITY:
 			out += self.flag_format(self.AUTHENTICITY) + "MHD_AV "  \
@@ -1185,7 +1185,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			out += self.flag_format(self.COMMENT) + "LHD_COMMENT "  \
 				"(file comment present -> RAR 3.x has separate block)\n"
 		if self.flags & self.SOLID:
-			out += self.flag_format(self.SOLID) + "LHD_SOLID" + \
+			out += self.flag_format(self.SOLID) + "LHD_SOLID" \
 				"(information from previous files is used (solid flag) 2.0+)\n"
 		if self.flags & self.LARGE_FILE:
 			out += self.flag_format(self.LARGE_FILE) + "LHD_LARGE "  \
@@ -1195,7 +1195,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 				"(Unicode name separated by zero also available)\n"
 		if self.flags & self.SALT:
 			out += self.flag_format(self.SALT) + "LHD_SALT "  \
-				"(the header contains additional 8 bytes" +  \
+				"(the header contains additional 8 bytes"  \
 				" to increase encryption security)\n"
 		if self.flags & self.VERSION:
 			out += self.flag_format(self.VERSION) + "LHD_VERSION "  \

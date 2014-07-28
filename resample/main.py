@@ -1208,7 +1208,7 @@ def profile_wmv(wmv_data): # FileData object
 			# exact size is stored in one of the header objects
 			i = 16
 			(file_size,) = S_LONGLONG.unpack_from(data, i)
-			if (file_size != wmv_data.size):
+			if file_size != wmv_data.size:
 				print("\nWarning: File size does not appear to be correct!",
 				      "\t Expected: %s" % sep(file_size),
 				      "\t Found   : %s\n" % sep(wmv_data.size), 
@@ -1858,7 +1858,7 @@ def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	next_chunk = True
 	
 	# walk through the stream one sample at the time
-	while(data != track.signature_bytes and next_chunk):
+	while data != track.signature_bytes and next_chunk:
 		next_chunk = next(mtrack.trackstream)
 		data = mtrack.trackstream.read(len(track.signature_bytes))
 		if data == track.signature_bytes:
