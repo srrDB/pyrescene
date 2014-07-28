@@ -134,14 +134,14 @@ def parse_sfv_file(sfv_file):
 	def parse(file_data):
 		for line in file_data.split(b"\n"):
 			# empty line, comments or useless text for whatever reason
-			if not (line).strip():
+			if not line.strip():
 				pass # blank line detected
-			elif (line).lstrip().startswith(b";"):
+			elif line.lstrip().startswith(b";"):
 			# or len(line) < 10:
 				line = line.decode("ascii", "replace")
 				comments.append(line)
 			else:
-				line = (line.rstrip())
+				line = line.rstrip()
 				try:
 					text = line.decode("ascii")
 					text = text.replace("\t", "    ") # convert tabs
@@ -276,7 +276,7 @@ def show_spinner(amount):
 	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
 
 def remove_spinner():
-	sys.stdout.write("\b"), # removes spinner
+	sys.stdout.write("\b") # removes spinner
 	
 def empty_folder(folder_path):
 	if os.name == "nt" and win32api_available:

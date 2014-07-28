@@ -768,7 +768,7 @@ class NNTPFile(io.IOBase):
 			if i not in self.data:
 				# download the segment
 				# not all the data for first segment RAR files
-				if (self.is_rar and spart_nb == 1):
+				if self.is_rar and spart_nb == 1:
 					amount = DEFAULT_LINES
 				else:
 					amount = -1
@@ -791,7 +791,7 @@ class NNTPFile(io.IOBase):
 							lines = int(match.group(1))
 							break
 					if lines > 10: # arbitrary number
-						line_size = (self.segments[i].bytes // lines)
+						line_size = self.segments[i].bytes // lines
 						# yEnc overhead (around 2%)
 						new_line_size = line_size
 						new_line_size -= new_line_size * 0.07
@@ -807,7 +807,7 @@ class NNTPFile(io.IOBase):
 				# try to fix one (or more) byte off yEnc (CRC) errors here
 				# it's for the RR: somewhere in the file and RAR
 				# when actual size is different than advertised size
-				if (i == spart_nb and is_rar(self.name)):
+				if i == spart_nb and is_rar(self.name):
 					# minimum size split archives used is 15 million bytes
 #					and self._current_position > 10000000):
 					spart_offset = do_magic(spart_offset, i)
@@ -878,8 +878,8 @@ class NNTPFile(io.IOBase):
 				
 		#--- start file magic -------------------------------------------------
 		# handle first byte missing of RAR (never seen this yet?)
-		# will never be used because rarreader reads the 3rd byte fist?
-		if (is_rar(self.name) and self._current_position == 0):
+		# will never be used because rarreader reads the 3rd byte first?
+		if is_rar(self.name) and self._current_position == 0:
 #			print("Is RAR and reading from the start!")
 #			print(hexlify(self.data[1][0:6]).decode('ascii'))
 			marker = b"Rar!\x1a\x07\x00"
@@ -895,7 +895,7 @@ class NNTPFile(io.IOBase):
 		
 		# MAGIC for all other cases (for RAR volumes with many files)
 		# we are probably reading a rar basic header block	
-		if (is_rar(self.name) and size == 7 and self._did_seek):
+		if is_rar(self.name) and size == 7 and self._did_seek:
 #			self._current_position == 0):
 			spart_offset_after = do_magic(spart_offset, spart_nb)
 			
@@ -1073,7 +1073,7 @@ def create_srr(nzb_path, options):
 
 	nntp_files = {}	# everything
 	to_store = []	# saved in the SRR file
-	sfvs = []		# we use this to find allf the other files
+	sfvs = []		# we use this to find all the other files
 	result = False  # no SRR file is created
 	
 	read_retries = 3 * len(EXTRA_SERVERS)
