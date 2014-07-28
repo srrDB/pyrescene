@@ -49,11 +49,11 @@ def decode_id3_size(sbytes):
 	              (ord(sbytes[i:i + 1]) for i in range(4)))
 	
 def encode_id3_size(size):
-	result = b""
+	result = bytearray(4)
 	# adds groups of last 7 bytes to the result
 	for i in range(4):
 		byte = (size >> (i*7)) & 0x7F
-		result = chr(byte) + result
+		result[-1 - i] = byte
 	return result
 
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
