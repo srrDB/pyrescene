@@ -221,7 +221,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		# append release name to the output path for all extracted files
 		if options.parent: # -d (additional usage for this option)
 			srr = os.path.basename(infiles[0])
-			out_folder = os.path.join(out_folder, srr.rstrip(".srr"))
+			out_folder = os.path.join(out_folder, os.path.splitext(srr)[0])
 		
 		# extract ALL possible files
 		files = rescene.extract_files(infiles[0], out_folder, save_paths)
