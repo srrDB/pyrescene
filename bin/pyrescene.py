@@ -70,7 +70,7 @@ from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
-from rescene.utility import raw_input, unicode
+from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
 
 o = rescene.Observer()
@@ -467,8 +467,10 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 							if line.startswith(b"id: "):
 								language_lines.append(line)
 					with open(idx_lang, "ab") as diz:
+						efile = fsunicode(efile)
 						line = "# %s\n" % efile
-						line = line.encode("ascii")
+						line = line.encode("utf-8",
+							"replace")
 						diz.write(line)
 						for line in language_lines:
 							diz.write(line)
