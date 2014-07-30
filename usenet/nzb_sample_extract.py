@@ -78,7 +78,7 @@ def is_sample(file_name):
 		exts += "|\.m2ts" 
 	
 	if exts == "": # those that are currently SRSable
-		print("No extentions given. Testing for AVI and MKV.")
+		print("No extensions given. Testing for AVI and MKV.")
 		exts = "\.avi|\.mkv"
 	else: # strip leading |
 		exts = exts[1:]

@@ -65,8 +65,16 @@ if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
+	unicode = unicode  # Export to other modules
+	
+	def fsunicode(path):
+		"""Converts a file system "str" object to Unicode"""
+		encoding = sys.getfilesystemencoding()
+		return path.decode(encoding or sys.getdefaultencoding())
 else:
 	unicode = str #@ReservedAssignment
+	def fsunicode(path):
+		return path
 
 try:  # Python < 3
 	raw_input = raw_input
@@ -132,13 +140,13 @@ def parse_sfv_data(file_data):
 	
 	for line in file_data.split(b"\n"):
 		# empty line, comments or useless text for whatever reason
-		if not (line).strip():
+		if not line.strip():
 			pass # blank line detected
-		elif (line).lstrip().startswith(b";"): # or len(line) < 10:
+		elif line.lstrip().startswith(b";"): # or len(line) < 10:
 			line = line.decode("ascii", "replace")
 			comments.append(line)
 		else:
-			line = (line.rstrip())
+			line = line.rstrip()
 			try:
 				text = line.decode("ascii")
 				text = text.replace("\t", "    ") # convert tabs
@@ -274,7 +282,7 @@ def show_spinner(amount):
 	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
 
 def remove_spinner():
-	sys.stdout.write("\b"), # removes spinner
+	sys.stdout.write("\b") # removes spinner
 	
 def empty_folder(folder_path):
 	if os.name == "nt" and win32api_available:
