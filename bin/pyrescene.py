@@ -922,7 +922,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	
 	# season torrent packs have often an additional NFO file in the root
 	# don't detect as a release if this is the case
-	if len(filenames) == 1 and filenames[0].lower()[-4:] == ".nfo":
+	if len(filenames) == 1 and filenames[0].lower().endswith(".nfo"):
 		# could still be a regular release with multiple CDs
 		# each other subdir must be a release dir -> not reldir itself
 		release = False

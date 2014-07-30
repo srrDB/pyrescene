@@ -176,7 +176,7 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 			print("error: %s" % fname)
 
 def get_rar_date_name(file_name):
-	if file_name.endswith(".exe") or file_name.endswith(".sfx"):
+	if file_name.endswith((".exe", ".sfx")):
 		for block in RarReader(file_name, enable_sfx=True):
 			try:
 				if block.file_name in ("Rar.exe", "Rar.Exe", "rar\\rar", "rar"):
