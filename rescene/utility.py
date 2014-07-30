@@ -69,6 +69,8 @@ if sys.hexversion < 0x3000000:
 	
 	def fsunicode(path):
 		"""Converts a file system "str" object to Unicode"""
+		if isinstance(path, unicode):
+			return path
 		encoding = sys.getfilesystemencoding()
 		return path.decode(encoding or sys.getdefaultencoding())
 else:
