@@ -1450,7 +1450,7 @@ def main(options, args):
 			priorities = []
 			servers = []
 			for sec in config.sections():
-				if config.getboolean(sec, "enabled") and "server_" == sec[:7]:
+				if config.getboolean(sec, "enabled") and sec.startswith("server_"):
 					priority = config.getint(sec, "priority")
 					host = config.get(sec, "host")
 					print("\t%s" % host)
