@@ -4,7 +4,7 @@ from io import BytesIO
 try:
     from lxml import etree
 except ImportError:
-    raise ImportError("You must have lxml installed before you can use the " +
+    raise ImportError("You must have lxml installed before you can use the "
         "lxml NZB parser.")
 
 class LXMLNZBParser(BaseETreeNZBParser):

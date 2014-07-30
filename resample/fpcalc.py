@@ -29,6 +29,7 @@ import inspect
 import os
 import sys
 from distutils.spawn import find_executable
+from rescene.utility import fsunicode
 
 MSG_NOTFOUND = "The fpcalc executable isn't found."
 
@@ -104,15 +105,6 @@ def module_path():
 	if we_are_frozen():
 		return os.path.dirname(fsunicode(sys.executable))
 	return os.path.dirname(fsunicode(__file__))
-
-try:
-	unicode
-except NameError:  # Python 3
-	def fsunicode(path):
-		return path
-else:  # Python < 3
-	def fsunicode(path):
-		return unicode(path, sys.getfilesystemencoding())
 
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""

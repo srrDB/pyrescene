@@ -39,8 +39,6 @@ Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
-from __future__ import unicode_literals
-
 from optparse import OptionParser, OptionGroup # argparse new in version 2.7
 from tempfile import mkdtemp
 from datetime import datetime
@@ -72,7 +70,7 @@ from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from rescene.unrar import unrar_is_available, locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
-from rescene.utility import raw_input
+from rescene.utility import raw_input, unicode
 from rescene.utility import decodetext, encodeerrors
 
 o = rescene.Observer()
@@ -91,13 +89,13 @@ def can_create(always_yes, path):
 			retvalue = False
 	return retvalue
 
-def get_files(release_dir, extention):
+def get_files(release_dir, extension):
 	"""Gather all 'extension' files from the subdirs."""
 	matches = []
 	try:
 		for dirpath, _dirnames, filenames in os.walk(release_dir):
 			for filename in filenames:
-				if fnmatch.fnmatchcase(filename.lower(), extention.lower()):
+				if fnmatch.fnmatchcase(filename.lower(), extension.lower()):
 					matches.append(os.path.join(dirpath, filename))
 		return matches
 	except TypeError:
@@ -1181,9 +1179,9 @@ def main(argv=None):
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
-				"open %s type cdaudio alias ddrive" % drive, None, 0, None)
+				unicode("open %s type cdaudio alias ddrive") % drive, None, 0, None)
 			ctypes.windll.WINMM.mciSendStringW(
-				"set ddrive door open", None, 0, None)
+				unicode("set ddrive door open"), None, 0, None)
 		
 		try:
 			import winsound #@UnresolvedImport
