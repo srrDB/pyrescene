@@ -444,6 +444,9 @@ def main(argv=None):
 	
 	rescene.main.can_overwrite = can_overwrite
 	
+	if options.temp_dir and not os.path.isdir(options.temp_dir):
+		report_error(1, "Provided temporary directory not found.\n")
+	
 	if options.allow_compressed:
 		print("*"*60, file=sys.stderr)
 		sys.stderr.write("""\
