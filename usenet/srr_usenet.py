@@ -231,44 +231,30 @@ class NNTP(nntplib.NNTP):
 		
 		return resp, article_nr, msg_id, list_body
 	
-	def getlongresp_little(self, ofile=None, max_nb_lines=DEFAULT_LINES):
+	def getlongresp_little(self, max_nb_lines=DEFAULT_LINES):
 		"""Internal: get a response plus following text from server.
 		Raise various errors if the response indicates an error.
 		
 		Gets only one or more of the first lines.
 		max_nb_lines = 3: yEnc header and first data line """
-		openedFile = None
+		resp = self.getresp()
 		try:
-			# If a string was passed, open a file with that name
-			if isinstance(ofile, str):
-				openedFile = ofile = open(ofile, "wb")
-
-			resp = self.getresp()
-			try:
-				resplist = nntplib.LONGRESP
-			except AttributeError: #Python 3
-				resplist = nntplib._LONGRESP #@UndefinedVariable
-			if resp[:3] not in resplist:
-				raise nntplib.NNTPReplyError(resp)
-			data_list = []
-			# grab one or more lines only
-			line_amount = 0
-			while line_amount < max_nb_lines:
-				line = self.getline()
-				if line == b'.':
-					break
-				if line.startswith(b'..'):
-					line = line[1:]
-				if ofile:
-					ofile.write(line + b"\n")
-				else:
-					data_list.append(line)
-				line_amount += 1
-		finally:
-			# If this method created the file, it must close it
-			if openedFile:
-				openedFile.close()
-
+			resplist = nntplib.LONGRESP
+		except AttributeError: #Python 3
+			resplist = nntplib._LONGRESP #@UndefinedVariable
+		if resp[:3] not in resplist:
+			raise nntplib.NNTPReplyError(resp)
+		data_list = []
+		# grab one or more lines only
+		line_amount = 0
+		while line_amount < max_nb_lines:
+			line = self.getline()
+			if line == b'.':
+				break
+			if line.startswith(b'..'):
+				line = line[1:]
+			data_list.append(line)
+			line_amount += 1
 		return resp, data_list
 
 def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
