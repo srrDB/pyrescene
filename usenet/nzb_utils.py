@@ -29,7 +29,7 @@ def read_nzb(nzb_file):
 	print("Reading %s." % os.path.basename(nzb_file))
 	def parse(pnzb_file):
 		try: # file on disk
-			with open(pnzb_file) as file:
+			with open(pnzb_file, "rb") as file:
 				return pynzb.nzb_parser.parse(file.read())
 		except: # an open file object
 			return pynzb.nzb_parser.parse(pnzb_file.read())
