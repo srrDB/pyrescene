@@ -14,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from __future__ import unicode_literals
-
 # https://docs.newzbin2.es/index.php/Newzbin:NZB_Specs
 
 import pynzb # http://pypi.python.org/pypi/pynzb/
@@ -50,8 +48,8 @@ def read_nzb(nzb_file):
 		with open(nzb_file, "rb") as file:
 			for line in file.readlines():
 				line = re.sub(XML_AMP_FIX, b"&amp;", line)
-				ouml = "ö".encode("latin-1")
-				line = re.sub(b"&ouml;", ouml, line)
+				LATIN1_OUML = b"\xF6"
+				line = re.sub(b"&ouml;", LATIN1_OUML, line)
 				# invalid XML characters from NewsLeecher
 				line = re.sub(b"\00", b"", line)
 				fixed_nzb.write(line)

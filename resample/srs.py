@@ -36,7 +36,7 @@ import resample
 from rescene.utility import sep
 from resample.main import FileType
 from resample import fpcalc
-from rescene.utility import raw_input
+from rescene.utility import raw_input, unicode
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
@@ -59,8 +59,8 @@ def main(argv=None, no_exit=False):
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
 		
 	"To create a ReSample file (SRS), pass in the sample file.\n"
-	"This can be an AVI, MKV, MP4 or WMV file.\n"
-	"	ex: srs sample.mkv -dd\n"
+	"This can be an AVI, MKV, MP4, WMV, MP3 or FLAC file.\n"
+	"	ex: srs sample.mkv --dd\n"
 	"To recreate a sample, pass in the SRS file and the full movie file\n"
 	"or the first file of a RAR set containing the full movie.\n"
 	"	ex: srs sample.srs full.mkv\n"
@@ -212,8 +212,8 @@ def main(argv=None, no_exit=False):
 			sample_file_data = resample.FileData(file_name=sample_file)
 			try:
 				tracks, attachments = sample.profile_sample(sample_file_data)
-			except resample.IncompleteSample:
-				pexit(2, str(sys.exc_info()[1]))
+			except resample.IncompleteSample as err:
+				pexit(2, str(err))
 	
 			if not len(tracks):
 				pexit(2, "No A/V data was found. "
@@ -260,7 +260,8 @@ def main(argv=None, no_exit=False):
 			
 			print("SRS Type   : {0}".format(ftype_arg0))
 			print("SRS App    : {0}".format(srs_data.appname))
-			print("Sample Name: {0}".format(srs_data.name))
+			msg = unicode("Sample Name: {0}")
+			print(msg.format(srs_data.name))
 			print("Sample Size: {0}".format(sep(srs_data.size)))
 			print("Sample CRC : {0:08X}".format(srs_data.crc32))
 			for track in tracks.values():
@@ -273,7 +274,8 @@ def main(argv=None, no_exit=False):
 				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
 					try:
 						print("Duration: %d" % track.duration)
-						print("AcoustID fingerprint: %s" % track.fingerprint)
+						print("AcoustID fingerprint: %s" % 
+						      track.fingerprint.decode("ascii"))
 					except AttributeError:
 						pass # SRS without fingerprint information
 			
@@ -386,23 +388,26 @@ def main(argv=None, no_exit=False):
 		
 		pexit(0)
 	
-	except (ValueError, AssertionError):
+	except (ValueError, AssertionError) as err:
 		if _DEBUG:
 			traceback.print_exc()
 		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-				sys.exc_info()[1])
-	except fpcalc.ExecutableNotFound:
-		pexit(3, str(sys.exc_info()[1]))
-	except AttributeError:
-		if str(sys.exc_info()[1]).startswith("Compressed RARs"):
+		      str(err).strip('\n').rstrip('.')) # prevent double dots
+	except fpcalc.ExecutableNotFound as err:
+		pexit(3, str(err))
+	except AttributeError as err:
+		if str(err).startswith("Compressed RARs"):
 			# AttributeError: Compressed RARs are not supported
 			pexit(4, "Cannot verify sample against compressed RARs.")
+		elif (str(err) == 
+			"You must start with the first volume from a RAR set"):
+			pexit(5, str(err))
 		else:
 			traceback.print_exc()
-			pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
-	except Exception:
+			pexit(99, "Unexpected Error:\n%s\n" % err)
+	except Exception as err:
 		traceback.print_exc()
-		pexit(99, "Unexpected Error:\n%s\n" % sys.exc_info()[1])
+		pexit(99, "Unexpected Error:\n%s\n" % err)
 
 if __name__ == "__main__":
 	if "--profile" in sys.argv:

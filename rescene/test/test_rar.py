@@ -247,8 +247,7 @@ class TestSrrFileBlocks(unittest.TestCase): # 0x6A
 		sfb = SrrStoredFileBlock(file_name="Κείμενο στην ελληνική γλώσσα.txt",
 								 file_size=65)
 		# tests file name attribute
-		self.assertEqual(sfb.file_name,
-			"Κείμενο στην ελληνική γλώσσα.txt")
+		self.assertEqual(sfb.file_name, "Κείμενο στην ελληνική γλώσσα.txt")
 		# tests full block (including the previous test)
 		data = bytearray.fromhex("6A 6A 6A 00 80 46 00 41 00 00 00 39 00 CE 9A CE B5 CE AF"
 		" CE BC CE B5 CE BD CE BF 20 CF 83 CF 84 CE B7 CE BD 20 CE B5 CE"

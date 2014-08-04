@@ -217,7 +217,7 @@ class BlockType: # saved as integer number internally
 	RarOldSubblock = 0x77 # OS/2 extended attributes subblock
 	RarOldAuthenticity79 = 0x79 # SIGN_HEAD
 	
-	# these are the only rar block types we do anything with
+	# these are the only RAR block types we do anything with
 	RarVolumeHeader = 0x73  # Archive header                            s
 	RarPackedFile = 0x74    # File header                               t
 	RarOldRecovery = 0x78   # old-style recovery record                 x
@@ -232,6 +232,7 @@ class BlockType: # saved as integer number internally
 	SrrHeader = 0x69        # i -> 0x73 (s) RarVolumeHeader
 	SrrStoredFile = 0x6A    # j -> 0x74 (t) RarPackedFile
 	SrrOsoHash = 0x6B       # k
+	SrrRarPadding = 0x6C	# l
 	SrrRarFile = 0x71       # q -> 0x7A (z) RarNewSub
 	
 class SrrFlags():
@@ -425,7 +426,13 @@ class RarBlock(object):
 		return "0x%X (%u bytes)" % (size, size)
 
 class _SrrFileNameBlock(RarBlock):
-	"""Base class for SRR blocks with a file name field"""
+	"""Base class for SRR blocks with a file name field
+	
+	The "file_name" attribute holds the original file name as stored in
+	the SRR file. Forward slashes (/) are the preferred directory
+	separator, but apparently the Net version also recognizes the
+	backward slash (\\), and there is a test case for this. File paths in
+	RAR files use backward slashes."""
 	
 	def _unpack_file_name(self):
 		'''Read in "self.file_name"'''
@@ -441,10 +448,7 @@ class _SrrFileNameBlock(RarBlock):
 		
 		Sets "self.file_name", with any directory separators
 		converted to internal format. The return value is also
-		encoded with UTF-8 and prefixed with its length.
-		
-		Paths always use forward slashes as the directory separator.
-		File paths in RAR files use backward slashes."""
+		encoded with UTF-8 and prefixed with its length."""
 		
 		if os.sep != "/" and os.sep in file_name:
 			file_name = file_name.replace(os.sep, "/")
@@ -454,6 +458,16 @@ class _SrrFileNameBlock(RarBlock):
 		
 		# the size in bytes (not the number of Unicode characters).
 		return struct.pack("<H", len(file_name)) + file_name
+	
+	def os_file_name(self):
+		"""Returns the file name converted to an OS-specific path
+		
+		The "file_name" attribute may not be directly usable,
+		especially in OSes other than Windows. Raises ValueError if
+		the file name is unsuitable for the current OS."""
+		
+		path = self.file_name.replace("\\", "/")
+		return utility.joinpath(path.split("/"))
 
 class SrrHeaderBlock(RarBlock):
 	""" Represents marker/srr volume header block.
@@ -630,7 +644,7 @@ class SrrStoredFileBlock(_SrrFileNameBlock):
 		
 		self._write_header(length)
 		# ADD_SIZE field: unsigned integer (4 bytes)
-		self._rawdata += (struct.pack("<I", file_size))
+		self._rawdata += struct.pack("<I", file_size)
 		self._rawdata += file_name_data
 
 	def srr_data(self):
@@ -798,6 +812,49 @@ class SrrOsoHashBlock(_SrrFileNameBlock):
 		        len(self.file_name.encode("utf-8"))) + "\n"
 		out += "+File name: " + self.file_name + "\n"
 		return out
+
+class SrrRarPaddingBlock(RarBlock):
+	"""
+	Some scene releases, e.g.
+	    The.Numbers.Station.2013.720p.BluRay.x264-DAA
+	    Stand.Up.Guys.2012.720p.BluRay.x264-DAA
+	have padded bytes after the end of the RAR Archive End Block.
+	This block will include those padded bytes into the SRR file.
+		
+	|CRC |TY|FLAG| HL |  SIZE  |
+	CRC:    0x6C6C (2 bytes)
+	TY:     Type 0x6C (1 byte)
+	FLAG:   Long block (2 bytes)
+	HL:     Header Length (2 bytes)
+	        Always 7 + 4 = 11 bytes.
+	"""
+	def __init__(self, bbytes=None, filepos=None, fname=None,
+				padding_bytes=None):
+		if bbytes != None:
+			super(SrrRarPaddingBlock, self).__init__(bbytes, filepos, fname)
+			
+			# 4 bytes for the padding size (ADD_SIZE)
+			self.padding_size = struct.unpack("<I", 
+				self._rawdata[self._p:self._p+4])[0]
+			self._p += 4
+		elif padding_bytes != None:
+			self.crc = 0x6C6C
+			self.rawtype = 0x6C
+			self.flags = self.LONG_BLOCK
+			self.padding_size = len(padding_bytes)
+			self.header_size = HEADER_LENGTH + 4
+			
+			self._write_header(self.header_size)
+			self._rawdata += struct.pack("<I", self.padding_size) # 4 bytes
+			self._rawdata += padding_bytes
+		else:
+			raise AttributeError("Invalid values for the constructor.")
+			
+	def explain(self):
+		out = super(SrrRarPaddingBlock, self).explain()
+		out += "+Padding size (4 bytes): " + self.explain_size(
+												self.padding_size) + "\n"
+		return out
 	
 class RarVolumeHeaderBlock(RarBlock): # 0x73
 	""" Archive header ( MAIN_HEAD )
@@ -840,8 +897,8 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 			out += self.flag_format(self.SOLID) + "MHD_SOLID "  \
 				"(Solid attribute (solid archive))\n"
 		if self.flags & self.NEW_NUMBERING:
-			out += self.flag_format(self.NEW_NUMBERING) + "MHD_NEWNUMBERING" + \
-				", MHD_PACK_COMMENT " +  \
+			out += self.flag_format(self.NEW_NUMBERING) + "MHD_NEWNUMBERING" \
+				", MHD_PACK_COMMENT "  \
 				"(New volume naming scheme ('volname.partN.rar'))\n"
 		if self.flags & self.AUTHENTICITY:
 			out += self.flag_format(self.AUTHENTICITY) + "MHD_AV "  \
@@ -887,6 +944,10 @@ class RarVolumeHeaderBlock(RarBlock): # 0x73
 		
 class RarPackedFileBlock(RarBlock): # 0x74
 	""" File header (File in archive)
+	
+	"file_name" attribute: File name stored in the block, using the
+		backslash (\\) as a directory separator
+	
 	HEAD_CRC        CRC of fields from HEAD_TYPE to FILEATTR   2 bytes
 	                and file name
 	HEAD_TYPE       Header type: 0x74                          1 byte
@@ -1080,6 +1141,8 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			return "-mdB"
 		elif self.flags & self.DICT64 == self.DICT64:
 			return "-mdA"
+		else: # self.DIRECTORY
+			return ""
 	
 	def get_os(self):
 		return "%s used to create this file block." % OS_NAME[self.os]
@@ -1122,7 +1185,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 			out += self.flag_format(self.COMMENT) + "LHD_COMMENT "  \
 				"(file comment present -> RAR 3.x has separate block)\n"
 		if self.flags & self.SOLID:
-			out += self.flag_format(self.SOLID) + "LHD_SOLID" + \
+			out += self.flag_format(self.SOLID) + "LHD_SOLID" \
 				"(information from previous files is used (solid flag) 2.0+)\n"
 		if self.flags & self.LARGE_FILE:
 			out += self.flag_format(self.LARGE_FILE) + "LHD_LARGE "  \
@@ -1132,7 +1195,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 				"(Unicode name separated by zero also available)\n"
 		if self.flags & self.SALT:
 			out += self.flag_format(self.SALT) + "LHD_SALT "  \
-				"(the header contains additional 8 bytes" +  \
+				"(the header contains additional 8 bytes"  \
 				" to increase encryption security)\n"
 		if self.flags & self.VERSION:
 			out += self.flag_format(self.VERSION) + "LHD_VERSION "  \
@@ -1146,6 +1209,15 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		out += self.flag_format(self.flags & self.DIRECTORY) +  \
 				"LHD_WINDOW (" + self.get_dictionary() + ")\n"
 		return out
+	
+	def os_file_name(self):
+		"""Returns the file name converted to an OS-specific path
+		
+		The "file_name" attribute may not be directly usable,
+		especially in OSes other than Windows. Raises ValueError if
+		the file name is unsuitable for the current OS."""
+		
+		return utility.joinpath(self.file_name.split("\\"))
 
 class RarNewSubBlock(RarPackedFileBlock): # 0x7A
 	""" RarNewSubBlock is used for AV, CMT, RR. 
@@ -1277,6 +1349,7 @@ BTYPES_CLASSES = {
 	BlockType.SrrStoredFile: SrrStoredFileBlock,
 	BlockType.SrrRarFile: SrrRarFileBlock,
 	BlockType.SrrOsoHash: SrrOsoHashBlock,
+	BlockType.SrrRarPadding: SrrRarPaddingBlock,
 	BlockType.RarVolumeHeader: RarVolumeHeaderBlock,
 	BlockType.RarPackedFile: RarPackedFileBlock,
 	BlockType.RarOldRecovery: RarOldRecoveryBlock,
@@ -1305,8 +1378,8 @@ class RarReader(object):
 		else: # file on hard drive
 			try:
 				self._rarstream = open(rfile, mode="rb")
-			except (IOError, TypeError):
-				raise ArchiveNotFoundError(sys.exc_info()[1])
+			except (IOError, TypeError) as err:
+				raise ArchiveNotFoundError(err)
 		
 		# get the length of the stream
 		self._initial_offset = self._rarstream.tell()
@@ -1361,6 +1434,7 @@ class RarReader(object):
 				raise ValueError("SFX support not on or not a RAR archive.")
 		self._rarstream.seek(self._initial_offset)
 		self._current_index = 0
+		self._rar_end_block_encountered = False # for detecting padding
 
 	def __del__(self):
 		try: # close the file/stream
@@ -1402,7 +1476,10 @@ class RarReader(object):
 		#   otherwise you would get this error:
 		#   error: unpack requires a string argument of length 7
 		if block_start_position + HEADER_LENGTH > self._file_length:
-			raise EnvironmentError("Cannot read basic block header.")
+			if self._rar_end_block_encountered and self._readmode == self.RAR:
+				return SrrRarPaddingBlock(padding_bytes=self._rarstream.read())
+			else:
+				raise EnvironmentError("Cannot read basic block header.")
 
 		""" The block header is always 7 bytes: (see struct BaseBlock unrar)
 		  - 2 for crc,                  H  unsigned short
@@ -1424,6 +1501,13 @@ class RarReader(object):
 		header_buffer = self._rarstream.read(HEADER_LENGTH)
 		fmt = "<HBHH"
 		(_crc, btype, flags, hsize) = struct.unpack(fmt, header_buffer)
+		
+		# detect padding bytes
+		if self._rar_end_block_encountered and self._readmode == self.RAR:
+			return SrrRarPaddingBlock(
+				padding_bytes=header_buffer + self._rarstream.read())
+		if btype == BlockType.RarMax:
+			self._rar_end_block_encountered = True
 		
 		# one more sanity check on the length before continuing
 		if (hsize < HEADER_LENGTH or 

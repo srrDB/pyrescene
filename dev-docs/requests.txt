@@ -1092,3 +1092,86 @@ cxx		Gfy: this sample failed to rebuild Saboteur.1942.MULTi.1080p.BluRay.x264-RO
 aidan		Gfy: does pyrescene have an option to just verify an exracted release is valid?
 
  -> added
+ 
+<cwiz> [17:54:09] Hi
+<cwiz> [17:55:09] Question... When using srr with the -r flag, it will auto-locate files (using size or hash).  This works fine for reconstructing rars, but does this not work when simply verifying (with the -q flag)?
+<cwiz> [17:57:13] It would also be cool if there was an option to automatically rename any files that were auto-located.
+<@cxx> [17:57:52] these are gonna be rarred anyway, aren't they?
+<cwiz> [17:59:00] Well, not always... I just like verifying the files, not re-rarring them.
+<@cxx> [17:59:14] :S
+<cwiz> [17:59:34] Some media players don't play rared files, so it's not always an option unfortunately.
+<@cxx> [18:00:05] you can change media players
+<cwiz> [18:00:38] I have a dedicated media player.
+<@cxx> [18:01:00] oh, like a multimedia hardware thingy?
+<cwiz> [18:01:05] My computer I just use VLC, but I have other media boxes (wdtv, etc.).
+<cwiz> [18:01:07] Yea, exactly.
+<cwiz> [18:01:32] They use their own propitiatory crap, which is very annoying.
+<cwiz> [18:02:02] So I've been just verifying the files (to guarantee their integrity), but keeping them in their extracted (playable) form.
+<@cxx> [18:02:09] yeah i see
+<cwiz> [18:04:14] So any idea if it's possible to rename the files using srr with the -r and -q flag?
+<cwiz> [18:04:46] I was just writing my own script to do it, but I figured I should just make sure before duplicating work.
+<@Gfy> [18:14:35] it does currently not exist: https://bitbucket.org/Gfy/pyrescene/src/e02b9325f54de7520fcc684644f704dd436b98b9/rescene/srr.py?at=default#cl-147
+<cwiz> [18:30:10] Ok, thanks!
+ 
+ -> added
+ 
+WARNING:root:P:\EBOOKS\Microsoft.Press.-.Microsoft.SharePoint.2010.Plain.and.Simple.2010.RETAiL.eBOOk-rebOOk: SRR could not be created.
+P:\EBOOKS\Microsoft.Press.-.Microsoft.Word.2010.Inside.Out.2010.RETAiL.eBOOk-rebOOk
+WARNING:root:P:\EBOOKS\Microsoft.Press.-.Microsoft.Word.2010.Inside.Out.2010.RETAiL.eBOOk-rebOOk: SRR could not be created.
+Traceback (most recent call last):
+  File "C:\pyrescene\bin\pyrescene.py", line 596, in <module>
+    sys.exit(main())
+  File "C:\pyrescene\bin\pyrescene.py", line 549, in main
+    result = generate_srr(release_dir, working_dir, options)
+  File "C:\pyrescene\bin\pyrescene.py", line 232, in generate_srr
+    mthread.start()
+  File "C:\Python27\lib\threading.py", line 494, in start
+    _start_new_thread(self.__bootstrap, ())
+thread.error: can't start new thread
+Exception in thread Thread-206 (most likely raised during interpreter shutdown):Exception in thread Thread-568 (most likely raised during interpreter shutdown):
+
+
+
+[21:20:35] <gueTs789> [15:50:50] hi found another not working srr
+[21:20:35] <gueTs789> [15:51:57] http://www.srrdb.com/release/details/Dragon.Age.Origins.Darkspawn.Chronicles.DLC-ARM
+[21:20:35] <gueTs789> [15:52:51] http://pastebin.com/Y1B9eeDh
+...       drk500cs_fort.bik                                           OK
+Calculating the control sum
+12396612
+12396591
+Traceback (most recent call last):
+  File "rescene\srr.pyo", line 417, in main
+  File "rescene\srr.pyo", line 209, in manage_srr
+  File "rescene\main.pyo", line 1134, in reconstruct
+  File "rescene\main.pyo", line 1472, in get_rar_data_object
+  File "rescene\main.pyo", line 1728, in compressed_rar_file_factory
+  File "rescene\main.pyo", line 1902, in __init__
+ValueError: Still not fine :(.
+Unexpected Error: Still not fine :(.
+K:\Torrent\jeux\[ReScene]>
+
+
+
+[00:07:58] <gueSt798> hi
+[00:08:04] <gueSt798> problem with Grand.Theft.Auto.Episodes.From.Liberty.City.Patch.1.1.2.0-RELOADED
+[00:08:26] <gueSt798> pyrescene aborts at some point without any error message
+
+
+[10:18:42] <NiGoLi> Crysis.2.v1.9.Update.incl.DX11.Ultra.and.HiRes.Texture.Packs-SKIDROW
+[10:19:09] <NiGoLi> this one is succesfully rebuildng all except the first part (.rar)
+[10:19:33] <NiGoLi> there is a problem in the middle of the file
+[10:20:07] <NiGoLi> i will try to obtain the actual rar to compare them
+[10:20:25] <NiGoLi> but likely differ in a few bytes only
+[10:21:40] <Gfy> you know the rar version that was used to create the rars?
+[10:22:17] <NiGoLi> unfortunately no, my backlog can't go backward enough :(
+[10:22:28] <NiGoLi> it took hours before rebuilding :/
+[10:23:17] <NiGoLi> but beta were not included
+[10:23:40] <NiGoLi> and only rar 3.00 onward were used
+
+
+[12:23:13] <Binaire> pyrescene deletes a srr if i tell overwrite while my rlz folder has non rar
+[12:24:02] <Binaire> i think it should first ask confirmation > verify rlz files > then delete srr if release will output a better srr
+
+
+
+
