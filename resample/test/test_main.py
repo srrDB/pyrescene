@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,14 +27,23 @@
 from __future__ import division
 
 import unittest
-import os
 import tempfile
 import shutil
 import os.path
 import struct
+from os import SEEK_CUR
 
-from resample.main import get_file_type, stsc, FileType
+from resample.main import get_file_type, stsc, FileType, sample_class_factory
+from resample.main import profile_wmv, FileData
+from resample import asf
 import resample.srs
+import rescene
+
+class TempDirTest(unittest.TestCase):
+	def setUp(self):
+		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
+	def tearDown(self):
+		shutil.rmtree(self.dir)
 
 class TestGetFileType(unittest.TestCase):
 	"""http://samples.mplayerhq.hu/
@@ -85,12 +94,77 @@ class TestStsc(unittest.TestCase):
 		            (6, 8, 0), (7, 4, 0), ]
 		self.assertEqual(expected, outlist)
 
-class TestMp4CreateSrs(unittest.TestCase):
-	def setUp(self):
-		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
-	def tearDown(self):
-		shutil.rmtree(self.dir)
-	
+class TestProfileWmv(TempDirTest):
+	def runTest(self):
+		wmv = os.path.join(self.dir, "sample.wmv")
+		with open(wmv, "w+b") as f:
+			f.write(asf.GUID_HEADER_OBJECT)
+			f.write(struct.pack("< Q 6x", 0))  # Dummy size
+			
+			f.write(asf.GUID_FILE_OBJECT)
+			f.write(struct.pack("< Q 16x", 24 + 16 + 8))
+			size_fixup = f.tell()
+			f.seek(+8, SEEK_CUR)
+			
+			for track in range(2):
+				f.write(asf.GUID_STREAM_OBJECT)
+				void = 16 + 16 + 8 + 4 + 4
+				f.write(struct.pack("<Q", 24 + void + 2))
+				f.write(bytearray(void))
+				f.write(struct.pack("<H", 1 + track))
+			
+			f.write(asf.GUID_DATA_OBJECT)
+			header = struct.Struct("< Q 16x Q")
+			f.write(header.pack(24 + 26 + 100 * 100, 100))
+			f.write(bytearray(8 + 26 - header.size))
+			for _packet in range(100):
+				header = struct.Struct("< B 2x BB BLH B")
+				payload1 = struct.Struct("< B BLB 8x H 20x")
+				payload2 = struct.Struct("< B BLB 1x H B30x")
+				padding = (100 - header.size -
+					payload1.size - payload2.size)
+				
+				f.write(header.pack(
+					0x82,
+					0x09,  # Byte for padding size field
+					0x5D,
+					padding,
+					0, 0,
+					0x82,  # 2 payloads
+				))
+				f.write(payload1.pack(
+					0x01,  # Track 1
+					0, 0,
+					8,
+					20,
+				))
+				f.write(payload2.pack(
+					0x02,  # Track 2
+					0, 0,
+					1,
+					1 + 30,
+					30,
+				))
+				f.write(bytearray(padding))
+			
+			size = f.tell()
+			f.seek(size_fixup)
+			f.write(struct.pack("<Q", size))
+		
+		file_data = FileData(file_name=wmv)
+		tracks = profile_wmv(file_data)
+		
+		self.assertEqual(5276, file_data.other_length)
+		self.assertEqual(10276, file_data.size)
+		self.assertEqual(0x4BCABBC7, file_data.crc32 & 0xFFFFFFFF)
+		
+		self.assertEqual(2, len(tracks))
+		self.assertEqual(1, tracks[1].track_number)
+		self.assertEqual(2000, tracks[1].data_length)
+		self.assertEqual(2, tracks[2].track_number)
+		self.assertEqual(3000, tracks[2].data_length)
+
+class TestMp4CreateSrs(TempDirTest):
 	def runTest(self):
 		ftyp = (b"ftyp", b"")
 		mdat = (b"mdat", bytearray(100 * 100))
@@ -99,7 +173,7 @@ class TestMp4CreateSrs(unittest.TestCase):
 		stsz = (b"stsz", struct.pack(">LLL", 0, 100, 100))
 		stco = (b"stco", struct.pack(">LL", 0, 100) +
 			struct.pack(">L", 0) * 100)
-		data = serialise_atoms((
+		data = serialize_atoms((
 			ftyp,
 			mdat,
 			(b"moov", (
@@ -130,15 +204,46 @@ class TestMp4CreateSrs(unittest.TestCase):
 		msg = msg.format(size, len(data))
 		self.assertTrue(size < len(data) / 2, msg)
 
-def serialise_atoms(atoms):
-	buffer = bytearray()
+def serialize_atoms(atoms):
+	abuffer = bytearray()
 	for atom in atoms:
-		(type, data) = atom
+		(atom_type, data) = atom
 		if not isinstance(data, (bytes, bytearray)):
-			data = serialise_atoms(data)
-		buffer.extend(struct.pack("> L 4s", 8 + len(data), type))
-		buffer.extend(data)
-	return buffer
+			data = serialize_atoms(data)
+		abuffer.extend(struct.pack("> L 4s", 8 + len(data), atom_type))
+		abuffer.extend(data)
+	return abuffer
+
+class TestLoad(TempDirTest):
+	def runTest(self):
+		srr = os.path.join(
+			os.path.dirname(__file__),
+			os.pardir, os.pardir, "test_files",
+			"bug_detected_as_being_different3",
+"Akte.2012.08.01.German.Doku.WS.dTV.XViD-FiXTv_f4n4t.srr",
+		)
+		srs = os.path.join("sample",
+			"fixtv-akte.2012.08.01.sample.srs")
+		((srs, success),) = rescene.extract_files(srr, self.dir,
+			packed_name=srs)
+		self.assertTrue(success)
+		
+		ftype = get_file_type(srs)
+		self.assertEqual(FileType.AVI, ftype)
+		
+		sample = sample_class_factory(ftype)
+		srs_data, tracks = sample.load_srs(srs)
+		
+		self.assertEqual("MKV/AVI ReSample 1.2", srs_data.appname)
+		self.assertEqual("fixtv-akte.2012.08.01.sample.avi",
+			srs_data.name)
+		self.assertEqual(4375502, srs_data.size)
+		self.assertEqual(0xC7FB72A8, srs_data.crc32)
+		
+		self.assertEqual(3385806, tracks[0].data_length)
+		self.assertFalse(tracks[0].match_offset)
+		self.assertEqual(917376, tracks[1].data_length)
+		self.assertFalse(tracks[1].match_offset)
 
 if __name__ == "__main__":
 	unittest.main()

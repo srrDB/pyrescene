@@ -37,6 +37,13 @@ import warnings
 import locale
 import os
 import shutil
+from io import TextIOWrapper, BytesIO
+
+try:
+	import win32api
+	win32api_available = True
+except ImportError:
+	win32api_available = False
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
@@ -58,8 +65,18 @@ if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
 	str = unicode #TODO: hmmm @ReservedAssignment
+	unicode = unicode  # Export to other modules
+	
+	def fsunicode(path):
+		"""Converts a file system "str" object to Unicode"""
+		if isinstance(path, unicode):
+			return path
+		encoding = sys.getfilesystemencoding()
+		return path.decode(encoding or sys.getdefaultencoding())
 else:
 	unicode = str #@ReservedAssignment
+	def fsunicode(path):
+		return path
 
 try:  # Python < 3
 	raw_input = raw_input
@@ -74,7 +91,7 @@ except NameError:  # Python 3
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""
 	def __init__(self, file_name, crc32="00000000"):
-		self.file_name = file_name
+		self.file_name = file_name.strip('"')
 		self.crc32 = crc32
 
 	def get_crc_32(self):
@@ -110,44 +127,59 @@ class SfvEntry(object):
 		return self.__dict__ == other.__dict__
 	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
-def parse_sfv_file(sfv_file):
-	"""Returns lists: (entries, comments, errors).
-	Accepts open file handle, a file or the file its data."""
+def parse_sfv_data(file_data):
+	"""Returns a tuple of three lists: (entries, comments, errors).
+	Accepts SFV file data as a byte string.
+	
+	The "comments" and "errors" lists contain
+	lines decoded from the file as text strings.
+	File names must be strictly ASCII.
+	Other text is decoded from ASCII using the "replace" error handler.
+	"""
 	entries = list()  # SfvEntry objects
 	comments = list() # and unrecognized stuff
 	errors = list()
 	
-	def parse(file_data):
-		for line in file_data.split("\n"):
-			# empty line, comments or useless text for whatever reason
-			if (line).strip() == (""):
-				pass # blank line detected
-			elif (line).lstrip()[0] == ";": # or len(line) < 10:
-				comments.append(line)
-			else:
-				line = (line.rstrip())
-				try:
-					line = line.replace("\t", "    ") # convert tabs
-					index = line.rindex(" ") # ValueError: substring not found
-					filename = line[:index]
-					# A SFV can contain multiple white spaces
-					crc = line[index+1:].lstrip()
-					# ValueError: bad CRC e.g. char > F
-					entries.append(SfvEntry(filename, crc))
-				except ValueError:
-					errors.append(line)
+	for line in file_data.split(b"\n"):
+		# empty line, comments or useless text for whatever reason
+		if not line.strip():
+			pass # blank line detected
+		elif line.lstrip().startswith(b";"): # or len(line) < 10:
+			line = line.decode("ascii", "replace")
+			comments.append(line)
+		else:
+			line = line.rstrip()
+			try:
+				text = line.decode("ascii")
+				text = text.replace("\t", "    ") # convert tabs
+				index = text.rindex(" ") # ValueError: substring not found
+				filename = text[:index]
+				# A SFV can contain multiple white spaces
+				crc = text[index+1:].lstrip()
+				# ValueError: bad CRC e.g. char > F
+				entries.append(SfvEntry(filename, crc))
+			except ValueError:
+				line = line.decode("ascii", "replace")
+				errors.append(line)
+		
+	return entries, comments, errors
+
+def parse_sfv_file(sfv_file):
+	"""Parses an SFV file with parse_sfv_data().
+	Accepts an open binary file object or a file name."""
 	try:
 		sfv_file.seek(0) # start at the beginning of the stream
 		sfv_data = sfv_file.read()
 	except AttributeError:
 		try:
-			with open(sfv_file, mode='rt') as fsock:
+			with open(sfv_file, mode='rb') as fsock:
 				sfv_data = fsock.read()
 		except IOError:
-			sfv_data = sfv_file
-	parse(sfv_data)
-		
-	return entries, comments, errors
+			if not isinstance(sfv_file, basestring):
+				raise
+			with open("\\\\?\\" + sfv_file, mode='rb') as fsock:
+				sfv_data = fsock.read()
+	return parse_sfv_data(sfv_data)
 
 def same_sfv(one, two):
 	"""Only based on actual content, not comments."""
@@ -226,6 +258,21 @@ def is_good_srr(filepath):
 			return False
 	return True
 
+def joinpath(path, start=""):
+	"""Validates and joins a sequence of path elements into an OS path
+	
+	Each path element is an individual directory, subdirectory or file
+	name. Raises ValueError if an element name is not supported by the
+	OS."""
+	
+	illegal_names = frozenset(
+		("", os.path.curdir, os.path.pardir, os.path.devnull))
+	for elem in path:
+		if os.path.dirname(elem) or elem in illegal_names:
+			fmt = "Path element not supported by OS: {0!r}"
+			raise ValueError(fmt.format(elem))
+	return os.path.join(start, *path)
+
 def sep(number, loc=''):
 	"""Adds a thousands separator to the number.
 	The function is locale aware."""
@@ -237,16 +284,45 @@ def show_spinner(amount):
 	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
 
 def remove_spinner():
-	sys.stdout.write("\b"), # removes spinner
+	sys.stdout.write("\b") # removes spinner
 	
 def empty_folder(folder_path):
+	if os.name == "nt" and win32api_available:
+		folder_path = win32api.GetShortPathName(folder_path)
 	for file_object in os.listdir(folder_path):
 		file_object_path = os.path.join(folder_path, file_object)
+		if os.name == "nt" and win32api_available:
+			file_object_path = win32api.GetShortPathName(file_object_path)
 		if os.path.isfile(file_object_path):
 			os.unlink(file_object_path)
 		else:
-			shutil.rmtree(file_object_path)
-	
+			try:
+				shutil.rmtree(file_object_path)
+			except OSError:
+				remove_folder(file_object_path)
+
+def remove_folder(path):
+	"""Recursively delete a directory tree."""
+	if os.name == "nt" and win32api_available:
+		path = win32api.GetShortPathName(path)
+	names = os.listdir(path)
+	for name in names:
+		fullname = os.path.join(path, name)
+		if os.path.isdir(fullname):
+			remove_folder(fullname)
+		else:
+			try:
+				os.remove(fullname)
+			except OSError:
+				try:
+					os.remove("\\\\?\\" + fullname)
+				except OSError: # it's a dir?
+					remove_folder(fullname)
+	try:
+		os.rmdir(path)
+	except OSError:
+		os.rmdir("\\\\?\\" + path)
+		
 ###############################################################################
 
 def diff_lists(one, two):
@@ -294,9 +370,35 @@ def same_nfo(one, two):
 	else:
 		_pos, _neg, no = diff_lists(onec, twoc)
 		return len(no) == len(onec)
-	
 
-"""Example SFV file:
+def encodeerrors(text, textio, errors="replace"):
+	"""Prepare a string with a fallback encoding error handler
+	
+	If the string is not encodable to the output stream,
+	the string is passed through a codec error handler."""
+	
+	encoding = getattr(textio, "encoding", None)
+	if encoding is None:
+		if isinstance(textio, TextIOBase):
+			# TextIOBase, and therefore StringIO, etc,
+			# have an "encoding" attribute,
+			# despite not doing any encoding
+			return text
+		# Otherwise assume semantics like Python 2's "file" object
+		encoding = sys.getdefaultencoding()
+	
+	try:
+		text.encode(encoding, textio.errors or "strict")
+	except UnicodeEncodeError:
+		text = text.encode(encoding, errors).decode(encoding)
+	return text
+
+def decodetext(bytes, *pos, **kw):
+	"""Decode a string using TextIOWrapper"""
+	return TextIOWrapper(BytesIO(bytes), *pos, **kw).read()
+
+
+"""Example SFV files:
 ; Generated by WIN-SFV32 v1 with MP3-RELEASER [Version:2000.2.2.1] by MorGoTH on 3/11/01 9:42:54 AM (px`hehxW)
 ; For more information visit http://morgoth.smartftp.com
 ;
@@ -327,5 +429,11 @@ def same_nfo(one, two):
 ;              Created with MorGoTH's MP3 Releaser
 ;!SFV_COMMENT_END
 01-olav_basoski_-_live_at_slam_fm_10-03-01-1real.mp3 2DEA959E
+
+; sfv created by SFV Checker
+;
+"gh-flow.subs.rar" 83a20923
+;
+; Total 1 File(s)	Combined CRC32 Checksum: 83a20923
 """
 	

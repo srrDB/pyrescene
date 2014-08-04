@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2014 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,6 +46,8 @@ class InvalidDataException(ValueError):
 	
 class Atom(object):
 	def __init__(self, size, object_guid):
+		"""size: full size of the atom (including 2 first header fields)
+		object_guid: the type of the atom (moov, mdat,...)"""
 		self.size = size
 		self.type = object_guid
 		self.raw_header = b""
@@ -83,7 +85,6 @@ class MovReader(object):
 		# SkipContents() must be called before Read() can be called again")
 		assert self.read_done or (self.mode == MovReadMode.SRS and
 		                          self.atom_type == b"mdat")
-		
 		
 		atom_start_position = self._mov_stream.tell()
 		self.current_atom = None
@@ -143,22 +144,44 @@ class MovReader(object):
 		# if read_done is set, we've already read or skipped it.
 		# back up and read again?
 		if self.read_done:
-			self._mov_stream.seek(self.current_atom.start_pos, 
-			                      os.SEEK_SET)
+			self._mov_stream.seek(self.current_atom.start_pos, os.SEEK_SET)
 
 		self.read_done = True
 		buff = b""
+		
+		if (self.mode != MovReadMode.SRS and self.atom_type == b"mdat"):
+			raise NotImplementedError("Programming error: implement this "
+				"for mdat atoms using the chunk method. These mdat atoms "
+				"can become enormous and cause a MemoryError.")
 
 		# do always when it's not a SRS file
 		# else skip it when encountering removed data
-		if (self.mode != MovReadMode.SRS or 
-			self.atom_type != b"mdat"):
+		if (self.mode != MovReadMode.SRS or self.atom_type != b"mdat"):
 			# skip header bytes
 			hl = len(self.current_atom.raw_header)
 			self._mov_stream.seek(hl, os.SEEK_CUR)
 			buff = self._mov_stream.read(self.current_atom.size - hl)
 		return buff
+	
+	def read_contents_chunks(self, chunk_size=65536):
+		"""Lazy function (generator) to read a lot of data piece by piece."""
+		if self.atom_type != b"mdat" or self.mode == MovReadMode.SRS:
+			raise NotImplementedError("Only use this for 'mdat' atoms.")
+
+		self.read_done = True
+		# skip header bytes
+		hl = len(self.current_atom.raw_header)
+		self._mov_stream.seek(self.current_atom.start_pos + hl, os.SEEK_SET)
+		end_offset = self.current_atom.start_pos + self.current_atom.size
 		
+		todo = self.current_atom.size - hl # to prevent ending up in a loop
+		while todo != 0 and self._mov_stream.tell() + todo == end_offset:
+			amount = end_offset - self._mov_stream.tell()
+			if amount > chunk_size:
+				amount = chunk_size
+			todo -= amount
+			yield self._mov_stream.read(amount)
+	
 	def skip_contents(self):
 		if not self.read_done:
 			self.read_done = True

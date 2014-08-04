@@ -40,7 +40,8 @@ if sys.hexversion < 0x3000000:
 else:
 	unicode = str #@ReservedAssignment
 
-from rescene.utility import (SfvEntry, parse_sfv_file, same_sfv, is_rar, 
+from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
+from rescene.utility import (same_sfv, is_rar, 
 							next_archive, is_good_srr, first_rars, sep)
 
 # for running nose tests
@@ -89,18 +90,18 @@ class TestSfv(unittest.TestCase):
 		self.assertRaises(ValueError, SfvEntry, "file_name", "11aa11aa  ")
 		
 	def test_parse_sfv(self):
-		output = io.StringIO()
-		output.write(str("  ; sfv raped by teh skilled thugs\n"
-		"test.r00 aabb0099  \n"
-		"test.r01	  AABBCCDD\n"
-		"test.rar	AABBCCDD\n" # \t only
-		"test.rar\tAABBDD\n"
-		"test name with spaces.rar AABBCCDD\n"
-		"test name with more spaces.rar	   AABBCCDD\n"
-		"test name with ;.rar AABBCCDD\n"
-		"  \n"
-		"----------------------------------\n"))
-		output.write(str("illegal.rar AABBCCDD ; comment\n"))
+		output = io.BytesIO()
+		output.write(b"  ; sfv raped by teh skilled thugs\n"
+		b"test.r00 aabb0099  \n"
+		b"test.r01	  AABBCCDD\n"
+		b"test.rar	AABBCCDD\n" # \t only
+		b"test.rar\tAABBDD\n"
+		b"test name with spaces.rar AABBCCDD\n"
+		b"test name with more spaces.rar	   AABBCCDD\n"
+		b"test name with ;.rar AABBCCDD\n"
+		b"  \n"
+		b"----------------------------------\n")
+		output.write(b"illegal.rar AABBCCDD ; comment\n")
 		
 		(entries, comments, errors) = parse_sfv_file(output)
 		print([str(e) for e in entries])
@@ -114,7 +115,7 @@ class TestSfv(unittest.TestCase):
 		
 		# just supply the data
 		output.seek(0)
-		(entries, comments, errors) = parse_sfv_file(output.read())
+		(entries, comments, errors) = parse_sfv_data(output.read())
 		self.assertTrue(len(entries) == 7)
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)
@@ -136,6 +137,23 @@ class TestSfv(unittest.TestCase):
 		two, _, _ = parse_sfv_file(os.path.join(txtdir, "checksum_copy.sfv"))
 		one.append(SfvEntry("name"))
 		self.assertFalse(one == two)
+	
+	def test_sfv_quotes(self):
+		output = io.BytesIO() # De.Gelukkige.Huisvrouw.2010.DVDRip.XviD-FloW
+		output.write(b"; sfv created by SFV Checker\n"
+		b";\n"
+		b""""gh-flow.subs.rar" 83a20923\n"""
+		b";\n"
+		b"; Total 1 File(s)	Combined CRC32 Checksum: 83a20923\n"
+		)
+		(entries, comments, errors) = parse_sfv_file(output)
+		print([str(e) for e in entries])
+		print(comments)
+		print(errors)
+		self.assertTrue(len(entries) == 1)
+		self.assertTrue(len(comments) == 4)
+		self.assertTrue(len(errors) == 0)
+		self.assertEqual("gh-flow.subs.rar", entries[0].file_name)
 	
 	def test_encoding_error(self):
 		"""Should not crash parsing garbage or non-ASCII SFV file"""
@@ -238,10 +256,8 @@ class TestUtility(unittest.TestCase):
 	def test_sep(self):
 		try:
 			self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
-			self.assertEqual(sep(1000000, 'English'),
-				"1,000,000")
+			self.assertEqual(sep(1000000, 'English'), "1,000,000")
 		except locale.Error as err:
-			fmt = ('"Dutch_Belgium.1252" and "English" locales: '
-				"{0}")
+			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
 			self.skipTest(fmt.format(err))  # 2.6 crash expected
