@@ -423,7 +423,14 @@ class NNTPFile(io.IOBase):
 						print(error)
 						print("Connecting to '%s' failed." % server[0])
 			else:
-				return server.body(article_id)
+				result = server.body(article_id)
+				try:  # Python 3
+					[resp, [num, id, lines]] = result
+					# Restore Python 2 layout
+					result = (resp, num, id, lines)
+				except ValueError:  # Python < 3
+					pass
+				return result
 			
 			# we need to fail if we are here (so we don't return None)
 			raise nntplib.NNTPError("Failure on all servers.")
