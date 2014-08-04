@@ -246,15 +246,13 @@ class NNTP(nntplib.NNTP):
 			raise nntplib.NNTPReplyError(resp)
 		data_list = []
 		# grab one or more lines only
-		line_amount = 0
-		while line_amount < max_nb_lines:
+		for _ in range(max_nb_lines):
 			line = self.getline()
 			if line == b'.':
 				break
 			if line.startswith(b'..'):
 				line = line[1:]
 			data_list.append(line)
-			line_amount += 1
 		return resp, data_list
 
 def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
@@ -393,9 +391,6 @@ class NNTPFile(io.IOBase):
 								for group in self.nzb_file.groups:
 									try:
 										s.group(group)
-										continue
-									except KeyboardInterrupt:
-										raise
 									except nntplib.NNTPTemporaryError as error:
 										print(error)
 							# closes socket
@@ -403,8 +398,6 @@ class NNTPFile(io.IOBase):
 						except Exception as error:
 							print(error)
 							print("Small article not on '%s'." % server[0])
-					except KeyboardInterrupt:
-						raise
 					except nntplib.NNTPError as error:
 						print(error)
 						print("Connecting to '%s' failed." % server[0])
