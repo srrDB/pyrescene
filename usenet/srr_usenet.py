@@ -215,9 +215,13 @@ nntplib.socket.setdefaulttimeout(180.0) # 3 minutes
 # add functionality to nntplib to grab only the first few lines
 class NNTP(nntplib.NNTP):
 	def body_little(self, article_id, nb_lines=DEFAULT_LINES):
-		self.putcmd('BODY ' + article_id)
-		resp, list_body = self.getlongresp_little(None, nb_lines)
-		resp, article_nr, msg_id = self.statparse(resp)
+		self.file.write(('BODY %s\r\n' % article_id).encode('ascii'))
+		self.file.flush()
+		resp, list_body = self.getlongresp_little(nb_lines)
+		if not resp.startswith('22'):
+			raise nntplib.NNTPReplyError(resp)
+		resp, article_nr, msg_id = resp.split(None, 4)[:3]
+		article_nr = int(article_nr)
 		
 		# http://q-lang.sourceforge.net/qcalc/qdoc_12.html#SEC132
 		# The shutdown function terminates data transmission on a
@@ -237,7 +241,12 @@ class NNTP(nntplib.NNTP):
 		
 		Gets only one or more of the first lines.
 		max_nb_lines = 3: yEnc header and first data line """
-		resp = self.getresp()
+		resp = self.getline().decode('utf-8', 'replace')
+		if resp.startswith('4'):
+			raise nntplib.NNTPTemporaryError(resp)
+		if resp.startswith('5'):
+			raise nntplib.NNTPPermanentError(resp)
+		
 		try:
 			resplist = nntplib.LONGRESP
 		except AttributeError: #Python 3
@@ -254,6 +263,16 @@ class NNTP(nntplib.NNTP):
 				line = line[1:]
 			data_list.append(line)
 		return resp, data_list
+	
+	def getline(self):
+		# RFC 3977 (NNTP) line limit is 512 octets
+		line = self.file.readline(1000)
+		if not 0 < len(line) < 1000:
+			raise nntplib.NNTPDataError('EOF or long line')
+		line = line.rstrip(b'\n')
+		if line.endswith(b'\r'):
+			line = line[:-1]
+		return line
 
 def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
 	return yenc.decode(data, partial_data, crc_behaviour)
