@@ -146,7 +146,7 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 	status = 0
 	archived_files = rescene.info(srr)["archived_files"].values()
 	for afile in archived_files:
-		if afile.crc32 != "0": # skip the directories and empty files
+		if afile.crc32 != "00000000" and afile.crc32 != "0": # skip the directories and empty files
 			name = os.path.join(in_folder, afile.file_name)
 			if not os.path.exists(name):
 				if not auto_locate:
@@ -165,7 +165,7 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 					found = False
 					for f in same_size_list:
 						crc = calculate_crc32(f)
-						if afile.crc32 == "%X" % crc:
+						if afile.crc32 == "%0.8X" % crc:
 							found = True
 							print("File OK: %s matches %s." % 
 									(f, afile.file_name))
@@ -177,7 +177,7 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 						status = 2
 			else:
 				crc = calculate_crc32(name)
-				if afile.crc32 == "%X" % crc:
+				if afile.crc32 == "%0.8X" % crc:
 					print("File OK: %s." % afile.file_name)
 				else:
 					print("File CORRUPT: %s!" % afile.file_name)
