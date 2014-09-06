@@ -913,7 +913,7 @@ class NNTPFile(io.IOBase):
 			try:
 				if not flags & ~rar.BTYPES_CLASSES[btype].SUPPORTED_FLAG_MASK:
 					# ONLY allowed flags are used
-					spart_offset =  spart_offset_after
+					spart_offset = spart_offset_after
 			except KeyError:
 				# probably not on a RAR block
 				pass
@@ -925,7 +925,7 @@ class NNTPFile(io.IOBase):
 		# 1) handle the first segment of which to get data from
 		data_begin = self.data[spart_nb][spart_offset:]
 		dsize = len(data_begin)
-		if dsize > size:
+		if dsize >= size:
 			self._current_position += size
 #			print(hexlify(data_begin[:size]).decode('ascii'))
 			return data_begin[:size]
