@@ -75,11 +75,15 @@ Install it to C:\Python33\ for example.
 
 Place the source somewhere on your hard disk. e.g. C:\pyReScene\
 Copy pysrr.bat and pysrs.bat to a folder that is in your PATH.
-e.g. C:\Windows\System32\
+    e.g. C:\Windows\System32\ [note]
 Edit the .bat files to reflect the path where Python and the script source code
 is located: e.g. C:\Python33\python.exe C:\pyReScene\bin\srr %*
 
 Now you will be able to call 'pysrr' from any directory.
+
+[note] If .exe files are placed in C:\Windows\System32\ and they fail to run,
+       move them to C:\Windows\SysWOW64
+       Even better would be to use your own folder you've added to the PATH!
 
 Tutorials
 =========
