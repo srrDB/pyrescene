@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Author: Gfy <tsl@yninovg.pbz>
+# Author: Gfy
 # Development started on 2011-12-11
 
 """ Creates SRR files from NZBs. To use multiple servers, edit the code below.
@@ -116,6 +116,10 @@ Changelog version 1.4 (2012-10-24)
 Changelog version 1.5 (2013-03-17)
  - no separate 'srr_compressed_rars' output dir anymore
 
+Changelog version 1.6 (2014-09-..)
+ - KeyError bug fixed (positive shift magic at the last segment of a file)
+ - Handle server reply with body that just contains a dot
+ 
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
     -> paranoid much?
@@ -179,7 +183,7 @@ from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
 from rescene.utility import basestring
 
-__version_info__ = ('1', '5')
+__version_info__ = ('1', '6')
 __version__ = '.'.join(__version_info__)
 
 EXTRA_SERVERS = [ # now in srr_usenet.cfg
@@ -258,8 +262,14 @@ class NNTP(nntplib.NNTP):
 		for _ in range(max_nb_lines):
 			line = self.getline()
 			if line == b'.':
+				# No more data to be expected. Without this check .getline()
+				# will wait indefinitely in the next iteration.
 				break
 			if line.startswith(b'..'):
+				# http://www.yenc.org/develop.htm
+				# the NNTP-protocol requires to double a dot in the first 
+				# colum when a line is sent - and to detect a double dot 
+				# (and remove one of them) when receiving a line.
 				line = line[1:]
 			data_list.append(line)
 		return resp, data_list
@@ -471,6 +481,7 @@ class NNTPFile(io.IOBase):
 			# Exception: ('CRC32 checksum failed', 2821898260L, 1224983450)
 		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError) as error:
 			print("Main server: " + str(error))
+			dpart = None
 			
 			# try to get the part on one of the other servers
 			for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
@@ -501,12 +512,11 @@ class NNTPFile(io.IOBase):
 						print("Article not found on '%s' either." % server[0])
 						
 					s.quit()
-				except (nntplib.NNTPError, socket.error) as \
-				error:
+				except (nntplib.NNTPError, socket.error) as error:
 					# what causes socket.error here?
 					print(error)
 					print("Connecting to '%s' failed." % server[0])
-			if not ydata:
+			if not ydata or not dpart:
 				print("Grab failed for <%s> (%s)" % (message_id, self.name))
 				raise
 		if self._inactive:
@@ -1386,7 +1396,8 @@ def create_srr_nzbmove(nzb_file):
 			ename = error.args[0]
 		except KeyError:
 			ename = ""
-		if ename == "Failure on all servers." or "430" in str(ename):
+		if (ename == "Failure on all servers." or "430" in str(ename) or
+			ename == "No data available to decode."):
 			faildir = "serverfailure"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
