@@ -148,7 +148,9 @@ def decode(data, seg_part=False, ignore_crc=False):
 			'part_size': int(ypart[b'end']) - int(ypart[b'begin']) + 1,
 			'file_size': int(ybegin[b'size']),
 		}
-
+	else:
+		raise YencException("No data available to decode.")
+	
 def yCheck(data):
 	ybegin = None
 	ypart = None
