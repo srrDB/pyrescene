@@ -145,6 +145,7 @@ def get_music_files(reldir):
 def get_proof_files(reldir):
 	"""
 	Includes proofs, proof RAR files, image files in Sample directories.
+	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
 	"""
 	image_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") + 
 	               get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
@@ -152,9 +153,11 @@ def get_proof_files(reldir):
 	rar_files = get_files(reldir, "*.rar")
 	result = []
 	for proof in image_files:
-		# images in Sample and Proof folders are ok
+		# images in Sample, Proof and Cover(s) subdirs are ok
 		# others need to contain the word proof in their path
-		if "proof" in proof.lower() or "sample" in proof.lower():
+		lproof = proof.lower()
+		if ("proof" in lproof or "sample" in lproof or 
+			os.sep + "cover" in lproof):
 			result.append(proof)
 		else:
 			# proof file in root dir without the word proof somewhere
@@ -163,16 +166,16 @@ def get_proof_files(reldir):
 			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg 
 			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Small.jpg 
 			if (" " not in os.path.basename(proof) and
-				not proof.lower()[:-4].endswith("folder") and
-				"albumartsmall" not in proof.lower() and
-				not os.path.basename(proof).lower().startswith("albumart_{")):
+				not lproof[:-4].endswith("folder") and
+				"albumartsmall" not in lproof and
+				not os.path.basename(lproof).startswith("albumart_{")):
 				# must be named like nfo/rars or start with 00
-				if os.path.basename(proof).lower().startswith("00"):
+				if os.path.basename(proof).startswith("00"):
 					# this way for mp3 releases
 					result.append(proof)
 					continue
 				# idea is to not have covers that are added later
-				s = 10
+				s = 10 # first X characters
 				if os.path.getsize(proof) > 100000:
 					for nfo in get_files(reldir, "*.nfo"):
 						if os.path.basename(nfo)[:-4][:s] == proof[:-4][:s]:
@@ -621,7 +624,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 	for m3u in get_files(reldir, "*.m3u"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))		
 		
-	for proof in get_proof_files(reldir): #also does certain Proof RARs
+	for proof in get_proof_files(reldir):
+		# also does certain Proof RARs and Covers
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
