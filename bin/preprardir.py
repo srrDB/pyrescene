@@ -260,6 +260,8 @@ def custom_popen(cmd):
 	finally:
 		if null:
 			null.close()
+			
+	return proc
 
 if __name__ == '__main__':
 	parser = OptionParser(
