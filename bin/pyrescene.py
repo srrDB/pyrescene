@@ -578,7 +578,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	if len(main_sfvs):
 		try:
 			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
-			                   options.compressed)
+			                            options.compressed)
 			# when the user decides not to overwrite an existing SRR
 			if not result:
 				return False

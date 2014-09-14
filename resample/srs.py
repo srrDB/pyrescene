@@ -123,12 +123,14 @@ def main(argv=None, no_exit=False):
 			if status != 0:
 				print(msg, file=sys.stderr)
 				raise ValueError(msg)
+			else:
+				return 0
 		
 	# no arguments given
 	if not len(argv):
 		# show application usage
 		parser.print_help()
-		return 0
+		return pexit(0)
 	
 	(options, args) = parser.parse_args(args=argv)
 	
@@ -221,7 +223,7 @@ def main(argv=None, no_exit=False):
 			
 			# show sample information only, no SRS creation
 			if options.info_only: # -i
-				pexit(0)
+				return pexit(0)
 				
 			# 2) check sample against main movie file
 			if options.check: # main AVI, MKV,... file to check against
@@ -247,7 +249,7 @@ def main(argv=None, no_exit=False):
 			
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
-				pexit(0, "Operation aborted.\n")
+				return pexit(0, "\nOperation aborted.\n")
 				
 			sample.create_srs(tracks, sample_file_data, sample_file, 
 			                  srs_name, options.big_file)
@@ -386,7 +388,7 @@ def main(argv=None, no_exit=False):
 			parser.print_help()
 			pexit(1)
 		
-		pexit(0)
+		return pexit(0)
 	
 	except (ValueError, AssertionError) as err:
 		if _DEBUG:
@@ -424,4 +426,4 @@ if __name__ == "__main__":
 		stats.print_stats()
 		statsfile.close()
 		sys.exit(0)
-	sys.exit(main())
+	main()
