@@ -140,8 +140,16 @@ def get_file_type(ifile):
 		return FileType.MP3
 	else:
 		(sync,) = BE_SHORT.unpack_from(marker, 0)
-		if sync & 0xFFE0 == 0xFFE0:
+		if sync & 0xFFE0 == 0xFFE0: # regular and valid mp3 music data start
 			return FileType.MP3
+		
+		# last attempt to detect an MP3 file by using the ID3v1 tag
+		# (last 128 bytes of mp3 file)
+		with open(ifile, 'rb') as ofile:
+			ofile.seek(-128, os.SEEK_END)
+			if ofile.read(3) == "TAG":
+				return FileType.MP3
+		
 		return FileType.Unknown
 
 # SampleAttachmentInfo.cs -----------------------------------------------------
