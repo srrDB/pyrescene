@@ -756,7 +756,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 					skip = True
 					break
 			# not for dirfix releases moved to the main folder
-			if "dirfix" in esfv.lower():
+			subdir = os.path.basename(os.path.normpath(os.path.dirname(esfv)))
+			if "dirfix" in subdir.lower():
 				skip = True
 			if skip:
 				continue
