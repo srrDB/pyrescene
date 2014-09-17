@@ -749,14 +749,18 @@ def generate_srr(reldir, working_dir, options, mthread):
 	if options.vobsub_srr:
 		unrar = locate_unrar()
 		for esfv in extra_sfvs:
-			# not for Proof RARs that are already stored inside the SRR
 			skip = False
+			# not for Proof RARs that are already stored inside the SRR
 			for cfile in copied_files:
 				if cfile.endswith((os.path.basename(esfv)[:-3] + "rar")):
 					skip = True
 					break
+			# not for dirfix releases moved to the main folder
+			if "dirfix" in esfv.lower():
+				skip = True
 			if skip:
 				continue
+			
 			new_srrs = create_srr_for_subs(unrar, esfv, working_dir, reldir)
 			for s in new_srrs:
 				copied_files.append(s)
