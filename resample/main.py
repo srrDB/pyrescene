@@ -119,6 +119,10 @@ def get_file_type(ifile):
 	if marker.startswith(MARKER_MKV):
 		return FileType.MKV
 	elif marker.startswith(MARKER_AVI):
+		# Some old .mp3 files use the RIFF container too
+		# e.g. (dj_tiesto_presents_allure)-we_ran_at_dawn_vinyl_djnl-bmi
+		if ifile.endswith(".mp3"):
+			return FileType.MP3
 		return FileType.AVI
 	if marker[4:].startswith(MARKER_MP4) or marker.startswith(MARKER_MP4_3GP):
 		# http://wiki.multimedia.cx/index.php?title=QuickTime_container
