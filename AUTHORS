@@ -1,5 +1,5 @@
 List ordered by time of first contributions according to
-https://www.openhub.net/p/pyrescene/contributors
+https://www.openhub.net/p/pyrescene/contributors?query=&sort=newest
 
 umlaut (original .NET implementation)
 gooober (awescript)
@@ -9,3 +9,4 @@ Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
 mechtex (fix commandline arguments for rar 2.xx archivers)
 Simon Zack (some code cleanup)
 Peter 'sticki' Shayt (small improvement)
+emargee [mRg] (bugfixes)
