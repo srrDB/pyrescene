@@ -956,7 +956,7 @@ def main(argv=None):
 	usage=("Usage: %prog [directories] [options]\n"
 	"This tool can automatically create a complete SRR file for a "
 	"release directory.\n"
-	"Example usage: %prog --recursive E:\ --output D:\ -s -c"), 
+	"Example usage: %prog E:\\ --best --recursive --output D:\\"), 
 	version="%prog " + rescene.__version__) # --help, --version
 	
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
@@ -1191,7 +1191,8 @@ def main(argv=None):
 		
 		for drive in drive_letters:
 			ctypes.windll.WINMM.mciSendStringW(
-				unicode("open %s type cdaudio alias ddrive") % drive, None, 0, None)
+				unicode("open %s type cdaudio alias ddrive") % drive, 
+				None, 0, None)
 			ctypes.windll.WINMM.mciSendStringW(
 				unicode("set ddrive door open"), None, 0, None)
 		
