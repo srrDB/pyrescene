@@ -160,7 +160,7 @@ def get_proof_files(reldir):
 			os.sep + "cover" in lproof):
 			result.append(proof)
 		else:
-			# proof file in root dir without the word proof somewhere
+			# proof file in root directory without the word proof somewhere
 			# no spaces: skip personal covers added to mp3 releases
 			# NOT: desktop.ini, AlbumArtSmall.jpg, 
 			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg 
@@ -169,23 +169,46 @@ def get_proof_files(reldir):
 				not lproof[:-4].endswith("folder") and
 				"albumartsmall" not in lproof and
 				not os.path.basename(lproof).startswith("albumart_{")):
-				# must be named like nfo/rars or start with 00
-				if os.path.basename(proof).startswith("00"):
-					# this way for mp3 releases
+				# must be named like nfo/sfv/rars or start with 00
+				
+				# 00 for mp3 releases. Mostly 00- but 00_ exists too:
+				# VA-Psychedelic_Wild_Diffusion_Part_1-(ESPRODCD01)-CD-2007-hM
+				# or 000- and 01- or 01_
+				if os.path.basename(proof).startswith(("00", "01")):
 					result.append(proof)
 					continue
 				# idea is to not have covers that are added later
+				# non music releases have a separate folder
 				s = 10 # first X characters
 				if os.path.getsize(proof) > 100000:
 					for nfo in get_files(reldir, "*.nfo"):
-						if os.path.basename(nfo)[:-4][:s] == proof[:-4][:s]:
+						if (os.path.basename(nfo)[:-4][:s].lower() == 
+							os.path.basename(proof)[:-4][:s].lower()):
+							result.append(proof)
+							continue
+					# for music releases, NFOs not always start with 00
+					# while all the other files do (sfv, m3u, jpg, cue,...)
+					# e.g. Hmc_-_187_(UDR011)-VLS-1996-TR
+					for sfv in get_files(reldir, "*.sfv"):
+						if (os.path.basename(sfv)[:-4][:s].lower() == 
+							os.path.basename(proof)[:-4][:s].lower()):
 							result.append(proof)
 							continue
 					for rar in rar_files:
-						if os.path.basename(rar)[:-4][:s] == proof[:-4][:s]:
+						if (os.path.basename(rar)[:-4][:s].lower() == 
+							os.path.basename(proof)[:-4][:s].lower()):
 							result.append(proof)
 							continue
-			# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small jpg image file)
+				else:
+					# TODO: smaller proofs can exist too
+					# -> but .startswith("00") already includes those
+					# maybe extra option to add all image files
+					# and do no separate detection?
+					# -> but even directly from topsite there can be
+					#    additional unwanted files?
+					# small JPGs are most likely site grabs by scripts
+					pass
+			# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small JPG image file)
 	for proof in rar_files:
 		if "proof" in proof.lower():
 			# RAR file must contain image file
