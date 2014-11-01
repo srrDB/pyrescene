@@ -27,6 +27,7 @@
 import unittest
 import os
 import io
+import zlib
 
 from rescene.rarstream import RarStream, FakeFile
 from rescene.rar import ArchiveNotFoundError
@@ -173,3 +174,9 @@ class TestFakeFile(unittest.TestCase):
 		ff.seek(33, os.SEEK_CUR)
 		self.assertEqual(len(ff.read()), 67)
 		ff.read(0)
+		
+	def test_zlib_crc32(self):
+		"""Data from FakeFile must be usable by zlib.crc32."""
+		ff = FakeFile(100)
+		data = ff.read(50)
+		zlib.crc32(data) # don't crash on this
