@@ -25,6 +25,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import io
+import os
 import unittest
 
 from resample import mp3
@@ -115,7 +116,7 @@ class TestDoubleId3v2(unittest.TestCase):
 		self.assertEqual(0, offset)
 		
 		# remember last ID3 tag between loops
-		self.mp3stream.seek(0, io.SEEK_END)
+		self.mp3stream.seek(0, os.SEEK_END)
 		self.mp3stream.write(b"\xE0")
 		offset = mp3.last_id3v2_before_sync(self.mp3stream, 0x10004)
 		self.assertEqual(10, offset)

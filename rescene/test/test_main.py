@@ -271,7 +271,7 @@ class TestHash(TestInit):
 		
 		hl = content_hash(lower)
 		hc = content_hash(capitals)
-		print(hl) # 1baad396af00591a16cd9691f2ff11ccdde1dcb1
+#		print(hl) # 1baad396af00591a16cd9691f2ff11ccdde1dcb1
 		self.assertEqual(hl, hc)
 	
 class TestDisplayInfo(TestInit):
@@ -289,9 +289,9 @@ class TestDisplayInfo(TestInit):
 		
 #		pprint.pprint(info(srr))
 
-		for block in RarReader(good):
-			pprint.pprint(block) 
-			pprint.pprint(hex(block.flags))
+#		for block in RarReader(good):
+#			pprint.pprint(block) 
+#			pprint.pprint(hex(block.flags))
 
 # first.volume.HEAD_FLAG.set.for.rXX_UNP_VER.is.2.0.with.m0.not.2.9
 		
