@@ -31,6 +31,7 @@ import tempfile
 import shutil
 import os.path
 import struct
+import sys
 from os import SEEK_CUR
 
 from resample.main import get_file_type, stsc, FileType, sample_class_factory
@@ -196,8 +197,11 @@ class TestMp4CreateSrs(TempDirTest):
 		with open(sample, "wb") as f:
 			f.write(data)
 		
+		actualstdout = sys.stdout
+		sys.stdout = open(os.devnull, "w")
 		argv = [sample, "-y", "-o", self.dir]
 		resample.srs.main(argv, no_exit=True)
+		sys.stdout = actualstdout
 		
 		size = os.path.getsize(os.path.join(self.dir, "sample.srs"))
 		msg = "SRS size {0} should be much less than sample size {1}"

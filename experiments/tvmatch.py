@@ -141,16 +141,16 @@ class TestAll(unittest.TestCase):
 	def test_all(self):
 		for rel in matches:
 			m = re.match(fullPattern, rel)
-			print(rel)
+#			print(rel)
 			assert m is not None
 		#	print(m.groups())
-			print(m.groupdict())
+#			print(m.groupdict())
 		
 		for rel in nomatch:
 			m = re.match(fullPattern, rel)
-			print(rel)
-			if m:
-				print(m.groups())
+#			print(rel)
+#			if m:
+#				print(m.groups())
 			assert m is None
 			
 	def test_date(self):
