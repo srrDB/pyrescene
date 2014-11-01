@@ -359,7 +359,7 @@ class FakeFile(io.IOBase):
 			Returns an empty string at EOF.
 		"""
 		def gennull(size):
-			return bytearray(size)
+			return bytes(bytearray(size))
 		
 		if size < 0:
 			old = self._current_position
