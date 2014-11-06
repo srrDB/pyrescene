@@ -1,0 +1,6 @@
+@echo off
+setlocal ENABLEDELAYEDEXPANSION
+set "params=!cmdcmdline:~0,-1!"
+set "params=!params:*" =!"
+C:\Tools\pyReScene\pyrescene.exe -o d:\srrfiles -r !params!
+exit
