@@ -140,7 +140,9 @@ def get_sample_files(reldir):
 	return result
 
 def get_music_files(reldir):
-	return get_files(reldir, "*.mp3") + get_files(reldir, "*.flac")
+	# .mp2: seen in very old releases e.g. u-Ziq-In.Pine.Effect-DAC (1998)
+	return (get_files(reldir, "*.mp3") + get_files(reldir, "*.mp2") +
+			get_files(reldir, "*.flac"))
 
 def get_proof_files(reldir):
 	"""
@@ -330,7 +332,7 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 	# will be seen as main archive volumes.
 	def has_music(sfv_file_lines):
 		for sfv_file_line in sfv_file_lines:
-			if sfv_file_line.file_name.endswith((".mp3", ".flac")):
+			if sfv_file_line.file_name.endswith((".mp3", ".flac", ".mp2")):
 				return True
 		return False
 	
@@ -673,7 +675,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		except:
 			pass
 
-		is_music = sample.lower().endswith((".mp3", ".flac"))
+		is_music = sample.lower().endswith((".mp3", ".flac", ".mp2"))
 		
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
