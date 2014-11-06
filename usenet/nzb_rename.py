@@ -61,7 +61,7 @@ def process_nzb(nzb_file):
 		if not new_name:
 			ln = nzb_split.longest_name(nfile.subject, file_name)
 			new_name = ln
-		if file_name.endswith((".mp3", ".flac")):
+		if file_name.endswith((".mp3", ".flac", ".mp2")):
 			has_music = True
 			break
 	
