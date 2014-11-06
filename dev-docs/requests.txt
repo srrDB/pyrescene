@@ -1174,4 +1174,8 @@ K:\Torrent\jeux\[ReScene]>
 
 
 
-
+TODO: srr file verification build-in for pyReScene
+(additional script)
+ - starts with srr marker
+ - all stored files before first srr rar
+ - new future blocks added at the end?

@@ -1,0 +1,25 @@
+: Batch
+@echo off
+SETLOCAL EnableExtensions EnableDelayedExpansion
+
+if "%1" equ "" (
+    echo \"Syntax : %~0 <directory>\"
+    goto :eof
+)
+set inputpath=%1
+
+: Config
+set program=pysrs.bat
+
+:: Remove quotes
+SET inputpath=###%inputpath%###
+SET inputpath=%inputpath:"###=%
+SET inputpath=%inputpath:###"=%
+SET inputpath=%inputpath:###=%
+
+: Core
+for /f "delims==" %%G in ('dir /b "%inputpath%\*.mp3"') do (
+"%program%" "%inputpath%\%%~nG.srs" "%inputpath%\%%~nG.mp3" -o d:\ -y
+)
+
+:eof

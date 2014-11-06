@@ -193,9 +193,20 @@ VIII. History - Databases and community
   posted to Usenet. [2]
   FireScene was the name while the second database site was in development. [3]
   It was eventually called srrDB and was made by Tony "Skalman^" Soderberg. [4]
-  200.000 SRR files were available before New Year 2012. 
-  On 2012-04-17 the amount of 300.000 SRR files was reached.
-  On 2012-09-14 the amount of 400.000 SRR files was reached.
+  200.000 SRR files were available before New Year 2012.
+  
+	  2011-10-27:   150,000
+	  2012-04-17:   300,000
+	  2012-09-14:   400,000
+	  2013-03-29:   500,000
+	  2014-02-13: 1,000,000
+	  2014-03-11: 1,100,000
+	  2014-08-12: 1,500,000
+	  2014-10-12: 1,700,000
+	  2014-10-23: 1,900,000
+	  2014-10-27: 2,000,000
+  
+  (data gathered from Tweets and old backups)
   
   #x264.rescene.info@EFnet was the place where all discussions took place. [5]
   #srrdb@EFnet is the place where all discussions take place. [6]
@@ -713,19 +724,11 @@ XII. SRS file format specification
 
 See pyReSample implementation for details.
 
-MKV
-===
+MKV, AVI, MP4, WMV, MP3, FLAC
 
-AVI
-===
+TODO: document shared structure and relevant parts of the file formats
 
-MP4
-===
 
-WMV
-===
-
-  
 XIII. In the news / links
 -------------------------
 
@@ -787,9 +790,3 @@ XVI. Change log
 2013-02-01: OSO hash support
 2013-05-15: RAR end padding block
 
-
-TODO: srr file verification build-in for pyReScene
-(additional script)
- - starts with srr marker
- - all stored files before first srr rar
- - new future blocks added at the end?

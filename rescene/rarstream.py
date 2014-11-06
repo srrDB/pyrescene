@@ -58,7 +58,7 @@ class RarStream(io.IOBase):
 	The compressed bytes will be returned for m1 - m5 compression."""
 	
 	def __init__(self, first_rar, packed_file_name=None, 
-		         middle=False, compressed=False):
+	             middle=False, compressed=False):
 		"""
 		If middle is set, the check for being the first RAR volume is skipped.
 		This can be the case when generating OSO hashes.

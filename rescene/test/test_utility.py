@@ -259,26 +259,6 @@ class TestUtility(unittest.TestCase):
 #		contents = {}
 #		for file in os.listdir(txtdir):
 #			if file.startswith(("ansi",)): # "unic")):
-
-	def test_diff_lists(self):
-		a = """een
-		twee
-		
-		drie"""
-		b = """een
-		twee
-		drie
-		"""
-		a, b = (a,), (b,)
-		
-		#print(diff_lists(a, b))
-		
-#	def test_nfo_diff(self):
-#		txtdir = os.path.join(os.pardir, "test_files", "txt")
-#		# _read all nfo files that start with ansi/unicode in memory
-#		contents = {}
-#		for file in os.listdir(txtdir):
-#			if file.startswith(("ansi",)): # "unic")):
 #				path = os.path.join(txtdir, file)
 #				with open(path, "rt") as f:
 #					contents[file] = f._read()
