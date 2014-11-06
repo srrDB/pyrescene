@@ -189,6 +189,20 @@ class TestUtility(unittest.TestCase):
 		self.assertEqual(next_archive("th.frag.rar.cd1.r00"),
 		                 "th.frag.rar.cd1.r01")
 		
+	def test_next_rar_bug_ambiguous_name(self):
+		"""Doctor.Who.The.Enemy.Of.The.World.S05E17.DVDRip.x264-PFa and
+		Doctor.Who.The.Enemy.Of.The.World.S05E18.DVDRip.x264-PFa"""
+		self.assertEqual(next_archive("pfa-dw.s05e18.teotw.part02.rar", True), 
+		                 "pfa-dw.s05e18.teotw.part02.r00")
+		self.assertEqual(next_archive("pfa-dw.s05e17.teotw.part01.rar", True), 
+		                 "pfa-dw.s05e17.teotw.part01.r00")
+		self.assertEqual(next_archive("pfa-dw.s05e17.teotw.part01.rar", False), 
+		                 "pfa-dw.s05e17.teotw.part02.rar")
+		self.assertEqual(next_archive("pfa-dw.s05e17.teotw.part01.rar"), 
+		                 "pfa-dw.s05e17.teotw.part02.rar")
+		self.assertEqual(next_archive("pfa-dw.s05e17.teotw.part01.r10"), 
+		                 "pfa-dw.s05e17.teotw.part01.r11")
+		
 	def test_is_good(self):
 		self.assertTrue(is_good_srr("good- #@&$§£~(){}[]!çéè"))
 		for char in """\:*?"<>|""":
@@ -196,18 +210,55 @@ class TestUtility(unittest.TestCase):
 			
 	def test_first_rars(self):
 		t = ["name.r00", "name.r01", "name.rar"]
-		self.assertEqual(["name.rar"], first_rars(t))
+		self.assertEqual(["name.rar"], first_rars(x for x in t))
 		t = ["test.part03.rar", "test.part20.rar", "test.part01.rar"]
 		self.assertEqual(["test.part01.rar"], first_rars(t))
 		t = ["test.part003.rar", "test.part020.rar", "test.part001.rar"]
 		self.assertEqual(["test.part001.rar"], first_rars(t))
 		t = ["test3.rar", "test20.rar", "test.part0001.rar"]
-		self.assertEqual(t, first_rars(t))
+		self.assertEqual(t, first_rars(x for x in t))
 		# 000 or 001 should be the first RAR
 		t = ["name.000", "name.001", "name.002"]
-		self.assertEqual(["name.000"], first_rars(t))
+		self.assertEqual(["name.000"], first_rars(x for x in t))
 		t = ["name.001", "name.002", "name.003", "other.000", "other.001"]
 		self.assertEqual(["name.001", "other.000"], first_rars(t))
+		t = ["name.003", "name.004", "name.007"]
+		self.assertEqual([], first_rars(t))
+	
+	def test_first_rars_bug(self):
+		t = ["name.part2.r00", "name.part2.r01", "name.part2.rar"]
+		self.assertEqual(["name.part2.rar"], first_rars(x for x in t))
+		t = ["name.part2.r00", "name.part2.r01", "name.part2.r02"]
+		self.assertEqual([], first_rars(t))
+		self.assertEqual(["name.part4.rar"], first_rars(["name.part4.rar"]))
+		t = ["name.part01.r00", "name.part01.r01", "name.part01.r02"]
+		self.assertEqual([], first_rars(t))
+		t = ["name.part01.rar", "name.part01.r00", "name.part01.r01"]
+		self.assertEqual(["name.part01.rar"], first_rars(t))
+		t = ["name.part001.rar"]
+		self.assertEqual(["name.part001.rar"], first_rars(x for x in t))
+		t = ["name.part2.rar", "name.part22.rar", "name.part7.rar"]
+		self.assertEqual([], first_rars(t))
+
+	def test_diff_lists(self):
+		a = """een
+		twee
+		
+		drie"""
+		b = """een
+		twee
+		drie
+		"""
+		a, b = (a,), (b,)
+		
+		#print(diff_lists(a, b))
+		
+#	def test_nfo_diff(self):
+#		txtdir = os.path.join(os.pardir, "test_files", "txt")
+#		# _read all nfo files that start with ansi/unicode in memory
+#		contents = {}
+#		for file in os.listdir(txtdir):
+#			if file.startswith(("ansi",)): # "unic")):
 
 	def test_diff_lists(self):
 		a = """een

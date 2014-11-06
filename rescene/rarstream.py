@@ -58,7 +58,7 @@ class RarStream(io.IOBase):
 	The compressed bytes will be returned for m1 - m5 compression."""
 	
 	def __init__(self, first_rar, packed_file_name=None, 
-				middle=False, compressed=False):
+		         middle=False, compressed=False):
 		"""
 		If middle is set, the check for being the first RAR volume is skipped.
 		This can be the case when generating OSO hashes.
@@ -78,9 +78,9 @@ class RarStream(io.IOBase):
 		
 		rar_file = first_rar
 		while os.path.isfile(rar_file):
-			self._process(rar_file, packed_file_name, compressed)
-			rar_file = utility.next_archive(rar_file)
-
+			is_old = self._process(rar_file, packed_file_name, compressed)
+			rar_file = utility.next_archive(rar_file, is_old)
+			
 		try:
 			# choose the first archive with the rar_file to start with
 			self._current_volume = self._rar_volumes[0]
@@ -91,14 +91,20 @@ class RarStream(io.IOBase):
 	def _process(self, rar_file, packed_file_name=None, compressed=False):
 		"""Checks if the rar_file has the packed_file and adds 
 		the _RarVolumes it creates to the list.
-		If packed_file_name is not supplied, the first file will be used."""
+		If packed_file_name is not supplied, the first file will be used.
+		Returns true if old style volume naming is used."""
 		if packed_file_name:
 			# / is an illegal character in Windows
 			# We support POSIX paths, but the path structure in RAR files
 			# is always Windows style.
 			packed_file_name = packed_file_name.replace("/", "\\")
+		is_old_style_naming = False
 		reader = rar.RarReader(rar_file)
 		for block in reader.read_all():
+			if block.rawtype == rar.BlockType.RarVolumeHeader:
+				# necessary for when the file name is ambiguous
+				if not block.flags & block.NEW_NUMBERING:
+					is_old_style_naming = True
 			if block.rawtype == rar.BlockType.RarPackedFile:
 				if (block.compression_method != rar.COMPR_STORING and 
 					not compressed):
@@ -119,6 +125,7 @@ class RarStream(io.IOBase):
 					self._packed_file_length += block.packed_size
 		reader.close()
 		self.packed_file_name = packed_file_name
+		return is_old_style_naming
 
 	def length(self):
 		"""Length of the packed file being accessed."""

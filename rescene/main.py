@@ -798,9 +798,13 @@ def _handle_sfv(sfile):
 def _handle_rar(rfile, filelist=None, read_retries=7):
 	"""Helper function for create_srr that yields all existing RAR archives
 	based on the first RAR. Archive naming is standardised: 
-	no need to read each file yet. Checking for existence is enough. 
+	no need to read each file yet. Checking for existence is enough, except
+	for the first volume. The naming can be ambiguous there, so the volume
+	naming style is checked.
 	
-	filelist: list check if specified instead of HD check (Usenet)"""
+	rfile: should be the first RAR volume. A ValueError is thrown otherwise.
+	filelist: list check if specified instead of HD check (Usenet)
+	read_retries: times to retry (Usenet)"""
 	def exists(rarfile):
 		if filelist:
 			return os.path.basename(rarfile) in filelist
@@ -813,38 +817,34 @@ def _handle_rar(rfile, filelist=None, read_retries=7):
 		except:
 			return robject
 		
-	# is this part necessary? just test on file name
-#	#rr = RarReader(rfile) # closes the file -> was problem with NNTPFiles
-#	for block in _rarreader_usenet(rfile, read_retries):
-#		if block.rawtype == BlockType.RarVolumeHeader and \
-#			(block.flags & rar.RarVolumeHeaderBlock.VOLUME):
-#			# Rar file is part of multiple volumes. Figure out whether this is
-#			# the first volume based on file name because some rars aren't
-#			# packed with (Win)Rar and always set the MHD_FIRSTVOLUME flag.
-#			# This flag is set only by RAR 3.0 and later on the first volume.
-#			#  -> ASAP and IMMERSE always set the first volume flag!
-#			#      e.g.  Game.of.Thrones.S01E07.HDTV.XviD-ASAP
-#			#            House.S06E12.720p.HDTV.x264-IMMERSE			
-#			#  -> RARFileSource version 0.9.2, released 2011-02-22
-#			#     is not able to start playing from .r00
-#			#  -> VLC 1.1 complains about broken files:
-#			#     ASAP, FQM
-#			if (not block.flags & rar.RarVolumeHeaderBlock.FIRST_VOLUME
-#			    and utility.first_rars([rfile])):
-#				raise ValueError("You must start with the first volume "
-#								 "from a RAR set.")
-#			# TODO: failed for RAR 2.0 archives
-#			# write tests (rar files already created) -> done
-#			# add rar version test too
+	is_old_style_naming = False
+	
+	# RarReader(rfile) closes the file -> was problem with NNTPFiles
+	for block in _rarreader_usenet(rfile, read_retries):
+		if (block.rawtype == BlockType.RarVolumeHeader and 
+			block.flags & block.VOLUME): # also set for RAR 2.0 archives
+			# RAR file is part of multiple volumes. Figure out whether this is
+			# the first volume based on file name because some RARs aren't
+			# packed with (Win)RAR and always set the MHD_FIRSTVOLUME flag.
+			# This flag is set only by RAR 3.0 and later on the first volume.
+			#  -> ASAP and IMMERSE always set the first volume flag!
+			#      e.g.  Game.of.Thrones.S01E07.HDTV.XviD-ASAP
+			#            House.S06E12.720p.HDTV.x264-IMMERSE			
+			#  -> RARFileSource version 0.9.2, released 2011-02-22
+			#     is not able to start playing from .r00
+			#  -> VLC 1.1 complains about broken files: ASAP, FQM
+			#if (not block.flags & block.FIRST_VOLUME and first_rars([rfile])):
+			#	raise ValueError("You must start with the first volume "
+			#	                 "from a RAR set.")
+			is_old_style_naming = not bool(block.flags & block.NEW_NUMBERING) 
 			
-	# TODO: SFX support?
 	if first_rars([filename(rfile)]) != [filename(rfile)]:
 		raise ValueError("You must start with the first volume from a RAR set.")
 			
 	next_file = filename(rfile)
 	while exists(next_file):
 		yield next_file
-		next_file = filename(next_archive(next_file))
+		next_file = filename(next_archive(next_file, is_old_style_naming))
 		
 def info(srr_file):
 	"""Returns a dictionary with the following keys:
