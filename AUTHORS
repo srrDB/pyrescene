@@ -3,8 +3,8 @@ https://www.openhub.net/p/pyrescene/contributors?query=&sort=newest
 
 umlaut (original .NET implementation)
 gooober (awescript)
+Martin 'vadmium' Panter (rerar, Python 3 port, improvements)
 Gfy <pyrescene@gmail.com> (porting to Python + everything new)
-Martin 'vadmium' Panter (Python 3 port, improvements)
 Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
 mechtex (fix commandline arguments for rar 2.xx archivers)
 Simon Zack (some code cleanup)
