@@ -494,10 +494,8 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 							if line.startswith(b"id: "):
 								language_lines.append(line)
 					with open(idx_lang, "ab") as diz:
-						efile = fsunicode(efile)
-						line = "# %s\n" % efile
-						line = line.encode("utf-8",
-							"replace")
+						line = "# %s\n" % fsunicode(efile)
+						line = line.encode("utf-8", "replace")
 						diz.write(line)
 						for line in language_lines:
 							diz.write(line)
@@ -556,6 +554,7 @@ def extract_rar(unrar, rarfile, destination):
 	extract = custom_popen([unrar, "e", "-ep", "-o+", 
 	                        rarfile, "*", destination])
 	(stdout, _) = extract.communicate()
+	# even if 'rarfile' isn't the first volume, exctraction still succeeds
 			
 	if extract.returncode != 0:
 		print("Some unrar error occurred:")

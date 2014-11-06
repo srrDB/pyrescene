@@ -189,10 +189,14 @@ def same_sfv(one, two):
 	twoc.sort()
 	return onec == twoc
 
-def next_archive(rfile):
+def next_archive(rfile, is_old=False):
 	"""Returns the name of the next possible RAR archive.
 	Behaviour undefined for *.part99.rar, *.rrar,...
-	It must never occur."""
+	It must never occur.
+	is_old: When enabled, makes sure the first .rar file is detected as
+	        old style volume naming. It makes '.part02.r00' possible.
+	        e.g. Doctor.Who.The.Enemy.Of.The.World.S05E17.DVDRip.x264-PFa
+	"""
 	def inc(extension):
 		# create an array of a string so we can manipulate it
 		extension = list(extension)
@@ -204,7 +208,7 @@ def next_archive(rfile):
 			extension[i] = chr(ord(extension[i]) + 1)
 		return "".join(extension) # array back to string
 
-	if re.match(".*\.part\d*.rar$", rfile, re.IGNORECASE):
+	if re.match(".*\.part\d*.rar$", rfile, re.IGNORECASE) and not is_old:
 		return inc(rfile[:-4]) + rfile[-4:]
 	elif re.match(".*\.rar$", rfile, re.IGNORECASE):
 		return rfile[:-4] + ".r00"
@@ -229,8 +233,7 @@ def is_rar(file_name):
 
 def first_rars(file_iter):
 	"""Tries to pick the first RAR file based on file name."""
-	
-	def isfirst(rar):
+	def is_first(rar):
 		if re.match(".*(\.part0*1\.rar|(?<!\d)\.rar)$", rar, re.IGNORECASE):
 			return True
 		# when there is a digit before the .rar
@@ -240,10 +243,31 @@ def first_rars(file_iter):
 		if rar.endswith((".000", ".001")):
 			return True
 		return False
-	firsts = list(filter(isfirst, file_iter))
+	
+	def is_dotrar(rar):
+		return rar.lower().endswith(".rar")
+	
+	# all items will need to be checked at least once: full generator run
+	input_files = list(file_iter)
+	
+	firsts = list(filter(is_first, input_files))
 	# .000? then no .001
 	for first in filter(lambda x: x.endswith(".000"), firsts):
 		firsts.remove(first[:-1] + "1")
+	# list still empty? A .part2.r00 situation might be the case.
+	if not len(firsts):
+		firsts = list(filter(is_dotrar, input_files))
+		have_r00_follower = []
+		for first in firsts:
+			if first[:-3] + "r00" in input_files:
+				have_r00_follower.append(first)
+		if len(have_r00_follower):
+			firsts = have_r00_follower
+		elif len(input_files) > 1:
+			firsts = [] # probably incomplete, so detect nothing
+		# else: empty list firsts or
+		# there is only a single .rar file provided with a weird name
+		# e.g. name.part3.rar (and it gets detected)
 	return firsts
 
 def is_good_srr(filepath):
