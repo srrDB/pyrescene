@@ -111,6 +111,8 @@ def get_sample_files(reldir):
 	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
 	#     05_g3_makingofst-xardas.wmv
 	#     06_g3_makingofst-xardas.m4v
+	# System_Of_A_Down-Aerials-svcd-wcs
+	#     system_of_a_down-aerials-svcd-wcs.m2p
 	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 
 	                get_files(reldir, "*.mp4") + get_files(reldir, "*.m4v") +
 	                get_files(reldir, "*.wmv"))

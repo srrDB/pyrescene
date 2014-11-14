@@ -528,21 +528,23 @@ class NNTPFile(io.IOBase):
 				self.name, dpart['part_number']))
 		sys.stdout.flush()
 
-		# newsmangler bug? Test NZB started working. very strange.
 		pnumber = dpart['part_number']
 		try:
 			self.segments[pnumber]
 		except KeyError:
-			# Not newsmangler bug:
+			# The server can return a segment from a totally different file
+			if dpart['file_name'].decode('utf-8', 'replace') != self.name:
+				print("The server returned a segment from a different post.")
+				print("    Expected file: %s" % self.name)
+				print("    Received file: %s" % dpart['file_name'])
+				raise nntplib.NNTPError("Unexpected file data received.")
+			
 			# Segment size: 384000B; grabbed    249B (sublime-hangover2.r00), 
 			# segment number: 218
-			# it should say segment number: 1
+			# -> it should say segment number: 1
 			""" The last file of a split volume archive has the same amount of
 			segments set as a previous volume. There is a large chance that
 			the segment won't exist. Pick the highest segment number. """
-			print("Encountered old newsmangler bug?")
-			print("Show me the error log if this fails!")
-			print("Trying to guess segment number because of bad yEnc data.")
 			pnumber = self.nb_segments
 		
 		self.segments[pnumber].decoded_size = dpart['part_size']
@@ -1241,23 +1243,10 @@ def create_srr(nzb_path, options):
 				rescene.create_srr_fh(srrf, sfvs, nntp_files, to_store,
 				                      read_retries=read_retries)
 				result = True
-			except ValueError:
+			except ValueError as error:
 				# the SFV had no contents or could not be grabbed
 				NO_SFV = True
-				traceback.print_exc()
-				"""TODO: something else raises this error too
-Segment size: 768000B; grabbed    254B (lg-le.de.le.2.r23), segment number: 1
-Segment size: 408000B; grabbed 408000B (lg-le.de.le.2.r23), segment number: 20
-Segment size: 768000B; grabbed    252B (lg-le.de.le.2.r24), segment number: 1
-Segment size: 408000B; grabbed 408000B (lg-le.de.le.2.r24), segment number: 20
-Segment size: 768000B; grabbed    250B (lg-le.de.le.2.r25), segment number: 1
-Segment size: 408000B; grabbed 407999B (lg-le.de.le.2.r25), segment number: 20
-MAGIC is happening! (shifting -1 byte(s))
-Segment size: 768000B; grabbed    256B (lg-le.de.le.2.r26), segment number: 1
-No SFV: trying again from the first RARs.
-Checking the end segments. (STAT)
-STAT last segment of lg-le.de.le.2.rar
-STAT last segment of lg-le.de.le.2.r00"""
+				print(error)
 				
 				print("No SFV: trying again from the first RARs.")
 				begin = [nntp_files[b].name for b in 
@@ -1270,6 +1259,8 @@ STAT last segment of lg-le.de.le.2.r00"""
 				except Repack:
 					raise
 				except ValueError as error:
+					# "SFX support not on or not a RAR archive."
+					# e.g. when a RAR volume exists of only zero bytes
 					print(error)
 					result = False # SRR creation failed
 				except RuntimeError: pass

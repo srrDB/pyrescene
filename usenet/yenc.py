@@ -80,6 +80,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 					data.pop()
 
 			decoded_data = b'\r\n'.join(data)
+			ybegin = {b'size': len(decoded_data), b'name': "UNKNOWN"}
 
 		#Deal with yenc encoded posts
 		elif ybegin and (yend or (not yend and seg_part)):
@@ -147,6 +148,7 @@ def decode(data, seg_part=False, ignore_crc=False):
 			'part_end': int(ypart[b'end']), # counts from 1 onwards
 			'part_size': int(ypart[b'end']) - int(ypart[b'begin']) + 1,
 			'file_size': int(ybegin[b'size']),
+			'file_name': ybegin[b'name'],
 		}
 	else:
 		raise YencException("No data available to decode.")
