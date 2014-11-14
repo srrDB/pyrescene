@@ -252,8 +252,8 @@ class NNTP(nntplib.NNTP):
 			raise nntplib.NNTPPermanentError(resp)
 		
 		try:
-			resplist = nntplib.LONGRESP
-		except AttributeError: #Python 3
+			resplist = nntplib.LONGRESP #@UndefinedVariable
+		except AttributeError: # Python 3
 			resplist = nntplib._LONGRESP #@UndefinedVariable
 		if resp[:3] not in resplist:
 			raise nntplib.NNTPReplyError(resp)
@@ -432,11 +432,11 @@ class NNTPFile(io.IOBase):
 						print("Connecting to '%s' failed." % server[0])
 			else:
 				result = server.body(article_id)
-				try:  # Python 3
-					[resp, [num, id, lines]] = result
+				try: # Python 3
+					[resp, [article_number, msg_id, lines]] = result
 					# Restore Python 2 layout
-					result = (resp, num, id, lines)
-				except ValueError:  # Python < 3
+					result = (resp, article_number, msg_id, lines)
+				except ValueError: # Python < 3
 					pass
 				return result
 			
@@ -1291,7 +1291,7 @@ STAT last segment of lg-le.de.le.2.r00"""
 				print("result: %d" % result)
 			else:
 				SUBDIR = ""
-				srr_info = rescene.info(srrf)
+#				srr_info = rescene.info(srrf)
 				
 				# TODO: change priorities of the output dirs in the future
 				if NO_SFV:
@@ -1301,8 +1301,8 @@ STAT last segment of lg-le.de.le.2.r00"""
 				
 				if SUBDIR: # move SRR to a subdirectory 
 					try:
-						os.renames(srrf, join(output_dir, SUBDIR,
-						                              release_name + ".srr"))
+						os.renames(srrf, 
+							join(output_dir, SUBDIR, release_name + ".srr"))
 					except:
 						print("Moving '%s' to '%s' failed." % (release_name + 
 						      ".srr", join(output_dir, SUBDIR)))
