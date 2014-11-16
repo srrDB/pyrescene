@@ -17,7 +17,7 @@
 # Author: Gfy
 # Development started on 2011-12-11
 
-""" Creates SRR files from NZBs. To use multiple servers, edit the code below.
+"""Creates SRR files from NZBs. To use multiple servers, edit the code below.
 Usage:
 	python srr_usenet.py /dir/with/nzbs/ /other/dir -l a -p b -s nntp.news.com
 	python -O srr_usenet.py file1.nzb file2.nzb /dir/
@@ -208,7 +208,7 @@ NO_CLI_SERVER = 0 # yes there is: all the EXTRA_SERVERS count: index 0
 DEFAULT_LINES = 4
 
 def be_efficient():
-	""" The fancy stuff is enabled. """
+	"""The fancy stuff is enabled."""
 	return DEFAULT_LINES != -1
 
 """Set the default timeout in floating seconds for new socket objects.
@@ -244,7 +244,7 @@ class NNTP(nntplib.NNTP):
 		Raise various errors if the response indicates an error.
 		
 		Gets only one or more of the first lines.
-		max_nb_lines = 3: yEnc header and first data line """
+		max_nb_lines = 3: yEnc header and first data line"""
 		resp = self.getline().decode('utf-8', 'replace')
 		if resp.startswith('4'):
 			raise nntplib.NNTPTemporaryError(resp)
@@ -294,7 +294,7 @@ class Repack(Exception):
 	pass
 	
 class NNTPFile(io.IOBase):
-	""" Represents a logical file posted to Usenet. """
+	"""Represents a logical file posted to Usenet."""
 	def __init__(self, server, nzb_file):
 		self.server = server 
 		self.new_server = False # we need this to close the connection
@@ -333,8 +333,9 @@ class NNTPFile(io.IOBase):
 			self.ignore_crc_errors = False
 			
 	def init_data(self, server_nb=0):
-		""" Used for wiping the data array clean so we can retry 
-		the bad segments again """
+		"""Used for wiping the data array clean so we can retry 
+		the bad segments again.
+		"""
 		#TODO: keep good segments! (saves bandwidth)
 		#  how do we know which ones were good? 
 		#    -> they passed the CRC check
@@ -376,16 +377,16 @@ class NNTPFile(io.IOBase):
 		print("--init-data--")
 		
 	def __getitem__(self, val):
-		""" Makes it subscriptable: no issues when os.path stuff or sorting
-		is used on this object. Returns slice of file name. """
+		"""Makes it subscriptable: no issues when os.path stuff or sorting
+		is used on this object. Returns slice of file name."""
 		return self.name.__getitem__(val)
 	
 	def __len__(self):
-		""" Returns the length of the name of the file. """
+		"""Returns the length of the name of the file."""
 		return self.name.__len__()
 	
 	def __str__(self):
-		""" Returns the name of the file. """
+		"""Returns the name of the file."""
 		return self.name
 	
 	def rfind(self, *args):
@@ -393,21 +394,21 @@ class NNTPFile(io.IOBase):
 		return self.name.rfind(*args)
 	
 	def close(self):
-		""" No need to have this closed. Gives problems either way. """
+		"""No need to have this closed. Gives problems either way."""
 #		print("CLOSE is called.")
 #		# close the connection of a changed server upon retries
 #		if self.new_server:
 #			self.server.quit()
 
 	def grab_segment(self, message_id, nb_lines=-1):
-		""" nb_lines: amount of the first lines that should be grabbed
+		"""nb_lines: amount of the first lines that should be grabbed
 		initially. Should be 2 or more for yEnc.
 		3 when the file is split across multiple segments:
 		=ybegin part=1 total=10 line=128 size=500000 name=mybinary.dat
 		=ypart begin=1 end=100000 
 		
-		Returns size of the segment, not the amount of actual grabbed data. """
-
+		Returns size of the segment, not the amount of actual grabbed data.
+		"""
 		def receive_body(server, article_id):
 			if nb_lines > 1:
 				# always use a new connection for these little grabs
@@ -548,24 +549,26 @@ class NNTPFile(io.IOBase):
 			pnumber = self.nb_segments
 		
 		self.segments[pnumber].decoded_size = dpart['part_size']
-		self.data[pnumber] = dpart['data']	
+		self.data[pnumber] = dpart['data']
 		
 	def tell(self):
-		""" Return the current stream position. """
+		"""Return the current stream position."""
 		return self._current_position
 	
 	def readable(self):
-		""" Return True if the stream can be read from. 
-			If False, read() will raise IOError. """
+		"""Return True if the stream can be read from. 
+		If False, read() will raise IOError.
+		"""
 		return True
 	
 	def seekable(self):
-		""" Return True if the stream supports random access. 
-			If False, seek(), tell() and truncate() will raise IOError. """
+		"""Return True if the stream supports random access. 
+		If False, seek(), tell() and truncate() will raise IOError.
+		"""
 		return True
 	
 	def file_size(self):
-		""" Size of the file. """
+		"""Size of the file."""
 		if self._inactive:
 #			print("Grabbing part of a segment in 'file_size()'.")
 			# no need to grab the full segment for just the size
@@ -574,8 +577,7 @@ class NNTPFile(io.IOBase):
 		return self._file_size	
 	
 	def seek(self, offset, origin=os.SEEK_SET):
-		"""
-		Change the stream position to the given byte offset. offset is 
+		"""Change the stream position to the given byte offset. offset is 
 		interpreted relative to the position indicated by origin. 
 		Values for whence are:
 	
@@ -613,7 +615,7 @@ class NNTPFile(io.IOBase):
 		return self._current_position
 	
 	def _which_segment(self, offset):
-		""" Tells which segment is needed for a given offset. """
+		"""Tells which segment is needed for a given offset."""
 		if offset < 0:
 			raise IndexError("Negative offset.")
 		if offset > self._file_size:
@@ -653,7 +655,7 @@ class NNTPFile(io.IOBase):
 		self._inactive = False	
 		
 	def read(self, size=-1):
-		""" read([size])
+		"""read([size])
 			-> read at most size bytes, returned as a string.
 			If the size argument is negative, read until EOF is reached.
 			Returns an empty string at EOF.
@@ -735,12 +737,13 @@ class NNTPFile(io.IOBase):
 			btype = get_blocktype_basic_header(offset)
 			return is_rar_block(btype)
 		def do_magic(spart_offset, seg_nb, amount=7):
-			""" Searches for RAR header in corrupt data stream. 
+			"""Searches for RAR header in corrupt data stream. 
 			spart_offset: offset in the segment where we will have
 			              a look to check we are on a RAR block
 			seg_nb: the number of the segment we are in
 			        this is often max(segments) or max(segments) - 1 
-			Returns the (changed) start offset. """ 
+			Returns the (changed) start offset.
+			""" 
 			# we can go 6 bytes back (and forward) "without problem"
 			if self.new_server and amount == 7:
 				amount = 19
@@ -902,8 +905,7 @@ class NNTPFile(io.IOBase):
 					# Only part of the magic marker is
 					# detected. Add the known missing
 					# bytes.
-					self.data[1] = (marker[:missing] +
-						self.data[1])
+					self.data[1] = (marker[:missing] + self.data[1])
 					print("MAGIC2: Adding first missing RAR byte(s)!")
 					break
 		
@@ -989,24 +991,26 @@ class NNTPFile(io.IOBase):
 	
 	def __lt__(self, other):
 		"""The sort routines are guaranteed to use __lt__ when making 
-		   comparisons between two objects."""
+		comparisons between two objects.
+		"""
 		try:
 			return self.name < other.name
 		except AttributeError: 
 			return self.name < other
 	
 	def has_first_segment(self):
-		""" Tests if the NZB has segment 1 for the file."""
+		"""Tests if the NZB has segment 1 for the file."""
 		return 1 in self.segments
 	
 	def stat_last_segment(self):
-		""" Returns:
+		"""Returns:
 		- resp: server response if successful
 		- nr:   the article number
 		- id:   the message id
 		
 		STAT checks if the article (of the last segment) is available.
-		Tries other servers if the main server failed. """
+		Tries other servers if the main server failed.
+		"""
 		if options.nostat:
 			return True
 		print("STAT last segment of %s" % self.name)
@@ -1040,8 +1044,7 @@ class NNTPFile(io.IOBase):
 							
 							(resp, _nr, _id) = self.server.stat("<%s>" % 
 								self.segments[self.nb_segments].message_id)
-							if resp.startswith(
-							"223 "):
+							if resp.startswith("223 "):
 								s.quit()
 								return True
 							break
@@ -1053,8 +1056,7 @@ class NNTPFile(io.IOBase):
 					except KeyboardInterrupt:
 						raise
 					except (nntplib.NNTPPermanentError,
-					        nntplib.NNTPTemporaryError) \
-					        as error:
+					        nntplib.NNTPTemporaryError) as error:
 						print(error)
 						print("Connecting to '%s' failed." % server[0])
 					
@@ -1066,7 +1068,7 @@ class NNTPFile(io.IOBase):
 			return True
 		
 	def stat_first_segment(self):
-		""" This does not STAT, but grabs the first bytes from the article. """
+		"""This does not STAT, but grabs the first bytes from the article."""
 		self._first_inactive_grab()
 
 def connect_server():
@@ -1077,9 +1079,10 @@ def connect_server():
 	return s
 
 def create_srr(nzb_path, options):
-	""" Create a .srr file from nzb_path in options.output_dir. 
+	"""Create a .srr file from nzb_path in options.output_dir. 
 	options.group: sending GROUP command or not?
-	options.dry_run: create an actual SRR file?"""
+	options.dry_run: create an actual SRR file?
+	"""
 	release_name = basename(nzb_path)[:-4]
 	output_dir = options.output_dir
 	if not output_dir:
@@ -1333,14 +1336,20 @@ def create_srr(nzb_path, options):
 	return result
 		
 def create_srr_nzbmove(nzb_file):
-	""" Error/success handling """
+	"""Error/success handling"""
+	def move_nzb(source, destination):
+		try:
+			os.renames(source, destination)
+		except OSError as windowserror:
+			# WindowsError: [Error 183] if the file already exists
+			print(windowserror)
 	try:
 		result = create_srr(nzb_file, options)
 		if not result:
 			raise IncompleteNzb()
 		if not options.dry_run:
 			new = join(dirname(nzb_file), "success", basename(nzb_file))
-			os.renames(nzb_file, new)
+			move_nzb(nzb_file, new)
 	except (socket.error, socket.timeout):
 		print("No network connection.")
 #			print("Could not connect to the first server. Aborting.")
@@ -1364,10 +1373,10 @@ def create_srr_nzbmove(nzb_file):
 		print(error)
 		#if not options.dry_run:
 		new = join(dirname(nzb_file), "bad", basename(nzb_file))
-		os.renames(nzb_file, new)
+		move_nzb(nzb_file, new)
 	except Repack:
 		new = join(dirname(nzb_file), "repacks", basename(nzb_file))
-		os.renames(nzb_file, new)
+		move_nzb(nzb_file, new)
 	except nntplib.NNTPPermanentError as error:
 		# for when you reached the download limit
 		# you might want to try these nzbs again
@@ -1375,7 +1384,7 @@ def create_srr_nzbmove(nzb_file):
 		faildir = "5xxerror"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
-			os.renames(nzb_file, new)
+			move_nzb(nzb_file, new)
 	except (nntplib.NNTPError, yenc.YencException) as error:
 		# the problem was the news server
 		print("%s failed." % nzb_file)
@@ -1392,7 +1401,7 @@ def create_srr_nzbmove(nzb_file):
 			faildir = "serverfailure"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
-			os.renames(nzb_file, new)
+			move_nzb(nzb_file, new)
 	except Exception:
 		print("Unknown failure")
 		traceback.print_exc()
@@ -1400,10 +1409,10 @@ def create_srr_nzbmove(nzb_file):
 		faildir = "unknownerror"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
-			os.renames(nzb_file, new)
+			move_nzb(nzb_file, new)
 		
 def process_dir(path, amount):
-	""" Does not fail if the NZB files are removed. """
+	"""Does not fail if the NZB files are removed."""
 	try:
 		for gfile in glob.iglob(path + "/*.nzb"):
 			amount += 1
@@ -1420,7 +1429,7 @@ def main(options, args):
            NO_CLI_SERVER, EXTRA_SERVERS
 	
 	def create_template(config):
-		""" Will try the server specified on the CLI. """
+		"""Will try the server specified on the CLI."""
 		sname = "server_ArbitraryNameHere"
 		host = "news.just4today.net"
 		username = "{username}"
