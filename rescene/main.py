@@ -559,14 +559,17 @@ def _rarreader_usenet(rarfile, read_retries=7):
 	rr = RarReader(rarfile)
 	try:
 		return rr.read_all()
-	except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError):
+	except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError) as error:
 		# IndexError: Offset after end of file.
 		# EnvironmentError: Invalid RAR block length (9728) at offset 0xe4e1b3
 		# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
 		#	(banana_joe.cd2.part46.rar) Banana.Joe.XViD-HRG-CD1
+		print(error)
 		print("Parsing RAR file failed. Trying again a couple of times.")
-		import traceback
-		traceback.print_exc()
+		
+		if _DEBUG:
+			import traceback
+			traceback.print_exc()
 		
 		# reading from usenet fails somewhere
 		# keep redownloading
@@ -576,8 +579,9 @@ def _rarreader_usenet(rarfile, read_retries=7):
 			try:
 				rr = RarReader(rarfile)
 				return rr.read_all()
-			except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError) as ex:
-				print(ex)
+			except (EnvironmentError, IndexError,
+			        nntplib.NNTPTemporaryError) as error:
+				print(error)
 				if stop <= read_retries:
 					stop += 1
 					print(stop)
