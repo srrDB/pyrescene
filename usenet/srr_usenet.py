@@ -795,7 +795,7 @@ class NNTPFile(io.IOBase):
 				try:
 					message_id = self.segments[i].message_id
 				except KeyError:
-					raise IncompleteNzb()
+					raise IncompleteNzb("Segment %d missing!" % i)
 					
 				# download not more data than necessary for RR meta data
 				if (be_efficient() and i == end_part and 
@@ -1140,22 +1140,19 @@ def create_srr(nzb_path, options):
 	for nfile in nntp_files.values():
 		if is_rar(nfile.name) and not nfile.has_first_segment():
 			server.quit()
-			print("Incomplete RAR file found: %s" % nfile.name)
-			raise IncompleteNzb
+			raise IncompleteNzb("Incomplete RAR file found: %s" % nfile.name)
 		
 		# we won't do known repacks either
-		if re.match("ich\d+.part\d+.rar", nfile.name, re.I) or  \
-			re.match("zed\d+.part\d+.rar", nfile.name, re.I) or  \
-			"kere.ws" in nfile.name:
-			print("Repack detected: %s" % nfile.name)
-			raise Repack
+		if (re.match("ich\d+.part\d+.rar", nfile.name, re.I) or
+			re.match("zed\d+.part\d+.rar", nfile.name, re.I) or
+			"kere.ws" in nfile.name):
+			raise Repack("Repack detected: %s" % nfile.name)
 		
 		# fail if kere.ws rename is detected
 		if (nfile.name[-4:].lower() == ".rar" and len(nfile.name) == 20 + 4
 		and re.match("^[a-zA-Z0-9]{20}$", nfile.name[:-4])):
-			print("kere.ws repack detected: %s" % nfile.name)
 			# these posts don't always have SFVs
-			raise Repack
+			raise Repack("kere.ws repack detected: %s" % nfile.name)
 
 	# filter out duplicate SFV files (has side effects otherwise)
 	unique = []
@@ -1244,6 +1241,7 @@ def create_srr(nzb_path, options):
 			srrf = abspath(join(output_dir, release_name + ".srr"))
 			try:
 				rescene.create_srr_fh(srrf, sfvs, nntp_files, to_store,
+				                      stat=not options.nostat,
 				                      read_retries=read_retries)
 				result = True
 			except ValueError as error:
@@ -1257,6 +1255,7 @@ def create_srr(nzb_path, options):
 				
 				try:
 					rescene.create_srr_fh(srrf, begin, nntp_files, to_store,
+					                      stat=not options.nostat,
 					                      read_retries=read_retries)
 					result = True
 				except Repack:
@@ -1346,7 +1345,7 @@ def create_srr_nzbmove(nzb_file):
 	try:
 		result = create_srr(nzb_file, options)
 		if not result:
-			raise IncompleteNzb()
+			raise IncompleteNzb("SRR creation failed.")
 		if not options.dry_run:
 			new = join(dirname(nzb_file), "success", basename(nzb_file))
 			move_nzb(nzb_file, new)
@@ -1370,11 +1369,12 @@ def create_srr_nzbmove(nzb_file):
 		traceback.print_exc()
 		sys.exit(1)
 	except (IncompleteNzb, rescene.FileNotFound) as error:
-		print(error)
+		print("ERROR: %s" % error)
 		#if not options.dry_run:
 		new = join(dirname(nzb_file), "bad", basename(nzb_file))
 		move_nzb(nzb_file, new)
-	except Repack:
+	except Repack as error:
+		print("REPACK: %s" % error)
 		new = join(dirname(nzb_file), "repacks", basename(nzb_file))
 		move_nzb(nzb_file, new)
 	except nntplib.NNTPPermanentError as error:
