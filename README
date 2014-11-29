@@ -43,10 +43,27 @@ directory. The compiled _yenc.so module (for more speed) can be obtained from
 http://pypi.python.org/pypi/yenc/. Create a srr_usenet.cfg configuration file 
 in the usenet directory for easy usage. A template example file is available.
 
+Some related external tools are included into the repository:
+
+  Awescript is a Usenet downloads post processing script made by Guber. It is
+able to create SRR files and extract RAR archives.
+
+  Rerar is a tool written in Python 3 by Vadmium to re-create sets of 
+uncompressed rar files. It can also report the metadata and parameters 
+stored in a rar file. It should be able to exactly re-create many real-world 
+RAR files if the right input parameters and metadata are known.
+
 View srr_spec.txt and http://rescene.wikidot.com/ for more info.
 
 Dependencies
 ============
+
+ - Python (http://www.activestate.com/activepython)
+ - Chromaprint* (https://acoustid.org/chromaprint)
+ - UnRAR* (http://www.rarlab.com/download.htm)
+ - Shareware WinRAR setup files* (http://rescene.wikidot.com/rar-versions)
+
+* Works without, but required for certain functionality.
 
 pyReScene requires Python 2.6, 2.7, or 3 to run. There are some executables
 made available for Windows users. fpcalc is necessary for creating 
@@ -56,16 +73,16 @@ These files will need to be preprocessed by the bin/preprardir.py script.
 This script extracts the RAR executables from the archives and renames them
 for further usage. The new folder with RAR executables will need to be passed
 to the -z parameter of ReScene when reconstructing compressed archives.
-http://rescene.wikidot.com/rar-versions
 UnRAR.exe or its Linux equivalent is required for SRR creation of vobsubs.
 
 Installation instructions
 =========================
 
 python setup.py install
+
 Install chromaprint from your repository or put the fpcalc executable
 somewhere in your path. It will also work if you put it in the ./bin or
-./resample directory. On Windows, pyReScene will also look under C:\ and D:\.
+./resample directory.
 
 Windows installation instructions
 =================================
@@ -74,12 +91,20 @@ Install Python 3.3. Download it from http://www.activestate.com/activepython
 Install it to C:\Python33\ for example.
 
 Place the source somewhere on your hard disk. e.g. C:\pyReScene\
-Copy pysrr.bat and pysrs.bat to a folder that is in your PATH.
+
+Add the bin\windows directory to your path.
+  * Run add_to_path.bat that you can find in that directory.
+    It'll overwrite your USER path. (!= SYSTEM path and was empty for me)
+  * Or add it manually: http://www.computerhope.com/issues/ch000549.htm
+
+Done! Now you will be able to call 'pyrescene' from any directory.
+
+
+Another way, but better to not mess with Windows folders:
+Copy the .bat to a folder that is in your PATH.
     e.g. C:\Windows\System32\ [note]
 Edit the .bat files to reflect the path where Python and the script source code
 is located: e.g. C:\Python33\python.exe C:\pyReScene\bin\srr %*
-
-Now you will be able to call 'pysrr' from any directory.
 
 [note] If .exe files are placed in C:\Windows\System32\ and they fail to run,
        move them to C:\Windows\SysWOW64
@@ -92,16 +117,38 @@ Do tool_name --help to see all the available options.
 
 A one stop solution to create SRR files is the following command:
 
-	python pyrescene.py -r -s -c /root/directory/to/check
+    python pyrescene.py -r --best /root/directory/to/check
 
-This command will recursively check /root/directory/to/check for scene
-releases. Sample files are checked against the main movie files and SRR
-files for compressed RARs are also created.
+  This command will recursively check /root/directory/to/check for scene
+  releases. Sample files are checked against the main movie files (-s) and SRR
+  files for compressed RARs are also created (-c). An SRR file for vobsubs
+  will be created recursively if unrar can be found (-v). --best: -c -s -v
+  
+To create a .srr file for vobsubs, do:
+
+    python pyrescene.py --vobsubs file.sfv
+
+  Pointing to the .rar file works too and 
+  Windows users can use the vs.bat shortcut.
 
 http://rescene.wikidot.com/tutorials has some more tutorials.
 
 What's new?
 ===========
 
-Read NEWS.
+Read the NEWS file.
 
+Who wrote this?
+===============
+
+Check the AUTHORS file.
+
+Where can I get help?
+=====================
+
+ - Read the FAQ: http://rescene.wikidot.com/faq
+ - Check out the tutorials: http://rescene.wikidot.com/tutorials
+ - Forum: http://rescene.wikidot.com/forum:start
+ - Chat: #srrdb on EFNet
+
+Do contribute to srrdb.com and help us to motivate the right people! --Gfy
