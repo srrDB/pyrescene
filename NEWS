@@ -1,6 +1,7 @@
 pyReScene 0.6
 =============
 
+ * pyReScene Auto: Folder right-click shell extension for Windows File Explorer
  * pyReScene Auto: don't create SRR meta data for proof images in RAR
  * pyReScene Auto: SRRs for vobsubs path bug fixed and optional switch added
  * pyReScene Auto: stored SRR and RAR files above their SFV in list
@@ -18,6 +19,7 @@ pyReScene 0.6
  * ReScene: SRR was stored in subfolder instead of output folder
  * ReScene: Reconstruction error fixed (when unpack size is set to 4294967295)
  * ReScene: -x and -d extracts to folder named after .srr in the output path
+ * ReTag: Script to fix the tagging of music files. (retag.py)
  * New script added to detect bad "samples" in SRR files. (srs_bad.py)
  * Scripts relocated and .bat files added for easy PATH inclusion in Windows.
 
