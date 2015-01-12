@@ -139,6 +139,9 @@ class InvalidFileSize(Exception):
 class FileNotFound(Exception):
 	"""The file does not exist."""
 
+class EmptySfv(ValueError):
+	"""The SFV does not have any valid contents."""
+
 def can_overwrite(file_path):
 	"""Method must be wrapped in the application to ask what to do. 
 		Returns False when file exists.
@@ -482,8 +485,11 @@ def create_srr(srr_name, infiles, in_folder="",
 		# COLLECT ARCHIVES
 		rarfiles = []
 		for infile in infiles:
-			if infile[-4:].lower() == ".sfv":
-				rarfiles.extend(_handle_sfv(infile))
+			if infile.lower().endswith(".sfv"):
+				# SFV can sill have non-RAR files: empty list here
+				files_sfv = _handle_sfv(infile)
+				rarfiles.extend(files_sfv)
+				# EmptySfv Exception: no useful lines found in the SFV file
 			else:
 				rarfiles.extend(_handle_rar(infile))
 	
@@ -595,8 +601,8 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 			   stat=True, read_retries=7): #TODO: use stat in caller
 	"""Same as the function above, but uses open file handles for 
 	all parameters. Can be used for creating SRRs directly from a
-	virtual source. e.g. Usenet"""
-	"""
+	virtual source. e.g. Usenet
+	
 	infiles:     RAR or SFV file(s) to create SRR from
 	store_files: a list of files to store in the SRR
 	in_folder:   root folder for relative paths to store
@@ -640,14 +646,11 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		rarfiles = []
 		for infile in infiles:
 			rarfile = infile # declaration for 'except:' if it goes wrong here
-			if infile[-4:].lower() == ".sfv":
-#				try:
-				rarfiles.extend(_handle_sfv(infile))
-					# pointer SFV has changed!
-#				except BaseException as ex:
-#					# NNTPTemporaryError('430 No such article',)
-#					print(ex)
-#					raise ValueError("SFV file can't be read.")
+			if infile.lower().endswith(".sfv"):
+				# SFV can sill have non-RAR files: empty list here
+				files_sfv = _handle_sfv(infile)
+				rarfiles.extend(files_sfv)
+				# EmptySfv Exception: no useful lines found in the SFV file
 			else: # .rar, .001, .exe, ...?
 				rarfiles.extend(_handle_rar(allfiles[infile], 
 				                            filelist=allfiles, 
@@ -790,14 +793,19 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 
 def _handle_sfv(sfile):
 	"""Helper function for create_srr that yields all RAR archives enumerated
-	in a .sfv file."""
-	for sfv_entry in sorted(parse_sfv_file(sfile)[0]):
+	in a .sfv file.
+	Throws EmptySfv when not a single line could be parsed."""
+	(entries, _comments, _errors) = parse_sfv_file(sfile)
+	if not len(entries):
+		# Not even a non-RAR file found
+		raise EmptySfv("Empty SFV file found.");
+	
+	for sfv_entry in sorted(entries):
 		if is_rar(sfv_entry.file_name):
 			yield os.path.join(os.path.dirname(sfile), sfv_entry.file_name)
 		else:
 			_fire(MsgCode.NO_RAR, message="Warning: Non-RAR file found "
-				  "as SFV: '%s'." % sfv_entry.file_name)
-
+				  "in SFV: '%s'." % sfv_entry.file_name)
 
 def _handle_rar(rfile, filelist=None, read_retries=7):
 	"""Helper function for create_srr that yields all existing RAR archives
