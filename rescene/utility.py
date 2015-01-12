@@ -135,6 +135,7 @@ def parse_sfv_data(file_data):
 	lines decoded from the file as text strings.
 	File names must be strictly ASCII.
 	Other text is decoded from ASCII using the "replace" error handler.
+	TODO: UTF8 here?
 	"""
 	entries = list()  # SfvEntry objects
 	comments = list() # and unrecognized stuff
@@ -417,9 +418,9 @@ def encodeerrors(text, textio, errors="replace"):
 		text = text.encode(encoding, errors).decode(encoding)
 	return text
 
-def decodetext(bytes, *pos, **kw):
+def decodetext(tbytes, *pos, **kw):
 	"""Decode a string using TextIOWrapper"""
-	return TextIOWrapper(BytesIO(bytes), *pos, **kw).read()
+	return TextIOWrapper(BytesIO(tbytes), *pos, **kw).read()
 
 
 """Example SFV files:

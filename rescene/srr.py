@@ -37,7 +37,7 @@ import fnmatch
 from threading import Thread
 
 import rescene
-from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository 
+from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
 from rescene.utility import show_spinner, remove_spinner, sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
@@ -313,6 +313,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		# Can not read basic block header
 		# ValueError: compressed SRR
 		# ValueError: The file is too small.
+		# EmptySfv: can't create a useful file in this case
 		# make sure there is no broken SRR file
 		try:
 			os.unlink(srr_name)
