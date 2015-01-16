@@ -50,11 +50,7 @@ def can_overwrite(file_path, yes_option=False):
 			return False
 	return True
 
-def main(argv=None, no_exit=False):
-	"""
-	no_exit is used when this function is called from an other Python
-	program
-	"""
+def setup_cli_parser():
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
 		
@@ -112,6 +108,18 @@ def main(argv=None, no_exit=False):
 	output.add_option("-m", dest="no_stored_match_offset",
 				action="store_true", default=False,
 				help="Ignore stored match offset against main movie file.")
+	output.add_option("-k", dest="keep_reconstruction_failure",
+				action="store_true", default=False,
+				help="Keep samples that reconstructed, but failed CRC check."
+				"Not applicable for music to prevent data loss.")
+	
+	return parser
+
+def main(argv=None, no_exit=False):
+	"""
+	no_exit: used when this function is called from an other Python program
+	"""
+	parser = setup_cli_parser()
 	
 	if argv is None:
 		argv = sys.argv[1:]
@@ -167,18 +175,19 @@ def main(argv=None, no_exit=False):
 			ext = "srs"
 		else:
 			ext = ".srs"
+		is_music = ftype_arg0 in (FileType.FLAC, FileType.MP3)
 			
 		t0 = time.clock()
 		
 		# showing info media file or creating SRS file
-		if len(args) == 1 and args[0][-4:].lower() != ".srs":
+		if len(args) == 1 and not args[0].lower().endswith(".srs"):
 			# create SRS file
 			sample_file = os.path.abspath(args[0])
 	
 			if (os.path.getsize(sample_file) >= 0x80000000 and 
 				not options.big_file):
 				pexit(1, "Samples over 2GB are not supported without the"
-				               " -b switch.  Are you sure it's a sample?\n")
+				               " -b switch. Are you sure it's a sample?\n")
 				
 			out_folder = os.path.abspath(os.curdir)
 			srs_name = None
@@ -192,8 +201,7 @@ def main(argv=None, no_exit=False):
 				# parent directory of the Sample dir
 				out_folder = os.path.dirname(sample_file).rsplit(os.sep, 1)[0]
 			if not os.path.exists(out_folder):
-				pexit(1, "Output directory does not exist:"
-				         " %s\n" % out_folder)
+				pexit(1, "Output directory does not exist: %s\n" % out_folder)
 				
 			# almost always, unless a specific sample name was given
 			if not srs_name: 
@@ -273,7 +281,7 @@ def main(argv=None, no_exit=False):
 				print("Track %d: %s bytes %s" % (track.track_number,
 				                                 sep(track.data_length),
 				                                 offset))
-				if ftype_arg0 in (FileType.FLAC, FileType.MP3):
+				if is_music:
 					try:
 						print("Duration: %d" % track.duration)
 						print("AcoustID fingerprint: %s" % 
@@ -282,7 +290,7 @@ def main(argv=None, no_exit=False):
 						pass # SRS without fingerprint information
 			
 		# reconstructing sample
-		elif len(args) == 2 and args[0][-4:].lower() == ".srs":
+		elif len(args) == 2 and args[0].lower().endswith(".srs"):
 			# reconstruct sample
 			srs = args[0]
 			movie = args[1]
@@ -290,7 +298,7 @@ def main(argv=None, no_exit=False):
 			movie_type = resample.get_file_type(movie)
 			movi = resample.sample_class_factory(movie_type)
 			
-			out_folder = "."
+			out_folder = "." # current directory
 			if options.output_dir:
 				out_folder = options.output_dir
 				
@@ -316,8 +324,8 @@ def main(argv=None, no_exit=False):
 				
 			# 2) Find the sample streams in the main movie file
 			# always do this search for music files
-			if (not skip_location or options.no_stored_match_offset or
-				ftype_arg0 in (FileType.FLAC, FileType.MP3)):
+			if (is_music or not skip_location or 
+			    options.no_stored_match_offset):
 				tracks = movi.find_sample_streams(tracks, movie)
 				
 				t1 = time.clock()
@@ -351,8 +359,8 @@ def main(argv=None, no_exit=False):
 					pexit(4, msg)
 					
 			# 5) Ask user for overwrite permission
-			if not can_overwrite(os.path.join(out_folder, srs_data.name),
-				                 options.always_yes):
+			result_file = os.path.join(out_folder, srs_data.name)
+			if not can_overwrite(result_file, options.always_yes):
 				pexit(1, "\nOperation aborted.\n")
 				
 			# 6) Recreate the sample
@@ -372,15 +380,20 @@ def main(argv=None, no_exit=False):
 				
 			print("\nFile Details:   Size           CRC")
 			print("                -------------  --------")
-			print("Expected    :   {0:>13}  {1:08X}".format(sep(srs_data.size),
-			                                                srs_data.crc32))
-			print("Actual      :   {0:>13}  {1:08X}\n".format(sep(sfile.size), 
-			                                                  sfile.crc32))
+			print("Expected    :   {0:>13}  {1:08X}".format(
+				sep(srs_data.size), srs_data.crc32))
+			print("Actual      :   {0:>13}  {1:08X}\n".format(
+				sep(sfile.size), sfile.crc32))
 			
 			if sfile.crc32 == srs_data.crc32:
 				print("\nSuccessfully rebuilt sample: %s" % srs_data.name)
 			else:
 				#TODO: try again with the correct interleaving for LOL samples
+				if not options.keep_reconstruction_failure and not is_music:
+					print("This is a known issue for LOL xvid releases.")
+					# also for some DOCUMENT releases
+					print("Use -k to keep the result for investigation.")
+					os.unlink(result_file)
 				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
 				pexit(5, msg)
 				
