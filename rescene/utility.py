@@ -37,7 +37,7 @@ import warnings
 import locale
 import os
 import shutil
-from io import TextIOWrapper, BytesIO
+from io import BytesIO, TextIOBase, TextIOWrapper
 
 try:
 	import win32api
@@ -64,8 +64,8 @@ def deprecated(func):
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
 	range = xrange #@ReservedAssignment
-	str = unicode #TODO: hmmm @ReservedAssignment
-	unicode = unicode  # Export to other modules
+	str = unicode #@ReservedAssignment
+	unicode = unicode #@ReservedAssignment # Export to other modules
 	
 	def fsunicode(path):
 		"""Converts a file system "str" object to Unicode"""
@@ -79,14 +79,14 @@ else:
 		return path
 
 try:  # Python < 3
-	raw_input = raw_input
+	raw_input = raw_input #@ReservedAssignment
 except NameError:  # Python 3
-	raw_input = input
+	raw_input = input #@ReservedAssignment
 
 try:  # Python < 3
-	basestring = basestring
+	basestring = basestring #@ReservedAssignment
 except NameError:  # Python 3
-	basestring = str
+	basestring = str #@ReservedAssignment
 
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""

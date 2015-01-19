@@ -87,7 +87,7 @@ def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 		# TODO: will fail on *nix when capitals differ
 		musicf = os.path.join(input_dir, original_name)
 		
-		srs_parameters = [srsf, musicf, "-o", output_dir]
+		srs_parameters = [srsf, musicf, "-o", output_dir, "-k"]
 		if always_yes:
 			srs_parameters.append("-y")
 		try:
