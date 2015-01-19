@@ -22,7 +22,7 @@ import sys
 config_dict = {
     "name": "pyReScene",
     "packages": ["rescene", "resample"],
-    "scripts": ["bin/srr", "bin/srs", "bin/pyrescene.py", "bin/preprardir.py"],
+    "scripts": ["bin/srr.py", "bin/srs.py", "bin/pyrescene.py", "bin/preprardir.py"],
     "version": rescene.__version__,
     "description": "Python ReScene and ReSample implementation",
     "author": "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
