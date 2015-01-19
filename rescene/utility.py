@@ -46,6 +46,7 @@ except ImportError:
 	win32api_available = False
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
+_SPINNER = not bool(os.environ.get("RESCENE_NO_SPINNER"))
 
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
@@ -306,10 +307,13 @@ def sep(number, loc=''):
 	
 def show_spinner(amount):
 	"""amount: a number"""
-	sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
+	if _SPINNER:
+		sys.stdout.write("\b%s" % ['|', '/', '-', '\\'][amount % 4])
 
 def remove_spinner():
-	sys.stdout.write("\b") # removes spinner
+	"""removes spinner with the backspace char"""
+	if _SPINNER:
+		sys.stdout.write("\b")
 	
 def empty_folder(folder_path):
 	if os.name == "nt" and win32api_available:
