@@ -66,7 +66,7 @@ import pynzb
 if pynzb.LXMLNZBParser:
 	suite.addTest(unittest.FunctionTestCase(pynzb.tests.test_lxml))
 
-sys.path.append(os.path.join(curdir, "experiments"))
+sys.path.append(os.path.join(curdir, "scripts", "experiments"))
 suite.addTest(unittest.defaultTestLoader.loadTestsFromName("tvmatch"))
 
 sys.path.append(os.path.join(curdir, "scripts"))
