@@ -21,3 +21,14 @@ SRS Load Complete...          Elapsed Time: 0.05s
 Track Location Complete...    Elapsed Time: 71.93s
 
 Unable to locate track signature for track 0. Aborting.
+
+---
+
+The above behavior is correct. No track location is attempted in the first case [1],
+so the rebuild starts immediately. There are no separate checks in place to verify that
+the provided match offset actually matches with the data found at that location.
+A quick failure check could be added to all the extract sample functions [2],
+but then they need to take into account the possibility to keep the broken sample.
+
+[1] find_sample_streams
+[2] extract_sample_streams

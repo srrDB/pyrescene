@@ -34,7 +34,7 @@ import traceback
 
 import resample
 from rescene.utility import sep
-from resample.main import FileType
+from resample.main import FileType, InvalidMatchOffset
 from resample import fpcalc
 from rescene.utility import raw_input, unicode
 
@@ -402,7 +402,10 @@ def main(argv=None, no_exit=False):
 			pexit(1)
 		
 		return pexit(0)
-	
+
+	except InvalidMatchOffset:
+		pexit(6, "The stored main video location is not valid. "
+		         "Try again on a different disk or use -m.")
 	except (ValueError, AssertionError) as err:
 		if _DEBUG:
 			traceback.print_exc()
