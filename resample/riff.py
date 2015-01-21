@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -40,6 +40,9 @@ S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
 class InvalidDataException(ValueError):
 	pass
 
+class InvalidMatchOffsetException(ValueError):
+	pass
+
 # RiffReader.cs ---------------------------------------------------------------
 class RiffReadMode(object):
 	AVI, Sample, SRS = list(range(3))
@@ -64,7 +67,7 @@ fourCCValidator = re.compile(b"^[ 0-9A-Za-z]{4}$")
 class RiffReader(object):
 	"""Implements a simple Reader class that reads through AVI 
 	or AVI-SRS files one chunk at a time."""
-	def __init__(self, read_mode, path=None, stream=None):
+	def __init__(self, read_mode, path=None, stream=None, match_offset=0):
 		if path:
 			if is_rar(path):
 				self._riff_stream = RarStream(path)
@@ -74,24 +77,39 @@ class RiffReader(object):
 			self._riff_stream = stream
 		else:
 			assert False
-		self._riff_stream.seek(0, 2)
+		self._riff_stream.seek(0, os.SEEK_END)
 		self._file_length = self._riff_stream.tell()
-		self._riff_stream.seek(0)
-		self.mode = read_mode
 		
+		# faster reconstructing when match_offset is provided
+		if match_offset >= 8 and match_offset < self._file_length:
+			# -8 is there to add the chunck header for read()
+			self._riff_stream.seek(match_offset - 8, os.SEEK_SET)
+			# quick sanity check for valid location
+			fourcc = self._riff_stream.read(4)
+			if fourCCValidator.match(fourcc):
+				self._riff_stream.seek(match_offset - 8, os.SEEK_SET)
+			else:
+				# we can reset to zero and try to reconstruct, 
+				# but it is most likely the wrong disk anyway
+				# -m will have to be used to ignore the match offset
+				msg = "Invalid match offset for video: %s" % match_offset
+				raise InvalidMatchOffsetException(msg)
+		else:
+			self._riff_stream.seek(0)
+
+		self.mode = read_mode
 		self.read_done = True
 	
 		self.current_chunk = None
 		self.chunk_type = None
 		self.has_padding = False
-		self.padding_byte = ""		
+		self.padding_byte = ""
 
 	def read(self):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again");
 		assert self.read_done or (self.mode == RiffReadMode.SRS and
 		                          self.chunk_type == RiffChunkType.Movi)
-		
 		
 		chunk_start_position = self._riff_stream.tell()
 		self.current_chunk = None

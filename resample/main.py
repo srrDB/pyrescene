@@ -47,6 +47,7 @@ from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            MakeEbmlUInt, EbmlID)
 from resample.riff import RiffReader, RiffReadMode, RiffChunkType
+from resample.riff import InvalidMatchOffsetException
 from resample.mov import MovReader, MovReadMode
 from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT, 
 						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT,
@@ -84,6 +85,9 @@ BE_LONGLONG = Struct('>Q')
 SIG_SIZE = 256
 
 class IncompleteSample(Exception):
+	pass
+
+class InvalidMatchOffset(ValueError):
 	pass
 
 # srs.cs ----------------------------------------------------------------------
@@ -2217,14 +2221,17 @@ def mp3_find_sample_streams(tracks, main_mp3_file):
 	return tracks
 
 def avi_extract_sample_streams(tracks, movie):
-	rr = RiffReader(RiffReadMode.AVI, movie)
-	
-	# TODO: never used start_offset?
-	# search for first match offset
+	# search for first match offset (possibly skipping some parsing)
 	start_offset = 2 ** 63 # long.MaxValue + 1
 	for track in tracks.values():
 		if track.match_offset > 0:
 			start_offset = min(track.match_offset, start_offset)
+
+	try:
+		rr = RiffReader(RiffReadMode.AVI, movie,
+		                match_offset=start_offset)
+	except InvalidMatchOffsetException as ex:
+		raise InvalidMatchOffset(ex.message)
 	
 	block_count = 0
 	done = False
@@ -2233,12 +2240,12 @@ def avi_extract_sample_streams(tracks, movie):
 		if rr.chunk_type == RiffChunkType.List:
 			rr.move_to_child()
 		else: # normal chunk
-			tracks, block_count, done = _avi_normal_chunk_extract(tracks, rr, 
-			                                      block_count, done)
+			tracks, block_count, done = _avi_normal_chunk_extract(
+			                                tracks, rr, block_count, done)
 	remove_spinner()
 	
 	rr.close()
-	return tracks, {} #attachments
+	return tracks, {} # attachments
 
 def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 	if rr.chunk_type == RiffChunkType.Movi:
