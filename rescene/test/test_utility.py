@@ -286,6 +286,7 @@ class TestUtility(unittest.TestCase):
 
 	def test_sep(self):
 		try:
+			# TODO: \xa0 on Windows 8 (non-breaking space)
 			self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'), "1.000.000")
 			self.assertEqual(sep(1000000, 'English'), "1,000,000")
 		except locale.Error as err:
