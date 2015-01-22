@@ -110,6 +110,12 @@ is located: e.g. C:\Python33\python.exe C:\pyReScene\bin\srr %*
        move them to C:\Windows\SysWOW64
        Even better would be to use your own folder you've added to the PATH!
 
+Linux installation instructions
+===============================
+
+Make sure you can run the 32 bit rar binaries when you try to reconstruct
+compressed rar archives: http://rescene.wikidot.com/faq#x64
+
 Tutorials
 =========
 
