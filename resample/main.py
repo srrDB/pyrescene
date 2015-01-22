@@ -2231,7 +2231,7 @@ def avi_extract_sample_streams(tracks, movie):
 		rr = RiffReader(RiffReadMode.AVI, movie,
 		                match_offset=start_offset)
 	except InvalidMatchOffsetException as ex:
-		raise InvalidMatchOffset(ex.message)
+		raise InvalidMatchOffset(format(ex))
 	
 	block_count = 0
 	done = False
