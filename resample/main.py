@@ -1931,12 +1931,11 @@ class TrackStream(object):
 	def seek(self, offset):
 		"""The offset must be the beginning of a sample."""
 		self._current_offset = offset
-		largest = 0
 		for chunk in self.chunks:
-			if chunk.chunk_offset > largest and chunk.chunk_offset <= offset:
-				largest = chunk.chunk_offset
+			if chunk.chunk_offset <= offset:
 				self._current_chunk = chunk
 		assert self._current_chunk
+		# Will raise InvalidMatchOffset when not on start of a sample
 		self._current_sample = self._current_chunk.get_sample_nb(offset)
 		
 	def read(self, amount):
@@ -2012,8 +2011,9 @@ class TrackChunk(object):
 		sample_sum = 0
 		count = 0
 		for sample in self.samples:
-			if (self.chunk_offset + sample_sum >= offset and 
-			self.chunk_offset <= offset):
+			if offset <= self.chunk_offset + sample_sum:
+				if offset != self.chunk_offset + sample_sum:
+					raise InvalidMatchOffset
 				assert self.chunk_offset + sample_sum == offset
 				return count
 			count += 1
@@ -2406,6 +2406,7 @@ def open_main(big_file):
 		return open(big_file, "rb")
 		
 def mp4_extract_sample_stream(track, mtrack, main_mp4_file):
+	"""Can throw InvalidMatchOffset"""
 	track.track_file = tempfile.TemporaryFile()
 	mtrack = mp4_add_track_stream(mtrack)
 	mtrack.trackstream.stream = open_main(main_mp4_file)
