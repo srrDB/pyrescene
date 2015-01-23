@@ -409,8 +409,10 @@ def main(argv=None, no_exit=False):
 	except (ValueError, AssertionError) as err:
 		if _DEBUG:
 			traceback.print_exc()
-		pexit(2, "Corruption detected: %s. Aborting.\n" % 
-		      str(err).strip('\n').rstrip('.')) # prevent double dots
+		fault = str(err).strip('\n').rstrip('.') # prevent double dots
+		if fault == "":
+			fault = "AssertionError" # must never occur!
+		pexit(2, "Corruption detected: %s. Aborting.\n" % fault)
 	except fpcalc.ExecutableNotFound as err:
 		pexit(3, str(err))
 	except AttributeError as err:
