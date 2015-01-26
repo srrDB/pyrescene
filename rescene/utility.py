@@ -112,20 +112,32 @@ class SfvEntry(object):
 		ext_other = other.file_name[-4:].lower()
 		same_base = self.file_name[:-4].lower() == other.file_name[:-4].lower()
 
-		if ext_self != ext_other and ext_self == ".rar" and same_base:
-			return True if bool(re.match("\.[r-v]\d{2}$", ext_other)) \
-						else self.file_name < other.file_name # .rar < .r00
-		elif ext_self != ext_other and ext_other == ".rar" and same_base:
-			return False if bool(re.match("\.[r-v]\d{2}$", ext_self)) \
-						else self.file_name < other.file_name # .r00 > .rar
+		if same_base and ext_self != ext_other:
+			if ext_self == ".rar":
+				if bool(re.match("\.[r-v]\d{2}$", ext_other)):
+					return True
+				else:
+					return self.file_name < other.file_name # .rar < .r00
+			elif ext_other == ".rar":
+				if bool(re.match("\.[r-v]\d{2}$", ext_self)):
+					return False
+				else:
+					return self.file_name < other.file_name # .r00 > .rar
 		# .part1.rar < .part2.rar, r99 < s00, 001 < 002
 		return self.file_name < other.file_name
 		
 	def __repr__(self):
 		return self.file_name + " " + self.crc32
 	
-	def __eq__(self, other) : 
-		return self.__dict__ == other.__dict__
+	def __eq__(self, other): 
+		if type(other) is type(self):
+			return (self.file_name.lower() == other.file_name.lower() and
+			        self.crc32.lower() == other.crc32.lower())
+		return False
+
+	def __ne__(self, other):
+		return not self.__eq__(other)
+	
 	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
 def parse_sfv_data(file_data):
@@ -182,6 +194,17 @@ def parse_sfv_file(sfv_file):
 			with open("\\\\?\\" + sfv_file, mode='rb') as fsock:
 				sfv_data = fsock.read()
 	return parse_sfv_data(sfv_data)
+
+def filter_sfv_duplicates(entries):
+	"""Accepts the entries list of the parse functions above.
+	The result will be sorted."""
+	result = list()
+	previous = None
+	for entry in sorted(entries):
+		if previous is None or not entry.__eq__(previous):
+			result.append(entry)
+		previous = entry
+	return result
 
 def same_sfv(one, two):
 	"""Only based on actual content, not comments."""
