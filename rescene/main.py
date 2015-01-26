@@ -58,9 +58,10 @@ from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.utility import parse_sfv_file, parse_sfv_data
-from rescene.osohash import osohash_from
+from rescene.utility import filter_sfv_duplicates
 from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
+from rescene.osohash import osohash_from
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -794,13 +795,15 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 def _handle_sfv(sfile):
 	"""Helper function for create_srr that yields all RAR archives enumerated
 	in a .sfv file.
+	Duplicate SFV data lines will be filtered out.
 	Throws EmptySfv when not a single line could be parsed."""
 	(entries, _comments, _errors) = parse_sfv_file(sfile)
 	if not len(entries):
 		# Not even a non-RAR file found
 		raise EmptySfv("Empty SFV file found.");
-	
-	for sfv_entry in sorted(entries):
+
+	sorted_entries = filter_sfv_duplicates(entries)
+	for sfv_entry in sorted_entries:
 		if is_rar(sfv_entry.file_name):
 			yield os.path.join(os.path.dirname(sfile), sfv_entry.file_name)
 		else:

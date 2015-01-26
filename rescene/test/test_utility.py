@@ -41,8 +41,8 @@ else:
 	unicode = str #@ReservedAssignment
 
 from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
-from rescene.utility import (same_sfv, is_rar, 
-							next_archive, is_good_srr, first_rars, sep)
+from rescene.utility import filter_sfv_duplicates, same_sfv
+from rescene.utility import is_rar, next_archive, is_good_srr, first_rars, sep
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -164,6 +164,15 @@ class TestSfv(unittest.TestCase):
 			b"--- \x9F garbage error line ---\n"
 		)
 		parse_sfv_file(sfv)
+		
+	def test_filter_sfv_duplicates(self):
+		"""The capitals in the CRC32 may not make a difference."""
+		sorted_list = [SfvEntry("a.part01.rar","ab000000"),
+		               SfvEntry("a.part01.rar","AB000000")]
+		filtered = filter_sfv_duplicates(sorted_list)
+		
+		sorted_list.remove(SfvEntry("a.part01.rar","AB000000"))
+		self.assertEqual(filtered, sorted_list, "Dupe not filtered out")
 
 class TestUtility(unittest.TestCase):
 	def test_is_rar_file(self):

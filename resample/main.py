@@ -334,10 +334,10 @@ class TrackData(object):
 			"length_check_bytes={lcb} "
 			">"
 			"".format(flags=self.flags, number=self.track_number,
-		                  length=self.data_length, mlength=self.match_length,
-		                  moffset=self.match_offset, 
-		                  lsb=len(self.signature_bytes), 
-		                  lcb=len(self.check_bytes)))
+		              length=self.data_length, mlength=self.match_length,
+		              moffset=self.match_offset,
+		              lsb=len(self.signature_bytes),
+		              lcb=len(self.check_bytes)))
 			
 	def serialize(self):
 		big_file = self.flags & self.BIG_FILE
