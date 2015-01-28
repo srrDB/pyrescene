@@ -46,8 +46,7 @@ import tempfile
 from binascii import hexlify
 
 from rescene import utility 
-
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
+from rescene.utility import _DEBUG
 
 ###############################################################################
 
@@ -76,6 +75,7 @@ if sys.hexversion < 0x3000000:
 
 # internal byte constants
 RAR_MARKER_BLOCK = b"Rar!\x1a\x07\x00"
+RAR5_MARKER_BLOCK = b"Rar!\x1a\x07\x01\x00"
 ZERO = b"\0"
 
 # default fallback charset
@@ -1365,13 +1365,13 @@ BTYPES_CLASSES = {
 ###############################################################################
 	
 class RarReader(object):
-	""" A simple Reader class that reads through 
-		RAR or SRR files one block at a time. """
+	"""A simple Reader class that reads through 
+	RAR or SRR files one block at a time. (No RAR 5)"""
 	RAR, SRR, SFX = list(range(3))
 	
 	def __init__(self, rfile, file_length=0, enable_sfx=False):
-		""" If the file is a part of a stream, (e.g. RAR in SRR)
-			the file_length must be given. """
+		"""If the file is a part of a stream, (e.g. RAR in SRR)
+		the file_length must be given."""
 		if isinstance(rfile, io.IOBase): 
 			# the file is supplied as a stream
 			self._rarstream = rfile
@@ -1384,7 +1384,7 @@ class RarReader(object):
 		# get the length of the stream
 		self._initial_offset = self._rarstream.tell()
 		if not file_length:
-			self._rarstream.seek(0, 2) # 2: move relative to end of file
+			self._rarstream.seek(0, os.SEEK_END) # move relative to end of file
 			self._file_length = self._rarstream.tell() - self._initial_offset
 		else:
 			self._file_length = file_length
@@ -1407,7 +1407,9 @@ class RarReader(object):
 #			block_type = ord(self._rarstream.read(1))
 			# read 7 bytes so Usenet error correction can kick in
 			self._rarstream.seek(self._initial_offset)
-			bheader = self._rarstream.read(7)
+			bheader = self._rarstream.read(8)
+			if bheader == RAR5_MARKER_BLOCK:
+				raise ValueError("RAR5 files are not yet supported!")
 			block_type = ord(bheader[2:3]) # third byte
 			if block_type == BlockType.RarMin: # 0x72
 				self._readmode = self.RAR
@@ -1481,7 +1483,7 @@ class RarReader(object):
 			else:
 				raise EnvironmentError("Cannot read basic block header.")
 
-		""" The block header is always 7 bytes: (see struct BaseBlock unrar)
+		"""The block header is always 7 bytes: (see struct BaseBlock unrar)
 		  - 2 for crc,                  H  unsigned short
 			  HEAD_CRC      2 bytes     CRC of total block or block part
 		  - 1 for block type,           B  unsigned char (8-bit integer)
@@ -1599,8 +1601,8 @@ class RarReader(object):
 		return rar_block
 	
 	def read_all(self):
-		""" Parse the whole rar/srr file. The results are cached.
-		Closes the open file. """
+		"""Parse the whole rar/srr file. The results are cached.
+		Closes the open file."""
 		# the list is not empty -> function has been called before: use cache
 		try:
 			return self._found_blocks 
@@ -1631,7 +1633,7 @@ class RarReader(object):
 		return files
 
 	def file_type(self):
-		""" Returns whether this RarReader reads a RAR, SRR or SFX file. """
+		"""Returns whether this RarReader reads a RAR, SRR or SFX file."""
 		return self._readmode
 	
 	def __next__(self):
