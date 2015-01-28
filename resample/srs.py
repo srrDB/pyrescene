@@ -264,7 +264,7 @@ def main(argv=None, no_exit=False):
 			print("Successfully created SRS file: %s" % srs_name)
 		
 		# showing SRS info
-		elif (len(args) == 1 and args[0][-4:].lower() == ".srs"
+		elif (len(args) == 1 and args[0].lower().endswith(".srs")
 		    	and options.srs_info): # -l
 			srs_data, tracks = sample.load_srs(args[0])
 			
@@ -277,15 +277,14 @@ def main(argv=None, no_exit=False):
 			for track in tracks.values():
 				offset = ""
 				if track.match_offset:
-					offset = "@ %s" % sep(track.match_offset)
-				print("Track %d: %s bytes %s" % (track.track_number,
-				                                 sep(track.data_length),
-				                                 offset))
+					offset = " @ {0}".format(sep(track.match_offset))
+				print("Track {0}: {1} bytes{2}".format(
+					track.track_number, sep(track.data_length), offset))
 				if is_music:
 					try:
-						print("Duration: %d" % track.duration)
-						print("AcoustID fingerprint: %s" % 
-						      track.fingerprint.decode("ascii"))
+						print("Duration: {0}".format(track.duration))
+						print("AcoustID fingerprint: {0}".format( 
+						      track.fingerprint.decode("ascii")))
 					except AttributeError:
 						pass # SRS without fingerprint information
 			
