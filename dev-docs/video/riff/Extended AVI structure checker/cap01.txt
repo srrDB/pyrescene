@@ -1,0 +1,168 @@
+C:\tmp\cap01.avi
+
+0000000000000000    RIFF 3FF78FF8
+                    AVI 
+000000000000000C      LIST 00010230
+                      hdrl
+0000000000000018        avih 00000038
+                          dwMicroSecPerFrame 00009C40 (40000), Fps 25
+                          dwMaxBytesPerSec 00000000 (0)
+                          dwPaddingGranularity 00000000 (0)
+                          dwFlags 10030, AVIF_HASINDEX|AVIF_MUSTUSEINDEX|AVIF_WASCAPTUREFILE
+                          dwTotalFrames 00000CC6 (3270) , Seconds 130.8
+                          dwInitialFrames 00000000 (0)
+                          dwStreams 2
+                          dwSuggestedBufferSize 000CA808 (829448)
+                          dwWidth 000002D0 (720)
+                          dwHeight 00000240 (576)
+0000000000000058        LIST 00008074
+                        strl
+0000000000000064          strh 00000038
+                            fccType "vids"
+                            fccHandler "    "
+                            dwFlags 0
+                            wPriority 0
+                            wLanguage 00000000 (0)
+                            dwInitialFrames 00000000 (0)
+                            dwScale 00000001 (1)
+                            dwRate 00000019 (25) , Sps 25
+                            dwStart 00000000 (0)
+                            dwLength 00001DB5 (7605) , Seconds 304.2
+                            dwSuggestedBufferSize 000CA808 (829448)
+                            dwQuality 00000000 (0)
+                            dwSampleSize 00000000 (0)
+                            rcFrame 0 0 720 576
+00000000000000A4          strf 00000028
+                            biSize 00000028 (40)
+                            biWidth 000002D0 (720)
+                            biHeight 00000240 (576)
+                            biPlanes 1
+                            biBitCount 16
+                            biCompression 00000000 "    "
+                            biSizeImage 00000000 (0)
+                            biXPelsPerMeter 0
+                            biYPelsPerMeter 0
+                            biClrUsed 0
+                            biClrImportant 0
+                              Low rate size 000032A0 (12960)
+00000000000000D4          indx 00007FF8
+                            wLongsPerEntry 4
+                            bIndexSubType 0
+                            bIndexType 0 AVI_INDEX_OF_INDEXES
+                            nEntriesInUse 00000003 (3)
+                            dwChunkId "00dc"
+                            qwBaseOffset 0000000000000000
+                              Duration : 00000CC6 (3270)
+                              Duration : 00000EC3 (3779)
+                              Duration : 0000022C (556)
+                               Summary : 00001DB5 (7605)
+00000000000080D4        LIST 0000805C
+                        strl
+00000000000080E0          strh 00000038
+                            fccType "auds"
+                            fccHandler "    "
+                            dwFlags 0
+                            wPriority 0
+                            wLanguage 00000000 (0)
+                            dwInitialFrames 00000000 (0)
+                            dwScale 00000001 (1)
+                            dwRate 0000AC44 (44100) , Sps 44100
+                            dwStart 00000000 (0)
+                            dwLength 00CCB333 (13415219) , Seconds 304.2
+                            dwSuggestedBufferSize 00080000 (524288)
+                            dwQuality 00000000 (0)
+                            dwSampleSize 00000004 (4)
+                            rcFrame 0 0 0 0
+0000000000008120          strf 00000010
+                            wf.wFormatTag 00000001 (1)
+                            wf.nChannels 2
+                            wf.nSamplesPerSec 44100
+                            wf.nAvgBytesPerSec 0002B110 (176400)
+                            wf.nBlockAlign 4
+                            wBitsPerSample 16
+0000000000008138          indx 00007FF8
+                            wLongsPerEntry 4
+                            bIndexSubType 0
+                            bIndexType 0 AVI_INDEX_OF_INDEXES
+                            nEntriesInUse 00000003 (3)
+                            dwChunkId "01wb"
+                            qwBaseOffset 0000000000000000
+                              Duration : 005870A0 (5796000)
+                              Duration : 0065E200 (6676992)
+                              Duration : 000E6093 (942227)
+                               Summary : 00CCB333 (13415219)
+0000000000010138        LIST 00000104
+                        odml
+0000000000010144          dmlh 000000F8
+                            dwTotalFrames 00001DB5 (7605)
+0000000000010FF4      LIST 3FF5A004
+                      movi
+0000000000011000        ix00 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 00000CC6 (3270)
+                          dwChunkId "00dc"
+                          qwBaseOffset 0000000000011000
+                          Summary size : 3DD8F800 (1037629440)
+0000000000091000        ix01 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 0000007D (125)
+                          dwChunkId "01wb"
+                          qwBaseOffset 0000000000091000
+                          Summary size : 0161C280 (23184000)
+                          Duration : 005870A0 (5796000)
+000000003FF6B008      idx1 0000D450
+                        Entries in index 00000D45 (3397)
+                        Index is relative
+000000003FF79000    RIFF 3FF3BFF8
+                    AVIX
+000000003FF7900C      LIST 3FF3BFEC
+                      movi
+000000003FF7A000        ix00 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 00000EC3 (3779)
+                          dwChunkId "00dc"
+                          qwBaseOffset 000000003FF7A000
+                          Summary size : 3D806000 (1031823360)
+000000003FFFA000        ix01 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 00000090 (144)
+                          dwChunkId "01wb"
+                          qwBaseOffset 000000003FFFA000
+                          Summary size : 01978800 (26707968)
+                          Duration : 0065E200 (6676992)
+000000007FEB5000    RIFF 0B554FF8
+                    AVIX
+000000007FEB500C      LIST 0B554FEC
+                      movi
+000000007FEB6000        ix00 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 0000022C (556)
+                          dwChunkId "00dc"
+                          qwBaseOffset 000000007FEB6000
+                          Summary size : 0AED0800 (183306240)
+000000007FF36000        ix01 0007FFF8
+                          wLongsPerEntry 2
+                          bIndexSubType 0
+                          bIndexType 1 AVI_INDEX_OF_CHUNKS
+                          nEntriesInUse 00000015 (21)
+                          dwChunkId "01wb"
+                          qwBaseOffset 000000007FF36000
+                          Summary size : 0039824C (3768908)
+                          Duration : 000E6093 (942227)
+
+EOF
+Sound summ size 0332CCCC (53660876)
+Sound summ length 00CCB333 (13415219)
+Errors 0
+Dropped 4889
+Low rate 0

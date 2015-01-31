@@ -1,0 +1,23 @@
+http://www174.pair.com/yamir/programs/rifflist.htm
+
+Created by Amir Yantimirov
+
+
+Extended AVI structure checker 
+
+ If you ever develop a program to write AVI file, you know the RIFFWALK utility. 
+
+ The Rifflist is better: this is a Windows program, it outputs to text file and it works with multi-riff AVI files which can be large then 4GB (depend of file system). 
+
+ 
+Multiple RIFF file listing example. http://www174.pair.com/yamir/programs/cap01.txt
+
+ The program: rifflist.zip 234 Kb. http://www174.pair.com/yamir/programs/rifflist.zip
+
+ The program can take the name of AVI file from command line, so it can be associated with context menu command for AVI file type in Windows Explorer. The listing file by default has same name and folder as AVI file. 
+ For reference of extended AVI format see: 
+ Version 1.02 of the OpenDML AVI File Format Extensions
+ published by the OpenDML AVI M-JPEG File Format Subcommittee, February 28, 1996.
+ (unfortunately I cannot find it on the Web) 
+ The program and source code I use as example and etalon (include workarounds of Microsoft bugs): 
+www.virtualdub.org, great thanks to Avery Lee.
