@@ -2592,7 +2592,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 
 def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	crc = 0 # Crc32.StartValue
-	er = EbmlReader(RiffReadMode.SRS, path=srs)
+	er = EbmlReader(EbmlReadMode.SRS, path=srs)
 	
 	for track in tracks.values():
 		if track.track_file:
