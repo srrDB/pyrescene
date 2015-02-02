@@ -1690,8 +1690,7 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 			# for all tracks in the main file. If that happens, 
 			# we obviously don't want to try to match the data
 			if track.signature_bytes:
-				if (0 < len(track.check_bytes) <
-				len(track.signature_bytes)):
+				if (0 < len(track.check_bytes) < len(track.signature_bytes)):
 					lcb = min(len(track.signature_bytes),
 								rr.current_chunk.length + 
 								len(track.check_bytes))
@@ -2259,6 +2258,7 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 			tracks[track_number].track_number = track_number
 		track = tracks[track_number]
 		
+		# test if located on a chunk with the required data
 		if (rr.current_chunk.chunk_start_pos + 
 		len(rr.current_chunk.raw_header) + 
 		rr.current_chunk.length > track.match_offset):
@@ -2266,17 +2266,21 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 				track.track_file = tempfile.TemporaryFile()
 				
 			if track.track_file.tell() < track.data_length:
+				# read in data to temporary file track
 				if (rr.current_chunk.chunk_start_pos + 
 				len(rr.current_chunk.raw_header) >= track.match_offset):
+					# read contents starting from the beginning of the chunk
 					track.track_file.write(
 					    rr.read_contents()[:rr.current_chunk.length])
 				else:
+					# read contents starting from offset in the chunk
 					chunk_offset = (track.match_offset - 
 					                (rr.current_chunk.chunk_start_pos + 
 					                len(rr.current_chunk.raw_header)))
 					track.track_file.write(rr.read_contents()[chunk_offset:
 					                       rr.current_chunk.length])
 	
+			# check for tracks completion
 			tracks_done = True
 			for track_data in tracks.values():
 				if (track_data.track_file == None or 
