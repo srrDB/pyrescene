@@ -31,11 +31,16 @@ import struct
 import re
 import os
 
-from rescene.utility import is_rar
+from rescene.utility import is_rar, _DEBUG
 from rescene.rarstream import RarStream
 
 S_BYTE = struct.Struct('<B') # unsigned char: 1 byte
 S_LONG = struct.Struct('<L') # unsigned long: 4 bytes
+
+# https://msdn.microsoft.com/en-us/library/windows/desktop/dd318189(v=vs.85).aspx
+# A FOURCC (four-character code) is a 32-bit unsigned integer created by 
+# concatenating four ASCII characters. FOURCCs can contain space characters.
+fourCCValidator = re.compile(b"^[ 0-9A-Za-z]{4}$")
 
 class InvalidDataException(ValueError):
 	pass
@@ -45,10 +50,16 @@ class InvalidMatchOffsetException(ValueError):
 
 # RiffReader.cs ---------------------------------------------------------------
 class RiffReadMode(object):
+	"""The read mode for the RiffReader.
+	
+	AVI: .avi file
+	Sample: same as AVI, but used for detecting corruption with samples
+	SRS: used for the meta data files
+	"""
 	AVI, Sample, SRS = list(range(3))
 
 class RiffChunkType(object):
-	List, Movi, SrsFile, SrsTrack, Unknown = list(range(5))
+	List, Movi, SrsFile, SrsTrack, Index, Unknown = list(range(6))
 
 class RiffChunk(object):
 	fourcc = b""
@@ -61,8 +72,6 @@ class MoviChunk(RiffChunk):
 	
 class RiffList(RiffChunk):
 	list_type = 0
-
-fourCCValidator = re.compile(b"^[ 0-9A-Za-z]{4}$")
 
 class RiffReader(object):
 	"""Implements a simple Reader class that reads through AVI 
@@ -79,38 +88,113 @@ class RiffReader(object):
 			assert False
 		self._riff_stream.seek(0, os.SEEK_END)
 		self._file_length = self._riff_stream.tell()
-		
-		# faster reconstructing when match_offset is provided
-		if match_offset >= 8 and match_offset < self._file_length:
-			# -8 is there to add the chunck header for read()
-			self._riff_stream.seek(match_offset - 8, os.SEEK_SET)
-			# quick sanity check for valid location
-			fourcc = self._riff_stream.read(4)
-			if fourCCValidator.match(fourcc):
-				self._riff_stream.seek(match_offset - 8, os.SEEK_SET)
-			else:
-				# we can reset to zero and try to reconstruct, 
-				# but it is most likely the wrong disk anyway
-				# -m will have to be used to ignore the match offset
-				msg = "Invalid match offset for video: %s" % match_offset
-				raise InvalidMatchOffsetException(msg)
-		else:
-			self._riff_stream.seek(0)
-
 		self.mode = read_mode
+		
 		self.read_done = True
-	
 		self.current_chunk = None
 		self.chunk_type = None
 		self.has_padding = False
 		self.padding_byte = ""
+		
+		# faster reconstructing when match_offset is provided
+		if True and match_offset >= 8 and match_offset < self._file_length:
+			# -8 is there to add the chunk header for read()
+			if self._is_valid_chunk_location(match_offset - 8):
+				# yes! reconstruction will be fast
+				self._riff_stream.seek(match_offset - 8, os.SEEK_SET)
+			else:
+				# match offset is not at the start boundary of a chunk
+				chunk_offset = self._find_chunk_offset(match_offset)
+				if _DEBUG:
+					print("Match offset doesn't start on a nice boundary.")
+					print("Chunk offset: {0}".format(chunk_offset))
+					print("Match offset: {0}".format(match_offset))
+				assert chunk_offset < match_offset
+				self._riff_stream.seek(chunk_offset, os.SEEK_SET)
+				
+			# re-initialisation 
+			self.read_done = True
+			self.current_chunk = None
+			self.chunk_type = None
+			self.has_padding = False
+			self.padding_byte = ""
+		elif match_offset >= self._file_length:
+			msg = "Invalid match offset for video: {0}".format(match_offset)
+			raise InvalidMatchOffsetException(msg)
+		else:
+			# no useful matching offset against the main movie file
+			self._riff_stream.seek(0)
 
+	def _is_valid_chunk_location(self, offset):
+		"""Checks whether a certain offset is a valid chunk location to
+		start processing from. Based on Four Character Code."""
+		self._riff_stream.seek(offset, os.SEEK_SET)
+		fourcc = self._riff_stream.read(4)
+		return fourCCValidator.match(fourcc)
+		
+	def _find_chunk_offset(self, match_offset):
+		"""Finds the start offset of the chunk for the match_offset. It uses
+		the index at the end of the file."""
+		self._riff_stream.seek(0, os.SEEK_SET)
+		index_data = ""
+		movi_start = 0
+		
+		while self.read():
+			fourcc = self.current_chunk.fourcc
+			if fourcc == b"AVI ":
+				# the index is in here
+				self.move_to_child()
+			elif fourcc == b"movi":
+				# location where the index is relative to
+				movi_start = self.current_chunk.chunk_start_pos
+			elif self.chunk_type == RiffChunkType.Index:
+				index_data = self.read_contents()
+				break
+			self.skip_contents()
+		
+		# https://msdn.microsoft.com/en-us/library/windows/desktop/dd318181(v=vs.85).aspx
+		# we've found the index
+		if movi_start and len(index_data):
+			# read chunk positions until an _absolute_ file position larger
+			# than our match offset is found
+			offsets = []
+			offset = 0
+			idxpos = 0
+			while offset < match_offset and idxpos + 16 <= len(index_data):
+				(offset,) = S_LONG.unpack(index_data[idxpos+8:idxpos+12])
+				offsets.append(offset)
+				idxpos += 16 # ckid, dwFlags, dwChunkOffset, dwChunkLength
+			
+			# choose the last _relative_ chunk smaller than the match offset
+			# the match offset is absolute form the beginning of the file
+			for offset in reversed(offsets):
+				start_offset = movi_start + 8 + offset
+				if start_offset < match_offset:
+					if self._is_valid_chunk_location(start_offset):
+						return start_offset
+					else:
+						if _DEBUG:
+							print("AVI doesn't follow the 'idx1' spec.")
+						break 
+			
+			# assume the AVI doesn't follow the specification
+			for offset in reversed(offsets):
+				if offset < match_offset:
+					if self._is_valid_chunk_location(offset):
+						return offset
+					else:
+						if _DEBUG:
+							print("The index offset wasn't usable.")
+						return 0
+		return 0
+	
 	def read(self):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again");
 		assert self.read_done or (self.mode == RiffReadMode.SRS and
 		                          self.chunk_type == RiffChunkType.Movi)
 		
+		# includes 8 byte header
 		chunk_start_position = self._riff_stream.tell()
 		self.current_chunk = None
 		self.read_done = False
@@ -161,6 +245,9 @@ class RiffReader(object):
 				self.current_chunk = MoviChunk()
 				self.current_chunk.stream_number =  int(fourcc[:2])
 				self.chunk_type = RiffChunkType.Movi
+			elif fourcc == b"idx1":
+				self.current_chunk = RiffChunk()
+				self.chunk_type = RiffChunkType.Index
 			else:
 				self.current_chunk = RiffChunk()
 				self.chunk_type = RiffChunkType.Unknown
