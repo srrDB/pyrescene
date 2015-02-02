@@ -486,7 +486,7 @@ def create_srr(srr_name, infiles, in_folder="",
 		# COLLECT ARCHIVES
 		rarfiles = []
 		for infile in infiles:
-			if infile.lower().endswith(".sfv"):
+			if str(infile).lower().endswith(".sfv"):
 				# SFV can sill have non-RAR files: empty list here
 				files_sfv = _handle_sfv(infile)
 				rarfiles.extend(files_sfv)
@@ -647,7 +647,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		rarfiles = []
 		for infile in infiles:
 			rarfile = infile # declaration for 'except:' if it goes wrong here
-			if infile.lower().endswith(".sfv"):
+			if str(infile).lower().endswith(".sfv"):
 				# SFV can sill have non-RAR files: empty list here
 				files_sfv = _handle_sfv(infile)
 				rarfiles.extend(files_sfv)
