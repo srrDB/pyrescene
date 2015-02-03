@@ -1058,7 +1058,8 @@ def print_details(file_path):
 			
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
-				rar_executable_dir=None, tmp_dir=None, extract_files=True):
+				rar_executable_dir=None, tmp_dir=None, extract_files=True,
+				srr_part=""):
 	"""
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
@@ -1072,6 +1073,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	auto_locate_renamed: if set, start looking in sub folders and guess based
 	                     on file size and extension of the file to pack
 	extract_files: if set, extract additional files stored in the srr
+	srr_part: string with volume(s) to reconstruct
 	"""
 	rar_name = ""
 	ofile = ""
@@ -1080,6 +1082,11 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
 	running_crc = 0
+	
+	skip_volume = False # helps to reconstruct a single volume
+	skip_offset = 0
+	partial_reconstruction = srr_part != "" and srr_part is not None
+	partial_set = False
 	
 	global temp_dir
 	temp_dir = tmp_dir
@@ -1106,9 +1113,22 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			_extract(block, _opath(block, extract_paths, out_folder))
 		elif block.rawtype == BlockType.SrrRarFile:
 			_flag_check_srr(block)
+			
+			skip_volume = False # always reset for new volume
+			# check whether to recreate the volume
+			if partial_reconstruction:
+				if not block.file_name.endswith(srr_part):
+					skip_volume = True
+				
+				# extension wildcard is used to reconstruct subset
+				if (srr_part.endswith("*") and
+				    block.file_name.startswith(srr_part[:-1])):
+					skip_volume = False
+					partial_set = True
+
 			# We need to create a RAR file for each SRR block.
 			# Get the stored name and create it.
-			if rar_name != block.file_name:
+			if rar_name != block.file_name and not skip_volume:
 				# We use flag 0x1 to mark the files that have their recovery
 				# records removed.  All other flags are currently undefined.
 				rebuild_recovery = (block.flags &
@@ -1127,7 +1147,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				else:
 					_fire(MsgCode.USER_ABORTED, message="Operation aborted.")
 					return -1
-		elif _is_recovery(block):
+		elif _is_recovery(block) and not skip_volume:
 			if block.recovery_sectors > 0 and rebuild_recovery:
 				_write_recovery_record(block, rarfs)
 			else:
@@ -1136,6 +1156,17 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				rarfs.write(block.block_bytes())
 				# TODO: !!! not fully copied?
 		elif block.rawtype == BlockType.RarPackedFile:
+			if skip_volume:
+				# keep track of offsets in the packed file
+				if source_name != block.file_name:
+					skip_offset = block.packed_size
+				else:
+					skip_offset += block.packed_size
+				
+				source_name = block.file_name
+				running_crc = 0
+				continue
+
 			# This is the main RAR block and treat it differently.
 			# We removed the data when storing it, so we need to get 
 			# the data back from the extracted file.
@@ -1148,7 +1179,9 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 #			if block.packed_size > 0:
 			# Make sure we have the correct extracted file open. 
 			# If not, attempt to locate and open it.
-			if source_name != block.file_name:
+			if (source_name != block.file_name
+				or (partial_reconstruction and not partial_set)
+				or (partial_set and source_name != block.file_name)):
 				try: srcfs.close()
 				except: pass
 				source_name = block.file_name
@@ -1177,20 +1210,31 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 						raise
 			assert srcfs
 			
+			# make sure the offset is correct
+			if partial_reconstruction and not partial_set:
+				srcfs.seek(skip_offset)
+			
 			# then grab the correct amount of data from the extracted file
 			running_crc = _repack(block, rarfs, in_folder, srcfs, running_crc, 
-								 skip_rar_crc)
-		elif BlockType.RarMin <= block.rawtype <= BlockType.RarMax or \
-				(block.rawtype == 0x00 and block.header_size == 20): #TODO:test
-			# copy any other RAR blocks to the destination unmodified
-			rarfs.write(block.block_bytes())
-			# -> P0W4 cleared RAR archive end block: 
-			# almost all zeros except for the header size field
+			                      skip_rar_crc)
+		elif (BlockType.RarMin <= block.rawtype <= BlockType.RarMax or 
+			(block.rawtype == 0x00 and block.header_size == 20)): #TODO: test
+			if not skip_volume:
+				# copy any other RAR blocks to the destination unmodified
+				rarfs.write(block.block_bytes())
+				# -> P0W4 cleared RAR archive end block: 
+				# almost all zeros except for the header size field
+			else:
+				continue
 		elif block.rawtype == BlockType.SrrOsoHash:
 			# so no warning message 'unknown block' is shown
 			pass
 		elif block.rawtype == BlockType.SrrRarPadding:
-			rarfs.write(block.block_bytes()[block.header_size:])
+			if not skip_volume:
+				# unknown superfluous bytes in the original volume
+				rarfs.write(block.block_bytes()[block.header_size:])
+			else:
+				continue
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "

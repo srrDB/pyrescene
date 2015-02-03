@@ -241,6 +241,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		rescene.add_stored_files(infiles[0], options.store_files, 
 		                         in_folder, save_paths)
 	else:
+		# reconstruct (certain) volumes
 		mthread.set_messages([MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN,
 							MsgCode.MSG])
 		hints = dict()
@@ -256,7 +257,8 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths, 
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
-			                    options.rar_executable_dir, options.temp_dir)
+			                    options.rar_executable_dir, options.temp_dir,
+			                    options.volume is not None, options.volume)
 		except (FileNotFound, RarNotFound) as err:
 			mthread.done = True
 			mthread.join()
@@ -394,6 +396,10 @@ def main(argv=None):
 					 help="fills RAR with fake data when the archived file "
 					 "isn't found (e.g. no extras) "
 					 "this option implies --no-autocrc")
+	recon.add_option("-m", "--volume", dest="volume", 
+					metavar="VOLUME", help="Specify a single RAR volume "
+					"to reconstruct. Provide the extension or file name. "
+					"End name with * to trigger entire subset reconstruction.")
 	recon.add_option("-u", "--no-autocrc", 
 					 action="store_true", dest="no_auto_crc", default=False,
 					 help="disable automatic CRC checking during reconstruction")
