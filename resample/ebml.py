@@ -159,12 +159,17 @@ class EbmlReadMode(object):
 
 class EbmlElementType(object):
 	(Ebml, Segment, TimecodeScale, Cluster, Timecode, BlockGroup, Block,
-	AttachmentList,	Attachment,	AttachedFileName, AttachedFileData,
-	ReSample, ReSampleFile,	ReSampleTrack, Crc32, Unknown) = list(range(16))
+	AttachmentList,	TrackList, Track, TrackNumber, TrackCodec, EncodingList,
+	ContentEncodingList, ContentEncoding, Compression, CompressionAlgorithm,
+	CompressionSettings, Attachment, AttachedFileName, AttachedFileData,
+	ReSample, ReSampleFile,	ReSampleTrack, Crc32, Unknown) = list(range(26))
 
-EbmlElementTypeName = dict(zip(list(range(16)), ["Ebml", "Segment", 
+EbmlElementTypeName = dict(zip(list(range(26)), ["Ebml", "Segment",
 	"TimecodeScale", "Cluster", "Timecode", "BlockGroup", "Block",
-	"AttachmentList", "Attachment", "AttachedFileName", "AttachedFileData",
+	"AttachmentList", "TrackList", "Track", "TrackNumber", "TrackCodec",
+	"EncodingList", "ContentEncodingList", "ContentEncoding",
+	"Compression", "CompressionAlgorithm", "CompressionSettings",
+	"Attachment", "AttachedFileName", "AttachedFileData",
 	"ReSample", "ReSampleFile",	"ReSampleTrack", "Crc32", "Unknown"]))
 
 class EbmlLaceType(object):
@@ -200,6 +205,16 @@ class EbmlID(object):
 	BLOCK_GROUP = b"\xA0"
 	BLOCK = b"\xA1"
 	SIMPLE_BLOCK = b"\xA3"
+	
+	TRACKLIST = b"\x16\x54\xAE\x6B"
+	TRACK = b"\xAE" # Child of Segment
+	TRACKNUMBER = b"\xD7"
+	TRACKCODEC = b"\x86"
+	CONTENTENCODINGLIST = b"\x6D\x80"
+	CONTENTENCODING = b"\x62\x40"
+	COMPRESSION = b"\x50\x34"
+	COMPRESSIONALGORITHM = b"\x42\x54"
+	COMPRESSIONSETTINGS = b"\x42\x55"
 
 	ATTACHMENT_LIST = b"\x19\x41\xA4\x69"
 	ATTACHMENT = b"\x61\xA7"
@@ -299,6 +314,22 @@ class EbmlReader(object):
 			self.element_type = EbmlElementType.Crc32
 		elif eh == EbmlID.ATTACHMENT_LIST:
 			self.element_type = EbmlElementType.AttachmentList
+		elif eh == EbmlID.TRACKLIST:
+			self.element_type = EbmlElementType.TrackList
+		elif eh == EbmlID.TRACK:
+			self.element_type = EbmlElementType.Track
+		elif eh == EbmlID.TRACKNUMBER:
+			self.element_type = EbmlElementType.TrackNumber
+		elif eh == EbmlID.TRACKCODEC:
+			self.element_type = EbmlElementType.TrackCodec
+		elif eh == EbmlID.CONTENTENCODINGLIST:
+			self.element_type = EbmlElementType.ContentEncodingList
+		elif eh == EbmlID.CONTENTENCODING:
+			self.element_type = EbmlElementType.ContentEncoding
+		elif eh == EbmlID.COMPRESSION:
+			self.element_type = EbmlElementType.Compression
+		elif eh == EbmlID.COMPRESSIONALGORITHM:
+			self.element_type = EbmlElementType.CompressionAlgorithm
 		elif eh == EbmlID.ATTACHMENT:
 			self.element_type = EbmlElementType.Attachment
 		elif eh == EbmlID.ATTACHED_FILE_NAME:
