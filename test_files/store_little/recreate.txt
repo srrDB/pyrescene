@@ -1,0 +1,25 @@
+Input file not found: /home/jef/workspace/pyMove/python-rescene/src/test_files/store_little
+
+ReScene .NET 1.2
+
+Usage:  srr <input file list> [switches]
+	To create a reconstruction file (SRR), use the release SFV or RAR file.
+	All files referenced by the SFV must be in the same folder as the SFV.
+		ex: srr example.sfv -s *.nfo -d
+	To reconstruct a release, use the SRR file created from the release.
+		ex: srr example.srr
+
+Available switches:
+	-l: List SRR file contents only.
+	-x: Extract SRR stored files only.
+	-d: Use parent directory name as basis for generated .srr file name.
+	-p: Store file names with paths (relative to the input base directory)
+	-r: Attempt to auto-locate renamed files (must have same extension)
+	-u: Disable automatic CRC checking during reconstruction.
+	-y: Assume Y(es) for all prompts.
+	-v: Enable verbose (technical) output.
+	-s <file list>: Store additional files in the SRR (wildcards supported)
+	-i <path>: Specify input base directory.
+	-o <path>: Specify output file or directory path.
+	-h <oldname:newname list>: Specify alternate names for extracted files.
+		ex: srr example.srr -h orginal.mkv:renamed.mkv

@@ -1,0 +1,70 @@
+wormdrink	goes into each directory and creates srr - extracts rars that was put in srrs - and then moves the rars away
+wormdrink	so if you have a large collection then you can use that to generate srrs for it
+
+user@host:/mnt/drives/md0/sorted/movies/movies.001 $ find [Aa]* -name '*.sfv' | grep -v -i -e '\Wsubs\W' -e '\Wproof\W' | sed -n 's,/[^/]\+$,,gp' | sort | uniq | tr '\n' '\000' | xargs -0 auto-srr -f /mnt/drives/md0/auto-srr/fails/fails.`date +%Y%m%d%H%M%S` -t /mnt/drives/md0/trash/ -l /mnt/drives/md0/auto-srr/logs/
+srr-dir [A.Beautiful.Life.2008.DVDRip.RERIP.XviD-IGUANA]
+srr-dir [A.Beautiful.Life.2008.DVDRip.RERIP.XviD-IGUANA] : PASS
+srr-dir [A.Beautiful.Mind.2001.iNTERNAL.DVDrip.XViD.AC3-DCA]
+srr-dir [A.Beautiful.Mind.2001.iNTERNAL.DVDrip.XViD.AC3-DCA] : PASS
+srr-dir [Abelar.Tales.Of.An.Ancient.Empire.2010.DVDRip.XviD-VoMiT]
+srr-dir [Abelar.Tales.Of.An.Ancient.Empire.2010.DVDRip.XviD-VoMiT] : PASS
+srr-dir [A.Bittersweet.Life.2005.DC.DVDRiP.XViD-CaYEnnE]
+srr-dir [A.Bittersweet.Life.2005.DC.DVDRiP.XViD-CaYEnnE] : PASS
+srr-dir [Across.The.Universe.DVDRip.XviD-iMBT]
+srr-dir [Across.The.Universe.DVDRip.XviD-iMBT] : PASS
+srr-dir [A.Dangerous.Method.2011.BDRip.XviD-iLG]
+srr-dir [A.Dangerous.Method.2011.BDRip.XviD-iLG] : PASS
+srr-dir [Adaptation.DVDRiP.XViD-DcN]
+srr-dir [Adaptation.DVDRiP.XViD-DcN] : PASS
+srr-dir [Adrift.In.Manhattan.LiMiTED.DVDRiP.XViD-HLS]
+srr-dir [Adrift.In.Manhattan.LiMiTED.DVDRiP.XViD-HLS] : PASS
+srr-dir [Aeon.Flux.DVDRip.XviD-DiAMOND]
+srr-dir [Aeon.Flux.DVDRip.XviD-DiAMOND] : PASS
+srr-dir [A.Film.Unfinished.2010.DVDRip.XviD-FRAGMENT]
+srr-dir [A.Film.Unfinished.2010.DVDRip.XviD-FRAGMENT] : PASS
+srr-dir [After.Life.LIMITED.DVDRip.XviD-DoNE]
+srr-dir [After.Life.LIMITED.DVDRip.XviD-DoNE] : PASS
+srr-dir [After.Sex.2007.Festival.DVDRiP.XviD-iNTiMiD]
+srr-dir [After.Sex.2007.Festival.DVDRiP.XviD-iNTiMiD] : PASS
+srr-dir [After.The.Sunset.DVDRiP.XViD-KJS]
+srr-dir [After.The.Sunset.DVDRiP.XViD-KJS] : PASS
+srr-dir [Age.of.the.Dragons.2011.DVDRiP.XViD-TASTE]
+srr-dir [Age.of.the.Dragons.2011.DVDRiP.XViD-TASTE] : PASS
+srr-dir [A.Good.Old.Fashioned.Orgy.LIMITED.DVDRip.XviD-TWiZTED]
+srr-dir [A.Good.Old.Fashioned.Orgy.LIMITED.DVDRip.XviD-TWiZTED] : PASS
+srr-dir [A.Good.Woman.2004.WS.LiMiTED.DVDRiP.XViD-iKA]
+srr-dir [A.Good.Woman.2004.WS.LiMiTED.DVDRiP.XViD-iKA] : PASS
+srr-dir [A.History.Of.Violence.DVDRip.XviD-DiAMOND]
+srr-dir [A.History.Of.Violence.DVDRip.XviD-DiAMOND] : PASS
+srr-dir [Ajami.2009.LiMiTED.DVDRip.XviD-NODLABS]
+srr-dir [Ajami.2009.LiMiTED.DVDRip.XviD-NODLABS] : PASS
+srr-dir [A.Knights.Tale.2001.Extended.DVDRip.XviD-iMMORTALS]
+srr-dir [A.Knights.Tale.2001.Extended.DVDRip.XviD-iMMORTALS] : PASS
+srr-dir [Albert.Schweitzer.2009.BDRip.XviD-MoH]
+srr-dir [Albert.Schweitzer.2009.BDRip.XviD-MoH] : PASS
+srr-dir [Alexander.DVDRip.XviD-DMT/CD1]
+srr-dir [Alexander.DVDRip.XviD-DMT/CD1] : PASS
+srr-dir [Alexander.DVDRip.XviD-DMT/CD2]
+srr-dir [Alexander.DVDRip.XviD-DMT/CD2] : PASS
+srr-dir [Alexander.Revisited.The.Final.Cut.2004.PROPER.DVDRip.XviD-VCDVaULT]
+srr-dir [Alexander.Revisited.The.Final.Cut.2004.PROPER.DVDRip.XviD-VCDVaULT] : PASS
+srr-dir [Alfie.2004.PROPER.DVDRiP.XViD-HLS]
+srr-dir [Alfie.2004.PROPER.DVDRiP.XViD-HLS] : PASS
+srr-dir [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE]
+srr-dir [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE] : FAIL
+srr-dir [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE] : FAIL
+	aiwrm.part.r47                                    OK
+	aiwrm.part.r48                                    OK
+	aiwrm.part.rar                                    OK
+	aiwrm.part.sfv                                    different CRC
+	--------------------------------------------------------------------------------
+	Errors Occured.
+	Tested 52 files, Successful 51, Different 1, Missing 0
+	TEST : sfv_file=[aiwrm.part.sfv] : FAIL
+	Assertion failed: [/home/iwana/profile/bin//auto-srr:srr-dir:291] [(xs=11) != 0] verify-sfv
+	ERROR: Could not verify sfv for [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE] [/home/iwana/profile/bin//auto-srr:srr-dir:291]
+srr-dir [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE] : FAIL
+srr-dir [Alice.In.Wonderland.1951.REMASTERED.INTERNAL.DVDRip.XviD-PARTiCLE] : FAIL
+srr-dir [Alice.in.Wonderland.DVDRip.XviD-DiAMOND]
+srr-dir [Alice.in.Wonderland.DVDRip.XviD-DiAMOND] : PASS
+srr-dir [Alien.1979.iNTERNAL.DVDRip.XviD-iNCiTE]
