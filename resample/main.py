@@ -215,7 +215,7 @@ class FileData(object):
 			raise AttributeError("Buffer or file expected.")
 		
 	def serialize(self):
-		app_name = resample.APPNAME.encode("utf-8")
+		app_name = (resample.APPNAME).encode("utf-8")
 		file_name = basename(self.sample_name).encode("utf-8")
 		data_length = 18 + len(app_name) + len(file_name)
 	
