@@ -1572,6 +1572,9 @@ def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 			else:
 				# anything not caught above is considered metadata, 
 				# so we copy it as is
+				# EbmlElementType.Timecode
+				# EbmlElementType.TimecodeScale
+				# EbmlElementType.AttachedFileName
 				srsf.write(er.read_contents())
 		er.close()
 
