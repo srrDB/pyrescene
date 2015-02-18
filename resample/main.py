@@ -45,7 +45,7 @@ from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
-                           MakeEbmlUInt, EbmlID)
+                           GetEbmlUInt, MakeEbmlUInt, EbmlID)
 from resample.riff import RiffReader, RiffReadMode, RiffChunkType
 from resample.riff import InvalidMatchOffsetException
 from resample.mov import MovReader, MovReadMode
@@ -295,12 +295,10 @@ class TrackData(object):
 			(self.flags,) = struct.unpack_from("<H", buff, 0)
 			
 			if self.flags & self.BIG_TACK_NUMBER:
-				(self.track_number,) = S_LONG.unpack_from(
-					buff, 2)
+				(self.track_number,) = S_LONG.unpack_from(buff, 2)
 				e = 2 # extra because of the larger file
 			else:
-				(self.track_number,) = S_SHORT.unpack_from(
-					buff, 2)
+				(self.track_number,) = S_SHORT.unpack_from(buff, 2)
 				e = 0
 			
 			if self.flags & self.BIG_FILE:
@@ -311,8 +309,7 @@ class TrackData(object):
 				add = 4
 				
 			(self.data_length, self.match_offset, sig_length) =  \
-				struct.unpack_from("<%sQH" % struct_string,
-				              buff, e+4)
+				struct.unpack_from("<%sQH" % struct_string, buff, e+4)
 			self.signature_bytes = buff[(e+14+add):(e+14+add+sig_length)]
 		else:
 			self.flags = self.NO_FLAGS
@@ -323,6 +320,13 @@ class TrackData(object):
 		self.match_length = 0
 		self.check_bytes = b""
 		self.track_file = None 
+		
+		# not serialized
+		self.codec = ""
+		# uint indicating which algorithm
+		# True when the algorithm isn't specified (compression element exists)
+		self.compression_algorithm = None
+		self.compression_settings = b"" # e.g. striped header bytes
 		
 	def __str__(self, *args, **kwargs):
 		return ("<track flags={flags} "
@@ -774,8 +778,10 @@ def mkv_profile_sample(mkv_data): # FileData object
 	other_length = 0
 	cluster_count = 0
 	block_count = 0
-	current_attachment = None
+	current_attachment_name = ""
 	elm_content = None
+	current_track_nb = 0
+	current_flag = 0
 	
 	mkv_data.crc32 = 0x0 # start value crc
 	
@@ -800,6 +806,10 @@ def mkv_profile_sample(mkv_data): # FileData object
 				      "\t Found   : %s\n" % sep(mkv_data.size), 
 				      sep='\n', file=sys.stderr)
 			er.move_to_child()
+		elif etype in (EbmlElementType.TimecodeScale, EbmlElementType.Timecode):
+			# (same as else)
+			other_length += er.current_element.length
+			mkv_data.crc32 = crc32(er.read_contents(), mkv_data.crc32)
 		elif etype == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while 
 			# (cluster is good because they're about 1mb each)
@@ -807,29 +817,25 @@ def mkv_profile_sample(mkv_data): # FileData object
 			show_spinner(cluster_count)
 			er.move_to_child()
 		elif etype in (EbmlElementType.BlockGroup, 
-		               EbmlElementType.Attachment,
-		               EbmlElementType.AttachmentList):
+		               EbmlElementType.TrackList,
+		               EbmlElementType.Track,
+		               EbmlElementType.ContentEncodingList,
+		               EbmlElementType.ContentEncoding,
+		               EbmlElementType.AttachmentList,
+		               EbmlElementType.Attachment):
 			# these elements have no useful info of their own, 
 			# but we want to step into them to examine their children
 			er.move_to_child()
-		elif etype == EbmlElementType.AttachedFileName:
-			elm_content = er.read_contents()
-			other_length += len(elm_content)
-			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
-			current_attachment = elm_content
-			if not current_attachment in attachments:
-				ad = AttachmentData(current_attachment)
-				attachments[current_attachment] = ad
-		elif etype == EbmlElementType.AttachedFileData:
-			elm_content = er.read_contents()
-			attachments[current_attachment].size = len(elm_content)
-			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+		elif etype == EbmlElementType.Compression:
+			# exact algorithm can be specified later
+			tracks[current_track_nb].compression_algorithm = True
+			er.move_to_child()
 		elif etype == EbmlElementType.Block:
 			block_count += 1
-			if not er.current_element.track_number in tracks:
-				td = TrackData()
-				td.track_number = er.current_element.track_number
-				tracks[er.current_element.track_number] = td
+# 			if not er.current_element.track_number in tracks:
+# 				td = TrackData()
+# 				td.track_number = er.current_element.track_number
+# 				tracks[er.current_element.track_number] = td
 				
 			track = tracks[er.current_element.track_number]
 			track.data_length += er.current_element.length
@@ -854,6 +860,53 @@ def mkv_profile_sample(mkv_data): # FileData object
 				else: # this branch can be eliminated + the test
 					lsig = min(SIG_SIZE, len(elm_content))
 					track.signature_bytes = elm_content[0:lsig]
+		elif etype == EbmlElementType.TrackNumber:
+			elm_content = er.read_contents()
+			other_length += len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
+			if not current_track_nb in tracks:
+				td = TrackData()
+				td.track_number = current_track_nb 
+				tracks[current_track_nb] = td
+		elif etype == EbmlElementType.TrackCodec:
+			elm_content = er.read_contents()
+			other_length += len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			tracks[current_track_nb].codec = elm_content
+		elif etype == EbmlElementType.CompressionAlgorithm:
+			elm_content = er.read_contents()
+			other_length += len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			# 0: zlib
+			# 1: bzlib
+			# 2: lzo1x
+			# 3: header striping
+			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
+			tracks[current_track_nb].compression_algorithm = algorithm
+			current_flag = algorithm == 3
+		elif etype == EbmlElementType.CompressionSettings:
+			elm_content = er.read_contents()
+			other_length += len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			if current_flag:
+				tracks[current_track_nb].compression_settings = elm_content
+		elif etype == EbmlElementType.AttachedFileName:
+			elm_content = er.read_contents()
+			other_length += len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			current_attachment_name = elm_content
+		elif etype == EbmlElementType.AttachedFileData:
+			elm_content = er.read_contents()
+# 			attachments[current_attachment].size = len(elm_content)
+			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
+			attkey = current_attachment_name 
+			while attkey in attachments:
+				attkey += ".dupe"
+			ad = AttachmentData()
+			ad.name = current_attachment_name
+			ad.size = len(elm_content) 
+			attachments[attkey] = ad
 		else:
 			other_length += er.current_element.length
 			mkv_data.crc32 = crc32(er.read_contents(), mkv_data.crc32)
@@ -863,7 +916,7 @@ def mkv_profile_sample(mkv_data): # FileData object
 	remove_spinner()
 	
 	total_size = other_length
-	attachmentSize = 0
+	attachment_size = 0
 	
 #	import locale
 #	print(locale.getdefaultlocale())
@@ -882,22 +935,22 @@ def mkv_profile_sample(mkv_data): # FileData object
 			print("                {0:25}  {1:>12}".format(
 			      attachment.name[0:25], sep(attachment.size)))
 			total_size += attachment.size
-			attachmentSize += attachment.size
+			attachment_size += attachment.size
 			
 	print()
-	print("Track Details:  Track  Length")
-	print("                -----  -------------")
+	print("Track Details:  Track  Length         Codec")
+	print("                -----  -------------  --------------------")
 	for _, track in tracks.items():
-		print("                {0:5n}  {1:>13}".format(track.track_number, 
-		                                               sep(track.data_length)))
+		print("                {0:5n}  {1:>13}  {2}".format(
+			track.track_number, sep(track.data_length), track.codec))
 		total_size += track.data_length
 		
 	print()
 	print("Parse Details:  Metadata     Attachments   Track Data     Total")
 	print("                -----------  ------------  -------------  -------------")
 	print("                {0:>11}  {1:>12}  {2:>13}  {3:>13}\n".format(
-	      sep(other_length), sep(attachmentSize), 
-		  sep(total_size - attachmentSize - other_length), sep(total_size)))
+	      sep(other_length), sep(attachment_size), 
+		  sep(total_size - attachment_size - other_length), sep(total_size)))
 	
 	if mkv_data.size != total_size:
 		msg = ("Error: Parsed size does not equal file size.\n"

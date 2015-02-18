@@ -206,15 +206,16 @@ class EbmlID(object):
 	BLOCK = b"\xA1"
 	SIMPLE_BLOCK = b"\xA3"
 	
-	TRACKLIST = b"\x16\x54\xAE\x6B"
-	TRACK = b"\xAE" # Child of Segment
-	TRACKNUMBER = b"\xD7"
-	TRACKCODEC = b"\x86"
-	CONTENTENCODINGLIST = b"\x6D\x80"
-	CONTENTENCODING = b"\x62\x40"
-	COMPRESSION = b"\x50\x34"
-	COMPRESSIONALGORITHM = b"\x42\x54"
-	COMPRESSIONSETTINGS = b"\x42\x55"
+	TRACKLIST = b"\x16\x54\xAE\x6B" # Tracks, Child of Segment
+	TRACK = b"\xAE" # TrackEntry, Child of Tracks
+	TRACKNUMBER = b"\xD7" # TrackNumber, Child of TrackEntry
+	TRACKCODEC = b"\x86" # CodecID, Child of TrackEntry
+	CONTENTENCODINGLIST = b"\x6D\x80" # ContentEncodings, Child of TrackEntry
+	CONTENTENCODING = b"\x62\x40" # ContentEncoding, Child of ContentEncodings
+	COMPRESSION = b"\x50\x34" # ContentCompression, Child of ContentEncoding
+	# ENCRYPTION = b"\x50\x35" # ContentEncryption, Child of ContentEncoding
+	COMPRESSIONALGORITHM = b"\x42\x54" # ContentCompAlgo, Child of ContentCompression
+	COMPRESSIONSETTINGS = b"\x42\x55" # ContentCompSettings, Child of ContentCompression
 
 	ATTACHMENT_LIST = b"\x19\x41\xA4\x69"
 	ATTACHMENT = b"\x61\xA7"
@@ -330,6 +331,8 @@ class EbmlReader(object):
 			self.element_type = EbmlElementType.Compression
 		elif eh == EbmlID.COMPRESSIONALGORITHM:
 			self.element_type = EbmlElementType.CompressionAlgorithm
+		elif eh == EbmlID.COMPRESSIONSETTINGS:
+			self.element_type = EbmlElementType.CompressionSettings
 		elif eh == EbmlID.ATTACHMENT:
 			self.element_type = EbmlElementType.Attachment
 		elif eh == EbmlID.ATTACHED_FILE_NAME:
