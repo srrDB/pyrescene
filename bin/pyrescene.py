@@ -656,6 +656,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
+		# blacklist known file names of transfer logs
 		if log.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log"):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
@@ -665,8 +666,14 @@ def generate_srr(reldir, working_dir, options, mthread):
 
 	mthread.wait_for_output()
 	
+	def get_media_files():
+		if options.nosrs:
+			return [] # wo don't handle them (traffic, speed, ...)
+		else:
+			return get_sample_files(reldir) + get_music_files(reldir)
+	
 	# Create SRS files
-	for sample in get_sample_files(reldir) + get_music_files(reldir):
+	for sample in get_media_files():
 		# avoid copying samples
 		path = os.path.relpath(sample, reldir)
 		dest_dir = os.path.dirname(os.path.join(working_dir, path))
@@ -799,7 +806,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 				for s in new_srrs:
 					copied_files.append(s)
 
-	#TODO: TXT files for m2ts/vob with crc and size?
+	# TODO: TXT files for m2ts/vob with crc and size?
+	# no, basic .srs file with a single track
 		
 	copied_sfvs = [] # SFVs in the working dir
 	for sfv in sfvs:
@@ -997,7 +1005,7 @@ def main(argv=None):
 					help="recursively create SRR files")
 	parser.add_option("--best", dest="best_settings", default=False,
 					action="store_true",
-					help="same as -csv (compressed, sample verify and vobsubs")
+					help="same as -csv (compressed, sample verify and vobsubs)")
 	parser.add_option("-c", "--compressed",
 					action="store_true", dest="compressed",
 					help="allow SRR creation for compressed RAR files")
@@ -1013,18 +1021,27 @@ def main(argv=None):
 	parser.add_option("-d", "--srr-in-reldir",
 					action="store_true", dest="srr_in_reldir",
 					help="overrides -o parameter")
+	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
+					metavar="DIRECTORY", 
+					help="change temporary directory")
+					# used for vobsub creation
+	parser.add_option("--no-srs", action="store_true", dest="nosrs",
+					help="disable .srs creation for media files")
+					# speedup rerun, less traffic, backup textfiles ...
 	parser.add_option("-e", "--eject",
 					action="store_true", dest="eject",
 					help="eject DVD drive after processing")
 	parser.add_option("-l", "--report",
 					action="store_true", dest="report",
 					help="reports which samples had issues")
-	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
-					metavar="DIRECTORY", help="Specify temporary directory.")
-	parser.add_option("--vobsubs", dest="vobsubs", metavar="VOBSUBS_SFV",
+
+	extra = OptionGroup(parser, "Separate features")
+	parser.add_option_group(extra)
+
+	extra.add_option("--vobsubs", dest="vobsubs", metavar="VOBSUBS_SFV",
 					help="creates an SRR file for the vobsubs RARs only")
 	
-	listoptions = OptionGroup(parser, "List options")
+	listoptions = OptionGroup(parser, "List feature")
 	parser.add_option_group(listoptions)
 	
 	listoptions.add_option("--show-paths", dest="show_paths", 
