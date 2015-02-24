@@ -322,7 +322,7 @@ class TrackData(object):
 		self.track_file = None 
 		
 		# not serialized
-		self.codec = ""
+		self.codec = b""
 		# uint indicating which algorithm
 		# True when the algorithm isn't specified (compression element exists)
 		self.compression_algorithm = None
@@ -580,12 +580,36 @@ def avi_load_srs(infile):
 
 def mkv_load_srs(infile):
 	tracks = {}
+# 	srs_data = None
 	er = EbmlReader(EbmlReadMode.SRS, infile)
+	header_striping = False
+	current_track_nb = 0
 	done = False
 	while not done and er.read():
-		if (er.element_type == EbmlElementType.Segment or
-			er.element_type == EbmlElementType.ReSample):
-				er.move_to_child()
+		if er.element_type in (
+				EbmlElementType.Segment,
+				EbmlElementType.TrackList,
+				EbmlElementType.Track,
+				EbmlElementType.ContentEncodingList,
+				EbmlElementType.ContentEncoding,
+				EbmlElementType.Compression,
+				EbmlElementType.ReSample,):
+			er.move_to_child()
+		elif er.element_type == EbmlElementType.TrackNumber:
+			elm_content = er.read_contents()
+			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
+			done = False
+		elif er.element_type == EbmlElementType.TrackCodec:
+			elm_content = er.read_contents()
+			tracks[current_track_nb].codec = elm_content
+		elif er.element_type == EbmlElementType.CompressionAlgorithm:
+			elm_content = er.read_contents()
+			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
+			header_striping = algorithm == 3 # 3: header striping
+		elif er.element_type == EbmlElementType.CompressionSettings:
+			elm_content = er.read_contents()
+			if header_striping: # and tracks.has_key(current_track_nb):
+				tracks[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.ReSampleFile:
 			srs_data = FileData(er.read_contents())
 		elif er.element_type == EbmlElementType.ReSampleTrack:
