@@ -1621,11 +1621,11 @@ class RarExecutable(object):
 		
 		# parse file name
 		match = re.match("(?P<date>\d{4}-\d{2}-\d{2})_rar"
-							"(?P<major>\d)(?P<minor>\d\d)"
-							"(?P<beta>b\d)?(\.exe)?", rar_sfx_file)
+		                 "(?P<major>\d)(?P<minor>\d\d)"
+		                 "(?P<beta>b\d)?(\.exe)?", rar_sfx_file)
 		if match:
 			self.date, self.major, self.minor, self.beta = match.group(
-										"date", "major", "minor", "beta")
+				"date", "major", "minor", "beta")
 		else:
 			raise ValueError("Could not parse file name.")
 		
@@ -1645,6 +1645,17 @@ class RarExecutable(object):
 		self.threads = b"mt<threads>" in stdout
 		return self.threads
 	
+	def max_thread_count(self):
+		"""
+		Ignores whether or not this version can set threads!
+		4.20: Now the allowed <threads> value for -mt<threads> switch is
+		1 - 32, not 0 - 16 as before. (also in 4.20 beta 1)
+		"""
+		if self.major <= 4 and self.minor < 20:
+			return 16
+		else:
+			return 32
+		
 	def __lt__(self, other):
 		"""
 		The sort routines are guaranteed to use __lt__ when making 
@@ -1689,7 +1700,7 @@ class RarArguments(object):
 		self.split = ""
 		self.old_naming_flag = "-vn"
 		
-	def increase_thread_count(self):
+	def increase_thread_count(self, rarbin):
 		if self.threads == "":
 			self.threads = "-mt1"
 			return True
@@ -1699,8 +1710,9 @@ class RarArguments(object):
 			# 4.20: Now the allowed <threads> value for -mt<threads> switch is
 			# 1 - 32, not 0 - 16 as before.
 			max_threads = multiprocessing.cpu_count() * 2
-			if max_threads > 32:
-				max_threads = 32
+			mtcount = rarbin.max_thread_count()	
+			if max_threads > mtcount:
+				max_threads = mtcount 
 			if current_count < max_threads:
 				self.threads = "-mt%d" % (current_count + 1)
 				return True
@@ -2194,7 +2206,7 @@ class CompressedRarFile(io.IOBase):
 			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
-				while args.increase_thread_count():
+				while args.increase_thread_count(rar):
 					if try_rar_executable(rar, args, old):
 						found = True
 						break
@@ -2216,7 +2228,7 @@ class CompressedRarFile(io.IOBase):
 					args.set_extra_files_before([prev_file.source_files[-1]])
 					
 					if rar.supports_setting_threads():
-						while args.increase_thread_count():
+						while args.increase_thread_count(rar):
 							if try_rar_executable(rar, args, old):
 								found = True
 								break
@@ -2268,7 +2280,7 @@ class CompressedRarFile(io.IOBase):
 		if self.rarstream.length() != block.packed_size:
 			_fire(MsgCode.MSG, message="Solid archive recompression.")
 			while(self.rarstream.length() != block.packed_size and
-				self.good_rar.args.increase_thread_count()):
+				self.good_rar.args.increase_thread_count(self.good_rar)):
 				compress()
 			
 		if self.rarstream.length() != block.packed_size:
@@ -2468,7 +2480,7 @@ class CompressedRarFileAll(io.IOBase):
 	def try_again(self, block):
 		# keep trying again with higher thread count
 		if (self.good_rar.supports_setting_threads() and 
-			self.good_rar.args.increase_thread_count()):
+			self.good_rar.args.increase_thread_count(self.good_rar)):
 			empty_folder(self.temp_dir)
 			self.compress_files()
 			self.set_file(block)
