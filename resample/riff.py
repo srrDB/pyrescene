@@ -97,7 +97,7 @@ class RiffReader(object):
 		self.padding_byte = ""
 		
 		# faster reconstructing when match_offset is provided
-		if True and match_offset >= 8 and match_offset < self._file_length:
+		if match_offset >= 8 and match_offset < self._file_length:
 			# -8 is there to add the chunk header for read()
 			if self._is_valid_chunk_location(match_offset - 8):
 				# yes! reconstruction will be fast
