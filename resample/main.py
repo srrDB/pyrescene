@@ -1840,10 +1840,19 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 	er = EbmlReader(EbmlReadMode.MKV, main_mkv_file)
 	cluster_count = 0
 	done = False
+	current_track_nb = 0
+	header_striping = False
+	tracksMain = {} # contains TrackData objects; main mkv info
 	
 	while er.read() and not done:
-		if er.element_type in (EbmlElementType.Segment, 
-			                   EbmlElementType.BlockGroup):
+		if er.element_type in (
+				EbmlElementType.Segment,
+				EbmlElementType.BlockGroup,
+				EbmlElementType.TrackList,
+				EbmlElementType.Track,
+				EbmlElementType.ContentEncodingList,
+				EbmlElementType.ContentEncoding,
+				EbmlElementType.Compression):
 			er.move_to_child()
 		elif er.element_type == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while 
@@ -1852,7 +1861,28 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 			show_spinner(cluster_count)
 			er.move_to_child()
 		elif er.element_type == EbmlElementType.Block:
-			tracks, done = _mkv_block_find(tracks, er, done)
+			# tracks and tracksMain get modified
+			done = _mkv_block_find(tracks, er, done, tracksMain)
+		elif er.element_type == EbmlElementType.TrackNumber:
+			elm_content = er.read_contents()
+			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
+			if not current_track_nb in tracksMain:
+				td = TrackData()
+				td.track_number = current_track_nb 
+				tracksMain[current_track_nb] = td
+			done = False
+		elif er.element_type == EbmlElementType.TrackCodec:
+			# not necessary, but might be useful for debugging output
+			elm_content = er.read_contents()
+			tracksMain[current_track_nb].codec = elm_content
+		elif er.element_type == EbmlElementType.CompressionAlgorithm:
+			elm_content = er.read_contents()
+			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
+			header_striping = algorithm == 3
+		elif er.element_type == EbmlElementType.CompressionSettings:
+			elm_content = er.read_contents()
+			if header_striping:
+				tracksMain[current_track_nb].compression_settings = elm_content
 		else:
 			er.skip_contents()
 	
@@ -1861,13 +1891,27 @@ def mkv_find_sample_streams(tracks, main_mkv_file):
 	er.close()
 	return tracks	
 
-def _mkv_block_find(tracks, er, done):
+def _mkv_block_find(tracks, er, done, tracksMain):
 	# grab track or create new track
 	track_number = er.current_element.track_number
 	if track_number not in tracks:
 		tracks[track_number] = TrackData()
 		tracks[track_number].track_number = track_number
+	if track_number not in tracksMain:
+		tracksMain[track_number] = TrackData()
+		tracksMain[track_number].track_number = track_number
 	track = tracks[track_number]
+	track2 = tracksMain[track_number]
+	sforsample = b"" # settings for the sample tracks
+	sformain = b"" # settings for main tracks
+	
+	# keep track of the compression settings differences
+	if ((track.compression_settings or track2.compression_settings) and
+		(track.compression_settings != track2.compression_settings)):
+		if track.compression_settings:
+			sformain = track.compression_settings
+		if track2.compression_settings:
+			sforsample = track2.compression_settings
 	
 	# it's possible the sample didn't require 
 	# or contain data for all tracks in the main file
@@ -1879,14 +1923,16 @@ def _mkv_block_find(tracks, er, done):
 		buff = er.read_contents()
 		offset = 0
 		for i in range(len(er.current_element.frame_lengths)):
+			flength = (er.current_element.frame_lengths[i] + 
+			           len(sforsample) - len(sformain))
 			# see if a false positive match was detected
-			if (0 < len(track.check_bytes) <
-			                                len(track.signature_bytes)):
+			if (0 < len(track.check_bytes) < len(track.signature_bytes)):
 				lcb = min(len(track.signature_bytes), 
-				          er.current_element.frame_lengths[i] + 
-				          len(track.check_bytes))
-				check_bytes = track.check_bytes
-				check_bytes += buff[offset:offset+lcb-len(track.check_bytes)]
+				          flength + len(track.check_bytes))
+				check_bytes = track.check_bytes # from sample
+				check_bytes += sforsample # stored settings from main video
+				check_bytes += buff[offset+len(sformain):
+				                    offset+lcb-len(track.check_bytes)]
 				
 				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
@@ -1901,23 +1947,19 @@ def _mkv_block_find(tracks, er, done):
 			# (rare problem, but it can happen with subtitles especially)
 			
 			if not track.check_bytes:
-				lcb = min(len(track.signature_bytes), 
-				              er.current_element.frame_lengths[i])
-				check_bytes = buff[offset:offset+lcb] 
-				
+				lcb = min(len(track.signature_bytes), flength)
+				check_bytes = sforsample
+				check_bytes += buff[offset+len(sformain):offset+lcb] 
 				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 					track.match_offset = (er.current_element.element_start_pos
 					                      + len(er.current_element.raw_header) 
 					                      + len(er.current_element.raw_block_header) 
 					                      + offset)
-					track.match_length = min(track.data_length, 
-					                         er.current_element.frame_lengths[i])
+					track.match_length = min(track.data_length, flength)
 			else:
 				track.match_length += min(track.data_length - 
-				                          track.match_length,
-				                          er.current_element.frame_lengths[i])
-				
+				                          track.match_length, flength)
 			offset += er.current_element.frame_lengths[i]
 	elif track.match_length < track.data_length:
 		track.match_length += min(track.data_length - track.match_length,
@@ -1934,7 +1976,7 @@ def _mkv_block_find(tracks, er, done):
 	else:
 		er.skip_contents()
 		
-	return tracks, done
+	return done
 
 def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	"""Check if the track from the sample exist in the main file. This is
