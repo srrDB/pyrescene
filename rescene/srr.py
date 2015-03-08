@@ -73,8 +73,7 @@ class MessageThread(Thread):
 			if len(o.events):
 				for event in o.events:
 					if event.code in self.messages or self.all:
-						print(event.message,
-							file=sys.stderr)
+						print(event.message, file=sys.stderr)
 				o.events = []
 			time.sleep(self.sleeptime) # in seconds
 		return
@@ -204,8 +203,13 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	save_paths = options.paths
 	
 	if options.list_info: # -l
+		# no messages. prevents mangled output in case there are any
+		# e.g. new style comment block on 
+		# Friday.the.13th.Part.2.1981.720p.BluRay.x264-CULTHD
+		mthread.set_messages([]) 
 		display_info(infiles[0])
 	elif options.list_details: # -e
+		mthread.set_messages([]) 
 		rescene.print_details(infiles[0])
 	elif options.verify: # -q
 		s = verify_extracted_files(infiles[0], in_folder, options.auto_locate)
@@ -278,7 +282,7 @@ def create_srr(options, infolder, infiles, working_dir):
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
 	if options.verbose:
 		msgs += [MsgCode.BLOCK, MsgCode.FBLOCK, MsgCode.RBLOCK, 
-		         MsgCode.NO_FILES, MsgCode.MSG]
+		         MsgCode.NO_FILES]
 		mthread.set_all(True)
 	mthread.set_messages(msgs)
 
