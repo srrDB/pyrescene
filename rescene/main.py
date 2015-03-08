@@ -1107,10 +1107,11 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			# of the application that created the SRR file.
 			_fire(MsgCode.MSG, message="SRR file created with %s." % 
 				  block.appname)
-		elif block.rawtype == BlockType.SrrStoredFile and extract_files:
+		elif block.rawtype == BlockType.SrrStoredFile:
 			_flag_check_srr(block)
-			# There is a file stored within the SRR file. Extract it.
-			_extract(block, _opath(block, extract_paths, out_folder))
+			if extract_files:
+				# There is a file stored within the SRR file. Extract it.
+				_extract(block, _opath(block, extract_paths, out_folder))
 		elif block.rawtype == BlockType.SrrRarFile:
 			_flag_check_srr(block)
 			

@@ -262,7 +262,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 			                    hints, options.no_auto_crc, 
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir,
-			                    options.volume is not None, options.volume)
+			                    options.volume is None, options.volume)
 		except (FileNotFound, RarNotFound) as err:
 			mthread.done = True
 			mthread.join()
