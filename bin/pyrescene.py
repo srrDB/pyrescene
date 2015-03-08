@@ -911,6 +911,9 @@ def get_release_directories(path):
 			pass
 		
 	for dirpath, dirnames, filenames in os.walk(path):
+		# The directory list is in arbitrary order, but on Windows it seems 
+		# to be sorted alphabetical by default.
+		dirnames.sort() # force alphabetical order 
 		if _DEBUG:
 			print(dirpath)
 			print(dirnames)
@@ -1244,10 +1247,13 @@ def main(argv=None):
 	# delete temporary working dir
 	try:
 		shutil.rmtree(working_dir)
-	except OSError:
+	except OSError as oserr:
 		print("Could not empty temporary working directory!")
 		print(working_dir)
 		print("This is a know problem for PyPy users. (long paths issue)")
+		# I've seen this error with CPython too. Something else wrong?
+		# The temp dir was actually removed though.
+		print("Actual error: {0}".format(str(oserr)))
 	
 	# see if we need to eject a disk drive
 	if options.eject and os.name == "nt" and not aborted:
