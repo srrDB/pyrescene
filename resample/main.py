@@ -2426,18 +2426,33 @@ def mkv_extract_sample_streams(tracks, movie):
 			start_offset = min(track.match_offset, start_offset)
 			
 	attachments = {}
+	tracksMain = {} # contains TrackData objects; main mkv info
 	current_attachment = None
 	cluster_count = 0
 	done = False
+	current_track_nb = 0
+	header_striping = False
+
 	while er.read() and not done:
 		if er.element_type in (EbmlElementType.Segment, 
+		                       EbmlElementType.BlockGroup,
+							   EbmlElementType.TrackList,
+							   EbmlElementType.Track,
+							   EbmlElementType.ContentEncodingList,
+							   EbmlElementType.ContentEncoding,
+							   EbmlElementType.Compression,
 		                       EbmlElementType.AttachmentList,
-		                       EbmlElementType.Attachment,
-		                       EbmlElementType.BlockGroup):
+		                       EbmlElementType.Attachment):
 			er.move_to_child()
+		elif er.element_type in (EbmlElementType.TimecodeScale,
+		                         EbmlElementType.Timecode,
+		                         EbmlElementType.TrackCodec):
+			er.skip_contents()
+		elif er.element_type == EbmlElementType.Block:
+			done = _mkv_block_extract(tracks, tracksMain, er, done)
 		elif er.element_type == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while 
-			# (cluster is good because they're about 1mb each)
+			# (cluster is good because they're about 1MB each)
 			cluster_count += 1
 			show_spinner(cluster_count)
 			
@@ -2449,6 +2464,26 @@ def mkv_extract_sample_streams(tracks, movie):
 				er.skip_contents()
 			else:
 				er.move_to_child()
+		elif er.element_type == EbmlElementType.TrackNumber:
+			elm_content = er.read_contents()
+			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
+			if not current_track_nb in tracksMain:
+				td = TrackData()
+				td.track_number = current_track_nb 
+				tracksMain[current_track_nb] = td
+			done = False
+		elif er.element_type == EbmlElementType.TrackCodec:
+			# not necessary, but might be useful for debugging output
+			elm_content = er.read_contents()
+			tracksMain[current_track_nb].codec = elm_content
+		elif er.element_type == EbmlElementType.CompressionAlgorithm:
+			elm_content = er.read_contents()
+			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
+			header_striping = algorithm == 3
+		elif er.element_type == EbmlElementType.CompressionSettings:
+			elm_content = er.read_contents()
+			if header_striping:
+				tracksMain[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
 			if current_attachment not in attachments:
@@ -2464,8 +2499,6 @@ def mkv_extract_sample_streams(tracks, movie):
 				attachment.attachment_file = tempfile.TemporaryFile()
 				attachment.attachment_file.write(er.read_contents())
 				attachment.attachment_file.seek(0)
-		elif er.element_type == EbmlElementType.Block:
-			tracks, done = _mkv_block_extract(tracks, er, done)
 		else:
 			er.skip_contents()
 
@@ -2474,15 +2507,25 @@ def mkv_extract_sample_streams(tracks, movie):
 	er.close()
 	return tracks, attachments
 
-def _mkv_block_extract(tracks, er, done):
+def _mkv_block_extract(tracks, tracksMain, er, done):
+	# grab the current track for main mkv and .srs meta data
 	try:
 		track = tracks[er.current_element.track_number]
 	except KeyError:
 		# 2001.A.Space.Odyssey.1968.1080p.MULTI.BluRay.x264-1080 sample
 		# System.Collections.Generic.KeyNotFoundException on .NET version
 		er.skip_contents()
-		return tracks, done	
-	
+		return done
+	trackMain = tracksMain[er.current_element.track_number]
+
+	# grab compression settings
+	sforsample = b"" # settings for the sample tracks
+	sformain = b"" # settings for main tracks
+	if track.compression_settings:
+		sformain = track.compression_settings
+	if trackMain.compression_settings:
+		sforsample = trackMain.compression_settings
+
 	if (er.current_element.element_start_pos + 
 		len(er.current_element.raw_header) + 
 		len(er.current_element.raw_block_header) + 
@@ -2492,14 +2535,14 @@ def _mkv_block_extract(tracks, er, done):
 		buff = er.read_contents()
 		offset = 0
 		for i in range(len(er.current_element.frame_lengths)):
-			if (er.current_element.element_start_pos + 
-			len(er.current_element.raw_header) + 
-			len(er.current_element.raw_block_header) + 
-			offset >= track.match_offset and 
+			if (er.current_element.element_start_pos +
+			len(er.current_element.raw_header) +
+			len(er.current_element.raw_block_header) +
+			offset >= track.match_offset and
 			track.track_file.tell() < track.data_length):
-				track.track_file.write(buff[offset:offset+
+				track.track_file.write(sforsample)
+				track.track_file.write(buff[offset+len(sformain):offset+
 				                       er.current_element.frame_lengths[i]])
-				
 			offset += er.current_element.frame_lengths[i]
 				
 		tracks_done = True
@@ -2512,7 +2555,7 @@ def _mkv_block_extract(tracks, er, done):
 	else:
 		er.skip_contents()
 		
-	return tracks, done
+	return done
 
 def mp4_extract_sample_streams(tracks, main_mp4_file):
 	mtracks = profile_mp4(FileData(file_name=main_mp4_file),
