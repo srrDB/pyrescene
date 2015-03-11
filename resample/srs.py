@@ -276,10 +276,13 @@ def main(argv=None, no_exit=False):
 			print("Sample CRC : {0:08X}".format(srs_data.crc32))
 			for track in tracks.values():
 				offset = ""
+				codec = ""
 				if track.match_offset:
 					offset = " @ {0}".format(sep(track.match_offset))
-				print("Track {0}: {1} bytes{2}".format(
-					track.track_number, sep(track.data_length), offset))
+				if track.codec:
+					codec = " [{0}]".format(track.codec)
+				print("Track {0}: {1} bytes{2}{3}".format(
+					track.track_number, sep(track.data_length), offset, codec))
 				if is_music:
 					try:
 						print("Duration: {0}".format(track.duration))
