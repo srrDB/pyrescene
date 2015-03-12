@@ -100,6 +100,13 @@ def check_for_no_ext(srr_file, extension):
 			return False
 	return True
 		
+def check_for_ext(srr_file, extension):
+	for block in RarReader(srr_file):
+		if (block.rawtype == BlockType.SrrStoredFile and
+			block.file_name.lower().endswith(extension)):
+			return True
+	return False
+
 rar_sizes = 0 #bytes
 
 def check(srr_file):
@@ -151,6 +158,8 @@ def check(srr_file):
 			result |= check_for_no_ext(srr_file, ".sfv")
 		if options.nonfo:
 			result |= check_for_no_ext(srr_file, ".nfo")
+		if options.txt:
+			result |= check_for_ext(srr_file, ".txt")
 		if result and options.output_dir:
 			print("Moving %s." % srr_file)
 			srr_name = os.path.basename(srr_file)
@@ -214,6 +223,8 @@ if __name__ == '__main__':
 					  action="store_true", dest="nosfv", default=False)
 	parser.add_option("-n", "--nonfo", help="list SRRs without NFO",
 					  action="store_true", dest="nonfo", default=False)
+	parser.add_option("--txt", help="list SRRs with TXT files",
+					  action="store_true", dest="txt", default=False)
 	
 	parser.add_option("-r", "--repack", help="list SRRs with -rpk., -r. in RAR name",
 					  action="store_true", dest="repack", default=False)
