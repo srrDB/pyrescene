@@ -112,6 +112,8 @@ def find_fpcalc_executable():
 	path = os.pathsep.join([script_dir, bin_dir, module_path(),
 	                        os.getenv('PATH', "")])
 	result = find_executable("fpcalc", path=path)
+	
+	result = check_fpcalc_validity(result)
 
 	if result:
 		print(result)
@@ -119,6 +121,25 @@ def find_fpcalc_executable():
 		return fpcalc_executable
 	else:
 		raise ExecutableNotFound(MSG_NOTFOUND)
+	
+def check_fpcalc_validity(potential_fpcalc_executable):
+	"""It tries to run the executable to check viability.
+	Windows: (empty fpcalc.exe file in path)
+	[Error 193] %1 is not a valid Win32 application
+	Linux:
+	[Errno 2] No such file or directory
+	"""
+	try:
+		custom_popen([potential_fpcalc_executable])
+	except (OSError, IOError):
+		return None
+	except Exception as ex:
+		print("Tell me about this unexpected error below!")
+		print(ex) # any other exception should not happen
+		return None
+	
+	# the executable ran just fine
+	return potential_fpcalc_executable
 	
 # http://www.py2exe.org/index.cgi/WhereAmI
 def we_are_frozen():
