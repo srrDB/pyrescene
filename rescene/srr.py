@@ -359,6 +359,9 @@ def main(argv=None):
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
+	parser.add_option("-n", "--always-no", dest="always_no", default=False,
+					  action="store_true",
+					  help="assume N(o) for all prompts")
 	parser.add_option("-v", help="enable verbose (technical) creation",
 						action="store_true", dest="verbose", default=False)
 	# TODO: get all the messages in order
@@ -441,7 +444,8 @@ def main(argv=None):
 	
 	def can_overwrite(file_path):
 		retvalue = True 
-		if not options.always_yes and os.path.isfile(file_path):
+		if (not options.always_yes and 
+		    not options.always_no and os.path.isfile(file_path)):
 			# make sure no messages pop up after our question
 			time.sleep(MessageThread.sleeptime)
 			
@@ -451,6 +455,8 @@ def main(argv=None):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			if char == 'n':
 				retvalue = False
+		elif options.always_no and os.path.isfile(file_path):
+			retvalue = False
 		return retvalue 
 	
 	rescene.main.can_overwrite = can_overwrite
