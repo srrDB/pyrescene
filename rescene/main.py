@@ -167,7 +167,7 @@ def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
 		if they have different paths.)
 		If it is a relative path, we only extract a single file.
 	If extract_paths is True, 
-		we try to recreate the file with its stored path.
+		we try to re-create the file with its stored path.
 	"""
 	extracted_files = []
 	def process(block):
@@ -205,7 +205,7 @@ def _extract(block, out_file):
 	after checking it can overwrite it if necessary.
 	The block must match the srr_file."""
 	if can_overwrite(out_file):
-		msg = "Recreating stored file: %s" % block.file_name
+		msg = "Re-creating stored file: %s" % block.file_name
 		if _DEBUG: print(msg)
 		_fire(MsgCode.MSG, message=msg)
 		# IOError: [Errno 2] No such file or directory: 
@@ -223,8 +223,8 @@ def _extract(block, out_file):
 			out_stream.write(block.srr_data())
 		return True
 	else: # User cancelled the file extraction
-		_fire(MsgCode.NO_OVERWRITE, 
-		      message="Overwrite operation aborted for %s" % out_file)
+		_fire(MsgCode.NO_OVERWRITE, message="Operation aborted. "
+		      "Stored file %s already exists." % out_file)
 		return False
 
 def add_stored_files(srr_file, store_files, in_folder="", save_paths=False,
@@ -1064,7 +1064,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
 	out_folder: location to place the constructed archives
-	extract_paths: if paths are stored in the SRR, they will be recreated
+	extract_paths: if paths are stored in the SRR, they will be re-created
 	               starting from out_folder
 	hints: a dictionary used for handling renamed files
 	key: name in original RAR, value: renamed file name on disk
@@ -1116,7 +1116,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			_flag_check_srr(block)
 			
 			skip_volume = False # always reset for new volume
-			# check whether to recreate the volume
+			# check whether to re-create the volume
 			if partial_reconstruction:
 				if not block.file_name.endswith(srr_part):
 					skip_volume = True
@@ -1146,7 +1146,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 						os.makedirs(os.path.dirname(ofile))
 					rarfs = open(ofile, "w+b")
 				else:
-					_fire(MsgCode.USER_ABORTED, message="Operation aborted.")
+					_fire(MsgCode.USER_ABORTED,
+						message="Operation aborted. Archive already exists.")
 					return -1
 		elif _is_recovery(block) and not skip_volume:
 			if block.recovery_sectors > 0 and rebuild_recovery:
@@ -1917,7 +1918,7 @@ def get_archived_file_blocks(blocks, current_block):
 
 def get_set(srr_rar_block):	
 	"""
-	An SRR file can contain recreation data of different RAR sets.
+	An SRR file can contain re-creation data of different RAR sets.
 	This function tries to pick the basename of such a set.
 	"""
 	n = srr_rar_block.file_name[:-4]
