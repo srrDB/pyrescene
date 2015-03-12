@@ -247,7 +247,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	else:
 		# reconstruct (certain) volumes
 		mthread.set_messages([MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN,
-							MsgCode.MSG])
+		                      MsgCode.MSG, MsgCode.NO_OVERWRITE])
 		hints = dict()
 		if options.hints:
 			for hint in options.hints.split(';'):
