@@ -540,7 +540,9 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			results.append(sfile)
 		
 	# add languages.diz to the first SRR file
-	if len(results):
+	# the file can be missing when the subs are in the .srt format
+	# e.g. Battlestar.Galactica.2003.WS.DVDRip.XviD-SFM
+	if len(results) and os.path.isfile(idx_lang):
 		rescene.add_stored_files(results[0], [idx_lang], save_paths=False)
 	
 	# hopefully the path of the root SRRs isn't too long anymore
