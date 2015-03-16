@@ -510,10 +510,11 @@ def parse_ref(ref):
             timestamp_frac /= 10 ** TIME_FRAC_DIGITS
         
         timestamp = time.struct_time(tuple(timestamp) + (0, 0, 0))
-        parser.out("time", time.strftime("%Y-%m-%d %H:%M:%S", timestamp))
+        parser.out("time", time.strftime("\"%Y-%m-%d %H:%M:%S", timestamp))
         if timestamp_frac:
             print(".{:0{digits}}".format(round(timestamp_frac * 10 **
                 TIME_FRAC_DIGITS), digits=TIME_FRAC_DIGITS), end="")
+        print("\"", end="")
         
         if hdr_pos != len(hdr):
             parser.error(pos + hdr_pos, "Excess file block header "
@@ -699,6 +700,7 @@ def parse_ref(ref):
             parser.out("dict", dict_size)
         
         print("Reference volume size:", fmt_size(pos), file=sys.stderr)
+        parser.out("size", pos)
         # print(first volume or volume number {})
     
     if not os.path.basename(ref).startswith(
