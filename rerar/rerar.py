@@ -155,17 +155,12 @@ def main():
             i += 1
         elif "dict" == arg:
             dict = int(sys.argv[i + 1])
-            
             if not DICT_MIN <= dict <= DICT_MAX:
                 raise SystemExit("Dictionary size {} out of {}-{} range".
                     format(dict, DICT_MIN, DICT_MAX))
-            log = math.log(dict / DICT_MIN)
-            ilog = int(log)
-            if ilog != log:
+            if dict not in (64, 128, 256, 512, 1024, 2048, 4096):
                 raise SystemExit("Dictionary size {} not a round binary".
                     format(dict))
-            dict = ilog << DICT_POS
-            
             i += 2
         elif "rar2" == arg:
             version = 2
