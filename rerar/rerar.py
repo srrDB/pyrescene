@@ -158,9 +158,11 @@ def main():
             if not DICT_MIN <= dict <= DICT_MAX:
                 raise SystemExit("Dictionary size {} out of {}-{} range".
                     format(dict, DICT_MIN, DICT_MAX))
-            if dict not in (64, 128, 256, 512, 1024, 2048, 4096):
+            dict_sizes = (64, 128, 256, 512, 1024, 2048, 4096)
+            if dict not in dict_sizes:
                 raise SystemExit("Dictionary size {} not a round binary".
                     format(dict))
+            dict = dict_sizes.index(dict) << DICT_POS
             i += 2
         elif "rar2" == arg:
             version = 2
