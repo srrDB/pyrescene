@@ -243,6 +243,12 @@ base <grp-name>
             end_flags,
         errors) = parse_ref(ref)
         
+        # grab additional properties from the file
+        base = os.path.basename(os.path.splitext(ref)[0])
+        vol_max = os.path.getsize(ref)
+        
+        # TODO: don't overwrite, rename or make copy of ref rar
+        
         #~ with "sfv" as sfv:
             #~ get header
             #~ find ref name
@@ -465,7 +471,6 @@ def parse_ref(ref):
             hdr_pos += S_HIGH_SIZE.size
             pack_size += high_pack << 32
             data_size += high_data << 32
-            parser.error(pos + HDR_FLAGS_POS, "Large file not implemented")
         
         name_field = hdr[hdr_pos:][:name_size]
         
@@ -704,12 +709,6 @@ def parse_ref(ref):
         print("Reference volume size:", fmt_size(pos), file=sys.stderr)
         parser.out("size", pos)
         # print(first volume or volume number {})
-    
-    if not os.path.basename(ref).startswith(
-    os.path.splitext(intname)[0]):
-        print("{}: appears to have been renamed".format(ref),
-            file=sys.stderr)
-        parser.fail = True
     
     # Verify size against rr_count
     # TODO: if not the final volume and RR doesn't introduce ambiguities,
