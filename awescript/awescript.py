@@ -144,12 +144,10 @@ overwrite_existing_samples = 1
 
 def get_files(path, cwdsolo, options):
     sfvList = []
-    fileList = []
+    fileList = glob.glob("*.*")
     fileMainList = []
     blackList = []
     sets_in_main = 0
-    
-    fileList = glob.glob("*.*")
     
     for root, dirs, _files in os.walk(path):
         base = os.path.relpath(root) + os.sep
@@ -183,20 +181,19 @@ def get_files(path, cwdsolo, options):
         subtyp = ""
         dest = ""
         sr_dir = "" # dir to store path for srs or srr that was created for fileset
-        part_fix = False
         
         (folder, filename) = os.path.split(lfile)
         if folder: 
             folder += os.sep
         
-        if not re.search("\.(avi|mkv|m4v|mp4|wmv|ts|divx|ogm|mpg|mpeg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo)$", filename, re.IGNORECASE):
-            if not (re.search("\.rar$", filename, re.IGNORECASE) and not re.search("\.part\d{2,3}\.rar$", filename, re.IGNORECASE)):
+        if not re.search("\.(avi|mkv|m4v|mp4|wmv|ts|divx|ogm|mpg|mpeg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo|jpg)$", filename, re.IGNORECASE):
+            if (not (re.search("\.rar$", filename, re.IGNORECASE) and 
+                     not re.search("\.part\d{2,3}\.rar$", filename, re.IGNORECASE))):
                 continue
             if re.search("\.part[2-9]\.rar$", filename, re.IGNORECASE):
-                basename = filename.split(".rar",1)[0]
+                basename = filename.split(".rar", 1)[0]
                 if not os.path.exists(folder + basename + ".r00"):
                     continue
-                part_fix = True
         
         # SFV Detection
         if re.search("\.sfv$", filename, re.IGNORECASE):
@@ -217,12 +214,14 @@ def get_files(path, cwdsolo, options):
                                 try:
                                     os.rename(folder + str(f).lower(), folder + str(f))
                                     skip = False
-                                except Exception as e:
+                                except Exception:
                                     skip = True
                         if skip:
                             continue
                     
-                    if re.search("\.part0?0?1\.rar$", f, re.IGNORECASE) or (re.search("\.(rar|00[0-1])$", f, re.IGNORECASE) and not re.search("\.part\d{1,3}\.rar$", f, re.IGNORECASE)):
+                    if (re.search("\.part0?0?1\.rar$", f, re.IGNORECASE) or 
+                        (re.search("\.(rar|00[0-1])$", f, re.IGNORECASE) and
+                         not re.search("\.part\d{1,3}\.rar$", f, re.IGNORECASE))):
                         if main_file:
                             blackList.append(f)
                         else:
@@ -261,7 +260,8 @@ def get_files(path, cwdsolo, options):
                         cont = True
                         break
                 if cont: continue
-                if main_file: blackList.append(f)
+                if main_file:
+                    blackList.append(f)
                 return []
             
             if not main_file: continue # sfv was probably corrupt
@@ -272,9 +272,9 @@ def get_files(path, cwdsolo, options):
         
         # Look inside RAR and get types (i.e. AVI,MKV,SUBS)
         if re.search("\.(rar|00[0-1])$", main_file, re.IGNORECASE):
-            
-            if blackList.count(main_file): continue
-            if os.path.exists(folder + main_file.split(".001",1)[0] + ".000"):
+            if blackList.count(main_file):
+                continue
+            if os.path.exists(folder + main_file.split(".001", 1)[0] + ".000"):
                 continue # split files - not RARs
             
             for i in range(len(fileMainList)):
@@ -439,26 +439,32 @@ def get_files(path, cwdsolo, options):
             if not folder:
                 dest = options.nfos_dir + os.sep
         
+        elif re.search(".*proof.*\.jpg$", main_file, re.IGNORECASE):
+            typ = "Proof"
+            subtyp = ""
+            if not folder:
+                dest = "Proof" + os.sep
+            
         elif re.search("\.srs$", main_file, re.IGNORECASE):
             if re.search("extra", main_file, re.IGNORECASE):
                 subtyp = "Extras_SRS"
                 if not folder:
-                    dest = "Extras"+os.sep + "Sample"+os.sep
+                    dest = "Extras" + os.sep + "Sample" + os.sep
             else:
                 subtyp = "SRS"
                 if not folder:
-                    dest = "Sample"+os.sep
+                    dest = "Sample" + os.sep
             typ = "Sample"
         
         elif re.search("\.srr$", main_file, re.IGNORECASE):
             typ = "Other"
             subtyp = "SRR"
         
-        if len(fset) == 0: fset.append(main_file)
+        if len(fset) == 0:
+            fset.append(main_file)
         #if dest and options.unrar_dir: dest = options.unrar_dir.rstrip(os.sep) + os.sep + dest
         
         fileMainList.append([folder,main_file,sfv,fset,typ,subtyp,dest,sr_dir])
-    
     
     # Detect CD folders - skip if folder has TV tags
     if sets_in_main >= 2 and not re.search("([\._\s]s?\d{1,3}[\._\s]?[ex]\d{1,3}|s\d{1,3})", cwdsolo, re.IGNORECASE): # 2 or more CDs possible
@@ -642,6 +648,9 @@ def move_files(files, options, cwdsolo):
                     files = move(files, "Sample", "Extras_SRS", True, options.debug)
         else:
             print("Only samples found, not moving.")
+            
+    if options.move_proof:
+        files = move(files, "Proof", "", True, options.debug)
     
     if options.move_samples:
         files = move(files, "VobSample", "", True, options.debug)
@@ -1147,8 +1156,6 @@ def main(options, path):
             print(str(i+1) + ": " + str(files[i]) + "\n")
         print("")
     
-    code = 1
-    
     files = move_files(files, options, cwdsolo)
     
     code, files = srs_srr(files, options, cwdsolo)
@@ -1200,6 +1207,8 @@ if __name__ == '__main__':
                       help="Do not move EXTRAS to Extras folder.")
     parser.add_option("--ignore-subs", dest="move_subs", action="store_false", default=True,
                       help="Do not move subs to Subs directory.")
+    parser.add_option("--ignore-proof", dest="move_proof", action="store_false", default=True,
+                      help="Do not move proof to Proof directory.")
     parser.add_option("-i", "--ignore-sample", dest="move_samples", action="store_false", default=True,
                       help="Do not move sample(s) to Sample directory.")
     parser.add_option("-d", "--delete-sample", dest="delete_samples", action="store_true", default=False,
