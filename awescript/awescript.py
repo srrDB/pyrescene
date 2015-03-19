@@ -410,7 +410,7 @@ def get_files(path, cwdsolo, options):
                 if re.search("\.vob$", main_file, re.IGNORECASE):
                     typ = "VobSample"
                     if not folder:
-                        dest = "VobSample"+os.sep
+                        dest = "Sample"+os.sep
                 elif re.search("\.m2ts$", main_file, re.IGNORECASE):
                     typ = "m2tsSample"
                     if not folder:
