@@ -1226,10 +1226,12 @@ def main(argv=None):
 		aborted = True
 	except ExecutableNotFound:
 		print("----------------------------------------------------")
-		print("Please put the fpcalc executable in your path.")
+		print("Please put the fpcalc executable in your PATH!")
+		print("It is necessary for the creation of music SRS files.")
+		print("")
 		print("It can be downloaded from ")
 		print("https://bitbucket.org/acoustid/chromaprint/downloads")
-		print("It is necessary for the creation of music SRS files.")
+		print("On Debian, install libchromaprint-tools")
 		print("----------------------------------------------------")
 		aborted = True
 	finally:
