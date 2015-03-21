@@ -129,6 +129,11 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 	Linux:
 	[Errno 2] No such file or directory
 	"""
+	# fpcalc was not found
+	if potential_fpcalc_executable is None:
+		return None
+	
+	# something is wrong with the executable
 	try:
 		custom_popen([potential_fpcalc_executable])
 	except (OSError, IOError):
