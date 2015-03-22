@@ -80,6 +80,15 @@ def check_nfos(srr_file):
 			nfo_count += 1
 	return False if nfo_count <= 1 else True
 
+def check_duplicates(srr_file):
+	found = []
+	for block in RarReader(srr_file):
+		if (block.rawtype == BlockType.SrrStoredFile):
+			if found.count(block.file_name):
+				return True
+			found.append(block.file_name)
+	return False
+
 def check_for_possible_nonscene(srr_file):
 	for block in RarReader(srr_file):
 		if (block.rawtype == BlockType.SrrRarFile and
@@ -150,6 +159,8 @@ def check(srr_file):
 			result |= check_repack(srr_file)
 		if options.nfos:
 			result |= check_nfos(srr_file)
+		if options.duplicates:
+			result |= check_duplicates(srr_file)
 		if options.peer2peer:
 			result |= check_for_possible_nonscene(srr_file)
 		if options.nofiles:
@@ -207,6 +218,8 @@ if __name__ == '__main__':
 					  action="store_true", dest="verify", default=False)
 	parser.add_option("-t", "--nfos", help="two or more NFOs",
 					  action="store_true", dest="nfos", default=False)
+	parser.add_option("-u", "--duplicates", help="the same file is stored twice",
+					  action="store_true", dest="duplicates", default=False)
 	parser.add_option("-p", "--noproof", help="list SRRs with images that "
 						"do not contain the word proof",
 					  action="store_true", dest="noproof", default=False)
