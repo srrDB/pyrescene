@@ -1125,7 +1125,7 @@ def create_srr(nzb_path, options):
 				print("Choosing new file.")
 				old = nfile
 		nntp_files[nfile.name] = old
-		extension = nfile.name[-4:]
+		extension = nfile.name[-4:].lower()
 		
 		if extension in (".nfo", ".jpg", ".png", ".bmp", ".srs"):
 			to_store.append(nfile)
