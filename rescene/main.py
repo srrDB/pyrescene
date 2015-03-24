@@ -1653,7 +1653,8 @@ class RarExecutable(object):
 		4.20: Now the allowed <threads> value for -mt<threads> switch is
 		1 - 32, not 0 - 16 as before. (also in 4.20 beta 1)
 		"""
-		if int(self.major) <= 4 and int(self.minor) < 20:
+		if (int(self.major) < 4 or
+			int(self.major) == 4 and int(self.minor) < 20):
 			return 16
 		else:
 			return 32
