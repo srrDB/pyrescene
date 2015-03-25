@@ -494,7 +494,7 @@ def create_srr(srr_name, infiles, in_folder="",
 			else:
 				rarfiles.extend(_handle_rar(infile))
 	
-		oso_dict = {}
+		oso_dict = odict()
 		# STORE ARCHIVE BLOCKS
 		for rarfile in rarfiles:
 			if not os.path.isfile(rarfile):
