@@ -1089,18 +1089,19 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		if self.flags & self.SALT:
 			out += "+SALT: %X\n" % self.salt
 		if self.flags & self.EXT_TIME:
-			out += "+modification time: %s\n" % self.ftime(self.atime)
-			out += "+access time: %s\n" % self.ftime(self.mtime)
-			out += "+metadata change time: %s\n" % self.ftime(self.ctime)
-			out += "+arc time: %s\n" % self.ftime(self.arctime)
+			out += "+modification time: %s\n" % self.ftime(self.mtime)
+			out += "+creation time: %s\n" % self.ftime(self.ctime)
+			out += "+last access time: %s\n" % self.ftime(self.atime)
+			out += "+archival time: %s\n" % self.ftime(self.arctime)
 		return out
 	
 	def ftime(self, timetuple):
 		"""Formats the time tuple to a string."""
 		if not timetuple:
-			return "UNKNOWN"
-		return "%04d-%02d-%02d %02d:%02d:%02d" % timetuple
-	
+			return "UNKNOWN"		seconds = timetuple[5]		if int(seconds) != seconds:
+			# sub second precision			return "%04d-%02d-%02d %02d:%02d:%02.7f" % timetuple		else:
+			return "%04d-%02d-%02d %02d:%02d:%02d" % timetuple
+
 	def get_compression_name(self):
 		return COMPRESSION_NAME[self.compression_method]
 	
