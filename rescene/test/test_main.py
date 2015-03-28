@@ -101,12 +101,12 @@ class TestExtract(TmpDirSetup):
 		efile = os.path.join(self.tdir, "store_little", "store_little.srr")
 		
 		extract_files(srr_file, self.tdir)
-		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		self.assertEqual(self.o.last_event().message[:11], "Re-creating")
 		self.assertEqual(self.o.last_event().code, MsgCode.MSG)
 		extract_files(srr_file, self.tdir)
 		self.assertEqual(self.o.last_event().code, MsgCode.NO_OVERWRITE)
 		self.assertEqual(self.o.last_event().message[:15], 
-		                 "Overwrite operation aborted"[:15])
+		                 "Operation aborted"[:15])
 		
 		# clean up but keep created directory -> os error expected
 		try:
@@ -128,12 +128,12 @@ class TestExtract(TmpDirSetup):
 		self.assertTrue(os.path.isfile(efile),
 			"{0!r} should be a file".format(efile))
 		self.assertEqual(self.o.last_event().code, MsgCode.MSG)
-		self.assertEqual(self.o.last_event().message[:10], "Recreating")
+		self.assertEqual(self.o.last_event().message[:11], "Re-creating")
 		
 		extract_files(srr_file, self.tdir)
 		self.assertEqual(self.o.last_event().code, MsgCode.NO_OVERWRITE)
 		self.assertEqual(self.o.last_event().message[:15], 
-		                 "Overwrite operation aborted"[:15])
+		                 "Operation aborted"[:15])
 	
 	def test_extract_srr_utf8(self):
 		utf8 = "Κείμενο στην ελληνική γλώσσα.txt"
