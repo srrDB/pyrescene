@@ -185,24 +185,27 @@ def get_proof_files(reldir):
 				# non music releases have a separate folder
 				s = 10 # first X characters
 				if os.path.getsize(proof) > 100000:
+					similar_named = False
 					for nfo in get_files(reldir, "*.nfo"):
 						if (os.path.basename(nfo)[:-4][:s].lower() == 
 							os.path.basename(proof)[:-4][:s].lower()):
-							result.append(proof)
-							continue
+							similar_named = True
+							break
 					# for music releases, NFOs not always start with 00
 					# while all the other files do (sfv, m3u, jpg, cue,...)
 					# e.g. Hmc_-_187_(UDR011)-VLS-1996-TR
 					for sfv in get_files(reldir, "*.sfv"):
 						if (os.path.basename(sfv)[:-4][:s].lower() == 
 							os.path.basename(proof)[:-4][:s].lower()):
-							result.append(proof)
-							continue
+							similar_named = True
+							break
 					for rar in rar_files:
 						if (os.path.basename(rar)[:-4][:s].lower() == 
 							os.path.basename(proof)[:-4][:s].lower()):
-							result.append(proof)
-							continue
+							similar_named = True
+							break
+					if similar_named:
+						result.append(proof)
 				else:
 					# TODO: smaller proofs can exist too
 					# -> but .startswith("00") already includes those
