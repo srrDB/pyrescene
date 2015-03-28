@@ -22,7 +22,12 @@ import sys
 config_dict = {
     "name": "pyReScene",
     "packages": ["rescene", "resample"],
-    "scripts": ["bin/srr.py", "bin/srs.py", "bin/pyrescene.py", "bin/preprardir.py"],
+    "scripts": [
+		"bin/srr.py", 
+		"bin/srs.py", 
+		"bin/pyrescene.py", 
+		"bin/preprardir.py",
+		"bin/retag.py"],
     "version": rescene.__version__,
     "description": "Python ReScene and ReSample implementation",
     "author": "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
@@ -31,16 +36,18 @@ config_dict = {
     "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads",
     "license": "MIT",
     "keywords": ["rescene", "srr", "resample", "srs", "repackage", "rar",
-	            "avi", "mkv", "mp4", "wmv", "scene", "compressed"],
+	            "avi", "mkv", "mp4", "wmv", "warez", "scene", "compressed",
+	            "mp3", "flac", "retag"],
     "classifiers": [
 		"Development Status :: 4 - Beta",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
         "Environment :: Console",
-        "Intended Audience :: Developers",
         "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
@@ -58,19 +65,41 @@ pyReScene consists of multiple related tools.
 
 # for creating Windows EXE files
 if 'py2exe' in sys.argv:
-	import py2exe #@UnresolvedImport
+	import py2exe #@UnresolvedImport #@UnusedImport
+	
+	# http://www.py2exe.org/index.cgi/ListOfOptions
 	config_dict["options"] = {
-		'py2exe': {'bundle_files': 1,
-	               'optimize': 2,
-	               'compressed': True}}
-	config_dict["zipfile"] = None
+		'py2exe': {
+			'bundle_files': 2,  # bundle everything but the Python interpreter
+	        'optimize': 2,      # 2 = extra optimization (like python -OO)
+	        'compressed': True  # compressed zipfile
+	     }
+	}
+	
+	# name of shared zipfile to generate
+	# None: the files will be bundled within the executable
+	config_dict["zipfile"] = "pyrescenelibrary.zip"
+	
 	# targets to build
-	config_dict["console"] = config_dict["scripts"]
-#	config_dict["windows"] = [{
-#	    'script': config_dict["scripts"][2],
-#	    'icon_resources': [(1,'images/icon.ico')]
-#	}]
-	#TODO: http://stackoverflow.com/questions/525329/embedding-icon-in-exe-with-py2exe-visible-in-vista
-	#http://stackoverflow.com/questions/9649727/changing-the-icon-of-the-produced-exe-py2exe
-
+	config_dict["console"] = [{
+	    'script': "bin/srr.py",
+	    'icon_resources': [(1, 'images/icon.ico')]
+	},
+	{
+	    'script': "bin/srs.py",
+	    'icon_resources': [(1, 'images/icon.ico')]
+	},
+	{
+	    'script': "bin/pyrescene.py",
+	    'icon_resources': [(1, 'images/icon.ico')]
+	},
+	{
+	    'script': "bin/preprardir.py",
+	    'icon_resources': [(1, 'images/icon.ico')]
+	},
+	{
+	    'script': "bin/retag.py",
+	    'icon_resources': [(1, 'images/icon.ico')]
+	}]
+		
 setup(**config_dict)
