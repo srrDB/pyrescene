@@ -29,8 +29,8 @@ def read_nzb(nzb_file):
 	print("Reading %s." % os.path.basename(nzb_file))
 	def parse(pnzb_file):
 		try: # file on disk
-			with open(pnzb_file, "rb") as file:
-				return pynzb.nzb_parser.parse(file.read())
+			with open(pnzb_file, "rb") as bfile:
+				return pynzb.nzb_parser.parse(bfile.read())
 		except: # an open file object
 			return pynzb.nzb_parser.parse(pnzb_file.read())
 
@@ -43,8 +43,8 @@ def read_nzb(nzb_file):
 		# http://www.powergrep.com/manual/xmpxmlfixentities.html
 		XML_AMP_FIX = b"&(?!(?:[a-z]+|#[0-9]+|#x[0-9a-f]+);)"
 		fixed_nzb = io.BytesIO()
-		with open(nzb_file, "rb") as file:
-			for line in file.readlines():
+		with open(nzb_file, "rb") as bfile:
+			for line in bfile.readlines():
 				line = re.sub(XML_AMP_FIX, b"&amp;", line)
 				LATIN1_OUML = b"\xF6"
 				line = re.sub(b"&ouml;", LATIN1_OUML, line)
