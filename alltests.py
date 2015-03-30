@@ -30,49 +30,53 @@ import unittest
 import sys
 import os
 
-# Save script directory before the test modules change the current directory
-curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
+def main():
+	# Save script directory before the test modules change the current directory
+	curdir = os.path.join(os.getcwd(), os.path.dirname(__file__))
 
-suite = unittest.TestSuite()
+	suite = unittest.TestSuite()
 
-# These would be automatically discovered in Python 2.7 and 3.2,
-# but Python 2.6's "unittest" module does not support discovery
-suite.addTest(unittest.defaultTestLoader.loadTestsFromNames((
-	"rescene.test.test_utility",
-	"rescene.test.test_rar",
-	"rescene.test.test_osohash",
-	"rescene.test.test_rarstream",
-	"rescene.test.test_main",
-	"resample.test.test_main",
-	"resample.test.test_ebml",
-	"resample.test.test_mp3",
-)))
+	# These would be automatically discovered in Python 2.7 and 3.2,
+	# but Python 2.6's "unittest" module does not support discovery
+	suite.addTest(unittest.defaultTestLoader.loadTestsFromNames((
+		"rescene.test.test_utility",
+		"rescene.test.test_rar",
+		"rescene.test.test_osohash",
+		"rescene.test.test_rarstream",
+		"rescene.test.test_main",
+		"resample.test.test_main",
+		"resample.test.test_ebml",
+		"resample.test.test_mp3",
+	)))
 
-sys.path.append(os.path.join(curdir, "usenet"))
+	sys.path.append(os.path.join(curdir, "usenet"))
 
-suite.addTest(unittest.defaultTestLoader.loadTestsFromNames((
-	"nzb_sample_extract",
-	"nzb_split",
-)))
+	suite.addTest(unittest.defaultTestLoader.loadTestsFromNames((
+		"nzb_sample_extract",
+		"nzb_split",
+	)))
 
-import pynzb.tests
+	import pynzb.tests
 
-# Not running test_parse_date(), because the parse_date() function is monkey-
-# patched to a version that returns a local time
-for func in ("test_expat", "test_etree"):
-	suite.addTest(unittest.FunctionTestCase(getattr(pynzb.tests, func)))
+	# Not running test_parse_date(), because the parse_date() function is
+	# monkey-patched to a version that returns a local time
+	for func in ("test_expat", "test_etree"):
+		suite.addTest(unittest.FunctionTestCase(getattr(pynzb.tests, func)))
 
-import pynzb
-if pynzb.LXMLNZBParser:
-	suite.addTest(unittest.FunctionTestCase(pynzb.tests.test_lxml))
+	import pynzb
+	if pynzb.LXMLNZBParser:
+		suite.addTest(unittest.FunctionTestCase(pynzb.tests.test_lxml))
 
-sys.path.append(os.path.join(curdir, "scripts", "experiments"))
-suite.addTest(unittest.defaultTestLoader.loadTestsFromName("tvmatch"))
+	sys.path.append(os.path.join(curdir, "scripts", "experiments"))
+	suite.addTest(unittest.defaultTestLoader.loadTestsFromName("tvmatch"))
 
-sys.path.append(os.path.join(curdir, "scripts"))
-suite.addTest(unittest.defaultTestLoader.loadTestsFromName("nzbsrr"))
+	sys.path.append(os.path.join(curdir, "scripts"))
+	suite.addTest(unittest.defaultTestLoader.loadTestsFromName("nzbsrr"))
 
-kw = dict()
-if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
-	kw.update(buffer=True)
-unittest.main(defaultTest="suite", **kw)
+	kw = dict()
+	if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
+		kw.update(buffer=True)
+	unittest.main(defaultTest="suite", **kw)
+
+if __name__ == '__main__':
+	main()
