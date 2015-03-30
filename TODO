@@ -4,9 +4,9 @@ pyReScene
  - SRR support for RAR5 files <supportATrarlab.com>
  - SRR support for ZIP files
  - Make SFX volumes rescenable
- - *.sfv as the first parameter
+ - *.sfv as the first parameter (srr.py. Use Linux shell?)
  - add, remove, rename stored files from CLI
- - new block for empty directories?
+ - new block for empty directories? (use empty.txt instead for dirfixes?)
  - do not create SRR based on empty SFV files (but do so when .mkv in there)
  - here's an idea: if you find a tool, for example the gui one, to make 
    the srr process automated, like select target folder > rescene scans it, 
@@ -21,15 +21,15 @@ pyReScene
    maybe an app which scans all your drives , checks which rls dont have srr 
    on site, create srr for them, download srr packages from srrdb and re-sample
    those rls which have missing Sample
- - fail on empty sfv
  - automatically check for rar executables in srr.exe dir
  - new parameter: it must behave like -n (faster than recreating everything), 
    except when the release new files 
    compared to the ones stored in the existing srr release folder, 
    contains new files. new in the sense of addition e.g. proof jpg
  - add a switch (like -z) for a single executable
- - add --broken-samples parameter
+ - add --broken-samples parameter (used with --list-releases option)
  - don't make SRR files disappear when no new one can be created
+   (fix this together with concurrency problem)
  - SRRs for extracted disk image files or burned to disk
     
 pyReSample
@@ -40,17 +40,19 @@ pyReSample
     * M2TS (BDRs)
     * OGM
     * MPEG
- - Reconstruct LOL AVI samples correctly.
- - Be able to use the srs command like this: srs *.mp4
- - try to extract sample from one big AVI (sample across CDs)
+   General .srs file for unsupported data streams instead of .txt files?
+   (no .txt for this at the moment either. CRC will be stored.)
+ - Reconstruct LOL AVI samples correctly. (visible skip)
+ - try to extract/verify sample from one big AVI (sample across CDs)
+   (http://www.srrdb.com/release/details/Bobby.Deerfield.1977.DVDrip.XviD-DnB)
+   "Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept 
+   getting ... "Unable to extract correct amount of data for track 0. Aborting.
  - remove all tags if fpcalc fails and try again
+   (RIFF mp3 with ID3v2 tag?)
     
 General
 =======
 
- - Figure out how to get all the unit tests completing successfully when 
-   running them all at once with nose in Eclipse instead of running them 
-   individually. https://nose.readthedocs.org/en/latest/
  - http://www.debian.org/doc/packaging-manuals/python-policy/
  - http://infinitemonkeycorps.net/docs/pph/
  - http://guide.python-distribute.org/

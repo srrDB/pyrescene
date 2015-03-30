@@ -3,59 +3,30 @@ Converted to TODO and NEWS:
 -o *.nfo *.jpg fails if there is no jpg in the dir
 not -o, -s
 	=> -s something.nfo -s *.jpg
-- It would be nice if it was possible to use *sfv on the first paramete
+- "It would be nice if it was possible to use *sfv on the first parameter"
 
-Feature request: Be able to use the srs command like this: srs *.mp4
-
-http://www.debian.org/doc/packaging-manuals/python-policy/
-
-DONE! - list file size in verbose output	=> possible!
-DONE! - repair with missing files
-DONE! - create paths when extracting files (.NET never does this) -> it does with -p parameter?
-DONE! - add, remove, rename stored files
-DONE! - Re-creating RAR file: linuxpath.part1.rar
-	Could not locate data file: /home/me/test/subdir/dir_in_rar\filelist.txt
-	.net bug?
-- .NET can not recreate http://www.srrdb.com/details.php?release=Psych.S06E02.HDTV.XviD-P0W4
-	-> doesn't write the corrupt end block; the fix:
+- remove, rename stored files -> not yet possible with cli interface
 	
-					else if (block.RawType >= (byte)RarBlockType.RarMin && block.RawType <= (byte)RarBlockType.RarMax || block.RawType == 0x00)
-					{
-						// -> P0W4 cleared RAR archive end block: almost all zeros except for the header length field
-						// copy any other rar blocks to the destination unmodified
-						rarfs.Write(block.RawData, 0, block.RawData.Length);
-					}
-	
-- new block for empty standalone directory
-- new block for oso hashes of archived files (at the end of an srr file?)
-- skip new .rar, r00,... archives when the contents aren't found
-DONE! but creates bad rars for other files - recreate rars of only a single cd/extras
+- new block for empty standalone directory -> No
 
 - dot not create srr based on empty sfv files
 - instead of renaming the temporary files, put their data inside the original srr file	? -> but is more IO!
 DONE! ? separate script - fix merged srr files/detect
 - show srr differences
 - indicate when something smells in an srr file
+  (something for -e?)
 - calculate filecount (# of rars for the main movie)
 - calculate total size of the release based on an srr file
+  (nice to have for -l output)
+- show more info for music in -l output
 - list rars in cli that should not be tried to repair
+  (a specific set/rar file can be reconstructed)
 	
-- same exit codes as .net version
-- resample: try to extract sample from one big avi (sample across cds)
-	"Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept getting ... "Unable to extract correct amount of data for track 0. Aborting.
-
-- http://fire.no-ip.info/FireSCene/details.php?release=Brave.Story.2006.DVD5.720p.BluRay.x264-FaNSuB
-  sample does not work with getid3()
-DONE! - Python 2.6+ support
-- .exe support Windows
-http://guide.python-distribute.org/
-
-- hachoir find out values of missing stuff
+- hachoir find out values of missing stuff (add missing stuff to the project)
 - CRC support: in srr file; make it possible to check rars for correctness
 while creating srr?
-	- function to pass through all streams and calculates CRC in between
+- function to pass through all streams and calculates CRC in between
 - possibility to check .sfv/.rars (build-in crcs -> done while constructing!) afterwards
-
 
 - much smaller (even then rar) for srr files:
 http://tukaani.org/xz/format.html
@@ -66,19 +37,6 @@ XZ uses the LZMA2 compression algorithm and is supported by 7-zip.
   -> do a larger test
 - http://pypi.python.org/pypi/pyliblzma/0.5.3
 
-
-#        Similar projects
-#        ================
-#        
-#         * Kaa - http://freevo.sourceforge.net/cgi-bin/freevo-2.0/Kaa (written in Python)
-#         * libextractor: http://gnunet.org/libextractor/ (written in C)
-
-# .CRR: Compressed RAR Reconstruction
-	=> better yet, flag in srr header that indicates compression
-		=> already in rar headers
-		=> extra rar block?
-# .SRR: Scene Release Reconstruction
-
 # http://code.google.com/p/py-unrar2/
 # http://rarfile.berlios.de/ - http://pypi.python.org/pypi/rarfile/2.2
 
@@ -87,20 +45,7 @@ XZ uses the LZMA2 compression algorithm and is supported by 7-zip.
 
 # http://www.catacombae.org/jlrarx.html
 
-#nope:
-# http://pypi.python.org/pypi/dirstore/0.1.0
-# http://pypi.python.org/pypi/easy-extract/0.1.1
-
 Californication.S04E01.PROPER.HDTV.XviD-ASAP can't be extracted by unrar.
-
-
-
-Up to 2.5, Python was still compatible with Windows 95, 98 and ME (but already 
-raised a deprecation warning on installation). For Python 2.6 (and all 
-following releases), this support was dropped and new releases are just 
-expected to work on the Windows NT family.
-
-
 
 -------------------------------------------------------------------------------
 
@@ -268,50 +213,6 @@ kiczek	HellRezor sometimes a sample doesnt recreate with an SRS in those cases I
 		BarryShit is using the server irc.eversible.com (Eversible.com Internet Services)
 		BarryShit signed on at 21/03/2011 20:29:21, and has been idle 11 minutes and 41 seconds
 
-
-
-17:57 < furtim> does anyone know if theres some kind of flag to do a
-                test/verify of the srr without actually rebuilding the rars?
-17:59 -!- defier` [~x@217.18.70.193] has quit [ZNC -
-          http://znc.sourceforge.net]
-18:15 -!- defier` [~x@217.18.70.193] has joined #x264.rescene.info
-18:52 < HellRezor> the srr has the checksum for the extracted content, you
-                   could compare that to the file you have
-18:53 < HellRezor> but i don't belive you can normally view that info
-                   although it is available on the db page
-18:57 < lrkj> open the srr file in winrar to see the crc32 value of the files
-18:57 < lrkj> create an sfv file for your extracted content and verify
-              manually
-
-
-03:39 < gomtuu> Oh, from when I asked it last night?
-03:39 < AWingsFan> [15:35:35] <lrkj> mv filelist.txt dir_in_rar\\fileliest.txt
-03:39 < AWingsFan> apparently (I joined after you left)
-03:40 < gomtuu> IC
-03:40 < gomtuu> Thanks for letting me know. :)
-03:42 < gomtuu> Well, I'll have to go to bed in a few hours, but for anyone who might read this:
-03:44 < gomtuu> I've since been able to get srr.exe to reconstruct my RARs, but they're damaged (most of them are missing between 1 and 5 par2 blocks)
-03:45 < gomtuu> The way I got it sort-of working was be recompiling srr.cs with the SearchOption.AllDirectories flag added to the GetFiles call in the
-                autoLocateRenamed routine, but for some reason, srr.exe complains about CRC errors while it's rebuilding, and, like I said, the RARs are
-                damaged.
-03:48 < gomtuu> (Also, that's not an ideal solution if it recursively searches the whole inputdir tree. That could be really slow.)
-03:51 < gomtuu> Before I tried the SearchOption approach, I tried setting srcName = srcName.Replace('\\', Path.DirectorySeparatorChar) around line 490. That
-                seemed to perform the correct substitution, but srr.exe still couldn't find the first file in my archive, probably because it contains an
-                umlaut o. The error message did change from:
-03:53 -!- diskdocx [~diskdoc1@d24-141-141-139.home.cgocable.net] has quit [Read error: Connection reset by peer]
-03:53 < gomtuu> Could not locate data file: /home/me/test/subdir/dir_in_rar\filelist.txt to /home/me/test/subdir/dir_in_rar/filelist.txt, but in my case the
-                "filelist.txt" file has an umlaut o in it.
-03:59 < gomtuu> I looked at the RAR file and the SRR file, and the umlaut o is encoded as a single byte (0x94) in both files, so I guess that's CP437. I don't
-                know how to tell what it's encoded as in the filesystem, but my locale is set to UTF-8, so that's probably it.
-03:59 < gomtuu> Also, if I use xxd (a hex viewer) to inspect srr.exe's "Could not locate data file" output, there's "EF BF BD" where the umlaut o should be. I
-                have no idea why it would be that. If it were UTF-8, it'd be "C3 B6"...
-03:59 < gomtuu> So, hopefully that helps.
-04:02 < gomtuu> I'll stay in the channel this time in case someone wants to reply.
-
-
-YopoM	awescript isn't that difficult,many have run it on their collections
-	YopoM	I remember ryback was here
-	YopoM	he contributed quite a few
 
 13:34 < HellRezor> if only it was as simple as comparing file names
 13:40 < HellRezor> but before you can declare an srr a dupe you need to make sure its actually for the same rars (one could be a repack) that it doesn't
@@ -908,24 +809,6 @@ YopoM	Hmm, I think I'll use that NO sample bat file myself, found a TV eps w/ no
 13:36 < XDot> Actual      :       6.901.760  2F24B53E
 13:36 < XDot> http://fire.no-ip.info/FireSCene/details.php?release=Kill.Switch.2008.DVDRip.XviD-VoMiT
 
-http://pastebin.com/eTSai7jb
-<shEiD> Unable to locate track signature for track 2.  Aborting.
-[06-Dec-2010/03:29:28] <shEiD> but just now I went to the site and saw that gui version is out :)
-[06-Dec-2010/03:29:31] <@umlaut> oh yeah.  you probably want that new secret build that i've been keeping to myself
-[06-Dec-2010/03:29:37] <@umlaut> just a sec
-[06-Dec-2010/03:29:47] <shEiD> tried that same release with gui version and it created an srs without a hitch :)
-[06-Dec-2010/03:30:12] <@umlaut> oh, i don't think the gui does the -c option?
-[06-Dec-2010/03:30:30] <@umlaut> it's probably to do with mkv header compression/stripping
-[06-Dec-2010/03:30:40] <shEiD> lemme check, i dont even remember now whats taht -c option
-[06-Dec-2010/03:31:01] <@umlaut> it checks to make sure the tracks can be matched before creating the srs
-[06-Dec-2010/03:31:20] <shEiD> yes, it has a checkbox option for -c
-[06-Dec-2010/03:31:38] <@umlaut> probably won't work if you check the box ;)
-[06-Dec-2010/03:31:48] <shEiD> I did check it :)
-[06-Dec-2010/03:31:50] <@umlaut> if a full mkv doesn't have header stripping but the sample does, they won't match without some compensation.  i made a new version that handles it
-[06-Dec-2010/03:33:54] <shEiD> ok, 1 sec, I'll throw both out puts to pastebin
-[06-Dec-2010/03:33:55] <@umlaut> http://rescene.com/resample/srs.1.3.preview.zip  <-- try that one
-[06-Dec-2010/03:34:22] <shEiD> oh, new version... :)
-
 14:03 <lrkj> Expected    :       6,819,840  5AE10D3B
 14:03 <lrkj> Actual      :       6,819,840  9EB2CA1C
 14:03 <lrkj> Rebuild failed for sample: arw-kfp.dvdrip.xvid.sample.avi
@@ -1062,58 +945,6 @@ Parse Details:   Metadata     Stream Data    Total
 Error: Parsed size does not equal file size.
        The sample is likely corrupted or incomplete.
        
-       
-
-       
-cxx	just got another failure
-	cxx	Traceback (most recent call last):
-	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/srs.py", line 307, in main
-	cxx	 srs, out_folder)
-	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/main.py", line 390, in rebuild_sample
-	cxx	 return mkv_rebuild_sample(*args, **kwargs)
-15:27	cxx	 File "/home/flash/local/usr/lib64/python2.7/site-packages/resample/main.py", line 2109, in mkv_rebuild_sample
-	cxx	 track.track_file.seek(0)
-	cxx	AttributeError: 'NoneType' object has no attribute 'seek'
-	cxx	Unexpected Error:
-	cxx	'NoneType' object has no attribute 'seek'
-cxx	The.Butterfly.Effect.3.Revelations.2009.STV.FRENCH.720p.BluRay.x264-ROUGH
-
- -> fixed
-
-
-cxx		Gfy: some samples with subs don't rebuid properly, subs are replaced with random chars
-cxx		Gfy: this sample failed to rebuild Saboteur.1942.MULTi.1080p.BluRay.x264-ROUGH
-15:18	Gfy	it fails with rescene.net too?
-15:26	cxx	i don't jh
-	cxx	have rescene dotnet anymore*
-       
- -> fixed
-       
-aidan		Gfy: does pyrescene have an option to just verify an exracted release is valid?
-
- -> added
- 
-<cwiz> [17:54:09] Hi
-<cwiz> [17:55:09] Question... When using srr with the -r flag, it will auto-locate files (using size or hash).  This works fine for reconstructing rars, but does this not work when simply verifying (with the -q flag)?
-<cwiz> [17:57:13] It would also be cool if there was an option to automatically rename any files that were auto-located.
-<@cxx> [17:57:52] these are gonna be rarred anyway, aren't they?
-<cwiz> [17:59:00] Well, not always... I just like verifying the files, not re-rarring them.
-<@cxx> [17:59:14] :S
-<cwiz> [17:59:34] Some media players don't play rared files, so it's not always an option unfortunately.
-<@cxx> [18:00:05] you can change media players
-<cwiz> [18:00:38] I have a dedicated media player.
-<@cxx> [18:01:00] oh, like a multimedia hardware thingy?
-<cwiz> [18:01:05] My computer I just use VLC, but I have other media boxes (wdtv, etc.).
-<cwiz> [18:01:07] Yea, exactly.
-<cwiz> [18:01:32] They use their own propitiatory crap, which is very annoying.
-<cwiz> [18:02:02] So I've been just verifying the files (to guarantee their integrity), but keeping them in their extracted (playable) form.
-<@cxx> [18:02:09] yeah i see
-<cwiz> [18:04:14] So any idea if it's possible to rename the files using srr with the -r and -q flag?
-<cwiz> [18:04:46] I was just writing my own script to do it, but I figured I should just make sure before duplicating work.
-<@Gfy> [18:14:35] it does currently not exist: https://bitbucket.org/Gfy/pyrescene/src/e02b9325f54de7520fcc684644f704dd436b98b9/rescene/srr.py?at=default#cl-147
-<cwiz> [18:30:10] Ok, thanks!
- 
- -> added
  
 WARNING:root:P:\EBOOKS\Microsoft.Press.-.Microsoft.SharePoint.2010.Plain.and.Simple.2010.RETAiL.eBOOk-rebOOk: SRR could not be created.
 P:\EBOOKS\Microsoft.Press.-.Microsoft.Word.2010.Inside.Out.2010.RETAiL.eBOOk-rebOOk
