@@ -601,14 +601,18 @@ def mkv_load_srs(infile):
 			done = False
 		elif er.element_type == EbmlElementType.TrackCodec:
 			elm_content = er.read_contents()
-			tracks[current_track_nb].codec = elm_content
+			# subtitle tracks aren't stripped and 
+			# do not have a ReSampleTrack element for the track
+			# e.g. Fury.2014.720p.BluRay.x264-SPARKS
+			if current_track_nb in tracks:
+				tracks[current_track_nb].codec = elm_content
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
 			header_striping = algorithm == 3 # 3: header striping
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
-			if header_striping: # and tracks.has_key(current_track_nb):
+			if header_striping and current_track_nb in tracks:
 				tracks[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.ReSampleFile:
 			srs_data = FileData(er.read_contents())
