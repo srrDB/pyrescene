@@ -31,6 +31,7 @@ import sys
 import tempfile
 from distutils.spawn import find_executable
 from rescene.utility import fsunicode
+from resample.mp3 import Mp3Reader
 
 MSG_NOTFOUND = "The fpcalc executable isn't found."
 
@@ -39,7 +40,10 @@ fpcalc_executable = ""
 class ExecutableNotFound(Exception):
 	"""The fpcalc.exe executable isn't found."""
 	
-def fingerprint(file_name):
+def fingerprint(file_name, temp_dir=None, recursive=0):
+	"""Calculates the fingerprint of the given file.
+	temp_dir: optional temporary directory to use
+	recursive: local parameter to prevent endless loop after stripping tags"""
 	duration = fp = b""
 	bad = False
 	fpcalc = find_fpcalc_executable()
@@ -55,12 +59,8 @@ def fingerprint(file_name):
 		# copy the file with a default name and create the fp for that file
 		print("Non-ASCII characters detected: creating temporary file.")
 		temp_cleanup = True
-		nm = "-pyReScene_fpcalc"
-		if file_name.endswith(".flac"):
-			nm += ".flac"
-		else:
-			nm += file_name[-4:]
-		(fd, tmpname) = tempfile.mkstemp(nm)
+		name_suffix = make_temp_suffix(file_name)
+		(fd, tmpname) = tempfile.mkstemp(name_suffix, dir=temp_dir)
 		os.close(fd) # we won't use it
 		with open(file_name, "rb") as music_file:
 			with open(tmpname, "wb") as tmpf:
@@ -86,6 +86,52 @@ def fingerprint(file_name):
 		
 	if not duration or not fp:
 		bad = True
+		
+	if bad:
+		# strip any recognized tags from the music file and try again
+		# (ID3v2 tag around RIFF file)
+		# e.g. (angelmoon)-hes_all_i_want_cd_pg2k-bmi
+		# ERROR: couldn't find stream information in the file
+		# ERROR: unable to calculate fingerprint for file x.mp3, skipping
+		if recursive > 1:
+			# tags have been stripped before already
+			raise ValueError("Fingerprinting failed.")
+		else:
+			recursive += 1
+			
+		print("Stripping recognized tags for better fpcalc detection.")
+		name_suffix = make_temp_suffix(file_name)
+		(fd, stripped) = tempfile.mkstemp(name_suffix, dir=temp_dir)
+		os.close(fd) # we won't use it
+
+		try:
+			with open(stripped, "wb") as tmpf:
+				mr = Mp3Reader(file_name)
+				for block in mr.read():
+					if block.type in ("MP3", "fLaC"): # main music data
+						read = 0
+						to_read = 65536
+						while read < block.size:
+							if read + to_read > block.size:
+								to_read = block.size - read
+							tmpf.write(mr.read_part(to_read, read))
+							read += to_read
+						break # exit for: music data copied
+				mr.close()
+			
+			duration, fp = fingerprint(stripped, temp_dir, recursive)
+			bad = False # it succeeded (exception otherwise)
+		except:
+			print("----------------------------------------------------")
+			print("Tell me if the .sfv matches the music file!")
+			print("Otherwise your file is most likely totally corrupt.")
+			print("----------------------------------------------------")
+			# this would be a very rare case:
+			# double bad tagging or just bad data?
+			raise
+		finally:
+			# cleanup temporary stripped file
+			os.remove(stripped)
 		
 	if temp_cleanup:
 		print("Removing %s" % tmpname)
@@ -145,6 +191,14 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 	
 	# the executable ran just fine
 	return potential_fpcalc_executable
+
+def make_temp_suffix(file_name):
+	nm = "-pyReScene_fpcalc"
+	if file_name.endswith(".flac"):
+		nm += ".flac"
+	else:
+		nm += file_name[-4:]
+	return nm
 	
 # http://www.py2exe.org/index.cgi/WhereAmI
 def we_are_frozen():

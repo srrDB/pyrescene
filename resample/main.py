@@ -43,6 +43,7 @@ import resample
 from rescene import rarstream
 from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
+from rescene.utility import temporary_directory
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            GetEbmlUInt, MakeEbmlUInt, EbmlID)
@@ -1432,7 +1433,7 @@ def flac_profile_sample(flac_data): # FileData object
 		raise IncompleteSample(msg)
 	
 	# create a finger print of the file
-	duration, fp = fingerprint(flac_data.name)
+	duration, fp = fingerprint(flac_data.name, utility.temporary_directory)
 	
 	try:
 		tracks[1].duration = duration
@@ -1504,7 +1505,7 @@ def mp3_profile_sample(mp3_data): # FileData object
 		raise IncompleteSample(msg)
 	
 	# create a finger print of the file
-	duration, fp = fingerprint(mp3_data.name)
+	duration, fp = fingerprint(mp3_data.name, utility.temporary_directory)
 	
 	try:
 		tracks[1].duration = duration

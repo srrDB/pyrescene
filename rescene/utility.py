@@ -48,6 +48,10 @@ except ImportError:
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 _SPINNER = not bool(os.environ.get("RESCENE_NO_SPINNER"))
 
+# provides the temporary directory location to places where it would be a mess
+# to pass it as parameter (fingerprint calculation)
+temporary_directory = None
+
 def deprecated(func):
 	"""This is a decorator which can be used to mark functions
 	as deprecated. It will result in a warning being emmitted

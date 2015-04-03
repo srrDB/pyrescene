@@ -587,6 +587,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	if os.listdir(working_dir) != []:
 		# Can happen with PyPy and long dirs: create new working dir
 		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+		print("New temp dir: {}".format(working_dir))
 		
 	print(reldir)
 	relname = os.path.split(reldir)[1]
@@ -1168,7 +1169,13 @@ def main(argv=None):
 		options.temp_dir = os.path.abspath(options.temp_dir)
 	else:
 		options.temp_dir = None
-	working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+	try:
+		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+	except OSError:
+		print("The provided temporary directory does not exist.")
+		return 1 # failure
+	rescene.utility.temporary_directory = working_dir # for utility (fpcalc)
+	print("Temporary directory: {}".format(working_dir))
 	
 	# SRR for vobsubs only. Only one file at a time; last file will be used.
 	if options.vobsubs:
