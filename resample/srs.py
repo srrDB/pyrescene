@@ -110,7 +110,7 @@ def setup_cli_parser():
 				help="Ignore stored match offset against main movie file.")
 	output.add_option("-k", dest="keep_reconstruction_failure",
 				action="store_true", default=False,
-				help="Keep samples that reconstructed, but failed CRC check."
+				help="Keep samples that reconstructed, but failed CRC check. "
 				"Not applicable for music to prevent data loss.")
 	
 	return parser
@@ -186,7 +186,7 @@ def main(argv=None, no_exit=False):
 	
 			if (os.path.getsize(sample_file) >= 0x80000000 and 
 				not options.big_file):
-				pexit(1, "Samples over 2GB are not supported without the"
+				pexit(1, "Samples over 2GiB are not supported without the"
 				               " -b switch. Are you sure it's a sample?\n")
 				
 			out_folder = os.path.abspath(os.curdir)
@@ -261,7 +261,14 @@ def main(argv=None, no_exit=False):
 				
 			sample.create_srs(tracks, sample_file_data, sample_file, 
 			                  srs_name, options.big_file)
-			print("Successfully created SRS file: %s" % srs_name)
+			
+			if no_exit:
+				# just print the file name from pyReScene Auto
+				# (looks nicer for music)
+				success_name = os.path.basename(srs_name) + "\n"
+			else:
+				success_name = srs_name
+			print("Successfully created SRS file: %s" % success_name)
 		
 		# showing SRS info
 		elif (len(args) == 1 and args[0].lower().endswith(".srs")
