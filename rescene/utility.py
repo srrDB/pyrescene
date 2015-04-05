@@ -45,8 +45,19 @@ try:
 except ImportError:
 	win32api_available = False
 
+# on Windows:
+#   SET NAME=True       configure
+#   ECHO %NAME%         check
+#   SET NAME=           clear
+#   SETX NAME VALUE     set environment variables permanently
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
+
+# disables the spinner from showing while doing some processing
 _SPINNER = not bool(os.environ.get("RESCENE_NO_SPINNER"))
+
+# disables offset information to be printed out in srr -e output
+# this way the output become more easy to compare
+_OFFSETS = not bool(os.environ.get("RESCENE_NO_OFFSETS"))
 
 # provides the temporary directory location to places where it would be a mess
 # to pass it as parameter (fingerprint calculation)

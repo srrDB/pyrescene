@@ -46,7 +46,7 @@ import tempfile
 from binascii import hexlify
 
 from rescene import utility 
-from rescene.utility import _DEBUG
+from rescene.utility import _DEBUG, _OFFSETS
 
 ###############################################################################
 
@@ -394,10 +394,13 @@ class RarBlock(object):
 		
 	def explain(self):
 		bname = BLOCK_NAME.get(self.rawtype, "UNKNOWN BLOCK! NUKE IT!")
-		out = "Block: %s; offset: %s\n" % (bname, 
-			self.explain_size(self.block_position))
-		hex = hexlify(self._rawdata).decode('ascii')
-		out += "|Header bytes: %s\n" % hex
+		out = "Block: %s" % bname
+		if _OFFSETS:
+			out += "; offset: %s\n" % (self.explain_size(self.block_position))
+		else:
+			out += "\n"
+		hex_string = hexlify(self._rawdata).decode('ascii')
+		out += "|Header bytes: %s\n" % hex_string
 		if self.rawtype == BlockType.RarMin:
 			out += "|Rar marker block is always 'Rar!1A0700' (magic number)\n"
 		out += "|HEAD_CRC:   0x%X\n" % self.crc
