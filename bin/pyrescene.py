@@ -944,10 +944,12 @@ def get_release_directories(path):
 			except:
 				yield last_release
 			
-DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC)_?\d$", re.IGNORECASE)
-RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC)_?\d|(Vob)?Samples?|"
+# The_Guy_Game_USA_DVD9_XBOX-WoD: PART1/wod-guy.part001.sfv
+DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC|PART)_?\d$", re.IGNORECASE)
+RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC|PART)_?\d|(Vob)?Samples?|"
 	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
-			
+NOT_SCENE = ["motechnetfiles.nfo", "movie.nfo", "imdb.nfo", "scc.nfo"]
+
 def is_release(dirpath, dirnames=None, filenames=None):
 	if dirnames is None or filenames is None:
 		dirnames = list()
@@ -964,8 +966,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	# or a .sfv file in a CDx/DiskX subdir (when nfo file is missing)
 	for filename in filenames:
 		if (filename[-4:].lower() in (".nfo", ".sfv") and
-			filename not in ("motechnetfiles.nfo", "movie.nfo", "imdb.nfo",
-							"scc.nfo")):
+			filename not in NOT_SCENE):
 			release = True
 			break
 
