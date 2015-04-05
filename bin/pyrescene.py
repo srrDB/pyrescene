@@ -370,17 +370,21 @@ def get_start_rar_files(sfv_list):
 			wanted_rars.append(sfile)
 	return wanted_rars
 
+def work_dir_file(relfile, release_dir, working_dir):
+	path = os.path.relpath(relfile, release_dir)
+	dest_file = os.path.join(working_dir, path)
+	return dest_file
+
 def copy_to_working_dir(working_dir, release_dir, copy_file):
 	"""
 	working_dir: temporary directory with all the files to store in the SRR
 	release_dir: release folder with path
 	copy_file: file somewhere inside the release_dir
 	"""
-	path = os.path.relpath(copy_file, release_dir)
-	dest_file = os.path.join(working_dir, path)
+	dest_file = work_dir_file(copy_file, release_dir, working_dir)
 	
-	# make in between dirs
 	try:
+		# make in between dirs
 		os.makedirs(os.path.dirname(dest_file))
 	except:
 		pass
@@ -775,10 +779,14 @@ def generate_srr(reldir, working_dir, options, mthread):
 		"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
 		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS", #contains vobsubs
 		]
-	if (is_storable_fix(os.path.split(reldir)[1]) and 
+	release_name = os.path.split(reldir)[1]
+	if (is_storable_fix(release_name) and 
 		len(main_sfvs) == 1 and len(main_rars) == 1 and 
 		len(parse_sfv_file(main_sfvs[0])[0]) == 1 and
-		os.path.basename(reldir) not in false_positives):
+		os.path.basename(reldir) not in false_positives and
+		# prevent duplicate file add e.g. roor-blueruin-1080p-proof.fix.rar
+		# Blue.Ruin.2013.German.DL.Proof.Fix.1080p.BluRay.x264-ROOR
+		work_dir_file(main_rars[0], reldir, working_dir) not in copied_files):
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
