@@ -1045,10 +1045,11 @@ def content_hash(srr_file, algorithm='sha1'):
 def print_details(file_path):
 	"""Prints complete analysis and info to byte level."""
 	rr = RarReader(file_path)
-	ftype = {RarReader.RAR: "RAR",
-	         RarReader.SRR: "SRR",
-	         RarReader.SFX: "SFX", }[rr.file_type()] # dict to emulate switch
-	print("The file is a %s file." % ftype)
+	# dict to emulate switch
+	ftype = {RarReader.RAR: ("", "RAR"),
+	         RarReader.SRR: ("n", "SRR"),
+	         RarReader.SFX: ("n", "SFX"), }[rr.file_type()]
+	print("The file is a%s %s file." % ftype)
 	
 	for block in rr.read_all():
 		print(block.explain())
