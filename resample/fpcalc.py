@@ -66,9 +66,12 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 			with open(tmpname, "wb") as tmpf:
 				tmpf.write(music_file.read())
 		file_name = tmpname
-	fprint = custom_popen([fpcalc, file_name])
+	
+	# Set fingerprint length to 120 seconds
+	# older fpcalc versions default to 60 seconds
+	fprint = custom_popen([fpcalc, '-length', '120', file_name])
 	stdout, _stderr = fprint.communicate()
-			
+
 	lines = stdout.split(os.linesep.encode("ascii"))
 	for line in lines:
 		if line.startswith(b"DURATION="):
