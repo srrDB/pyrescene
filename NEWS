@@ -11,9 +11,11 @@ pyReScene 0.6
  * pyReScene Auto: --best option added (same as -c -s -v)
  * pyReScene Auto: includes images from Cover/Covers subfolders
  * pyReScene Auto: fewer .mp3.txt files
+ * Resample: "ReSample .NET 1.3 Preview" fix: MKV header compression/stripping
+ * ReSample: Faster AVI reconstruction times.
  * ReSample: MemoryError on large MP4s fixed and 
              skipping crc32 calculation when possible
- * ReSample: KeyError fixed for RIFF mp3
+ * ReSample: RIFF mp3: KeyError fixed and SRS will create when fpcalc fails.
  * ReSample: construct SRS for some bad MP3 files too + print warning
  * ReSample: "OverflowError: Python int too large to convert to C long"
              on a bad MP3 file fixed
@@ -25,9 +27,11 @@ pyReScene 0.6
  * ReScene: Reconstruction error fixed (when unpack size is set to 4294967295)
  * ReScene: -x and -d extracts to folder named after .srr in the output path
  * ReScene: Duplicate SFV lines won't include the RAR meta data twice.
+ * ReScene: No crashes on RAR5 files. (but no support yet)
  * ReTag: Script to fix the tagging of music files. (retag.py)
  * New script added to detect bad "samples" in SRR files. (srs_bad.py)
  * Scripts relocated and .bat files added for easy PATH inclusion in Windows.
+ * awescript: Move proof images to Proof/ folder.
 
 pyReScene 0.5.1 (2013-07-14)
 ===============
