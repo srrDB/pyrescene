@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright (c) 2012-2013 pyReScene
+# Copyright (c) 2012-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -456,6 +456,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		if not len(first_rars):
 			return []
 		if not os.path.isdir(folder):
+			# create the missing folder
 			head, tail =  os.path.split(folder)
 			if os.name == "nt" and win32api_available:
 				head = win32api.GetShortPathName(head)
@@ -519,19 +520,18 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 				# at same level as SFV (in main SRR)
 				# not in extract folder to prevent possible collisions
 				srr = folder + ".srr"
-				#srr_files_to_store.append("languages.diz")
 			else:
 				srr = dest_long + ".srr"
-			if os.name == "nt" and win32api_available:
-				head, tail =  os.path.split(srr)
-				try:
-					head = win32api.GetShortPathName(head)
-				except:
-					pass
-				srr = os.path.join(head, tail)
+				if os.name == "nt" and win32api_available:
+					head, tail =  os.path.split(srr)
+					try:
+						head = win32api.GetShortPathName(head)
+					except:
+						pass
+					srr = os.path.join(head, tail)
 			# create SRRs and add SRRs from previous steps
 			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
-						save_paths=False, compressed=True, oso_hash=False)
+			            save_paths=False, compressed=True, oso_hash=False)
 			result.append(srr)
 			
 		return result
@@ -551,10 +551,6 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	# e.g. Battlestar.Galactica.2003.WS.DVDRip.XviD-SFM
 	if len(results) and os.path.isfile(idx_lang):
 		rescene.add_stored_files(results[0], [idx_lang], save_paths=False)
-	
-	# hopefully the path of the root SRRs isn't too long anymore
-	if os.name == "nt" and win32api_available:
-		results = [win32api.GetLongPathName(x) for x in results]
 	
 	return results
 
@@ -666,8 +662,9 @@ def generate_srr(reldir, working_dir, options, mthread):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
-		# blacklist known file names of transfer logs
-		if log.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log"):
+		# blacklist known file names of transfer logs and hidden files
+		if (log.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log") or
+			log.startswith(".")):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
 		
@@ -900,9 +897,11 @@ def generate_srr(reldir, working_dir, options, mthread):
 	try:
 		empty_folder(working_dir)
 	except OSError:
+		mthread.wait_for_output()
 		print("Could not empty temporary working directory:")
 		print(working_dir)
 		print("This is a know problem for PyPy users.")
+		print("(And sadly others too, but less often.)")
 	
 	return True
 
@@ -1241,9 +1240,17 @@ def main(argv=None):
 			# gather drive info
 			drive_letters.append(reldir[:2])
 	except KeyboardInterrupt:
+		mthread.wait_for_output()
 		print("Process aborted.")
 		aborted = True
+	except AssertionError as err:
+		mthread.wait_for_output()
+		print(str(err))
+		print("Please report me this problem!")
+		print("https://bitbucket.org/Gfy/pyrescene/issues")
+		aborted = True
 	except ExecutableNotFound:
+		mthread.wait_for_output()
 		print("----------------------------------------------------")
 		print("Please put the fpcalc executable in your PATH!")
 		print("It is necessary for the creation of music SRS files.")
@@ -1259,6 +1266,7 @@ def main(argv=None):
 			mthread.join()
 		except:
 			print("Failure stopping the MessageThread.")
+
 	if len(missing):
 		print("")
 		print("------------------------------------")
@@ -1312,4 +1320,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
 	sys.exit(main())
-	
