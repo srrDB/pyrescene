@@ -117,7 +117,10 @@ def main(options, args):
 				output_dir = options.output_dir
 			else:
 				output_dir = os.path.join(os.path.dirname(pfile), "samples")
-			extract_sample(pfile, output_dir)
+			try:
+				extract_sample(pfile, output_dir)
+			except:
+				print("Broken NZB!")
 	
 	for element in args:
 		if os.path.isdir(element):
