@@ -41,6 +41,8 @@ Change log:
 0.4 (2012-09-28)
  - more extensions
  - other cli options (for each extension one)
+0.5 (2015-04-19)
+ - Don't crash on broken NZB files.
  
 """
 
@@ -156,7 +158,7 @@ if __name__ == '__main__':
 		usage="Usage: %prog [directories] [NZBs] [options]'\n"
 		"This tool will create new NZB files with only the sample "
 		"related data in the 'samples' subdir.\n",
-		version="%prog 0.4 (2012-09-28)") # --help, --version
+		version="%prog 0.5 (2015-04-19)") # --help, --version
 
 	parser.add_option("-o", dest="output_dir", metavar="DIRECTORY",
 					help="moves the new NZB files to DIRECTORY and a "
