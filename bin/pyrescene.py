@@ -434,18 +434,24 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	
 	return: list of SRR files to add to the main SRR
 	"""
-	# make in between dirs
+	# replicate subdirs from the release folder
 	path = os.path.relpath(sfv, release_dir)
 	dest_file = os.path.join(working_dir, path)
 	try:
+		# try to create only the path without SFV/RAR file part
 		os.makedirs(os.path.dirname(dest_file))
 	except:
-		pass
+		pass # the path already exists
 
 	idx_lang = os.path.join(working_dir, "languages.diz")
 	
 	# recursively create SRR and extract RARs
-	def extract_and_create_srr(folder, first_rars=None):
+	def extract_and_create_srr(folder, srr_out, first_rars=None):
+		"""
+		folder: working dir location for .srr output
+		srr_out: location and name of the .srr file to create (first step only)
+		first_rars: the first .rar files from the .sfv
+		"""
 		# find first RAR files in folder
 		if not first_rars:
 			first_rars = rescene.utility.first_rars(os.listdir(folder))
@@ -469,32 +475,32 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		
 		for fr in first_rars:
 			srr_files_to_store = []
+	
+			# dest srr name
+			new_srr = os.path.join(folder, os.path.basename(fr)[:-4]) + ".srr"
+
+			# use a short random name for the folder
+			random_subfolder = (hex(hash(fr)))[-3:]
+			dest = os.path.join(folder, random_subfolder)
+			counter = 1
+			while os.path.exists(dest):
+				# for the very rare cases it exists (hash collision)
+				dest = os.path.join(folder, str(counter))
+				counter += 1
+			mk_long_dir(dest)
+					
+			if not os.path.isdir(dest):
+				# otherwise unrar will still extract the files,
+				# but it'll put them in the source folder
+				# this is never wanted (especially for RAR Subs/ folder!)
+				logging.error("Failed to create temp folder for vobsubs: {}"
+				              .format(dest))
+				continue
 			
 			# extract archives
-			dest = os.path.join(folder, os.path.basename(fr)[:-4])
-			dest_long = dest
-			mk_long_dir(dest)
-			if os.name == "nt" and win32api_available:
-				try:
-					dest = win32api.GetShortPathName(dest)
-				except:
-					#pywintypes.error: (3, 'GetShortPathName', 
-					#'Het systeem kan het opgegeven pad niet vinden.')
-					head, tail =  os.path.split(dest)
-					try:
-						head = win32api.GetShortPathName(head)
-					except:
-						h, t =  os.path.split(head)
-						try:
-							h = win32api.GetShortPathName(h)
-						except:
-							# now we give up; bug in unrar: 
-							# it could overwrite main RAR files otherwise
-							continue
-						head = os.path.join(h, t)
-					dest = os.path.join(head, tail)
 			success = extract_rar(unrar, fr, dest)
 			if not success: # probably too long paths issue
+				logging.error("Failed to unrar vobsubs: {}".format(fr))
 				continue
 			
 			# search for idx files and store their language info
@@ -513,22 +519,15 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 							diz.write(line)
 			
 			# recursive step for each of the archives
-			for srr in extract_and_create_srr(dest):
+			for srr in extract_and_create_srr(dest, None):
 				srr_files_to_store.append(srr)
 		
 			if first_level:
-				# at same level as SFV (in main SRR)
-				# not in extract folder to prevent possible collisions
-				srr = folder + ".srr"
+				# at same level as SFV (in main SRR), (in temp folder)
+				# not in extract folder to prevent possible collisions too
+				srr = srr_out
 			else:
-				srr = dest_long + ".srr"
-				if os.name == "nt" and win32api_available:
-					head, tail =  os.path.split(srr)
-					try:
-						head = win32api.GetShortPathName(head)
-					except:
-						pass
-					srr = os.path.join(head, tail)
+				srr = new_srr 
 			# create SRRs and add SRRs from previous steps
 			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
 			            save_paths=False, compressed=True, oso_hash=False)
@@ -540,10 +539,29 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	
 	# get first RARs from SFV file
 	first_rars = get_start_rar_files([sfv])
-	if not len(first_rars) and os.path.isfile(sfv[:-4] + ".rar"): # bad SFV
-		first_rars = [sfv[:-4] + ".rar"]
+	if not len(first_rars):
+		# it was a bad SFV, but an archive with a similar same name might exist
+		sfv_base = sfv[:-4]
+		if os.path.isfile(sfv_base + ".rar"):
+			first_rars = [sfv_base + ".rar"]
+		elif os.path.isfile(sfv_base + ".part1.rar"):
+			first_rars = [sfv_base + ".part1.rar"]
+		elif os.path.isfile(sfv_base + ".part01.rar"):
+			first_rars = [sfv_base + ".part01.rar"]
+		elif os.path.isfile(sfv_base + ".001"):
+			first_rars = [sfv_base + ".001"]
 	if len(first_rars):
-		for sfile in extract_and_create_srr(dest_file[:-4], first_rars):
+		# use a short random name for the first folder
+		rand = (hex(hash(first_rars[0])))[-3:]
+		srr_folder = os.path.join(os.path.dirname(dest_file), rand)
+		counter = 1
+		while os.path.exists(srr_folder):
+			# for the very rare cases it exists (hash collision)
+			srr_folder = os.path.join(os.path.dirname(dest_file), str(counter))
+			counter += 1
+		# RAR/SFV without extension
+		srr = dest_file[:-4] + ".srr"
+		for sfile in extract_and_create_srr(srr_folder, srr, first_rars):
 			results.append(sfile)
 		
 	# add languages.diz to the first SRR file
@@ -581,12 +599,14 @@ def mk_long_dir(destination):
 			try:
 				os.mkdir("\\\\?\\" + destination)
 			except OSError as e:
+				# happens when there is a file with the same name as the dir
 				print(e)
 
 def generate_srr(reldir, working_dir, options, mthread):
 	if os.listdir(working_dir) != []:
-		# Can happen with PyPy and long dirs: create new working dir
-		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+		logging.warning("Failed to clean temp dir: {}".format(working_dir))
+		# Cleaning can fail with PyPy and long dirs: create new working dir
+		working_dir = mkdtemp(prefix="SRR-", dir=options.temp_dir)
 		print("New temp dir: {}".format(working_dir))
 		
 	print(reldir)
@@ -1178,7 +1198,8 @@ def main(argv=None):
 	else:
 		options.temp_dir = None
 	try:
-		working_dir = mkdtemp(".pyReScene", dir=options.temp_dir)
+		# 4 + 6 < 12; So no influence for a Windows short path
+		working_dir = mkdtemp(prefix="SRR-", dir=options.temp_dir)
 	except OSError:
 		print("The provided temporary directory does not exist.")
 		return 1 # failure
