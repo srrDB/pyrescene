@@ -11,6 +11,7 @@ pyReScene 0.6
  * pyReScene Auto: --best option added (same as -c -s -v)
  * pyReScene Auto: includes images from Cover/Covers subfolders
  * pyReScene Auto: fewer .mp3.txt files
+ * pyReScene Auto: --skip (-x) and --skip-list options added
  * Resample: "ReSample .NET 1.3 Preview" fix: MKV header compression/stripping
  * ReSample: Faster AVI reconstruction times.
  * ReSample: MemoryError on large MP4s fixed and 

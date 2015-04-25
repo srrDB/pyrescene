@@ -910,6 +910,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 			        ].index(move[:-4].lower() + ".sfv")
 			copied_files.insert(index, move)
 
+	# apply exclude list
+	for cfile in copied_files[:]:
+		if os.path.basename(cfile) in options.skip_list:
+			print("Skipped over stored file: %s" % os.path.basename(cfile))
+			copied_files.remove(cfile)
+	
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
 	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
@@ -1070,8 +1076,16 @@ def main(argv=None):
 					help="overrides -o parameter")
 	parser.add_option("-t", "--temp-dir", dest="temp_dir", default="",
 					metavar="DIRECTORY", 
-					help="change temporary directory")
+					help="set custom temporary directory")
 					# used for vobsub creation
+
+	parser.add_option("-x", "--skip", dest="skip_list", metavar="NAME",
+					action="append",
+					help="exclude these files from the stored files")
+	parser.add_option("--skip-list", dest="skip_file", default="",
+					metavar="FILE", 
+					help="file with file names to skip for the stored files")
+
 	parser.add_option("--no-srs", action="store_true", dest="nosrs",
 					help="disable .srs creation for media files")
 					# speedup rerun, less traffic, backup textfiles ...
@@ -1229,6 +1243,15 @@ def main(argv=None):
 			# No RAR5 support yet
 			logging.warning("{0}: {1}".format(str(e), sfv))
 			return 1 # failure (no .srr created)
+
+	if not options.skip_list:
+		options.skip_list = []
+	if options.skip_file:
+		if not os.path.isfile(options.skip_file):
+			print("The list of files to skip, could not be found.")
+			return 1 # failure
+		with open(options.skip_file, 'r') as skiplist:
+			options.skip_list = skiplist.read().splitlines()
 
 	drive_letters = []
 	aborted = False
