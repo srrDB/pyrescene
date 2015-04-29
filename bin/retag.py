@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Copyright (c) 2014 pyReScene
+# Copyright (c) 2014-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,7 +46,10 @@ except ImportError:
 
 import rescene
 from resample.srs import main as srsmain
-from resample.main import get_file_type, sample_class_factory
+from resample.main import get_file_type, sample_class_factory, FileType
+
+class NoTaggingAvailable(Exception):
+	pass
 
 def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 	if not srr_file.endswith(".srr"):
@@ -79,14 +82,23 @@ def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 	# fix music files that can be found
 	successes = 0
 	failures = 0
+	skips = 0
 	for srs in srs_files:
 		srsf = os.path.join(output_dir, os.path.basename(srs))
-		srs_info = get_srs_info(srsf)
+		try:
+			srs_info = get_srs_info(srsf)
+		except NoTaggingAvailable as not_music:
+			print("")
+			print(str(not_music))
+			os.remove(srsf)
+			skips += 1
+			continue
 		original_name = srs_info.sample_name
 		print("Fixing %s" % original_name)
 		# TODO: will fail on *nix when capitals differ
 		musicf = os.path.join(input_dir, original_name)
 		
+		# -k: keeps broken repair (not necessary for music)
 		srs_parameters = [srsf, musicf, "-o", output_dir, "-k"]
 		if always_yes:
 			srs_parameters.append("-y")
@@ -98,18 +110,24 @@ def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 		
 		os.remove(srsf)
 		
-	print("\n\n%d/%d files succeeded. %d failures." % 
-		(successes, failures + successes, failures))
+	print("\n\n%d/%d files succeeded. %d failure%s. %s" % (
+		successes, failures + successes, failures, 
+		"" if failures == 1 else "s",
+		"" if not skips else "%s skip%s." % 
+	    	(skips, "" if skips == 1 else "s")))
 		
 def get_srs_info(srs_file):
-	# TODO: get_file_type can be unknown
-	sample = sample_class_factory(get_file_type(srs_file))
+	file_type = get_file_type(srs_file)
+	if file_type not in (FileType.MP3, FileType.FLAC):
+		message = "Not a FLAC or MP3 music file: %s." % srs_file
+		raise NoTaggingAvailable(message)
+	sample = sample_class_factory(file_type)
 	srs_data, _tracks = sample.load_srs(srs_file)
 	return srs_data
 
 def main(argv=None):
 	parser = OptionParser(
-	usage=("Usage: %prog srr-file -i input_dir -o output_dir\n"
+	usage=("Usage: %prog file.srr -i input_dir -o output_dir\n"
 	"This tool fixes the tags of music files.\n"
 	"Example usage: %prog rls.srr --output D:\\rls\\"), 
 	version="%prog " + rescene.__version__) # --help, --version
@@ -121,8 +139,7 @@ def main(argv=None):
 					default=".", help="Specifies output directory. "
 					"The default output path is the current directory.")
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
-					action="store_true",
-					help="assume Yes for all prompts")
+					action="store_true", help="assume Yes for all prompts")
 	
 	if argv is None:
 		argv = sys.argv[1:]
