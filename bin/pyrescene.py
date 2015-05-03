@@ -67,7 +67,7 @@ from rescene.srr import MessageThread
 from rescene.main import MsgCode, FileNotFound, custom_popen
 from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
-from rescene.unrar import unrar_is_available, locate_unrar
+from rescene.unrar import locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 from rescene.utility import raw_input, unicode, fsunicode
@@ -77,6 +77,18 @@ o = rescene.Observer()
 rescene.subscribe(o)
 
 rescene.change_rescene_name_version("pyReScene Auto %s" % rescene.__version__)
+
+unrar_executable = None
+
+def get_unrar():
+	"""Locate unrar executable only once"""
+	global unrar_executable
+	if not unrar_executable:
+		unrar_executable = locate_unrar()
+	return unrar_executable
+
+def unrar_is_available():
+	return os.path.isfile(os.path.abspath(get_unrar()))
 
 def can_create(always_yes, path):
 	retvalue = True 
@@ -811,7 +823,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		options.vobsub_srr = False
 		logging.warning("Ignoring --vobsub-srr: unrar unavailable")
 	if options.vobsub_srr:
-		unrar = locate_unrar()
+		unrar = get_unrar()
 		for esfv in extra_sfvs:
 			skip = False
 			# not for Proof RARs that are already stored inside the SRR
@@ -1225,7 +1237,7 @@ def main(argv=None):
 		if len(indirs):
 			print("Warning: ignoring unnecessary parameters.")
 			print("Use -v or --vobsub-srr to include SRR files for vobsubs.")
-		unrar = locate_unrar()
+		unrar = get_unrar()
 		sfv = os.path.abspath(options.vobsubs)
 		try:
 			srr_list = create_srr_for_subs(unrar, sfv, working_dir,
