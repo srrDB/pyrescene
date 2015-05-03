@@ -41,7 +41,7 @@ def locate_unrar():
 	if(os.name == "nt"):
 		unrar = locate_windows()
 	else:
-		unrar = locate_unix()
+		unrar = locate_in_path()
 	return unrar
 
 def locate_windows():
@@ -62,15 +62,17 @@ def locate_windows():
 		except KeyError:
 			unrar = try_registry()
 			if not unrar:
+				unrar = locate_in_path()
+			if not unrar:
 				print("-----------------------------------------------")
 				print("Install WinRAR to use all the functionalities.")
 				print("Freeware 'UnRAR for Windows' is already enough.")
 				print("http://www.rarlab.com/rar_add.htm")
 				print("-----------------------------------------------")
+				
+				# makes it work anyway when located in the same directory
 				unrar = "UnRAR.exe" 
 			
-	# define your own path to a program to unrar: (uncomment)
-	#unrar = "C:\Program Files\7z.exe"
 	return unrar
 
 def try_registry():
@@ -87,11 +89,8 @@ def try_registry():
 	except:
 		return None
 
-def locate_unix():
+def locate_in_path():
 	return find_executable("unrar")
-
-def unrar_is_available():
-	return os.path.isfile(os.path.abspath(locate_unrar()))
 
 if __name__ == '__main__':
 	print(locate_unrar())
