@@ -32,7 +32,6 @@ To do:
 	- issue with capitals on *nix
 	- path support (now path info gets ignored)
 	- testing
-	- rescene.extract_files does not ask/overwrites files -> implement method
 """
 
 from optparse import OptionParser
@@ -140,6 +139,9 @@ def main(argv=None):
 					"The default output path is the current directory.")
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					action="store_true", help="assume Yes for all prompts")
+	parser.add_option("-n", "--always-no", dest="always_no", default=False,
+					action="store_true", help="never overwrite existing files "
+					"with the extracted stored files from the SRR")
 	
 	if argv is None:
 		argv = sys.argv[1:]
@@ -157,6 +159,23 @@ def main(argv=None):
 		parser.print_help()
 		return 1
 	
+	def can_overwrite(file_path):
+		retvalue = True 
+		if (not options.always_yes and 
+		    not options.always_no and os.path.isfile(file_path)):
+			print("Warning: File %s already exists." % file_path)
+			char = raw_input("Do you wish to continue? (Y/N): ").lower()
+			while char not in ('y', 'n'):
+				char = raw_input("Do you wish to continue? (Y/N): ").lower()
+			if char == 'n':
+				retvalue = False
+		elif options.always_no and os.path.isfile(file_path):
+			print("(not replaced)")
+			retvalue = False
+		return retvalue 
+	
+	rescene.main.can_overwrite = can_overwrite
+
 	if fix_tags(args[0], options.input_dir, options.output_dir, 
 	            options.always_yes):
 		return 0
