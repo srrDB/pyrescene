@@ -293,7 +293,12 @@ def first_rars(file_iter):
 	firsts = list(filter(is_first, input_files))
 	# .000? then no .001
 	for first in filter(lambda x: x.endswith(".000"), firsts):
-		firsts.remove(first[:-1] + "1")
+		try:
+			firsts.remove(first[:-1] + "1")
+		except ValueError:
+			# the release consists of a a single .000 file only
+			# e.g. Ys_6_The_Ark_of_Napishtim_USA_FIX_READNFO_PSP-REBORN
+			pass
 	# list still empty? A .part2.r00 situation might be the case.
 	if not len(firsts):
 		firsts = list(filter(is_dotrar, input_files))
