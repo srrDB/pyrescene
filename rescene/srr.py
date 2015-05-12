@@ -41,6 +41,7 @@ from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
 from rescene.utility import show_spinner, remove_spinner, sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
+from rescene.utility import fsunicode
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -109,7 +110,8 @@ def display_info(srr_file):
 	if len(info["stored_files"]):
 		print("Stored files:")
 		for sfile in info["stored_files"].values():
-			print("\t{0: >9}  {1}".format(sep(sfile.file_size), sfile.file_name))
+			print_size = "\t{0: >9}  ".format(sep(sfile.file_size))
+			print(print_size + encodeerrors(sfile.file_name, sys.stdout))
 		print()
 		
 	if len(info["rar_files"]):
@@ -119,20 +121,21 @@ def display_info(srr_file):
 				print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
 								sfile.file_size))
 			except AttributeError: # No SFV file is used
-				print("\t%s %d" % (sfile.file_name, sfile.file_size))
+				print("\t%s %d" % (encodeerrors(sfile.file_name, sys.stdout),
+				                   sfile.file_size))
 		print()
 		
 	if len(info["archived_files"]):
 		print("Archived files:")
 		for sfile in info["archived_files"].values():
-			print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
-								sfile.file_size))
+			print("\t%s %s %d" % (encodeerrors(sfile.file_name, sys.stdout),
+			                      sfile.crc32, sfile.file_size))
 		print()
 		
 	if len(info["oso_hashes"]):
 		print("OpenSubtitles.org hashes:")
 		for (name, ohash, size) in info["oso_hashes"]:
-			print("\t%s %s %d" % (name, ohash, size))
+			print("\t%s %s %d" % (encodeerrors(name, sys.stdout), ohash, size))
 		print()
 		
 	if len(info["sfv_comments"]):
