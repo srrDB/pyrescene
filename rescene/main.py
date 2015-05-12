@@ -1423,7 +1423,7 @@ def _store(sfile, stream, save_paths, in_folder):
 	file_name = os.path.basename(sfile)
 	if save_paths: # AttributeError: 'NoneType' object has no attr...
 		file_name = os.path.relpath(sfile, in_folder)
-		if file_name.startswith(".."):
+		if file_name.startswith(b".."):
 			# sfile and in_folder don't match
 			# (long/short Windows path or totally different locations)
 			raise AssertionError("File to store not in the input folder.")
