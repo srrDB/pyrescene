@@ -682,7 +682,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	copied_files = []
 	is_music = False
 	for nfo in get_files(reldir, "*.nfo"):
-		if nfo.lower() in ("imdb.nfo"):
+		if os.path.basename(nfo).lower() in ("imdb.nfo"):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, nfo))
 
@@ -694,9 +694,10 @@ def generate_srr(reldir, working_dir, options, mthread):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 		
 	for log in get_files(reldir, "*.log"):
+		baselog = os.path.basename(log)
 		# blacklist known file names of transfer logs and hidden files
-		if (log.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log") or
-			log.startswith(".")):
+		if (baselog.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log") or
+			baselog.startswith(b".")):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
 		
