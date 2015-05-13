@@ -1048,7 +1048,13 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	if " " in tail: 
 		release = False
 				
-	return release 
+	return release
+
+def is_empty_file(fpath):
+	if os.path.isfile(fpath) and os.path.getsize(fpath) == 0:
+		return True
+	else:
+		return False
 
 def main(argv=None):
 	start_time = datetime.now()
@@ -1212,10 +1218,10 @@ def main(argv=None):
 			
 	if options.report:
 		now = datetime.now()
-		fn = os.path.join(options.output_dir, 
-						"pyReScene_report_%s.txt" % now.strftime("%Y-%m-%d"))
+		report_fn = os.path.join(options.output_dir, 
+		                "pyReScene_report_%s.txt" % now.strftime("%Y-%m-%d"))
 		# log will append by default
-		logging.basicConfig(filename=fn, level=logging.INFO,
+		logging.basicConfig(filename=report_fn, level=logging.INFO,
 		                    format="%(asctime)s %(levelname)s:%(message)s",
 		                    datefmt='%H:%M:%S')
 		
@@ -1365,6 +1371,14 @@ def main(argv=None):
 		subprocess.call(["eject"])
 		print("\a")
 		
+	if options.report and is_empty_file(report_fn):
+		# stop locking the .log file
+		for handler in logging.root.handlers[:]:
+			handler.flush()
+			handler.close()
+			logging.root.removeHandler(handler)
+		os.remove(report_fn)
+	
 	print(datetime.now()-start_time)
 		
 	# test the errorlevel with:
