@@ -72,11 +72,13 @@ def main():
 
 	sys.path.append(os.path.join(curdir, "scripts"))
 	suite.addTest(unittest.defaultTestLoader.loadTestsFromName("nzbsrr"))
+	
+	return suite
 
+if __name__ == '__main__':
+	suite = main()
+	
 	kw = dict()
 	if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
 		kw.update(buffer=True)
 	unittest.main(defaultTest="suite", **kw)
-
-if __name__ == '__main__':
-	main()
