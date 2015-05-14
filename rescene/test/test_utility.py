@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -24,6 +24,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+# Enable Unicode string literals by default because non-ASCII strings are
+# used and Python 3.2 does not support the u"" syntax.
+from __future__ import unicode_literals
 from __future__ import print_function
 
 import unittest
@@ -36,10 +39,10 @@ import platform
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
-	range = xrange #@ReservedAssignment
-	str = unicode #TODO: hmmm @ReservedAssignment
+	range = xrange  #@ReservedAssignment
+	str = unicode   #@ReservedAssignment
 else:
-	unicode = str #@ReservedAssignment
+	unicode = str   #@ReservedAssignment
 
 from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
 from rescene.utility import filter_sfv_duplicates, same_sfv
@@ -105,9 +108,6 @@ class TestSfv(unittest.TestCase):
 		output.write(b"illegal.rar AABBCCDD ; comment\n")
 		
 		(entries, comments, errors) = parse_sfv_file(output)
-#		print([str(e) for e in entries])
-#		print(comments)
-#		print(errors)
 		self.assertTrue(len(entries) == 7)
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)
@@ -120,7 +120,20 @@ class TestSfv(unittest.TestCase):
 		self.assertTrue(len(entries) == 7)
 		self.assertTrue(len(comments) == 1)
 		self.assertTrue(len(errors) == 2)
-	
+		
+	def test_extra_spaces_and_tab(self):
+		output = io.BytesIO()
+		output.write(b"atest.rar	  AABBCCDD\n")
+		
+		(entries, comments, errors) = parse_sfv_file(output)
+		self.assertTrue(len(entries) == 1)
+		self.assertTrue(len(comments) == 0)
+		self.assertTrue(len(errors) == 0)
+		
+		line = entries[0]
+		self.assertEqual("atest.rar", line.file_name)
+		self.assertEqual("AABBCCDD", line.crc32)
+		
 	def test_parse_sfv_file(self):
 		sfv = os.path.join(os.pardir, os.pardir, "test_files", 
 			"store_split_folder_old_srrsfv_windows", "store_split_folder.sfv")
@@ -165,6 +178,24 @@ class TestSfv(unittest.TestCase):
 			b"--- \x9F garbage error line ---\n"
 		)
 		parse_sfv_file(sfv)
+		
+	def test_umlaut(self):
+		output = io.BytesIO(
+			b"; irgendwann_kommt_alles_zur\xfcck\n"
+			b"kommt_alles_zur\xfcck-tpmf.mp3 4EE8195C\n"
+			b"kommt_alles_zur\xfcck-tpmf.mp34EE8195C"
+		)
+		(entries, comments, errors) = parse_sfv_file(output)
+		
+		self.assertTrue(len(entries) == 1)
+		self.assertEqual("kommt_alles_zurück-tpmf.mp3", entries[0].file_name)
+		self.assertEqual("4EE8195C", entries[0].crc32)
+		
+		self.assertTrue(len(comments) == 1)
+		self.assertEqual("; irgendwann_kommt_alles_zurück", comments[0])
+		
+		self.assertTrue(len(errors) == 1)
+		self.assertEqual("kommt_alles_zurück-tpmf.mp34EE8195C", errors[0])
 		
 	def test_filter_sfv_duplicates(self):
 		"""The capitals in the CRC32 may not make a difference."""
@@ -296,15 +327,15 @@ class TestUtility(unittest.TestCase):
 
 	def test_sep(self):
 		try:
-			if platform.win32_ver() >= 8:
+			if int(platform.win32_ver()[0]) >= 8:
 				# \xa0 on Windows 8 (non-breaking space)
-				self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'),
+				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
 				                 "1\xa0000\xa0000")
 			else:
 				# Windows 7 and lower
-				self.assertEqual(sep(1000000, 'Dutch_Belgium.1252'),
+				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
 			                     "1.000.000")
-			self.assertEqual(sep(1000000, 'English'), "1,000,000")
+			self.assertEqual(sep(1000000, b"English"), "1,000,000")
 		except locale.Error as err:
 			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
