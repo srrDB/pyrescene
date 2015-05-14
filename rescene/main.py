@@ -500,11 +500,11 @@ def create_srr(srr_name, infiles, in_folder="",
 			if not os.path.isfile(rarfile):
 				# TODO: case sensitivity on Unix systems
 				# all lower in sfv and casings in RAR file names
-				_fire(code=MsgCode.FILE_NOT_FOUND,
-					  message="Referenced file not found: %s" % rarfile)
+				msg = "Referenced file not found: %s" % rarfile
+				_fire(code=MsgCode.FILE_NOT_FOUND, message=msg)
 				srr.close()	  
 				os.unlink(srr_name)
-				raise FileNotFound("Referenced file not found: %s" % rarfile)
+				raise FileNotFound(msg)
 	
 			fname = os.path.relpath(rarfile, in_folder) if save_paths  \
 				else os.path.basename(rarfile)
