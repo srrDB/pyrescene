@@ -161,34 +161,36 @@ def parse_sfv_data(file_data):
 	
 	The "comments" and "errors" lists contain
 	lines decoded from the file as text strings.
-	File names must be strictly ASCII.
-	Other text is decoded from ASCII using the "replace" error handler.
-	TODO: UTF8 here?
+	File names must be iso-8859-1 aka latin1.
+	http://en.wikipedia.org/wiki/Extended_ASCII
+	Other text is decoded from latin1 using the "replace" error handler.
 	"""
-	entries = list()  # SfvEntry objects
-	comments = list() # and unrecognized stuff
-	errors = list()
+	entries = []   # SfvEntry objects
+	comments = []
+	errors = []    # unrecognized stuff
 	
 	for line in file_data.split(b"\n"):
-		# empty line, comments or useless text for whatever reason
 		if not line.strip():
-			pass # blank line detected
-		elif line.lstrip().startswith(b";"): # or len(line) < 10:
-			line = line.decode("ascii", "replace")
+			# ignore blank lines in parsed result
+			pass
+		elif line.lstrip().startswith(b";"):
+			# comment lines must start with ;
+			line = line.decode("latin-1", "replace")
 			comments.append(line)
 		else:
+			# actual data or parsing errors
 			line = line.rstrip()
 			try:
-				text = line.decode("ascii")
+				text = line.decode("latin-1")
 				text = text.replace("\t", "    ") # convert tabs
 				index = text.rindex(" ") # ValueError: substring not found
-				filename = text[:index]
+				filename = text[:index].strip()
 				# A SFV can contain multiple white spaces
 				crc = text[index+1:].lstrip()
 				# ValueError: bad CRC e.g. char > F
 				entries.append(SfvEntry(filename, crc))
 			except ValueError:
-				line = line.decode("ascii", "replace")
+				line = line.decode("latin-1", "replace")
 				errors.append(line)
 		
 	return entries, comments, errors
@@ -442,6 +444,8 @@ def same_nfo(one, two):
 	else:
 		_pos, _neg, no = diff_lists(onec, twoc)
 		return len(no) == len(onec)
+
+###############################################################################
 
 def encodeerrors(text, textio, errors="replace"):
 	"""Prepare a string with a fallback encoding error handler
