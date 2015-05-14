@@ -318,11 +318,13 @@ def create_srr(options, infolder, infiles, working_dir):
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.", file=sys.stderr)
-	except (EnvironmentError, ValueError) as err:
+	except (EnvironmentError, ValueError, FileNotFound) as err:
 		# Can not read basic block header
 		# ValueError: compressed SRR
 		# ValueError: The file is too small.
 		# EmptySfv: can't create a useful file in this case
+		# FileNotFound: Linux file systems are case sensitive
+		
 		# make sure there is no broken SRR file
 		try:
 			os.unlink(srr_name)

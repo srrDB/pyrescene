@@ -169,6 +169,11 @@ def parse_sfv_data(file_data):
 	comments = []
 	errors = []    # unrecognized stuff
 	
+	# .sfv files without any \n line breaks exist
+	# e.g. Need_for_Speed_Underground_2_JPN_NGC-WRG (\r\r instead)
+	# (are those made like that or altered on transfer?)
+	file_data = file_data.replace(b"\r", b"\n")
+	
 	for line in file_data.split(b"\n"):
 		if not line.strip():
 			# ignore blank lines in parsed result
