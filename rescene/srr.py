@@ -41,7 +41,6 @@ from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
 from rescene.utility import show_spinner, remove_spinner, sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
-from rescene.utility import fsunicode
 
 o = rescene.Observer()
 rescene.subscribe(o)
