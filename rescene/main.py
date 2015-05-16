@@ -168,6 +168,7 @@ def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
 		If it is a relative path, we only extract a single file.
 	If extract_paths is True, 
 		we try to re-create the file with its stored path.
+	Returns tuple: (extracted location, bool: extracted or overwritten)
 	"""
 	extracted_files = []
 	def process(block):

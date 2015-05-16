@@ -50,7 +50,7 @@ from resample.main import get_file_type, sample_class_factory, FileType
 class NoTaggingAvailable(Exception):
 	pass
 
-def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
+def fix_tracks(srr_file, input_dir, output_dir, always_yes=False):
 	if not srr_file.endswith(".srr"):
 		raise AttributeError("The first parameter must be an SRR file.")
 	if not os.path.isdir(input_dir):
@@ -65,49 +65,42 @@ def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 	
 	stored_files = rescene.info(srr_file)['stored_files']
 	
-	# extract files
+	# extract non SRS files
+	successes = 0
+	failures = 0
+	skips = 0
 	srs_files = []
 	for sfile in stored_files.keys():
 		if sfile.endswith(".srs"):
 			srs_files.append(sfile)
 		else:
 			print("Extracting %s" % sfile)
-			rescene.extract_files(srr_file, output_dir, False, sfile)
-	
-	for srs in srs_files:
-		print("Extracting %s" % srs)
-		rescene.extract_files(srr_file, output_dir, False, srs)
+			rescene.extract_files(srr_file, output_dir, True, sfile)
 		
 	# fix music files that can be found
-	successes = 0
-	failures = 0
-	skips = 0
 	for srs in srs_files:
-		srsf = os.path.join(output_dir, os.path.basename(srs))
-		try:
-			srs_info = get_srs_info(srsf)
-		except NoTaggingAvailable as not_music:
-			print("")
-			print(str(not_music))
-			os.remove(srsf)
-			skips += 1
+		print("Using %s" % srs)
+		(out, ok) = rescene.extract_files(srr_file, output_dir, True, srs)[0]
+		if not ok:
+			# file extraction failed or existing .srs not overwritten
+			print("Attempt to fix track aborted.")
 			continue
-		original_name = srs_info.sample_name
-		print("Fixing %s" % original_name)
-		# TODO: will fail on *nix when capitals differ
-		musicf = os.path.join(input_dir, original_name)
-		
-		# -k: keeps broken repair (not necessary for music)
-		srs_parameters = [srsf, musicf, "-o", output_dir, "-k"]
-		if always_yes:
-			srs_parameters.append("-y")
 		try:
-			srsmain(srs_parameters, no_exit=True)
-			successes += 1
-		except ValueError: # pexit() only throws ValueError
+			success = fix_tagging(out, output_dir, input_dir, always_yes)
+			if success:
+				successes += 1
+			else:
+				# .srs is not a music file
+				skips += 1
+		except ValueError:
+			# pexit() srs.py only throws ValueError
 			failures += 1
-		
-		os.remove(srsf)
+		except Exception as e:
+			print("Unexpected error!")
+			print(str(e))
+			failures += 1
+		finally:
+			os.remove(out)
 		
 	print("\n\n%d/%d files succeeded. %d failure%s. %s" % (
 		successes, failures + successes, failures, 
@@ -115,6 +108,45 @@ def fix_tags(srr_file, input_dir, output_dir, always_yes=False):
 		"" if not skips else "%s skip%s." % 
 	    	(skips, "" if skips == 1 else "s")))
 		
+def fix_tagging(srs, output_dir, input_dir, always_yes):
+	"""Fixes the meta data tags of a music track.
+	srs: srs file location
+	output_dir: root dir of the fixed release
+	input_dir: location to find the track to be fixed
+	always_yes: when to always confirm replacements
+	"""
+	try:
+		srs_info = get_srs_info(srs)
+	except NoTaggingAvailable as not_music:
+		print("")
+		print(str(not_music))
+		os.remove(srs)
+		return False
+
+	original_name = srs_info.sample_name
+	print("Fixing %s" % original_name)
+	
+	# TODO: will fail on *nix when capitals differ
+	musicf = os.path.join(input_dir, original_name)
+	out_subfolder = os.path.dirname(os.path.relpath(srs, output_dir))
+	if not os.path.isfile(musicf):
+		musicf = os.path.join(input_dir, out_subfolder, original_name)
+		if not os.path.isfile(musicf):
+			print("Track not found")
+			raise ValueError("not found")
+	print("From %s" % musicf)
+	
+	# -k: keeps broken repair (not necessary for music)
+	out_location = os.path.join(output_dir, out_subfolder)
+	srs_parameters = [srs, musicf, "-o", out_location, "-k"]
+	if always_yes:
+		srs_parameters.append("-y")
+
+	# can throw ValueError on pexit()
+	srsmain(srs_parameters, no_exit=True) 
+
+	return True
+
 def get_srs_info(srs_file):
 	file_type = get_file_type(srs_file)
 	if file_type not in (FileType.MP3, FileType.FLAC):
@@ -176,8 +208,8 @@ def main(argv=None):
 	
 	rescene.main.can_overwrite = can_overwrite
 
-	if fix_tags(args[0], options.input_dir, options.output_dir, 
-	            options.always_yes):
+	if fix_tracks(args[0], options.input_dir, options.output_dir, 
+	              options.always_yes):
 		return 0
 	else:
 		return 1
