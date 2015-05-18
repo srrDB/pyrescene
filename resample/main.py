@@ -43,7 +43,6 @@ import resample
 from rescene import rarstream
 from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
-from rescene.utility import temporary_directory
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            GetEbmlUInt, MakeEbmlUInt, EbmlID)
