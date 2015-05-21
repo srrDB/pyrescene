@@ -29,8 +29,7 @@ This tool fixes the tags of music files.
 
 To do:
 	- error handling
-	- issue with capitals on *nix
-	- path support (now path info gets ignored)
+	  (Ctr+C when source == dest => broken 0 byte track)
 	- testing
 """
 
@@ -126,11 +125,12 @@ def fix_tagging(srs, output_dir, input_dir, always_yes):
 	original_name = srs_info.sample_name
 	print("Fixing %s" % original_name)
 	
-	# TODO: will fail on *nix when capitals differ
-	musicf = os.path.join(input_dir, original_name)
+	musicf = join_fix_case(input_dir, original_name)
 	out_subfolder = os.path.dirname(os.path.relpath(srs, output_dir))
 	if not os.path.isfile(musicf):
-		musicf = os.path.join(input_dir, out_subfolder, original_name)
+		srr_path = out_subfolder.split("/")
+		srr_path.append(original_name)
+		musicf = join_fix_case(input_dir, *srr_path)
 		if not os.path.isfile(musicf):
 			print("Track not found")
 			raise ValueError("not found")
@@ -155,6 +155,32 @@ def get_srs_info(srs_file):
 	sample = sample_class_factory(file_type)
 	srs_data, _tracks = sample.load_srs(srs_file)
 	return srs_data
+
+def join_fix_case(good_base, *parts):
+	"""Returns a unix-type case-sensitive path of the joined parts.
+	An empty string is returned on failure: file not found."""
+	# check if input is already correct
+	joined_input = os.path.join(good_base, *parts)
+	if os.path.exists(joined_input):
+		return joined_input 
+
+	corrected_path = good_base 
+	for p in parts:
+		if not os.path.exists(os.path.join(corrected_path, p)):
+			listing = os.listdir(corrected_path)
+			cilisting = [l.lower() for l in listing]
+			cip = p.lower()
+			if cip in cilisting:
+				# get real folder name
+				l = listing[cilisting.index(cip)]
+				corrected_path = os.path.join(corrected_path, l)
+			else:
+				# file or path does not exist
+				return ""
+		else:
+			corrected_path = os.path.join(corrected_path, p)
+
+	return corrected_path
 
 def main(argv=None):
 	parser = OptionParser(
