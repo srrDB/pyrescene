@@ -1936,7 +1936,8 @@ def _mkv_block_find(tracks, er, done, tracksMain):
 				check_bytes = track.check_bytes # from sample
 				check_bytes += sforsample # stored settings from main video
 				check_bytes += buff[offset+len(sformain):
-				                    offset+lcb-len(track.check_bytes)]
+									offset+len(sformain)+lcb- 
+									len(track.check_bytes)-len(sforsample)]
 				
 				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
@@ -1953,7 +1954,8 @@ def _mkv_block_find(tracks, er, done, tracksMain):
 			if not track.check_bytes:
 				lcb = min(len(track.signature_bytes), flength)
 				check_bytes = sforsample
-				check_bytes += buff[offset+len(sformain):offset+lcb] 
+				check_bytes += buff[offset+len(sformain):
+				                    offset+len(sformain)+lcb-len(sforsample)] 
 				if track.signature_bytes.startswith(check_bytes):
 					track.check_bytes = check_bytes
 					track.match_offset = (er.current_element.element_start_pos
