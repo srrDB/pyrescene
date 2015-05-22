@@ -808,6 +808,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 		"MSC.PATRAN.V2001.R2A.FIX.FOR.RISE-TFL",
 		"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
 		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS", #contains vobsubs
+		# missing file main release
+		"Super.Streetfighter.IV.SSFIV.Arcade.Edition.DLC.FIX.READNFO.XBOX360-MoNGoLS",
 		]
 	release_name = os.path.split(reldir)[1]
 	if (is_storable_fix(release_name) and 
