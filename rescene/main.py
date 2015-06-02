@@ -794,8 +794,8 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		raise
 
 def _handle_sfv(sfile):
-	"""Helper function for create_srr that yields all RAR archives enumerated
-	in a .sfv file.
+	"""Helper function for create_srr and create_srr_fh that yields
+	all RAR archives enumerated in a .sfv file.
 	Duplicate SFV data lines will be filtered out.
 	Throws EmptySfv when not a single line could be parsed."""
 	(entries, _comments, _errors) = parse_sfv_file(sfile)
@@ -803,13 +803,21 @@ def _handle_sfv(sfile):
 		# Not even a non-RAR file found
 		raise EmptySfv("Empty SFV file found.");
 
+	wmsg = "Warning: Non-RAR file found in SFV: '%s'."
 	sorted_entries = filter_sfv_duplicates(entries)
-	for sfv_entry in sorted_entries:
-		if is_rar(sfv_entry.file_name):
-			yield os.path.join(os.path.dirname(sfile), sfv_entry.file_name)
-		else:
-			_fire(MsgCode.NO_RAR, message="Warning: Non-RAR file found "
-				  "in SFV: '%s'." % sfv_entry.file_name)
+	srr_usenet_tool = "NNTPFile" in repr(type(sfile))
+	if not srr_usenet_tool:
+		for sfv_entry in sorted_entries:
+			if is_rar(sfv_entry.file_name):
+				yield os.path.join(os.path.dirname(sfile), sfv_entry.file_name)
+			else:
+				_fire(MsgCode.NO_RAR, message=wmsg % sfv_entry.file_name)
+	else:
+		for sfv_entry in sorted_entries:
+			if is_rar(sfv_entry.file_name):
+				yield sfv_entry.file_name
+			else:
+				_fire(MsgCode.NO_RAR, message=wmsg % sfv_entry.file_name)
 
 def _handle_rar(rfile, filelist=None, read_retries=7):
 	"""Helper function for create_srr that yields all existing RAR archives
