@@ -442,15 +442,18 @@ def merge_srrs(srr_files, output_file, application_name=None):
 
 def create_srr(srr_name, infiles, in_folder="",
                store_files=None, save_paths=False, compressed=False,
-               oso_hash=True):
+               oso_hash=True, tmp_srr_name=None):
 	"""
+	srr_name:    path and name of the SRR file to create
+	             (for checking existence)
+	tmp_srr_name the actual file created! To be used with utility helpers.
+	             This will be the same as srr_name when not provided.
 	infiles:     RAR or SFV file(s) to create SRR from
-	store_files: a list of files to store in the SRR
-	             SFVs from infiles do not need to be in this list.
 	in_folder:   root folder for relative paths to store
 	             necessary when save_paths is True or
 	             paths are relative to in_folder in store_file
-	srr_name:    path and name of the SRR file to create
+	store_files: a list of files to store in the SRR
+	             SFVs from infiles do not need to be in this list.
 	save_paths:  if the path relative to in_folder 
 	             must be stored with the file name e.g. Sample/ or Proof/
 	compressed:  Do we create an SRR or not when encountered compressed files?
@@ -459,18 +462,23 @@ def create_srr(srr_name, infiles, in_folder="",
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
 	try:
+		if not tmp_srr_name:
+			tmp_srr_name = srr_name
 		if store_files is None:      # no default initialization with []
 			store_files = []
-		if not isinstance(infiles, (list, tuple)): # we need a list
+		if not isinstance(infiles, (list, tuple)):  # we need a list
 			infiles = [infiles]      # otherwise iterating over characters
 			
 		if not can_overwrite(srr_name):
 			return False
 	except KeyboardInterrupt:
-		# so an existing SRR file won't be removed
-		raise KeyboardInterrupt("DONT_DELETE")
+		if tmp_srr_name == srr_name:
+			# so an existing SRR file won't be removed upon Ctrl+C
+			raise KeyboardInterrupt("DONT_DELETE")
+		else:
+			raise
 	
-	srr = open(srr_name, "wb")
+	srr = open(tmp_srr_name, "wb")
 	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
 	
 	try:
@@ -504,7 +512,7 @@ def create_srr(srr_name, infiles, in_folder="",
 				msg = "Referenced file not found: %s" % rarfile
 				_fire(code=MsgCode.FILE_NOT_FOUND, message=msg)
 				srr.close()	  
-				os.unlink(srr_name)
+				os.unlink(tmp_srr_name)
 				raise FileNotFound(msg)
 	
 			fname = os.path.relpath(rarfile, in_folder) if save_paths  \
@@ -529,7 +537,7 @@ def create_srr(srr_name, infiles, in_folder="",
 						      message="Don't delete 'em yet!")
 						if not compressed:
 							srr.close()
-							os.unlink(srr_name)
+							os.unlink(tmp_srr_name)
 							raise ValueError("Archive uses unsupported "
 							           "compression method: %s" % rarfile)
 					else:

@@ -72,6 +72,7 @@ from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
 from resample.main import get_file_type, sample_class_factory
 from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
+from rescene.utility import create_temp_file_name, replace_result
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -541,8 +542,11 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 			else:
 				srr = new_srr 
 			# create SRRs and add SRRs from previous steps
+			tmp_srr_name = create_temp_file_name(srr)
 			rescene.create_srr(srr, fr, store_files=srr_files_to_store, 
-			            save_paths=False, compressed=True, oso_hash=False)
+			            save_paths=False, compressed=True, oso_hash=False,
+			            tmp_srr_name=tmp_srr_name)
+			replace_result(tmp_srr_name, srr)
 			result.append(srr)
 			
 		return result
@@ -642,8 +646,11 @@ def generate_srr(reldir, working_dir, options, mthread):
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
+			tmp_srr_name = create_temp_file_name(srr)
 			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
-			                            options.compressed)
+			                            options.compressed,
+									    tmp_srr_name=tmp_srr_name)
+			replace_result(tmp_srr_name, srr)
 			# when the user decides not to overwrite an existing SRR
 			if not result:
 				return False

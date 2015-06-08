@@ -41,6 +41,7 @@ from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
 from rescene.utility import show_spinner, remove_spinner, sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
+from rescene.utility import create_temp_file_name, replace_result
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -313,8 +314,11 @@ def create_srr(options, infolder, infiles, working_dir):
 #	print("infolder: %s" % infolder, file=sys.stderr)
 #	print("store files: %s" % store_files, file=sys.stderr)
 	try:
+		tmp_srr_name = create_temp_file_name(srr_name)
 		rescene.create_srr(srr_name, infiles, infolder, 
-	                       store_files, save_paths, options.allow_compressed)
+	                       store_files, save_paths, options.allow_compressed,
+	                       tmp_srr_name=tmp_srr_name)
+		replace_result(tmp_srr_name, srr_name)
 		mthread.done = True
 		mthread.join()
 		print("SRR file successfully created.", file=sys.stderr)
@@ -325,7 +329,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		# EmptySfv: can't create a useful file in this case
 		# FileNotFound: Linux file systems are case sensitive
 		
-		# make sure there is no broken SRR file
+		# make sure there is no broken SRR file/temporary file left
 		try:
 			os.unlink(srr_name)
 		except:
