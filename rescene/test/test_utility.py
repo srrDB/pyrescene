@@ -330,7 +330,7 @@ class TestUtility(unittest.TestCase):
 			if int(platform.win32_ver()[0]) >= 8:
 				# \xa0 on Windows 8 (non-breaking space)
 				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
-				                 "1\xa0000\xa0000")
+				                 b"1\xa0000\xa0000")
 			else:
 				# Windows 7 and lower
 				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
