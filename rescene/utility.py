@@ -38,6 +38,7 @@ import locale
 import os
 import shutil
 from io import BytesIO, TextIOBase, TextIOWrapper
+from tempfile import mktemp
 
 try:
 	import win32api
@@ -402,6 +403,29 @@ def remove_folder(path):
 	except OSError:
 		os.rmdir("\\\\?\\" + path)
 		
+def create_temp_file_name(output_file):
+	"""Creates file name for the temporary file based on the name of the
+	output file to create/overwrite later.
+	Used to prevent overwriting good files with a broken one later on."""
+	dirname = os.path.dirname(output_file)
+	prefix = os.path.basename(output_file)
+	return mktemp(".tmp", prefix + "-", dirname)
+
+def replace_result(src, dest):
+	"""Replaces the destination file with the source file.
+	Will not do anything when the source file doesn't exist.
+	Used to prevent overwriting good files with a broken one later on."""
+	# it must come from the above method
+	assert src.startswith(dest)
+
+	# it is possible a temp file was never created
+	# (.srr question for replacement is false)
+	if os.path.isfile(src):
+		# delete previous file when it exists
+		if os.path.isfile(dest):
+			os.unlink(dest)
+		os.rename(src, dest)
+
 ###############################################################################
 
 def diff_lists(one, two):

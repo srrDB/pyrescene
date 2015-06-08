@@ -2709,7 +2709,7 @@ def mp3_extract_sample_streams(tracks, main_mp3_file):
 
 	return tracks, {}
 	
-def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	rr = RiffReader(RiffReadMode.SRS, path=srs)
 	
@@ -2717,8 +2717,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	for track in tracks.values():
 		track.track_file.seek(0)
 	
-	sample_file = os.path.join(out_folder, srs_data.name)
-	with open(sample_file, "wb") as sample:
+	with open(out_file, "wb") as sample:
 		block_count = 0
 		while rr.read():
 			# skip over our custom chunks in rebuild mode 
@@ -2755,7 +2754,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				
 	remove_spinner()	
 	
-	ofile = FileData(file_name=sample_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	
 	if ofile.crc32 != srs_data.crc32:
@@ -2765,7 +2764,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	rr.close()
 	return ofile
 
-def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	er = EbmlReader(EbmlReadMode.SRS, path=srs)
 	
@@ -2778,8 +2777,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 		#   Unexpected Error:
 		#   System.NullReferenceException
 	
-	sample_file = os.path.join(out_folder, srs_data.name)
-	with open(sample_file, "wb") as sample:
+	with open(out_file, "wb") as sample:
 		current_attachment = None
 		cluster_count = 0
 		while er.read():
@@ -2839,11 +2837,11 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	er.close()
 	remove_spinner()	
 	
-	ofile = FileData(file_name=sample_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	
 	tracks = profile_mp4_srs(srs, tracks)
@@ -2853,8 +2851,7 @@ def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	
 	mr = MovReader(MovReadMode.SRS, path=srs)
 	
-	sample_file = os.path.join(out_folder, srs_data.name)
-	with open(sample_file, "wb") as sample:
+	with open(out_file, "wb") as sample:
 		while mr.read():
 			# we don't want the SRS elements copied into the new sample.
 			if mr.atom_type in (b"SRSF", b"SRST"):
@@ -2882,7 +2879,7 @@ def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				crc = crc32(buff, crc) & 0xFFFFFFFF
 	mr.close()
 	
-	ofile = FileData(file_name=sample_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
@@ -2970,7 +2967,7 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		
 	return tracks
 
-def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	ar = AsfReader(AsfReadMode.SRS, path=srs)
 	padding_index = 0
@@ -2979,8 +2976,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	for track in tracks.values():
 		track.track_file.seek(0)
 	
-	sample_file = os.path.join(out_folder, srs_data.name)
-	with open(sample_file, "wb") as sample:
+	with open(out_file, "wb") as sample:
 		while ar.read():
 			# skip over our custom chunks in rebuild mode 
 			# (only read it in load mode)
@@ -3057,11 +3053,11 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	ar.close()
 	remove_spinner()	
 	
-	ofile = FileData(file_name=sample_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	fr = FlacReader(path=srs)
 	
@@ -3069,8 +3065,7 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 	for track in tracks.values():
 		track.track_file.seek(0)
 	
-	good_flac_file = os.path.join(out_folder, srs_data.name)
-	with open(good_flac_file, "wb") as flac:
+	with open(out_file, "wb") as flac:
 		srs_flac_blocks = 0
 		while fr.read():
 			assert not fr.read_done
@@ -3098,11 +3093,11 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 			assert fr.read_done
 	fr.close()
 	
-	ofile = FileData(file_name=good_flac_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
+def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	mr = Mp3Reader(path=srs)
 	
@@ -3111,8 +3106,7 @@ def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 		track.track_file.seek(0)
 	
 	main_data_written = False
-	good_mp3_file = os.path.join(out_folder, srs_data.name)
-	with open(good_mp3_file, "wb") as mp3:
+	with open(out_file, "wb") as mp3:
 		for block in mr.read():
 			if block.type in ("SRSF", "SRST", "SRSP"):
 				if not main_data_written:
@@ -3128,7 +3122,7 @@ def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_folder):
 				crc = crc32(data, crc)
 	mr.close()
 	
-	ofile = FileData(file_name=good_mp3_file)
+	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 

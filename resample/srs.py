@@ -33,10 +33,11 @@ import time
 import traceback
 
 import resample
-from rescene.utility import sep
 from resample.main import FileType, InvalidMatchOffset
 from resample import fpcalc
+from rescene.utility import sep
 from rescene.utility import raw_input, unicode
+from rescene.utility import create_temp_file_name, replace_result
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
 
@@ -258,9 +259,13 @@ def main(argv=None, no_exit=False):
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
 				return pexit(0, "\nOperation aborted.\n")
+			
+			srs_name_tmp = create_temp_file_name(srs_name)
 				
 			sample.create_srs(tracks, sample_file_data, sample_file, 
-			                  srs_name, options.big_file)
+			                  srs_name_tmp, options.big_file)
+			
+			replace_result(srs_name_tmp, srs_name)
 			
 			if no_exit:
 				# just print the file name from pyReScene Auto
@@ -373,8 +378,10 @@ def main(argv=None, no_exit=False):
 				pexit(1, "\nOperation aborted.\n")
 				
 			# 6) Recreate the sample
+			out_file = create_temp_file_name(result_file)
 			sfile = sample.rebuild_sample(srs_data, tracks, attachments, 
-										  srs, out_folder)
+										  srs, out_file)
+			
 			t1 = time.clock()
 			total = t1-t0
 			print("Rebuild Complete...           "
@@ -395,14 +402,44 @@ def main(argv=None, no_exit=False):
 				sep(sfile.size), sfile.crc32))
 			
 			if sfile.crc32 == srs_data.crc32:
+				replace_result(out_file, result_file)
 				print("\nSuccessfully rebuilt sample: %s" % srs_data.name)
 			else:
 				#TODO: try again with the correct interleaving for LOL samples
-				if not options.keep_reconstruction_failure and not is_music:
+				if not is_music:
 					print("This is a known issue for LOL xvid releases.")
 					# also for some DOCUMENT releases
-					print("Use -k to keep the result for investigation.")
-					os.unlink(result_file)
+					if not options.keep_reconstruction_failure:
+						print("Use -k to keep the result for investigation.")
+				if options.keep_reconstruction_failure:
+					if not is_music:
+						replace_result(out_file, result_file)
+					elif is_music:
+						m = os.path.normpath(os.path.realpath(movie))
+						r = os.path.normpath(os.path.realpath(result_file))
+						if m == r:
+							# always keep original track on retag failure
+							print("No replacing of source file for music.")
+							print("The .tmp file will be kept:")
+							print(os.path.basename(out_file))
+						else:
+							# only keep broken file if source isn't overwritten
+							replace_result(out_file, result_file)
+				else:
+					# delete reconstruction failure
+					if not is_music:
+						replace_result(out_file, result_file)
+						os.unlink(result_file)
+					elif is_music:
+						m = os.path.normpath(os.path.realpath(movie))
+						r = os.path.normpath(os.path.realpath(result_file))
+						if m == r:
+							# always keep original track on retag failure!
+							print("Music track not deleted!")
+						else:
+							replace_result(out_file, result_file)
+							os.unlink(result_file)
+					
 				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
 				pexit(5, msg)
 				

@@ -136,9 +136,8 @@ def fix_tagging(srs, output_dir, input_dir, always_yes):
 			raise ValueError("not found")
 	print("From %s" % musicf)
 	
-	# -k: keeps broken repair (not necessary for music)
 	out_location = os.path.join(output_dir, out_subfolder)
-	srs_parameters = [srs, musicf, "-o", out_location, "-k"]
+	srs_parameters = [srs, musicf, "-o", out_location]
 	if always_yes:
 		srs_parameters.append("-y")
 
