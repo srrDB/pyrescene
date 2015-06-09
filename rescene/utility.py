@@ -423,8 +423,18 @@ def replace_result(src, dest):
 	if os.path.isfile(src):
 		# delete previous file when it exists
 		if os.path.isfile(dest):
-			os.unlink(dest)
-		os.rename(src, dest)
+			try:
+				os.unlink(dest)
+			except OSError:
+				print("Two processes are now trying to delete the same file!")
+		# concurrency issue: it can fail here with a
+		# WindowsError/OSError when the other process made the file
+		try:
+			os.rename(src, dest)
+		except OSError:
+			print("Two processes are now trying to output the same file!")
+			print("This one lost...")
+			raise
 
 ###############################################################################
 
