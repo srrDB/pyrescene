@@ -767,6 +767,9 @@ def generate_srr(reldir, working_dir, options, mthread):
 					copied_files.append(os.path.join(dest_dir, 
 						os.path.basename(sample))[:-4] + ".srs")
 			except ValueError as e:
+				if is_music:
+					print("SRS creation failed for %s!" % 
+						os.path.basename(sample))
 				# do not keep txt files for empty files
 				if os.path.getsize(sample) > 0:
 					keep_txt = True
