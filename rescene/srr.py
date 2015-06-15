@@ -110,8 +110,8 @@ def display_info(srr_file):
 	if len(info["stored_files"]):
 		print("Stored files:")
 		for sfile in info["stored_files"].values():
-			print_size = "\t{0: >9}  ".format(sep(sfile.file_size))
-			print(print_size + encodeerrors(sfile.file_name, sys.stdout))
+			print("\t{0: >9}  {1}".format(sep(sfile.file_size),
+				encodeerrors(sfile.file_name, sys.stdout)))
 		print()
 		
 	if len(info["rar_files"]):
