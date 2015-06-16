@@ -982,7 +982,13 @@ def get_release_directories(path):
 			print(dirpath)
 			print(dirnames)
 			print(filenames)
-		if last_release in dirpath and last_release:
+		if (last_release in dirpath and last_release and 
+			# keep release names that start with the same string,
+			# so that they won't be skipped
+			# e.g.  ReleaseName-CUTG
+			#       ReleaseName-CUTGRP
+			# (subdirs have a separator more)
+			dirpath.rfind(os.sep) != last_release.rfind(os.sep)):
 			continue # subfolders of a found release
 		
 		if is_release(dirpath, dirnames, filenames):
