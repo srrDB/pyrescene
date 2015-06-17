@@ -26,11 +26,6 @@
 
 """
 This tool fixes the tags of music files.
-
-To do:
-	- error handling
-	  (Ctr+C when source == dest => broken 0 byte track)
-	- testing
 """
 
 from optparse import OptionParser
