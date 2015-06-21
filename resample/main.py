@@ -155,7 +155,7 @@ def get_file_type(ifile):
 		# (last 128 bytes of mp3 file)
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(-128, os.SEEK_END)
-			if ofile.read(3) == "TAG":
+			if ofile.read(3) == b"TAG":
 				return FileType.MP3
 		
 		return FileType.Unknown
