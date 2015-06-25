@@ -10,15 +10,17 @@
 General Information
 ===================
 
-  pyReScene is a port of ReScene .NET to the Python programming language.
+  pyReScene is a port of ReScene .NET to the Python programming language,
+but by now many new features, improvements and scripts have been added.
 ReScene is a mechanism for backing up and restoring the metadata from "scene" 
 released RAR files. RAR archive volumes are rebuild using the stored metadata 
 in the SRR file and the extracted files from the RAR archive. This process
 only worked on RAR files created with "Store" mode (otherwise known as 
 -m0 or No Compression), but since pyReScene version 0.4 this is also possible
 for various other compression settings. However, it is not guaranteed that
-reconstruction of compressed archives is always possible. pyReScene consists
-of multiple related tools and scripts.
+reconstruction of compressed archives is always possible. Also a handful of
+known bugs related to this still exist. pyReScene consists of multiple 
+related tools and scripts.
 
   pyReSample is a companion to ReScene. It does for samples what ReScene does 
 for RARs. You can use ReSample to build a blueprint of an AVI, MKV, MP4 or WMV
@@ -32,9 +34,11 @@ must be available in your path to use this feature. It can be downloaded from
 https://bitbucket.org/acoustid/chromaprint/downloads. This tool creates
 AcoustID music fingerprints. http://acoustid.org/chromaprint
 
-  pyReScene Auto makes it all a bit easier. One command to create an SRR file.
+  pyReScene Auto makes it all a bit easier: one command to create an SRR file.
 It does not require write access to the release directories and it can create
 SRR files of your whole collection!
+(Create and mount a private file share to force the read only behavior
+in Windows. This way you can be absolutely sure!)
 
   pyReScene Usenet is able to create SRR files from NZB files. It works by
 downloading only (parts of) the segments it needs for creating an SRR file.
@@ -67,7 +71,7 @@ Dependencies
 
 pyReScene requires Python 2.6, 2.7, or 3 to run. There are some executables
 made available for Windows users. fpcalc is necessary for creating 
-music SRS files. If you want to reconstruct compressed RAR volumes, 
+music SRS files. If you want to try reconstructing compressed RAR volumes, 
 you will need to obtain a couple of the shareware (Win)RAR packages.
 These files will need to be preprocessed by the bin/preprardir.py script.
 This script extracts the RAR executables from the archives and renames them
@@ -87,14 +91,14 @@ somewhere in your path. It will also work if you put it in the ./bin or
 Windows installation instructions
 =================================
 
-Install Python 3.3. Download it from http://www.activestate.com/activepython
+Install Python 3. Download it from http://www.activestate.com/activepython
 Install it to C:\Python33\ for example.
 
 Place the source somewhere on your hard disk. e.g. C:\pyReScene\
 
 Add the bin\windows directory to your path.
-  * Run add_to_path.bat that you can find in that directory.
-    It'll overwrite your USER path. (!= SYSTEM path and was empty for me)
+  * Run add_current_dir_to_path.bat that you can find in that directory.
+    It'll prepend your SYSTEM path.
   * Or add it manually: http://www.computerhope.com/issues/ch000549.htm
 
 Done! Now you will be able to call 'pyrescene' from any directory.

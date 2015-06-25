@@ -28,8 +28,6 @@ pyReScene
    contains new files. new in the sense of addition e.g. proof jpg
  - add a switch (like -z) for a single executable
  - add --broken-samples parameter (used with --list-releases option)
- - don't make SRR files disappear when no new one can be created
-   (fix this together with concurrency problem)
  - SRRs for extracted disk image files or burned to disk
     
 pyReSample
@@ -47,8 +45,6 @@ pyReSample
    (http://www.srrdb.com/release/details/Bobby.Deerfield.1977.DVDrip.XviD-DnB)
    "Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept 
    getting ... "Unable to extract correct amount of data for track 0. Aborting.
- - remove all tags if fpcalc fails and try again
-   (RIFF mp3 with ID3v2 tag?)
     
 General
 =======

@@ -27,6 +27,7 @@
 from distutils.core import setup
 from distutils.command.build_py import build_py
 import rescene
+import sys
 
 try:
 	import py2exe #@UnresolvedImport #@UnusedImport
@@ -83,7 +84,8 @@ config_dict = {
 		"bin/srs.py", 
 		"bin/pyrescene.py", 
 		"bin/preprardir.py",
-		"bin/retag.py"],
+		"bin/retag.py"
+	],
     "version": rescene.__version__,
     "description": "Python ReScene and ReSample implementation",
     "author": "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
@@ -117,7 +119,6 @@ released RAR files. RAR archive volumes are rebuild using the stored metadata
 in the SRR file and the extracted files from the RAR archive. 
 pyReScene consists of multiple related tools.
 """,
-
 	# http://www.py2exe.org/index.cgi/ListOfOptions
 	"options": {
 		'py2exe': {
@@ -128,7 +129,8 @@ pyReScene consists of multiple related tools.
 	},
 	# name of shared zipfile to generate
 	# None: the files will be bundled within the executable
-	"zipfile": "pyrescenelibrary.zip",
+	# Not .zip because someone extracted it...
+	"zipfile": "pyrescenelibrary.dat",
 	# targets to build
 	"console": [{
 		    'script': "bin/srr.py",
@@ -146,6 +148,10 @@ pyReScene consists of multiple related tools.
 		    'script': "bin/preprardir.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
 		},
+# 		{
+# 		    'script': "usenet/srr_usenet.py",
+# 		    'icon_resources': [(1, 'images/icon.ico')]
+# 		},
 		{
 		    'script': "bin/retag.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
@@ -172,6 +178,24 @@ def main():
 	$ python setup.py exe --path "usenet/srr_usenet.py"
 	"""
 		
+	if "py2exe" in sys.argv:	
+		# files to output in the dist dir with the executables
+		# http://www.py2exe.org/index.cgi/data_files
+		py2exe_data_files = [("", [
+			"bin/windows/add_current_dir_to_path.bat",
+			"bin/py2exe/shell_extension-setup.bat",
+			"bin/py2exe/shell_extension-srrit.bat",
+			"bin/py2exe/auto.bat",
+			"bin/py2exe/README.txt",
+			#"usenet/srr_usenet_template.cfg",
+			"README",
+			"NEWS",
+			"AUTHORS",
+		])]
+		config_dict['data_files'] = py2exe_data_files
+		
+		# TODO: pywin32 a required dependency?
+
 	setup(**config_dict)
 
 if __name__ == '__main__':

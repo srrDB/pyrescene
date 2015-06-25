@@ -1,4 +1,4 @@
-pyReScene 0.6
+pyReScene 0.6 (2015-07-14)
 =============
 
  * Python 3 support (thanks to vadmium)
@@ -10,7 +10,9 @@ pyReScene 0.6
  * pyReScene Auto: failed to create SRRs when 'subs' was found in file names
  * pyReScene Auto: --best option added (same as -c -s -v)
  * pyReScene Auto: includes images from Cover/Covers subfolders
- * pyReScene Auto: fewer .mp3.txt files
+ * pyReScene Auto: fewer .mp3.txt files (when ID3v1 tag is available at end)
+ * pyReScene Auto: skipping of known .log files didn't work (e.g. rushchk.log)
+ * pyReScene Auto: no empty error reports
  * pyReScene Auto: --skip (-x) and --skip-list options added
  * Resample: "ReSample .NET 1.3 Preview" fix: MKV header compression/stripping
  * ReSample: Faster AVI reconstruction times.
@@ -29,10 +31,13 @@ pyReScene 0.6
  * ReScene: -x and -d extracts to folder named after .srr in the output path
  * ReScene: Duplicate SFV lines won't include the RAR meta data twice.
  * ReScene: No crashes on RAR5 files. (but no support yet)
+ * ReScene: SFV files with only \r (MacOS) line endings work
  * ReTag: Script to fix the tagging of music files. (retag.py)
  * New script added to detect bad "samples" in SRR files. (srs_bad.py)
  * Scripts relocated and .bat files added for easy PATH inclusion in Windows.
  * awescript: Move proof images to Proof/ folder.
+ * Usenet: better error handling/prevention
+ * Lots of bug fixes/small improvements. (none related to compressed rars)
 
 pyReScene 0.5.1 (2013-07-14)
 ===============
