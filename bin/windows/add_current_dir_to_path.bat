@@ -1,6 +1,12 @@
+@setlocal enableextensions
+@cd /d "%~dp0"
 @echo off
 title pyReScene: adds current dir to path variable
 
+echo Administrator rights are required for this script to have effect.
+echo The current directory will be added to the system PATH:
+cd
+echo.
 set currentdir=%CD%
 call :addPath currentdir /B && echo pyReScene path added! || echo Path not added.
 pause
@@ -106,9 +112,11 @@ if not defined NotDelayed set "rtn=%rtn:!=^^^!%" !
 :: restore the % and " characters. Again the trailing ! is critical.
 for /f "usebackq tokens=1,2" %%A in ('%%^ ^"') do (
   endlocal & endlocal & endlocal & endlocal & endlocal
-  set "path=%rtn%" !
+  :: set "path=%rtn%" !
+  setx /M path "%rtn%"
 )
-exit /b 0
+::exit /b 0
+exit /b %errorlevel%
 
 ::The following can set the system variable PATH instead:
 ::setx /M path "%rtn%"
