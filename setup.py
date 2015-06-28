@@ -26,8 +26,9 @@
 
 from distutils.core import setup
 from distutils.command.build_py import build_py
-import rescene
+import os
 import sys
+import rescene
 
 try:
 	import py2exe #@UnresolvedImport #@UnusedImport
@@ -87,8 +88,8 @@ config_dict = {
 		"bin/retag.py"
 	],
     "version": rescene.__version__,
-    "description": "Python ReScene and ReSample implementation",
-    "author": "Gfy", # ~umlaut@adsl-66-136-81-22.dsl.rcsntx.swbell.net (umlaut)
+    "description": "Backup and restore scene release metadata",
+    "author": "Gfy",
     "author_email": "pyrescene@gmail.com",
     "url": "https://bitbucket.org/Gfy/pyrescene",
     "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads",
@@ -97,7 +98,7 @@ config_dict = {
 	            "avi", "mkv", "mp4", "wmv", "warez", "scene", "compressed",
 	            "mp3", "flac", "retag"],
     "classifiers": [
-		"Development Status :: 4 - Beta",
+		"Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.2",
@@ -107,17 +108,22 @@ config_dict = {
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
+# 		"License :: OSI Approved :: GNU General Public License v3"
+# 		" or later (GPLv3+)", # srr_usenet
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Topic :: System :: Archiving :: Backup",
+        "Topic :: Sociology :: History",
         "Topic :: Utilities"
     ], # http://pypi.python.org/pypi?:action=list_classifiers
     "long_description": """\
 pyReScene is a port of ReScene .NET to the Python programming language.
 ReScene is a mechanism for backing up and restoring the metadata from "scene" 
-released RAR files. RAR archive volumes are rebuild using the stored metadata 
+released RAR files. RAR archive volumes are rebuilt using the stored metadata 
 in the SRR file and the extracted files from the RAR archive. 
 pyReScene consists of multiple related tools.
+
+A detailed explanation can be found on http://rescene.wikidot.com/
 """,
 	# http://www.py2exe.org/index.cgi/ListOfOptions
 	"options": {
@@ -148,10 +154,10 @@ pyReScene consists of multiple related tools.
 		    'script': "bin/preprardir.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
 		},
-# 		{
-# 		    'script': "usenet/srr_usenet.py",
-# 		    'icon_resources': [(1, 'images/icon.ico')]
-# 		},
+		{
+		    'script': "usenet/srr_usenet.py",
+		    'icon_resources': [(1, 'images/icon.ico')]
+		},
 		{
 		    'script': "bin/retag.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
@@ -187,7 +193,7 @@ def main():
 			"bin/py2exe/shell_extension-srrit.bat",
 			"bin/py2exe/auto.bat",
 			"bin/py2exe/README.txt",
-			#"usenet/srr_usenet_template.cfg",
+			"usenet/srr_usenet_template.cfg",
 			"README",
 			"NEWS",
 			"AUTHORS",
@@ -195,6 +201,21 @@ def main():
 		config_dict['data_files'] = py2exe_data_files
 		
 		# TODO: pywin32 a required dependency?
+		
+	# Only for Python 2.6:
+	# ? UserDict      imported from rescene.ordereddict
+	# ? psyco         imported from yenc
+	# Optional dependencies for srr_usenet.py:
+	# ? _yenc         imported from yenc
+	# ? cElementTree  imported from pynzb.etree_nzb
+	# ? lxml          imported from pynzb.lxml_nzb
+	# Optional:
+	# ? _lzma         imported from lzma
+	# ? readline      imported from cmd, code, pdb
+
+	# make sure all the necessary files can be found
+	base = os.path.realpath(os.path.curdir)
+	sys.path.append(os.path.join(base, "usenet"))
 
 	setup(**config_dict)
 

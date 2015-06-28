@@ -116,9 +116,14 @@ Changelog version 1.4 (2012-10-24)
 Changelog version 1.5 (2013-03-17)
  - no separate 'srr_compressed_rars' output dir anymore
 
-Changelog version 1.6 (2014-09-..)
+Changelog version 1.6 (2014-09-06)
  - KeyError bug fixed (positive shift magic at the last segment of a file)
  - Handle server reply with body that just contains a dot
+ 
+Changelog version 1.7 (2015-06-28)
+ - Divide by zero error prevented
+ - Better error handling
+ - Handle capitalised extensions correctly
  
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
@@ -171,7 +176,7 @@ except: # Python 3
 
 import yenc
 import nzb_utils
-from os.path import abspath, join, dirname, basename,realpath
+from os.path import abspath, join, dirname, basename, realpath
 
 #from binascii import hexlify
 
@@ -183,7 +188,7 @@ from rescene import rar
 from rescene.utility import is_rar, parse_sfv_file
 from rescene.utility import basestring
 
-__version_info__ = ('1', '6')
+__version_info__ = ('1', '7')
 __version__ = '.'.join(__version_info__)
 
 EXTRA_SERVERS = [ # now in srr_usenet.cfg
@@ -1570,7 +1575,7 @@ if __name__ == '__main__':
 	                  action="store_true", dest="largeseg", default=False)
 	parser.add_option("-d", help="debug level Usenet server: 0-2", 
 	                  type="int", dest="nntp_debug_level", default=0)
-	cmd_folder = dirname(abspath(__file__))	
+	cmd_folder = dirname(abspath(sys.argv[0]))	
 	cfg_file = join(cmd_folder, "srr_usenet.cfg")
 	parser.add_option("-f", "--settings", "--config", 
 	                  help="path to the servers configuration file"
