@@ -506,14 +506,14 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 				# otherwise unrar will still extract the files,
 				# but it'll put them in the source folder
 				# this is never wanted (especially for RAR Subs/ folder!)
-				logging.error("Failed to create temp folder for vobsubs: {}"
+				logging.error("Failed to create temp folder for vobsubs: {0}"
 				              .format(dest))
 				continue
 			
 			# extract archives
 			success = extract_rar(unrar, fr, dest)
 			if not success: # probably too long paths issue
-				logging.error("Failed to unrar vobsubs: {}".format(fr))
+				logging.error("Failed to unrar vobsubs: {0}".format(fr))
 				continue
 			
 			# search for idx files and store their language info
@@ -620,10 +620,10 @@ def mk_long_dir(destination):
 
 def generate_srr(reldir, working_dir, options, mthread):
 	if os.listdir(working_dir) != []:
-		logging.warning("Failed to clean temp dir: {}".format(working_dir))
+		logging.warning("Failed to clean temp dir: {0}".format(working_dir))
 		# Cleaning can fail with PyPy and long dirs: create new working dir
 		working_dir = mkdtemp(prefix="SRR-", dir=options.temp_dir)
-		print("New temp dir: {}".format(working_dir))
+		print("New temp dir: {0}".format(working_dir))
 		
 	print(reldir)
 	relname = os.path.split(reldir)[1]
@@ -1255,7 +1255,7 @@ def main(argv=None):
 		print("The provided temporary directory does not exist.")
 		return 1 # failure
 	rescene.utility.temporary_directory = working_dir # for utility (fpcalc)
-	print("Temporary directory: {}".format(working_dir))
+	print("Temporary directory: {0}".format(working_dir))
 	
 	# SRR for vobsubs only. Only one file at a time; last file will be used.
 	if options.vobsubs:

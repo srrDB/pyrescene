@@ -237,10 +237,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		for efile, success in files:
 			file_name = efile[len(out_folder)+1:]
 			if success:
-				print("{}: extracted.".format(file_name))
+				print("{0}: extracted.".format(file_name))
 			else:
 				status = 1
-				print("{}: not extracted!".format(file_name), file=sys.stderr)
+				print("{0}: not extracted!".format(file_name), file=sys.stderr)
 		return status
 	elif options.store_files: # -s
 		mthread.set_messages([MsgCode.STORING])
