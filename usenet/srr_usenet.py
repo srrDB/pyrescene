@@ -805,10 +805,16 @@ class NNTPFile(io.IOBase):
 				# download not more data than necessary for RR meta data
 				if (be_efficient() and i == end_part and 
 					is_not_edge_segment(spart_nb)):
-					headers = self.server.head("<%s>" % message_id)[3]
+					result = self.server.head("<%s>" % message_id)
 					lines = 0 # 'Lines: 6103'
+					try: # Python 3
+						# [resp, ArticleInfo(number, message_id, lines)]
+						[_resp, [_article_number, _msg_id, lines]] = result
+						headers = lines
+					except ValueError: # Python < 3
+						headers = result[3]
 					for hline in headers:
-						match = re.match("Lines: (\d+)", hline, re.I)
+						match = re.match(b"Lines: (\d+)", hline, re.I)
 						if match:
 							lines = int(match.group(1))
 							break
