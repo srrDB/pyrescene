@@ -1001,8 +1001,8 @@ def get_release_directories(path):
 				yield last_release
 			
 # The_Guy_Game_USA_DVD9_XBOX-WoD: PART1/wod-guy.part001.sfv
-DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC|PART)_?\d$", re.IGNORECASE)
-RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC|PART)_?\d|(Vob)?Samples?|"
+DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC|PART)_?\d\d?$", re.IGNORECASE)
+RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC|PART)_?\d\d?|(Vob)?Samples?|"
 	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
 NOT_SCENE = ["motechnetfiles.nfo", "movie.nfo", "imdb.nfo", "scc.nfo"]
 
