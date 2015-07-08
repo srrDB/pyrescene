@@ -145,10 +145,19 @@ def display_info(srr_file):
 		print()
 
 def verify_extracted_files(srr, in_folder, auto_locate):
+	"""return codes:
+	0: everything verified successfully
+	1: corrupt file detected
+	2: the file was not found
+	10: it was a music release; nothing to verify
+	"""
 	status = 0
 	archived_files = rescene.info(srr)["archived_files"].values()
+	if len(archived_files) == 0:
+		status = 10  # it's a music release
 	for afile in archived_files:
-		if afile.crc32 != "00000000" and afile.crc32 != "0": # skip the directories and empty files
+		# skip the directories and empty files
+		if afile.crc32 != "00000000" and afile.crc32 != "0":
 			name = os.path.join(in_folder, afile.file_name)
 			if not os.path.exists(name):
 				if not auto_locate:
@@ -218,6 +227,8 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		s = verify_extracted_files(infiles[0], in_folder, options.auto_locate)
 		if s == 0:
 			print("All files OK!")
+		elif s == 10:
+			print("No RAR meta data found: nothing to verify.")
 		else:
 			print("Corrupt and/or missing files!")
 		return s
