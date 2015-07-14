@@ -69,7 +69,7 @@ from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from rescene.unrar import locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
-from resample.main import get_file_type, sample_class_factory
+from resample.main import file_type_info, sample_class_factory
 from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import create_temp_file_name, replace_result
@@ -906,7 +906,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 		for stored_file in copied_files:
 			if stored_file[-4:].lower() == ".srs":
 				try:
-					sample = sample_class_factory(get_file_type(stored_file))
+					sample = sample_class_factory(
+						file_type_info(stored_file).file_type)
 					srs_data, _tracks = sample.load_srs(stored_file)
 					# accept SRS if it isn't in the SFV
 					crc = int(crclist.get(srs_data.name.lower(), "-1"), 16)

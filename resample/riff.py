@@ -76,10 +76,11 @@ class RiffList(RiffChunk):
 class RiffReader(object):
 	"""Implements a simple Reader class that reads through AVI 
 	or AVI-SRS files one chunk at a time."""
-	def __init__(self, read_mode, path=None, stream=None, match_offset=0):
+	def __init__(self, read_mode, path=None, stream=None, match_offset=0,
+			archived_file_name=""):
 		if path:
 			if is_rar(path):
-				self._riff_stream = RarStream(path)
+				self._riff_stream = RarStream(path, archived_file_name)
 			else:
 				self._riff_stream = open(path, 'rb')
 		elif stream:

@@ -62,11 +62,12 @@ class MovReader(object):
 	or MP4-SRS files one atom/box at a time.
 	atom: QuickTime File Format
 	box: ISO/IEC 14496-12:2008"""
-	def __init__(self, read_mode, path=None, stream=None):
+	def __init__(self, read_mode, path=None, stream=None,
+			archived_file_name=""):
 		assert path or stream
 		if path:
 			if is_rar(path):
-				self._mov_stream = RarStream(path)
+				self._mov_stream = RarStream(path, archived_file_name)
 			else:
 				self._mov_stream = open(path, 'rb')
 		elif stream:

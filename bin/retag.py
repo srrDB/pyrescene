@@ -39,7 +39,7 @@ except ImportError:
 
 import rescene
 from resample.srs import main as srsmain
-from resample.main import get_file_type, sample_class_factory, FileType
+from resample.main import file_type_info, sample_class_factory, FileType
 
 class NoTaggingAvailable(Exception):
 	pass
@@ -142,7 +142,7 @@ def fix_tagging(srs, output_dir, input_dir, always_yes):
 	return True
 
 def get_srs_info(srs_file):
-	file_type = get_file_type(srs_file)
+	file_type = file_type_info(srs_file).file_type
 	if file_type not in (FileType.MP3, FileType.FLAC):
 		message = "Not a FLAC or MP3 music file: %s." % srs_file
 		raise NoTaggingAvailable(message)

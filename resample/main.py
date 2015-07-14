@@ -40,7 +40,7 @@ from zlib import crc32
 
 import resample
 
-from rescene import rarstream
+from rescene import rarstream, RarReader
 from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 
@@ -95,7 +95,18 @@ class FileType(object):
 	MKV, AVI, MP4, WMV, FLAC, MP3, M2TS, VOB, Unknown =  \
 		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "M2TS", "VOB", "Unknown")
 
-def get_file_type(ifile):
+	# the extensions that are supported
+	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv')
+	AudioExtensions = ('.mp3', '.flac')
+	
+	def __init__(self, file_type, archived_file):
+		self.file_type = file_type
+		self.archived_file = archived_file
+
+	def __str__(self, *args, **kwargs):
+		return self.file_type
+	
+def file_type_info(ifile):
 	"""Decide the type of file based on the magic marker"""
 	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eß£
 	MARKER_AVI = b"\x52\x49\x46\x46" # RIFF
@@ -106,59 +117,76 @@ def get_file_type(ifile):
 	MARKER_FLAC = b"\x66\x4C\x61\x43" # fLaC
 	MARKER_ID3 = b"\x49\x44\x33" # ID3 (MP3/FLAC file with an ID3v2 container) 
 	
+	archived_file_name = ""
+	
 	with open(ifile, 'rb') as ofile:
 		marker = ofile.read(14)
 		
 	# the file is too small (probably empty)
 	# don't let this function throw an error
 	if len(marker) < 14:
-		return FileType.Unknown
+		return FileType(FileType.Unknown, archived_file_name)
 		
 	if marker.startswith(MARKER_RAR):
-		# Read first file from the RAR archive
-		rs = rarstream.RarStream(ifile)
+		# Read first file from the RAR archives
+		rr = RarReader(ifile)
+		first_file = True
+		for archf in rr.list_files():
+			# use the first file with a supported file extension
+			# (skipping .srt and other encountered files)
+			extension = FileType.VideoExtensions + FileType.AudioExtensions
+			if archf.endswith(extension):
+				archived_file_name = archf  # first useful file
+				break
+			first_file = False
+		rr.close()
+
+		# first file from RAR is the default behavior: no message
+		if not first_file:
+			print("Using %s from first RAR." % archived_file_name)
+		rs = rarstream.RarStream(ifile, archived_file_name)
 		marker = rs.read(8)
 		rs.close()
 		
 	if marker.startswith(MARKER_MKV):
-		return FileType.MKV
+		return FileType(FileType.MKV, archived_file_name)
 	elif marker.startswith(MARKER_AVI):
 		# Some old .mp3 files use the RIFF container too
 		# e.g. (dj_tiesto_presents_allure)-we_ran_at_dawn_vinyl_djnl-bmi
 		if ifile.endswith(".mp3"):
-			return FileType.MP3
-		return FileType.AVI
+			return FileType(FileType.MP3, archived_file_name)
+		return FileType(FileType.AVI, archived_file_name)
 	if marker[4:].startswith(MARKER_MP4) or marker.startswith(MARKER_MP4_3GP):
 		# http://wiki.multimedia.cx/index.php?title=QuickTime_container
 		# Extensions: mov, qt, mp4, m4v, m4a, m4p, m4b, m4r, k3g, skm, 3gp, 3g2
-		return FileType.MP4
+		return FileType(FileType.MP4, archived_file_name)
 	elif marker.startswith(MARKER_WMV):
-		return FileType.WMV
+		return FileType(FileType.WMV, archived_file_name)
 	elif marker.startswith(MARKER_FLAC):
-		return FileType.FLAC
+		return FileType(FileType.FLAC, archived_file_name)
 	elif marker.startswith(MARKER_ID3):
 		# can be MP3 or FLAC
 		size = decode_id3_size(marker[6:10])
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(10 + size)
 			if ofile.read(4) == b"fLaC":
-				return FileType.FLAC
-		return FileType.MP3
+				return FileType(FileType.FLAC, archived_file_name)
+		return FileType(FileType.MP3, archived_file_name)
 	elif marker.startswith(b"SRSF"):
-		return FileType.MP3
+		return FileType(FileType.MP3, archived_file_name)
 	else:
 		(sync,) = BE_SHORT.unpack_from(marker, 0)
 		if sync & 0xFFE0 == 0xFFE0: # regular and valid mp3 music data start
-			return FileType.MP3
+			return FileType(FileType.MP3, archived_file_name)
 		
 		# last attempt to detect an MP3 file by using the ID3v1 tag
 		# (last 128 bytes of mp3 file)
 		with open(ifile, 'rb') as ofile:
 			ofile.seek(-128, os.SEEK_END)
 			if ofile.read(3) == b"TAG":
-				return FileType.MP3
+				return FileType(FileType.MP3, archived_file_name)
 		
-		return FileType.Unknown
+		return FileType(FileType.Unknown, archived_file_name)
 
 # SampleAttachmentInfo.cs -----------------------------------------------------
 class AttachmentData(object):
@@ -438,7 +466,7 @@ def read_fingerprint_data(track, data):
 	return track
 
 class ReSample(object):
-	pass
+	archived_file_name = ""
 
 def sample_class_factory(file_type):
 	"""Choose the right class based on the sample's file type."""
@@ -460,100 +488,100 @@ class AviReSample(ReSample):
 	file_type = FileType.AVI
 	
 	def profile_sample(self, *args, **kwargs):
-		return avi_profile_sample(*args, **kwargs)
+		return avi_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return avi_create_srs(*args, **kwargs)
+		return avi_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return avi_load_srs(*args, **kwargs)
+		return avi_load_srs(self, *args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		return avi_find_sample_streams(*args, **kwargs)
+		return avi_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return avi_extract_sample_streams(*args, **kwargs)
+		return avi_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return avi_rebuild_sample(*args, **kwargs)
+		return avi_rebuild_sample(self, *args, **kwargs)
 
 # MkvReSample.cs --------------------------------------------------------------
 class MkvReSample(ReSample):
 	file_type = FileType.MKV
 	
 	def profile_sample(self, *args, **kwargs):
-		return mkv_profile_sample(*args, **kwargs)
+		return mkv_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return mkv_create_srs(*args, **kwargs)
+		return mkv_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return mkv_load_srs(*args, **kwargs)		
+		return mkv_load_srs(self, *args, **kwargs)		
 	def find_sample_streams(self, *args, **kwargs):
-		return mkv_find_sample_streams(*args, **kwargs)
+		return mkv_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return mkv_extract_sample_streams(*args, **kwargs)
+		return mkv_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return mkv_rebuild_sample(*args, **kwargs)
+		return mkv_rebuild_sample(self, *args, **kwargs)
 
 class Mp4ReSample(ReSample):
 	file_type = FileType.MP4
 	
 	def profile_sample(self, *args, **kwargs):
-		return mp4_profile_sample(*args, **kwargs)
+		return mp4_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return mp4_create_srs(*args, **kwargs)
+		return mp4_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return mp4_load_srs(*args, **kwargs)
+		return mp4_load_srs(self, *args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		return mp4_find_sample_streams(*args, **kwargs)
+		return mp4_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return mp4_extract_sample_streams(*args, **kwargs)
+		return mp4_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return mp4_rebuild_sample(*args, **kwargs)
+		return mp4_rebuild_sample(self, *args, **kwargs)
 
 class WmvReSample(ReSample):
 	file_type = FileType.WMV
 	
 	def profile_sample(self, *args, **kwargs):
-		return wmv_profile_sample(*args, **kwargs)
+		return wmv_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return wmv_create_srs(*args, **kwargs)
+		return wmv_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return wmv_load_srs(*args, **kwargs)
+		return wmv_load_srs(self, *args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		return wmv_find_sample_streams(*args, **kwargs)
+		return wmv_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return wmv_extract_sample_streams(*args, **kwargs)
+		return wmv_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return wmv_rebuild_sample(*args, **kwargs)
+		return wmv_rebuild_sample(self, *args, **kwargs)
 
 class FlacReSample(ReSample):
 	file_type = FileType.FLAC
 	
 	def profile_sample(self, *args, **kwargs):
-		return flac_profile_sample(*args, **kwargs)
+		return flac_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return flac_create_srs(*args, **kwargs)
+		return flac_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return flac_load_srs(*args, **kwargs)
+		return flac_load_srs(self, *args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		return flac_find_sample_streams(*args, **kwargs)
+		return flac_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return flac_extract_sample_streams(*args, **kwargs)
+		return flac_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return flac_rebuild_sample(*args, **kwargs)
+		return flac_rebuild_sample(self, *args, **kwargs)
 	
 class Mp3ReSample(ReSample):
 	file_type = FileType.MP3
 	
 	def profile_sample(self, *args, **kwargs):
-		return mp3_profile_sample(*args, **kwargs)
+		return mp3_profile_sample(self, *args, **kwargs)
 	def create_srs(self, *args, **kwargs):
-		return mp3_create_srs(*args, **kwargs)
+		return mp3_create_srs(self, *args, **kwargs)
 	def load_srs(self, *args, **kwargs):
-		return mp3_load_srs(*args, **kwargs)
+		return mp3_load_srs(self, *args, **kwargs)
 	def find_sample_streams(self, *args, **kwargs):
-		return mp3_find_sample_streams(*args, **kwargs)
+		return mp3_find_sample_streams(self, *args, **kwargs)
 	def extract_sample_streams(self, *args, **kwargs):
-		return mp3_extract_sample_streams(*args, **kwargs)
+		return mp3_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
-		return mp3_rebuild_sample(*args, **kwargs)
+		return mp3_rebuild_sample(self, *args, **kwargs)
 	
-def avi_load_srs(infile):
+def avi_load_srs(self, infile):
 	tracks = {}
 	rr = RiffReader(RiffReadMode.SRS, infile)
 	done = False
@@ -578,7 +606,7 @@ def avi_load_srs(infile):
 	rr.close()
 	return srs_data, tracks
 
-def mkv_load_srs(infile):
+def mkv_load_srs(self, infile):
 	tracks = {}
 # 	srs_data = None
 	er = EbmlReader(EbmlReadMode.SRS, infile)
@@ -630,7 +658,7 @@ def mkv_load_srs(infile):
 	er.close()
 	return srs_data, tracks
 
-def mp4_load_srs(infile):
+def mp4_load_srs(self, infile):
 	tracks = {}
 	mr = MovReader(MovReadMode.SRS, infile)
 	while mr.read():
@@ -646,7 +674,7 @@ def mp4_load_srs(infile):
 	mr.close()
 	return srs_data, tracks
 
-def wmv_load_srs(infile):
+def wmv_load_srs(self, infile):
 	tracks = {}
 	ar = AsfReader(AsfReadMode.SRS, infile)
 	while ar.read():
@@ -665,7 +693,7 @@ def wmv_load_srs(infile):
 	ar.close()
 	return srs_data, tracks
 
-def flac_load_srs(infile):
+def flac_load_srs(self, infile):
 	tracks = {}
 	fr = FlacReader(infile)
 	while(fr.read()):
@@ -685,7 +713,7 @@ def flac_load_srs(infile):
 	fr.close()
 	return srs_data, tracks
 
-def mp3_load_srs(infile):
+def mp3_load_srs(self, infile):
 	tracks = {}
 	mr = Mp3Reader(infile)
 	for block in mr.read():
@@ -699,7 +727,7 @@ def mp3_load_srs(infile):
 	mr.close()
 	return srs_data, tracks
 
-def avi_profile_sample(avi_data): # FileData object
+def avi_profile_sample(self, avi_data): # FileData object
 	tracks = {}
 	attachments = {} # not used for AVI
 	
@@ -794,7 +822,7 @@ def avi_profile_sample(avi_data): # FileData object
 	
 	return tracks, attachments
 
-def mkv_profile_sample(mkv_data): # FileData object
+def mkv_profile_sample(self, mkv_data): # FileData object
 	"""
 	* EBML Header [header|content]  \__full file size
 	* Segment     [header|content]  /
@@ -987,7 +1015,8 @@ def mkv_profile_sample(mkv_data): # FileData object
 	
 	return tracks, attachments
 
-def profile_mp4(mp4_data, calculate_crc32=True): # FileData object
+def profile_mp4(mp4_data,  # FileData object
+		calculate_crc32=True, archived_file_name):
 	"""Reads the necessary track header data 
 	and constructs track signatures
 	
@@ -999,7 +1028,8 @@ def profile_mp4(mp4_data, calculate_crc32=True): # FileData object
 	current_track = None
 	mp4_data.crc32 = 0x0 # start value CRC 
 	track_processed = False
-	mr = MovReader(MovReadMode.Sample, mp4_data.name)
+	mr = MovReader(MovReadMode.Sample, mp4_data.name,
+		archived_file_name=archived_file_name)
 	while mr.read():
 		a = mr.current_atom
 		atype = mr.atom_type
@@ -1123,8 +1153,9 @@ def stsc(samples_chunk):
 		index += 1
 	return new
 		
-def mp4_profile_sample(mp4_data):
-	tracks = profile_mp4(mp4_data, calculate_crc32=True)
+def mp4_profile_sample(self, mp4_data):
+	tracks = profile_mp4(mp4_data, calculate_crc32=True,
+		archived_file_name=self.archived_file_name)
 	# everything except stream data that will be removed
 	total_size = mp4_data.other_length
 	for _, track in tracks.items():
@@ -1200,7 +1231,7 @@ def mp4_signature_bytes(track, mp4_file):
 			return signature_bytes
 	return signature_bytes
 
-def profile_wmv(wmv_data): # FileData object
+def profile_wmv(self, wmv_data): # FileData object
 	"""Reads the necessary track header data 
 	and constructs track signatures"""
 	tracks = odict()
@@ -1316,7 +1347,7 @@ def profile_wmv(wmv_data): # FileData object
 	remove_spinner()
 	return tracks
 	
-def wmv_profile_sample(wmv_data):	
+def wmv_profile_sample(self, wmv_data):	
 	tracks = profile_wmv(wmv_data)
 	
 	# everything except stream data that will be removed
@@ -1359,7 +1390,7 @@ def wmv_profile_sample(wmv_data):
 	
 	return tracks, {} #attachments
 
-def flac_profile_sample(flac_data): # FileData object
+def flac_profile_sample(self, flac_data):  # FileData object
 	tracks = {}
 	flac_data.crc32 = 0x0 # start value crc
 	meta_length = 0
@@ -1441,7 +1472,7 @@ def flac_profile_sample(flac_data): # FileData object
 		pass
 	return tracks, {}
 
-def mp3_profile_sample(mp3_data): # FileData object
+def mp3_profile_sample(self, mp3_data):  # FileData object
 	tracks = {}
 	mp3_data.crc32 = 0x0 # start value crc
 	meta_length = 0
@@ -1513,7 +1544,7 @@ def mp3_profile_sample(mp3_data): # FileData object
 		pass
 	return tracks, {}
 
-def avi_create_srs(tracks, sample_data, sample, srs, big_file):
+def avi_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		rr = RiffReader(RiffReadMode.AVI, sample)
 		while(rr.read()):
@@ -1554,7 +1585,7 @@ def avi_create_srs(tracks, sample_data, sample, srs, big_file):
 					srsf.write(S_BYTE.pack(rr.padding_byte))
 		rr.close()
 
-def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
+def mkv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		er = EbmlReader(EbmlReadMode.MKV, sample)
 		while(er.read()):
@@ -1606,7 +1637,7 @@ def mkv_create_srs(tracks, sample_data, sample, srs, big_file):
 				srsf.write(er.read_contents())
 		er.close()
 
-def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
+def mp4_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as movf:
 		mr = MovReader(MovReadMode.MP4, sample)
 		while(mr.read()):
@@ -1634,7 +1665,7 @@ def mp4_create_srs(tracks, sample_data, sample, srs, big_file):
 				movf.write(mr.read_contents())
 		mr.close()
 			
-def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
+def wmv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		ar = AsfReader(AsfReadMode.WMV, sample)
 		while(ar.read()):
@@ -1692,7 +1723,7 @@ def wmv_create_srs(tracks, sample_data, sample, srs, big_file):
 				srsf.write(ar.read_contents())
 		ar.close()
 
-def flac_create_srs(tracks, sample_data, sample, srs, big_file):
+def flac_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as flacf:
 		fr = FlacReader(sample)
 		while(fr.read()):
@@ -1719,7 +1750,7 @@ def flac_create_srs(tracks, sample_data, sample, srs, big_file):
 				flacf.write(fr.read_contents())
 		fr.close()
 		
-def mp3_create_srs(tracks, sample_data, sample, srs, big_file):
+def mp3_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as mp3f:
 		mr = Mp3Reader(sample)
 		for block in mr.read():
@@ -1738,8 +1769,9 @@ def mp3_create_srs(tracks, sample_data, sample, srs, big_file):
 				mp3f.write(mr.read_contents())
 		mr.close()
 		
-def avi_find_sample_streams(tracks, main_avi_file):
-	rr = RiffReader(RiffReadMode.AVI, main_avi_file)
+def avi_find_sample_streams(self, tracks, main_avi_file):
+	rr = RiffReader(RiffReadMode.AVI, main_avi_file,
+		archived_file_name=self.archived_file_name)
 	block_count = 0
 	done = False
 	
@@ -1840,8 +1872,9 @@ def _avi_normal_chunk_find(tracks, rr, block_count, done):
 	
 	return tracks, block_count, done
 	
-def mkv_find_sample_streams(tracks, main_mkv_file):
-	er = EbmlReader(EbmlReadMode.MKV, main_mkv_file)
+def mkv_find_sample_streams(self, tracks, main_mkv_file):
+	er = EbmlReader(EbmlReadMode.MKV, main_mkv_file,
+		archived_file_name=self.archived_file_name)
 	cluster_count = 0
 	done = False
 	current_track_nb = 0
@@ -2147,9 +2180,10 @@ class TrackChunk(object):
 			sample_sum += sample
 		return count
 
-def mp4_find_sample_streams(tracks, main_mp4_file):
+def mp4_find_sample_streams(self, tracks, main_mp4_file):
 	mtracks = profile_mp4(FileData(file_name=main_mp4_file),
-	                      calculate_crc32=False)
+	                      calculate_crc32=False,
+	                      archived_file_name=self.archived_file_name)
 	
 	# check for each movie track if it contains the sample data
 	for mtrack in mtracks.values():
@@ -2166,8 +2200,9 @@ def mp4_find_sample_streams(tracks, main_mp4_file):
 			continue
 	return tracks
 
-def wmv_find_sample_streams(tracks, main_wmv_file):
-	ar = AsfReader(AsfReadMode.WMV, main_wmv_file)
+def wmv_find_sample_streams(self, tracks, main_wmv_file):
+	ar = AsfReader(AsfReadMode.WMV, main_wmv_file,
+		archived_file_name=self.archived_file_name)
 	done = False
 	while ar.read() and not done:
 		o = ar.current_object
@@ -2290,8 +2325,8 @@ def wmv_find_sample_streams(tracks, main_wmv_file):
 	
 	return tracks
 
-def flac_find_sample_streams(tracks, main_flac_file):
-	fr = FlacReader(main_flac_file)
+def flac_find_sample_streams(self, tracks, main_flac_file):
+	fr = FlacReader(main_flac_file, archived_file_name=self.archived_file_name)
 	while fr.read():
 		assert not fr.read_done
 		if fr.current_block.is_frame_data():
@@ -2319,8 +2354,8 @@ def flac_find_sample_streams(tracks, main_flac_file):
 
 	return tracks
 
-def mp3_find_sample_streams(tracks, main_mp3_file):
-	mr = Mp3Reader(main_mp3_file)
+def mp3_find_sample_streams(self, tracks, main_mp3_file):
+	mr = Mp3Reader(main_mp3_file, archived_file_name=self.archived_file_name)
 	for block in mr.read():
 		if block.type in ("MP3", "fLaC"):
 			track = tracks[1]
@@ -2347,7 +2382,7 @@ def mp3_find_sample_streams(tracks, main_mp3_file):
 
 	return tracks
 
-def avi_extract_sample_streams(tracks, movie):
+def avi_extract_sample_streams(self, tracks, movie):
 	# search for first match offset (possibly skipping some parsing)
 	start_offset = 2 ** 63 # long.MaxValue + 1
 	for track in tracks.values():
@@ -2356,7 +2391,8 @@ def avi_extract_sample_streams(tracks, movie):
 
 	try:
 		rr = RiffReader(RiffReadMode.AVI, movie,
-		                match_offset=start_offset)
+		                match_offset=start_offset,
+		                archived_file_name=self.archived_file_name)
 	except InvalidMatchOffsetException as ex:
 		raise InvalidMatchOffset(format(ex))
 	
@@ -2422,8 +2458,9 @@ def _avi_normal_chunk_extract(tracks, rr, block_count, done):
 	
 	return tracks, block_count, done	
 
-def mkv_extract_sample_streams(tracks, movie):
-	er = EbmlReader(EbmlReadMode.MKV, movie)
+def mkv_extract_sample_streams(self, tracks, movie):
+	er = EbmlReader(EbmlReadMode.MKV, movie,
+		archived_file_name=self.archived_file_name)
 	
 	# search for first offset so we can skip unnecessary clusters later on
 	start_offset = 2 ** 63 # long.MaxValue + 1
@@ -2563,9 +2600,10 @@ def _mkv_block_extract(tracks, tracksMain, er, done):
 		
 	return done
 
-def mp4_extract_sample_streams(tracks, main_mp4_file):
+def mp4_extract_sample_streams(self, tracks, main_mp4_file):
 	mtracks = profile_mp4(FileData(file_name=main_mp4_file),
-	                      calculate_crc32=False)
+	                      calculate_crc32=False,
+	                      archived_file_name=self.archived_file_name)
 	
 	for track_nb, track in tracks.items():
 		mtrack = mtracks[track_nb]
@@ -2592,8 +2630,9 @@ def mp4_extract_sample_stream(track, mtrack, main_mp4_file):
 	mtrack.trackstream.stream.close()
 	return track
 
-def wmv_extract_sample_streams(tracks, main_wmv_file):
-	ar = AsfReader(AsfReadMode.Sample, main_wmv_file)
+def wmv_extract_sample_streams(self, tracks, main_wmv_file):
+	ar = AsfReader(AsfReadMode.Sample, main_wmv_file,
+		archived_file_name=self.archived_file_name)
 	
 	# search for first match offset
 	start_offset = 2 ** 63 # long.MaxValue + 1
@@ -2683,8 +2722,8 @@ def wmv_extract_sample_streams(tracks, main_wmv_file):
 	
 	return tracks, {} #attachments
 	
-def flac_extract_sample_streams(tracks, main_flac_file):
-	fr = FlacReader(main_flac_file)
+def flac_extract_sample_streams(self, tracks, main_flac_file):
+	fr = FlacReader(main_flac_file, archived_file_name=self.archived_file_name)
 	while fr.read():
 		if fr.current_block.is_frame_data():
 			track = tracks[1]
@@ -2696,8 +2735,8 @@ def flac_extract_sample_streams(tracks, main_flac_file):
 
 	return tracks, {}
 
-def mp3_extract_sample_streams(tracks, main_mp3_file):
-	mr = Mp3Reader(main_mp3_file)
+def mp3_extract_sample_streams(self, tracks, main_mp3_file):
+	mr = Mp3Reader(main_mp3_file, archived_file_name=self.archived_file_name)
 	for block in mr.read():
 		if block.type in ("MP3", "fLaC"):
 			track = tracks[1]
@@ -2709,7 +2748,7 @@ def mp3_extract_sample_streams(tracks, main_mp3_file):
 
 	return tracks, {}
 	
-def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def avi_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	rr = RiffReader(RiffReadMode.SRS, path=srs)
 	
@@ -2764,7 +2803,7 @@ def avi_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	rr.close()
 	return ofile
 
-def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def mkv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	er = EbmlReader(EbmlReadMode.SRS, path=srs)
 	
@@ -2841,7 +2880,7 @@ def mkv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def mp4_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def mp4_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	
 	tracks = profile_mp4_srs(srs, tracks)
@@ -2967,7 +3006,7 @@ def profile_mp4_srs(srs, tracks): #XXX: copy paste edit from other function
 		
 	return tracks
 
-def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def wmv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	ar = AsfReader(AsfReadMode.SRS, path=srs)
 	padding_index = 0
@@ -3057,7 +3096,7 @@ def wmv_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def flac_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	fr = FlacReader(path=srs)
 	
@@ -3097,7 +3136,7 @@ def flac_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
 	ofile.crc32 = crc & 0xFFFFFFFF
 	return ofile
 
-def mp3_rebuild_sample(srs_data, tracks, attachments, srs, out_file):
+def mp3_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	mr = Mp3Reader(path=srs)
 	

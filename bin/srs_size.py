@@ -33,7 +33,7 @@ try:
 except ImportError:
 	pass
 
-from resample.main import get_file_type, sample_class_factory
+from resample.main import file_type_info, sample_class_factory
 from rescene.utility import sep
 			
 def main(options, args):
@@ -41,7 +41,7 @@ def main(options, args):
 		for sfile in filenames:
 			if sfile[-4:].lower() == ".srs":
 				f = os.path.join(dirpath, sfile)
-				sample = sample_class_factory(get_file_type(f))
+				sample = sample_class_factory(file_type_info(f).file_type)
 				srs_data, _tracks = sample.load_srs(f)
 				if srs_data.size > int(options.size):
 					print(f)

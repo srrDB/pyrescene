@@ -76,11 +76,11 @@ class Block(object):
 class Mp3Reader(object):
 	"""Implements a simple Reader class that reads through MP3 
 	or MP3-SRS files one block at a time."""
-	def __init__(self, path=None, stream=None):
+	def __init__(self, path=None, stream=None, archived_file_name=""):
 		assert path or stream
 		if path:
 			if is_rar(path):
-				self._mp3_stream = RarStream(path)
+				self._mp3_stream = RarStream(path, archived_file_name)
 			else:
 				self._mp3_stream = open(path, 'rb')
 		elif stream:

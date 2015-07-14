@@ -36,7 +36,7 @@ except ImportError:
 	pass
 
 from rescene.main import info, extract_files
-from resample.main import get_file_type, sample_class_factory, FileType
+from resample.main import file_type_info, sample_class_factory, FileType
 from rescene.utility import empty_folder
 			
 def main(options, args):
@@ -71,7 +71,7 @@ def handle_srr(srr_file, options, temporary_directory):
 			fn = basename(value.file_name)
 			if fn.endswith(".srs"):
 				srsf = join(temporary_directory, fn)
-				ft = get_file_type(srsf)
+				ft = file_type_info(srsf).file_type
 				if ft not in [FileType.MP3, FileType.FLAC]:
 					sample = sample_class_factory(ft)
 					_srs_data, tracks = sample.load_srs(srsf)
