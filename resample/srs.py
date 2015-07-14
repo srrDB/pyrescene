@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012-2013 pyReScene
+# Copyright (c) 2012-201% pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,6 +33,7 @@ import time
 import traceback
 
 import resample
+from resample import file_type_info
 from resample.main import FileType, InvalidMatchOffset
 from resample import fpcalc
 from rescene.utility import sep
@@ -155,7 +156,7 @@ def main(argv=None, no_exit=False):
 		for ifile in args:
 			msg = ""
 			if os.path.exists(ifile):
-				ftype = resample.get_file_type(ifile)
+				ftype = file_type_info(ifile).file_type
 				# check if we already have the type of the first argument
 				ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
 				if ftype == resample.FileType.Unknown:
@@ -238,8 +239,10 @@ def main(argv=None, no_exit=False):
 			if options.check: # main AVI, MKV,... file to check against
 				print("Checking that sample exists "
 				      "in the specified full file...")
-				if resample.get_file_type(options.check) != sample.file_type:
+				main_file_info = file_type_info(options.check)
+				if main_file_info.file_type != sample.file_type:
 					pexit(1, "Sample and -c file not the same format.\n")
+				sample.archived_file_name = main_file_info.archived_file
 				tracks = sample.find_sample_streams(tracks, options.check)
 				
 				for track in list(tracks.values()):
@@ -309,8 +312,10 @@ def main(argv=None, no_exit=False):
 			srs = args[0]
 			movie = args[1]
 			# should be the same as srs type
-			movie_type = resample.get_file_type(movie)
+			main_file_info = file_type_info(movie)
+			movie_type = main_file_info.file_type
 			movi = resample.sample_class_factory(movie_type)
+			movi.archived_file_name = main_file_info.archived_file
 			
 			out_folder = "." # current directory
 			if options.output_dir:
@@ -471,6 +476,10 @@ def main(argv=None, no_exit=False):
 		else:
 			traceback.print_exc()
 			pexit(99, "Unexpected Error:\n%s\n" % err)
+	except OSError as err:
+		# output file already locked by another process
+		print("The output file has been locked by another application?")
+		pexit(7, str(err))
 	except Exception as err:
 		traceback.print_exc()
 		pexit(99, "Unexpected Error:\n%s\n" % err)

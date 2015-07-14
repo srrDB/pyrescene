@@ -427,13 +427,19 @@ def replace_result(src, dest):
 				os.unlink(dest)
 			except OSError:
 				print("Two processes are now trying to delete the same file!")
+				if _DEBUG:
+					print("  Destination: {0}".format(dest))
 		# concurrency issue: it can fail here with a
 		# WindowsError/OSError when the other process made the file
 		try:
 			os.rename(src, dest)
 		except OSError:
 			print("Two processes are now trying to output the same file!")
-			print("This one lost...")
+			if _DEBUG:
+				print("  Source: {0}".format(src))
+				print("  Destination: {0}".format(dest))
+			print("This one lost... deleting temp file.")
+			os.unlink(src)
 			raise
 
 ###############################################################################

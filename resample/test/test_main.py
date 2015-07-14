@@ -34,7 +34,7 @@ import struct
 import sys
 from os import SEEK_CUR
 
-from resample.main import get_file_type, stsc, FileType, sample_class_factory
+from resample.main import file_type_info, stsc, FileType, sample_class_factory
 from resample.main import profile_wmv, FileData
 from resample import asf
 import resample.srs
@@ -54,7 +54,7 @@ class TestGetFileType(unittest.TestCase):
 		f.write(b"\x1A\x45\xDF\xA3\x93\x42\x82\x88"
 		        b"\x6D\x61\x74\x72\x6F\x73\x6B\x61\x42")
 		f.close()
-		self.assertEqual(FileType.MKV, get_file_type(f.name))
+		self.assertEqual(FileType.MKV, file_type_info(f.name).file_type)
 		os.unlink(f.name)
 		
 	def test_avi(self):
@@ -62,7 +62,7 @@ class TestGetFileType(unittest.TestCase):
 		f.write(b"\x52\x49\x46\x46\x10\xF6\x6E\x01"
 		        b"\x41\x56\x49\x20\x4C\x49\x53\x54\x7E")
 		f.close()
-		self.assertEqual(FileType.AVI, get_file_type(f.name))
+		self.assertEqual(FileType.AVI, file_type_info(f.name).file_type)
 		os.unlink(f.name)
 		
 	def test_mp4(self):
@@ -70,7 +70,7 @@ class TestGetFileType(unittest.TestCase):
 		f.write(b"\x00\x00\x00\x18\x66\x74\x79\x70"
 		        b"\x6D\x70\x34\x31\x00\x00\x00\x00\x6D")
 		f.close()
-		self.assertEqual(FileType.MP4, get_file_type(f.name))
+		self.assertEqual(FileType.MP4, file_type_info(f.name).file_type)
 		os.unlink(f.name)
 		
 	def test_wmv(self):
@@ -78,7 +78,7 @@ class TestGetFileType(unittest.TestCase):
 		f.write(b"\x30\x26\xB2\x75\x8E\x66\xCF\x11"
 		        b"\xA6\xD9\x00\xAA\x00\x62\xCE\x6C")
 		f.close()
-		self.assertEqual(FileType.WMV, get_file_type(f.name))
+		self.assertEqual(FileType.WMV, file_type_info(f.name).file_type)
 		os.unlink(f.name)
 		
 class TestStsc(unittest.TestCase):
@@ -232,7 +232,7 @@ class TestLoad(TempDirTest):
 			packed_name=srs)
 		self.assertTrue(success)
 		
-		ftype = get_file_type(srs)
+		ftype = file_type_info(srs).file_type
 		self.assertEqual(FileType.AVI, ftype)
 		
 		sample = sample_class_factory(ftype)

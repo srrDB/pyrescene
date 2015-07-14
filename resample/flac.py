@@ -67,11 +67,11 @@ class Block(object):
 class FlacReader(object):
 	"""Implements a simple Reader class that reads through FLAC  
 	or FLAC-SRS files one block at a time."""
-	def __init__(self, path=None, stream=None):
+	def __init__(self, path=None, stream=None, archived_file_name=""):
 		assert path or stream
 		if path:
 			if is_rar(path):
-				self._flac_stream = RarStream(path)
+				self._flac_stream = RarStream(path, archived_file_name)
 			else:
 				self._flac_stream = open(path, 'rb')
 		elif stream:

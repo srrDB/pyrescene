@@ -231,7 +231,8 @@ class EbmlID(object):
 class EbmlReader(object):
 	"""Implements a simple Reader class that reads through MKV or 
 	MKV-SRS files one element at a time."""
-	def __init__(self, read_mode, path=None, stream=None):
+	def __init__(self, read_mode, path=None, stream=None,
+			archived_file_name=""):
 		assert path or stream
 		self.element_header = b"" # 12 bytes
 		
@@ -244,7 +245,7 @@ class EbmlReader(object):
 		
 		if path:
 			if is_rar(path):
-				self._ebml_stream = RarStream(path)
+				self._ebml_stream = RarStream(path, archived_file_name)
 			else:
 				self._ebml_stream = open(path, 'rb')
 		elif stream:

@@ -72,11 +72,12 @@ class Object(object):
 class AsfReader(object):
 	"""Implements a simple Reader class that reads through WMV 
 	or WMV-SRS files one Object at a time."""
-	def __init__(self, read_mode, path=None, stream=None):
+	def __init__(self, read_mode, path=None, stream=None,
+			archived_file_name=""):
 		assert path or stream
 		if path:
 			if is_rar(path):
-				self._asf_stream = RarStream(path)
+				self._asf_stream = RarStream(path, archived_file_name)
 			else:
 				self._asf_stream = open(path, 'rb')
 		elif stream:
