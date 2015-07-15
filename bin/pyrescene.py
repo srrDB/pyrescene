@@ -632,6 +632,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	else:
 		srr_directory = options.output_dir
 	srr = os.path.join(srr_directory, relname + ".srr")
+	tmp_srr_name = create_temp_file_name(srr)
 		
 	# speedup: don't do stuff when we don't overwrite an existing SRR anyway
 	if options.always_no and os.path.exists(srr):
@@ -646,24 +647,23 @@ def generate_srr(reldir, working_dir, options, mthread):
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
-			tmp_srr_name = create_temp_file_name(srr)
 			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
 			                            options.compressed,
 									    tmp_srr_name=tmp_srr_name)
-			replace_result(tmp_srr_name, srr)
 			# when the user decides not to overwrite an existing SRR
 			if not result:
 				return False
 		except IOError:
 			print("Read error. DVD disk unreadable? Try again!")
 			try:
-				os.unlink(srr)
+				os.unlink(tmp_srr_name)
 			except OSError:
 				pass
 			return False
 		except KeyboardInterrupt as e:
+			# always deletes the temp file here
 			if e.message != "DONT_DELETE":
-				os.unlink(srr)
+				os.unlink(tmp_srr_name)
 			raise
 		except FileNotFound as e:
 			# rescene doesn't leave a half finished file
@@ -673,7 +673,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 			# e.g. 0 byte RAR file
 			# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
 			try:
-				os.unlink(srr)
+				os.unlink(tmp_srr_name)
 			except: # WindowsError
 				pass
 			print(e)
@@ -683,7 +683,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 		return False
 	
 	# remove all stored files so we can add them all in the right order again
-	rescene.remove_stored_files(srr, rescene.info(srr)["stored_files"])
+	rescene.remove_stored_files(tmp_srr_name,
+		rescene.info(tmp_srr_name)["stored_files"])
 	
 	# copy all files to store to the working dir + their paths
 	copied_files = []
@@ -782,7 +783,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 					# do cleanup
 					sys.stderr.close()
 					sys.stderr = original_stderr
-					os.unlink(srr)
+					os.unlink(tmp_srr_name)
 					empty_folder(working_dir)
 					raise ExecutableNotFound("Please put the fpcalc "
 						"executable in your path.")
@@ -944,7 +945,9 @@ def generate_srr(reldir, working_dir, options, mthread):
 	
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
-	rescene.add_stored_files(srr, copied_files, working_dir, True, False)
+	rescene.add_stored_files(
+		tmp_srr_name, copied_files, working_dir, True, False)
+	replace_result(tmp_srr_name, srr)
 
 	try:
 		empty_folder(working_dir)
