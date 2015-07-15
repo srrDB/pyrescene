@@ -1016,9 +1016,8 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 	return tracks, attachments
 
 def profile_mp4(mp4_data,  # FileData object
-		calculate_crc32=True, archived_file_name):
-	"""Reads the necessary track header data 
-	and constructs track signatures
+		calculate_crc32=True, archived_file_name=""):
+	"""Reads the necessary track header data and constructs track signatures
 	
 	Having calculate_crc32 set to True isn't necessary when profiling
 	a main movie file."""
@@ -1026,7 +1025,7 @@ def profile_mp4(mp4_data,  # FileData object
 	
 	meta_length = 0
 	current_track = None
-	mp4_data.crc32 = 0x0 # start value CRC 
+	mp4_data.crc32 = 0x0  # start value CRC 
 	track_processed = False
 	mr = MovReader(MovReadMode.Sample, mp4_data.name,
 		archived_file_name=archived_file_name)
@@ -1035,11 +1034,11 @@ def profile_mp4(mp4_data,  # FileData object
 		atype = mr.atom_type
 #		print(repr(atype))
 		
-		# 1) doing header
+		# 1) profiling atom header
 		meta_length += len(a.raw_header)
 		mp4_data.crc32 = crc32(a.raw_header, mp4_data.crc32)
 	
-		# 2) doing body
+		# 2) profiling atom body
 		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
 		elif atype == b"mdat":
