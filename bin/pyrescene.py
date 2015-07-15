@@ -948,12 +948,15 @@ def generate_srr(reldir, working_dir, options, mthread):
 
 	try:
 		empty_folder(working_dir)
-	except OSError:
+	except OSError as oserr:
 		mthread.wait_for_output()
 		print("Could not empty temporary working directory:")
 		print(working_dir)
 		print("This is a know problem for PyPy users.")
 		print("(And sadly others too, but less often.)")
+		# TODO: sure this isn't because of left open file handles?
+		if _DEBUG:
+			print("Actual error: {0}".format(str(oserr)))
 	
 	return True
 
@@ -1366,6 +1369,7 @@ def main(argv=None):
 		print("This is a know problem for PyPy users. (long paths issue)")
 		# I've seen this error with CPython too. Something else wrong?
 		# The temp dir was actually removed though.
+		# TODO: sure this isn't because of left open file handles?
 		print("Actual error: {0}".format(str(oserr)))
 	
 	# see if we need to eject a disk drive
