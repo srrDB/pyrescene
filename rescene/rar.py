@@ -1404,6 +1404,7 @@ class RarReader(object):
 		#	"Unexpected end of archive"
 		#	"The archive is either in unknown format or damaged"
 		if (self._file_length - self._initial_offset) < 20:
+			self._rarstream.close()
 			raise ValueError("The file is too small. "
 							 "The minimum RAR size is 20 bytes.")
 		else: # determine the read mode based on the raw flag type
@@ -1413,6 +1414,7 @@ class RarReader(object):
 			self._rarstream.seek(self._initial_offset)
 			bheader = self._rarstream.read(8)
 			if bheader == RAR5_MARKER_BLOCK:
+				self._rarstream.close()
 				raise ValueError("RAR5 files are not yet supported!")
 			block_type = ord(bheader[2:3]) # third byte
 			if block_type == BlockType.RarMin: # 0x72
@@ -1430,6 +1432,7 @@ class RarReader(object):
 				offset = data.find(RAR_MARKER_BLOCK)
 				self._initial_offset += offset
 				if offset < 0 or self._initial_offset > self._file_length:
+					self._rarstream.close()
 					raise ValueError("The file is not a valid .rar archive"
 					                 " or .srr file.")
 				self._readmode = self.SFX
@@ -1437,6 +1440,7 @@ class RarReader(object):
 				#	 srr_detected_as_sfx.exe EnvironmentError: 
 				#	 Invalid RAR block length (46325) at offset 0x124
 			else:
+				self._rarstream.close()
 				raise ValueError("SFX support not on or not a RAR archive.")
 		self._rarstream.seek(self._initial_offset)
 		self._current_index = 0
