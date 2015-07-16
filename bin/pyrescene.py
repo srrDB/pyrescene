@@ -376,11 +376,13 @@ def get_start_rar_files(sfv_list):
 	"""
 	wanted_rars = []
 	for sfv in sfv_list:
-		first = rescene.utility.first_rars(x.file_name for x in 
-				rescene.utility.parse_sfv_file(sfv)[0])
-		if len(first):
-			sfile = os.path.join(os.path.dirname(sfv), first[0])
-			wanted_rars.append(sfile)
+		firsts = rescene.utility.first_rars(x.file_name for x in 
+		         rescene.utility.parse_sfv_file(sfv)[0])
+		# Asterix.and.Obelix.Mission.Cleopatra.2002.DVDRip.XviD-AEN/Subs/
+		# aaomc-nl-subs-aen.sfv contains two different RAR sets:
+		# aaomc-nl-subs-aen.rar and aaomc-uk-subs-aen.rar
+		for first in firsts:
+			wanted_rars.append(os.path.join(os.path.dirname(sfv), first))
 	return wanted_rars
 
 def work_dir_file(relfile, release_dir, working_dir):
@@ -459,19 +461,19 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	idx_lang = os.path.join(working_dir, "languages.diz")
 	
 	# recursively create SRR and extract RARs
-	def extract_and_create_srr(folder, srr_out, first_rars=None):
+	def extract_and_create_srr(folder, srr_out=None, first_rars=None):
 		"""
 		folder: working dir location for .srr output
 		srr_out: location and name of the .srr file to create (first step only)
 		first_rars: the first .rar files from the .sfv
 		"""
 		# find first RAR files in folder
-		if not first_rars:
+		if first_rars:
+			first_level = True # RARS not somewhere in the temp folder
+		else:
 			first_rars = rescene.utility.first_rars(os.listdir(folder))
 			first_rars = [os.path.join(folder, x) for x in first_rars]
 			first_level = False
-		else:
-			first_level = True # RARS not somewhere in the temp folder
 		if not len(first_rars):
 			return []
 		if not os.path.isdir(folder):
@@ -532,13 +534,22 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 							diz.write(line)
 			
 			# recursive step for each of the archives
-			for srr in extract_and_create_srr(dest, None):
+			for srr in extract_and_create_srr(dest):
 				srr_files_to_store.append(srr)
 		
 			if first_level:
 				# at same level as SFV (in main SRR), (in temp folder)
 				# not in extract folder to prevent possible collisions too
-				srr = srr_out
+				srr = srr_out  # RAR/SFV without extension
+
+				# only possible for main vobsub set from SFV with multiple RARs
+				# Asterix.and.Obelix.Mission.Cleopatra.2002.DVDRip.XviD-AEN
+				if srr_out and len(first_rars) > 1:
+					# There will be only one root .srr file normally.
+					# This could give problems: make one for each set.
+					spath = os.path.dirname(srr_out)
+					fname = os.path.basename(new_srr)
+					srr = os.path.join(spath, fname)
 			else:
 				srr = new_srr 
 			# create SRRs and add SRRs from previous steps
@@ -580,7 +591,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		for sfile in extract_and_create_srr(srr_folder, srr, first_rars):
 			results.append(sfile)
 		
-	# add languages.diz to the first SRR file
+	# add languages.diz to the first SRR file only (more SRRs are possible)
 	# the file can be missing when the subs are in the .srt format
 	# e.g. Battlestar.Galactica.2003.WS.DVDRip.XviD-SFM
 	if len(results) and os.path.isfile(idx_lang):
