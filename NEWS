@@ -34,6 +34,7 @@ pyReScene 0.6 (2015-07-14)
  * ReScene: SFV files with only \r (MacOS) line endings work
  * ReTag: Script to fix the tagging of music files. (retag.py)
  * New script added to detect bad "samples" in SRR files. (srs_bad.py)
+ * New script added to batch create SRS or TXT files. (batch_srs.py)
  * Scripts relocated and .bat files added for easy PATH inclusion in Windows.
  * awescript: Move proof images to Proof/ folder.
  * Usenet: better error handling/prevention

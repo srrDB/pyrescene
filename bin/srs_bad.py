@@ -44,7 +44,7 @@ def main(options, args):
 		print("Add the parameter -t or -s.")
 		
 	tempdir = tempfile.mkdtemp("pyReScene-srs_bad")
-	for  dirpath, dirnames, filenames in os.walk(args[0]):
+	for dirpath, dirnames, filenames in os.walk(args[0]):
 		dirnames.sort()
 		for sfile in filenames:
 			if sfile[-4:].lower() == ".srr":
