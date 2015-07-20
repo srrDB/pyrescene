@@ -1230,13 +1230,13 @@ def mp4_signature_bytes(track, mp4_file):
 			return signature_bytes
 	return signature_bytes
 
-def profile_wmv(self, wmv_data): # FileData object
+def profile_wmv(wmv_data):  # FileData object
 	"""Reads the necessary track header data 
 	and constructs track signatures"""
 	tracks = odict()
 	
 	meta_length = 0
-	wmv_data.crc32 = 0x0 # start value CRC
+	wmv_data.crc32 = 0x0  # start value CRC
 	ar = AsfReader(AsfReadMode.Sample, wmv_data.name)
 	while ar.read():
 		o = ar.current_object
@@ -1267,7 +1267,7 @@ def profile_wmv(self, wmv_data): # FileData object
 				packet = AsfDataPacket()
 				packet.data = data
 				packet.data_file_offset = start + i * psize
-				packet.data_size = len(data) # psize
+				packet.data_size = len(data)  # psize
 				
 				asf_data_get_packet(packet, psize)
 				
