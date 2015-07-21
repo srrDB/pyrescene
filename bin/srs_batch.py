@@ -60,7 +60,7 @@ def create_srs(sample_dir, sample_file, output_dir, path):
 		os.makedirs(dest_dir)
 
 	original_stderr = sys.stderr
-	txt_error_file = os.path.join(dest_dir, sample) + ".txt"
+	txt_error_file = os.path.join(dest_dir, sample_file) + ".txt"
 	sys.stderr = open(txt_error_file, "wt")
 	keep_txt = False
 	try:
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 		usage="Usage: %prog -i input_directory -o output_directory\n"
 		"This tool creates .srs or .txt files for video files"
 		" found in the input directory.\nOverwrites existing files.",
-		version="%prog 1.0 (2015-07-19)")  # --help, --version
+		version="%prog 1.1 (2015-07-21)")  # --help, --version
 	
 	parser.add_option("-i", dest="input_dir", metavar="DIRECTORY",
 					help="folder with release folders")
