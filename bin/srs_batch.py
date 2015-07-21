@@ -55,6 +55,9 @@ def create_srs(sample_dir, sample_file, output_dir, path):
 	print(sample_dir)
 	dest_dir = os.path.join(output_dir, path)
 	sample = os.path.join(sample_dir, sample_file)
+	
+	if not os.path.isdir(dest_dir):
+		os.makedirs(dest_dir)
 
 	original_stderr = sys.stderr
 	txt_error_file = os.path.join(dest_dir, sample) + ".txt"
