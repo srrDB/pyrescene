@@ -430,7 +430,7 @@ def main(argv=None):
 					 action="store_true", dest="no_auto_crc", default=False,
 					 help="disable automatic CRC checking during reconstruction")
 	recon.add_option("-H", help="<oldname:newname list>: Specify alternate "
-					"names for extracted files.  ex: srr example.srr -h "
+					"names for extracted files.  ex: srr example.srr -H "
 					"orginal.mkv:renamed.mkv;original.nfo:renamed.nfo",
 					metavar="HINTS", dest="hints")
 	recon.add_option("-z", "--rar-dir", dest="rar_executable_dir", 
