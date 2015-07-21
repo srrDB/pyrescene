@@ -1024,6 +1024,7 @@ def profile_mp4(mp4_data,  # FileData object
 	tracks = odict()
 	
 	meta_length = 0
+	mdat_size = 0
 	current_track = None
 	mp4_data.crc32 = 0x0  # start value CRC 
 	track_processed = False
@@ -1042,6 +1043,8 @@ def profile_mp4(mp4_data,  # FileData object
 		if atype in (b"moov", b"trak", b"mdia", b"minf", b"stbl"):
 			mr.move_to_child()
 		elif atype == b"mdat":
+			mdat_size += a.size
+			
 			# crc32 calculation isn't used in all cases (optimization)
 			if calculate_crc32:
 				for data_piece in mr.read_contents_chunks():
@@ -1128,6 +1131,7 @@ def profile_mp4(mp4_data,  # FileData object
 	mr.close()
 	
 	mp4_data.other_length = meta_length
+	mp4_data.mdat_size = mdat_size  # better size guess for broken files
 #	assert meta_length == mp4_data.size - data_length
 	return tracks
 
@@ -1159,6 +1163,11 @@ def mp4_profile_sample(self, mp4_data):
 	total_size = mp4_data.other_length
 	for _, track in tracks.items():
 		total_size += track.data_length
+		
+	# Expected at least: 48 (broken file)
+	if total_size < mp4_data.size and total_size < 100:
+		# 100: small number safety check that might not be needed
+		total_size += mp4_data.mdat_size
 
 	if mp4_data.size != total_size:
 		print("\nWarning: File size does not appear to be correct!",

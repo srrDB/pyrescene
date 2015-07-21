@@ -18,6 +18,7 @@ pyReScene 0.6 (2015-07-14)
  * ReSample: Faster AVI reconstruction times.
  * ReSample: MemoryError on large MP4s fixed and 
              skipping crc32 calculation when possible
+ * ReSample: better expected size estimate for broken MP4 files (!= 48 bytes)
  * ReSample: RIFF mp3: KeyError fixed and SRS will create when fpcalc fails.
  * ReSample: construct SRS for some bad MP3 files too + print warning
  * ReSample: "OverflowError: Python int too large to convert to C long"
