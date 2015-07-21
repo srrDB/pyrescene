@@ -74,7 +74,7 @@ class AsfReader(object):
 	or WMV-SRS files one Object at a time."""
 	def __init__(self, read_mode, path=None, stream=None,
 			archived_file_name=""):
-		assert path or stream
+		assert path or stream, "missing ASF reader input"
 		if path:
 			if is_rar(path):
 				self._asf_stream = RarStream(path, archived_file_name)
@@ -95,8 +95,8 @@ class AsfReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or 
 		# SkipContents() must be called before Read() can be called again")
 		assert self.read_done or (self.mode == AsfReadMode.SRS and
-		                          self.object_guid == GUID_DATA_OBJECT)
-		
+		                          self.object_guid == GUID_DATA_OBJECT),  \
+		                          "AsfReader read() is invalid at this time"
 		
 		object_start_position = self._asf_stream.tell()
 		self.current_object = None
@@ -287,9 +287,6 @@ def getvalue2b(bits, data):
 
 def asf_data_read_packet_fields(packet, flags, data, length,
 	                            mode=AsfReadMode.Sample):
-	if mode != AsfReadMode.SRS:                         
-		assert len(data) == length
-	
 	datalength = (getlen2b((flags >> 1) & 0x03) +
 	              getlen2b((flags >> 3) & 0x03) +
 	              getlen2b((flags >> 5) & 0x03) + 6)
@@ -297,6 +294,12 @@ def asf_data_read_packet_fields(packet, flags, data, length,
 	if datalength > length:
 		raise ValueError("Invalid length")
 
+	if mode != AsfReadMode.SRS and len(data) != length:
+		if _DEBUG:
+			print("Data length: {0}".format(len(data)))
+			print("Expected length: {0}".format(length))
+		raise ValueError("Missing data")
+	
 	skip = 0
 	# Packet size	UINT16	0 or 2 ( present if bit 0x40 is set in flags )
 	packet.length = getvalue2b((flags >> 5) & 0x03, data[skip:])
