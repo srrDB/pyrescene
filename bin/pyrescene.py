@@ -39,7 +39,8 @@ Sorting isn't how we want it in this case:
  E:\Star.Wars.EP.I.The.Phantom.Menace.1999.iNT.DVDRip.XviD-aNBc\Cd1\
 """
 
-from optparse import OptionParser, OptionGroup # argparse new in version 2.7
+from __future__ import print_function
+from optparse import OptionParser, OptionGroup  # argparse new in version 2.7
 from tempfile import mkdtemp
 from datetime import datetime
 import sys
@@ -724,6 +725,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, cue))
 
 	mthread.wait_for_output()
+	print()
 	
 	def get_media_files():
 		if options.nosrs:
@@ -779,9 +781,9 @@ def generate_srr(reldir, working_dir, options, mthread):
 					copied_files.append(os.path.join(dest_dir, 
 						os.path.basename(sample))[:-4] + ".srs")
 			except ValueError as e:
-				if is_music:
-					print("SRS creation failed for %s!" % 
-						os.path.basename(sample))
+				print("SRS creation failed for %s!" % os.path.basename(sample))
+				print()
+				
 				# do not keep txt files for empty files
 				if os.path.getsize(sample) > 0:
 					keep_txt = True
@@ -796,8 +798,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 					sys.stderr = original_stderr
 					os.unlink(tmp_srr_name)
 					empty_folder(working_dir)
-					raise ExecutableNotFound("Please put the fpcalc "
-						"executable in your path.")
+					fpmsg = "Please put the fpcalc executable in your path."
+					raise ExecutableNotFound(fpmsg)
 					
 			sys.stderr.close()
 			if not keep_txt:
@@ -1356,7 +1358,7 @@ def main(argv=None):
 		print("----------------------------------------------------")
 		print("Please put the fpcalc executable in your PATH!")
 		print("It is necessary for the creation of music SRS files.")
-		print("")
+		print()
 		print("It can be downloaded from ")
 		print("https://bitbucket.org/acoustid/chromaprint/downloads")
 		print("On Debian, install libchromaprint-tools")
@@ -1370,7 +1372,7 @@ def main(argv=None):
 			print("Failure stopping the MessageThread.")
 
 	if len(missing):
-		print("")
+		print()
 		print("------------------------------------")
 		print("Warning: some SRRs failed to create!")
 		for item in missing:
