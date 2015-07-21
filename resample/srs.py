@@ -126,12 +126,13 @@ def main(argv=None, no_exit=False):
 	if argv is None:
 		argv = sys.argv[1:]
 		
-	def pexit(status, msg=""):
+	def pexit(status, msg="", error_print=True):
 		if not no_exit:
 			parser.exit(status, msg)
 		else:
 			if status != 0:
-				print(msg, file=sys.stderr)
+				if error_print:
+					print(msg, file=sys.stderr)
 				raise ValueError(msg)
 			else:
 				return 0
@@ -170,7 +171,7 @@ def main(argv=None, no_exit=False):
 				
 			if msg:
 				parser.print_help()
-				pexit(1, msg)
+				pexit(1, msg, False)
 				
 		sample = resample.sample_class_factory(ftype_arg0)
 		if ftype_arg0 == FileType.FLAC:
@@ -189,7 +190,7 @@ def main(argv=None, no_exit=False):
 			if (os.path.getsize(sample_file) >= 0x80000000 and 
 				not options.big_file):
 				pexit(1, "Samples over 2GiB are not supported without the"
-				               " -b switch. Are you sure it's a sample?\n")
+				         " -b switch. Are you sure it's a sample?\n", False)
 				
 			out_folder = os.path.abspath(os.curdir)
 			srs_name = None
@@ -203,7 +204,8 @@ def main(argv=None, no_exit=False):
 				# parent directory of the Sample dir
 				out_folder = os.path.dirname(sample_file).rsplit(os.sep, 1)[0]
 			if not os.path.exists(out_folder):
-				pexit(1, "Output directory does not exist: %s\n" % out_folder)
+				pexit(1, "Output directory does not exist: %s\n" %
+				         out_folder, False)
 				
 			# almost always, unless a specific sample name was given
 			if not srs_name: 
@@ -218,18 +220,19 @@ def main(argv=None, no_exit=False):
 					srs_name = os.path.join(out_folder, samp + ext)
 			srsdir = os.path.dirname(srs_name)
 			if not os.path.exists(srsdir):
-				pexit(1, "Output directory does not exist: %s\n" % srsdir)
+				pexit(1, "Output directory does not exist: %s\n" % 
+				         srsdir, False)
 					
 			# 1) Profile the sample
 			sample_file_data = resample.FileData(file_name=sample_file)
 			try:
 				tracks, attachments = sample.profile_sample(sample_file_data)
 			except resample.IncompleteSample as err:
-				pexit(2, str(err))
+				pexit(2, str(err), False)
 	
 			if not len(tracks):
 				pexit(2, "No A/V data was found. "
-				         "The sample is likely corrupted.\n")
+				         "The sample is likely corrupted.\n", False)
 			
 			# show sample information only, no SRS creation
 			if options.info_only: # -i
@@ -241,7 +244,8 @@ def main(argv=None, no_exit=False):
 				      "in the specified full file...")
 				main_file_info = file_type_info(options.check)
 				if main_file_info.file_type != sample.file_type:
-					pexit(1, "Sample and -c file not the same format.\n")
+					msg = "Sample and -c file not the same format.\n"
+					pexit(1, msg, False)
 				sample.archived_file_name = main_file_info.archived_file
 				tracks = sample.find_sample_streams(tracks, options.check)
 				
@@ -253,7 +257,7 @@ def main(argv=None, no_exit=False):
 						# 0 is a legal match offset for MP3
 						msg = ("\nUnable to locate track signature for"
 						       " track %s. Aborting.\n" % track.track_number)
-						pexit(3, msg)
+						pexit(3, msg, False)
 					elif not track.signature_bytes:
 						# main movie file has more tracks? or empty track?
 						tracks.pop(track.track_number)
@@ -261,7 +265,7 @@ def main(argv=None, no_exit=False):
 			
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
-				return pexit(0, "\nOperation aborted.\n")
+				return pexit(0, "\nOperation aborted.\n", False)
 			
 			srs_name_tmp = create_temp_file_name(srs_name)
 				
@@ -360,7 +364,7 @@ def main(argv=None, no_exit=False):
 						# 0 is a legal match offset for MP3
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
-						pexit(3, msg)
+						pexit(3, msg, False)
 						
 			# 3) Extract those sample streams to memory
 			tracks, attachments = movi.extract_sample_streams(tracks, movie)
@@ -375,12 +379,12 @@ def main(argv=None, no_exit=False):
 						track.track_file.tell() < track.data_length):
 					msg = ("\nUnable to extract correct amount of data for "
 					       "track %s. Aborting.\n" % track.track_number)
-					pexit(4, msg)
+					pexit(4, msg, False)
 					
 			# 5) Ask user for overwrite permission
 			result_file = os.path.join(out_folder, srs_data.name)
 			if not can_overwrite(result_file, options.always_yes):
-				pexit(1, "\nOperation aborted.\n")
+				pexit(1, "\nOperation aborted.\n", False)
 				
 			# 6) Recreate the sample
 			out_file = create_temp_file_name(result_file)
@@ -446,7 +450,7 @@ def main(argv=None, no_exit=False):
 							os.unlink(result_file)
 					
 				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
-				pexit(5, msg)
+				pexit(5, msg, False)
 				
 		else:
 			parser.print_help()
@@ -460,9 +464,11 @@ def main(argv=None, no_exit=False):
 	except (ValueError, AssertionError) as err:
 		if _DEBUG:
 			traceback.print_exc()
-		fault = str(err).strip('\n').rstrip('.') # prevent double dots
+		# strip leading white spaces for each line
+		fault = "\n".join(map(str.lstrip, str(err).split("\n")))
+		fault = fault.strip("\n").rstrip(".")  # prevent double dots
 		if fault == "":
-			fault = "AssertionError" # must never occur!
+			fault = "AssertionError"  # must never occur!
 		pexit(2, "Corruption detected: %s. Aborting.\n" % fault)
 	except fpcalc.ExecutableNotFound as err:
 		pexit(3, str(err))
