@@ -406,17 +406,29 @@ def remove_folder(path):
 def create_temp_file_name(output_file):
 	"""Creates file name for the temporary file based on the name of the
 	output file to create/overwrite later.
+	output_file must be an absolute path.
 	Used to prevent overwriting good files with a broken one later on."""
 	dirname = os.path.dirname(output_file)
 	prefix = os.path.basename(output_file)
-	return mktemp(".tmp", prefix + "-", dirname)
+	tmpfile = mktemp(".tmp", prefix + "-", dirname)
+	
+	# Windows long path support
+	if os.name == "nt":
+		tmpfile = "\\\\?\\" + tmpfile
+	
+	return tmpfile
 
 def replace_result(src, dest):
 	"""Replaces the destination file with the source file.
 	Will not do anything when the source file doesn't exist.
 	Used to prevent overwriting good files with a broken one later on."""
-	# it must come from the above method
-	assert src.startswith(dest)
+	if not src.startswith(dest):
+		# Windows long path support
+		if os.name == "nt":
+			dest = "\\\\?\\" + dest
+
+	# it must come from the above method (create_temp_file_name)
+	assert src.startswith(dest), "src and dest not at same location"
 
 	# it is possible a temp file was never created
 	# (.srr question for replacement is false)
