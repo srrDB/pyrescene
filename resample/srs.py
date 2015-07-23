@@ -156,7 +156,17 @@ def main(argv=None, no_exit=False):
 		# check the arguments for existence
 		for ifile in args:
 			msg = ""
-			if os.path.exists(ifile):
+			ifile_exists = os.path.exists(ifile)
+			
+			if not ifile_exists and os.name == "nt":
+				if os.path.isabs(ifile):
+					full = os.path.abspath(ifile)
+				else:
+					full = os.getcwd() + os.sep + ifile
+				ifile = "\\\\?\\" + full
+				ifile_exists = os.path.exists(ifile)
+		
+			if ifile_exists:
 				ftype = file_type_info(ifile).file_type
 				# check if we already have the type of the first argument
 				ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
@@ -167,7 +177,9 @@ def main(argv=None, no_exit=False):
 					msg += ("File size: %s bytes\n" % 
 					        sep(os.path.getsize(ifile)))
 			else:
-				msg = "Input file not found: %s\n" % ifile
+				msg = "Input file not found: %s\n" % os.path.basename(ifile)
+				if _DEBUG:
+					print(ifile)  # shows the complete path
 				
 			if msg:
 				parser.print_help()
@@ -182,10 +194,26 @@ def main(argv=None, no_exit=False):
 			
 		t0 = time.clock()
 		
+		# for Windows long path work around
+		args0 = ""
+		args1 = ""
+		if len(args) >= 1: 
+			args0 = args[0]
+		if len(args) >= 2: 
+			args1 = args[1]
+
+		# the check has been done before and succeeded
+		if not os.path.exists(args0):
+			if os.path.isabs(args0):
+				full = os.path.abspath(args0)
+			else:
+				full = os.getcwd() + os.sep + args0
+			args0 = "\\\\?\\" + full
+
 		# showing info media file or creating SRS file
-		if len(args) == 1 and not args[0].lower().endswith(".srs"):
+		if len(args) == 1 and not args0.lower().endswith(".srs"):
 			# create SRS file
-			sample_file = os.path.abspath(args[0])
+			sample_file = os.path.abspath(args0)
 	
 			if (os.path.getsize(sample_file) >= 0x80000000 and 
 				not options.big_file):
@@ -194,7 +222,7 @@ def main(argv=None, no_exit=False):
 				
 			out_folder = os.path.abspath(os.curdir)
 			srs_name = None
-			
+
 			if options.output_dir: # -o
 				if options.output_dir[-4:].lower() == ".srs":
 					srs_name = options.output_dir
@@ -283,9 +311,9 @@ def main(argv=None, no_exit=False):
 			print("Successfully created SRS file: %s" % success_name)
 		
 		# showing SRS info
-		elif (len(args) == 1 and args[0].lower().endswith(".srs")
+		elif (len(args) == 1 and args0.lower().endswith(".srs")
 		    	and options.srs_info): # -l
-			srs_data, tracks = sample.load_srs(args[0])
+			srs_data, tracks = sample.load_srs(args0)
 			
 			print("SRS Type   : {0}".format(ftype_arg0))
 			print("SRS App    : {0}".format(srs_data.appname))
@@ -311,10 +339,10 @@ def main(argv=None, no_exit=False):
 						pass # SRS without fingerprint information
 			
 		# reconstructing sample
-		elif len(args) == 2 and args[0].lower().endswith(".srs"):
+		elif len(args) == 2 and args0.lower().endswith(".srs"):
 			# reconstruct sample
-			srs = args[0]
-			movie = args[1]
+			srs = args0
+			movie = args1
 			# should be the same as srs type
 			main_file_info = file_type_info(movie)
 			movie_type = main_file_info.file_type
