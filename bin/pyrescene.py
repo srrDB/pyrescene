@@ -770,6 +770,11 @@ def generate_srr(reldir, working_dir, options, mthread):
 			original_stderr = sys.stderr
 			txt_error_file = os.path.join(dest_dir, 
 				os.path.basename(sample)) + ".txt"
+				
+			# long file names; dest_dir is an absolute path
+			if os.name == "nt":
+				txt_error_file = "\\\\?\\" + txt_error_file
+				
 			sys.stderr = open(txt_error_file, "wt")
 			keep_txt = False
 			try:
@@ -784,12 +789,18 @@ def generate_srr(reldir, working_dir, options, mthread):
 				print("SRS creation failed for %s!" % os.path.basename(sample))
 				print()
 				
+				sample_size = 0
+				try:
+					sample_size = os.path.getsize(sample)
+				except OSError as e:
+					sample_size = os.path.getsize("\\\\?\\" + sample)
+					
 				# do not keep txt files for empty files
-				if os.path.getsize(sample) > 0:
+				if sample_size > 0:
 					keep_txt = True
 					copied_files.append(txt_error_file)
 					logging.info("%s: Could not create SRS file for %s." %
-					             (reldir, os.path.basename(sample)))
+						     (reldir, os.path.basename(sample)))
 				
 				# fpcalc executable isn't found
 				if str(e).endswith(MSG_NOTFOUND):

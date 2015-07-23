@@ -1438,8 +1438,17 @@ def _flag_check_srr(block):
 def _store(sfile, stream, save_paths, in_folder):
 	"""Adds 'file' to the file stream by creating a SrrStoredFileBlock."""
 	file_name = os.path.basename(sfile)
-	if save_paths: # AttributeError: 'NoneType' object has no attr...
-		file_name = os.path.relpath(sfile, in_folder)
+	if save_paths:  # AttributeError: 'NoneType' object has no attr...
+		try:
+			file_name = os.path.relpath(sfile, in_folder)
+		except ValueError:
+			if os.name == "nt":
+				# ValueError: Cannot mix UNC and non-UNC paths
+				# the sfile must be a long file name here (.txt from auto)
+				file_name = os.path.relpath(sfile, "\\\\?\\" + in_folder)
+			else:
+				raise  # if this ever throws another valid error here
+			
 		if file_name[:2] == b"..":
 			# sfile and in_folder don't match
 			# (long/short Windows path or totally different locations)
