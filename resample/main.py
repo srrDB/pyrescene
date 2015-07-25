@@ -861,6 +861,8 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 				      "\t Expected: %s" % sep(fsize),
 				      "\t Found   : %s\n" % sep(mkv_data.size), 
 				      sep='\n', file=sys.stderr)
+			else:
+				er.expected_file_size = sep(fsize)
 			er.move_to_child()
 		elif etype in (EbmlElementType.TimecodeScale, EbmlElementType.Timecode):
 			# (same as else)
