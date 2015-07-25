@@ -243,6 +243,10 @@ class EbmlReader(object):
 		self.current_element = None
 		self.element_type = None
 		
+		# when not empty: an expected file size has been printed
+		# to stderr already when data was missing
+		self.expected_file_size = ""
+		
 		if path:
 			if is_rar(path):
 				self._ebml_stream = RarStream(path, archived_file_name)
@@ -361,8 +365,14 @@ class EbmlReader(object):
 		if (self.mode == EbmlReadMode.Sample and 
 			self.element_type != EbmlElementType.Segment and 
 			endOffset > self._file_length):
-			raise InvalidDataException("Invalid element length at 0x{0:08X}"
-			                           .format(element_start_position))
+			if self.expected_file_size:
+				msg = ("Invalid element length at 0x{0:08X}. "
+				       "Expected size: {1} bytes".format(
+				       element_start_position, self.expected_file_size))
+				raise InvalidDataException(msg)
+			else:
+				msg = "Invalid element length at 0x{0:08X}"
+				raise InvalidDataException(msg.format(element_start_position))
 			
 		if self.element_type != EbmlElementType.Block:
 			self.current_element = EbmlElement()
