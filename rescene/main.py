@@ -1100,6 +1100,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
 	running_crc = 0
+	compressed_block_encountered = False  # mixed blocks e.g. .PNG file
 	
 	skip_volume = False # helps to reconstruct a single volume
 	skip_offset = 0
@@ -1219,8 +1220,14 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 								% block.file_name)
 							srcfs = get_rar_data_object(block, blocks, src,
 										in_folder, hints, auto_locate_renamed)
-						else: # uncompressed file
+							compressed_block_encountered = srcfs
+						else:  # uncompressed file
 							srcfs = open(src, "rb")
+							if compressed_block_encountered:
+								global archived_files
+								archived_files.setdefault(block.file_name,
+									UncompressedRarFile(block, src,
+									    compressed_block_encountered))
 				except FileNotFound:
 					if empty:
 						_fire(MsgCode.MSG,
@@ -1592,10 +1599,11 @@ def temp_folder_cleanup():
 	
 def get_rar_data_object(block, blocks, src,
 	                    in_folder, hints, auto_locate_renamed):
-	return archived_files.setdefault(block.file_name,
-	                         compressed_rar_file_factory(block, blocks, src,
-									in_folder, hints, auto_locate_renamed))
-	
+	rar_object = archived_files.setdefault(block.file_name,
+		compressed_rar_file_factory(block, blocks, src, in_folder, hints,
+		                            auto_locate_renamed))
+	return rar_object
+
 def initialize_rar_repository(location):
 	global repository
 	repository = RarRepository(location)
@@ -1862,7 +1870,7 @@ def compressed_rar_file_factory(block, blocks, src,
 					return rar
 				else:
 					followup_src = _locate_file(followup, 
-			               in_folder, hints, auto_locate_renamed)
+					                   in_folder, hints, auto_locate_renamed)
 					# reuse CompressedRarFile because of the solid archive
 					rar = archived_files[blocks[0].file_name]
 					rar.set_new(src, block, followup_src)
@@ -1872,14 +1880,14 @@ def compressed_rar_file_factory(block, blocks, src,
 		if nblock:
 			try:
 				followup_src = _locate_file(nblock, 
-			                            in_folder, hints, auto_locate_renamed)
+				                   in_folder, hints, auto_locate_renamed)
 			except FileNotFound:
 				followup_src = ""
 		else:
 			followup_src = "" 
 	
 		return CompressedRarFile(block, blocks, src,
-							 nblock, followup_src, solid=False)
+		                         nblock, followup_src, solid=False)
 	except (RarNotFound, ValueError) as ex:
 		print(ex)
 		# we have found good RAR versions before
@@ -2153,7 +2161,7 @@ class CompressedRarFile(io.IOBase):
 			assert not os.path.isfile(out)
 		
 		if more_files:
-			#TODO: only use 4MiB here
+			#TODO: only use 4MiB here (maximum dictionary size RAR4)
 			args.set_extra_files_after([self.source_files[1]])
 		
 		#TODO: use?
@@ -2423,7 +2431,7 @@ def calculate_size_volume(blocks):
 			size += block.header_size
 			return size
 		elif block.rawtype in (BlockType.SrrHeader, BlockType.SrrStoredFile,
-							BlockType.SrrRarFile, BlockType.SrrOsoHash):
+		                       BlockType.SrrRarFile, BlockType.SrrOsoHash):
 			continue
 		else:
 			size += block.header_size
@@ -2602,7 +2610,15 @@ class CompressedRarFileAll(io.IOBase):
 			and no bytes are available, None is returned.
 		"""
 		return self.rarstream.readinto(byte_array)
-		
+
+class UncompressedRarFile(io.IOBase):
+	"""Represents uncompressed RAR data in a compressed archive."""
+
+	def __init__(self, block, source_files, prev_compressed):
+		self.current_block = block
+		self.source_files = [source_files]
+		self.good_rar = prev_compressed.good_rar
+	
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
 	

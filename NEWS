@@ -33,6 +33,7 @@ pyReScene 0.6 (2015-07-14)
  * ReScene: Duplicate SFV lines won't include the RAR meta data twice.
  * ReScene: No crashes on RAR5 files. (but no support yet)
  * ReScene: SFV files with only \r (MacOS) line endings work
+ * ReScene: KeyError fixed when reconstructing compressed archives
  * ReTag: Script to fix the tagging of music files. (retag.py)
  * New script added to detect bad "samples" in SRR files. (srs_bad.py)
  * New script added to batch create SRS or TXT files. (batch_srs.py)
