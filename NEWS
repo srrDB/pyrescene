@@ -1,4 +1,4 @@
-pyReScene 0.6 (2015-07-14)
+pyReScene 0.6 (2015-08-xx)
 =============
 
  * Python 3 support (thanks to vadmium)
@@ -40,7 +40,7 @@ pyReScene 0.6 (2015-07-14)
  * Scripts relocated and .bat files added for easy PATH inclusion in Windows.
  * awescript: Move proof images to Proof/ folder.
  * Usenet: better error handling/prevention
- * Lots of bug fixes/small improvements. (none related to compressed rars)
+ * Lots of bug fixes/small improvements. (only one related to compressed rars)
 
 pyReScene 0.5.1 (2013-07-14)
 ===============
