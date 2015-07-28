@@ -1254,8 +1254,11 @@ class RarNewSubBlock(RarPackedFileBlock): # 0x7A
 			out += "+AV: Authentication Verification\n"
 		elif self.file_name == "CMT":
 			out += "+CMT: Comment\n"
+		elif self.file_name == "ACL":
+			# "Save file security" NTFS options "Advanced" tab WinRAR
+			out += "+ACL: NTFS Access Control List\n"
 		else:
-			out += "+UKNOWN RarNewSubBlock FOUND!\n"
+			out += "+UNKNOWN RarNewSubBlock FOUND!\n"
 		return out
 			
 class RarOldRecoveryBlock(RarBlock): # 0x78
