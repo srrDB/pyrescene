@@ -1684,7 +1684,7 @@ class RarExecutable(object):
 	def supports_setting_threads(self):
 		if self.threads:
 			return self.threads
-		p = custom_popen(self.path())
+		p = custom_popen([self.path()])
 		(stdout, _stderr) = p.communicate()
 		self.threads = b"mt<threads>" in stdout
 		return self.threads
