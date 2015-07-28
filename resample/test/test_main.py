@@ -42,7 +42,7 @@ import rescene
 
 class TempDirTest(unittest.TestCase):
 	def setUp(self):
-		self.dir = tempfile.mkdtemp(prefix="pyrescene-")
+		self.dir = tempfile.mkdtemp(prefix="pyReScene-")
 	def tearDown(self):
 		shutil.rmtree(self.dir)
 

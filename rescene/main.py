@@ -30,7 +30,7 @@
 from __future__ import (with_statement, unicode_literals, print_function,
 	absolute_import, division)
 
-from tempfile import mkstemp
+from tempfile import mkstemp, mkdtemp
 from glob import glob
 
 import fnmatch
@@ -48,7 +48,6 @@ import time
 import shutil
 import subprocess
 import multiprocessing
-from tempfile import mkdtemp
 
 import rescene
 from rescene.rar import (BlockType, RarReader,
@@ -1585,8 +1584,8 @@ class RarNotFound(Exception):
 def get_temp_directory():
 	global temp_dir
 	if temp_dir and os.path.isdir(temp_dir):
-		return mkdtemp("_pyReScene", dir=temp_dir)
-	return mkdtemp("_pyReScene")
+		return mkdtemp(prefix="SRR-", dir=temp_dir)
+	return mkdtemp(prefix="SRR-")
 
 def temp_folder_cleanup():
 	"""Temp directory cleanup op the second compressed reconstruction
