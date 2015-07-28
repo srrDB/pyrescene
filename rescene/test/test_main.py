@@ -84,7 +84,7 @@ class TmpDirSetup(TestInit):
 	def setUp(self):
 		super(TmpDirSetup, self).setUp()
 		# temp dir to create files for tests
-		self.tdir = mkdtemp("-pyReScene", "tmp.", self.test_dir)
+		self.tdir = mkdtemp(prefix="pyReScene-", dir=self.test_dir)
 		assert self.o.events == []
 		
 	def tearDown(self):
