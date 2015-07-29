@@ -414,7 +414,7 @@ def create_temp_file_name(output_file):
 	
 	# Windows long path support
 	if os.name == "nt":
-		tmpfile = "\\\\?\\" + tmpfile
+		tmpfile = "\\\\?\\" + os.path.abspath(tmpfile)
 	
 	return tmpfile
 
@@ -425,7 +425,7 @@ def replace_result(src, dest):
 	if not src.startswith(dest):
 		# Windows long path support
 		if os.name == "nt":
-			dest = "\\\\?\\" + dest
+			dest = "\\\\?\\" + os.path.abspath(dest)
 
 	# it must come from the above method (create_temp_file_name)
 	assert src.startswith(dest), "src and dest not at same location"
