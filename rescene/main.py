@@ -2138,8 +2138,7 @@ class CompressedRarFile(io.IOBase):
 				(stdout, _) = proc.communicate()
 				
 				if proc.returncode != 0:
-					stdout = decodetext(stdout,
-						errors="replace")
+					stdout = decodetext(stdout, errors="replace")
 					print(encodeerrors(stdout, sys.stdout))
 					_fire(MsgCode.MSG, message=
 						"Something went wrong executing Rar.exe:")
