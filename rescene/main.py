@@ -457,7 +457,9 @@ def create_srr(srr_name, infiles, in_folder="",
 	             must be stored with the file name e.g. Sample/ or Proof/
 	compressed:  Do we create an SRR or not when encountered compressed files?
 	oso_hash:    Store OSO hashes or not.
-				 
+	
+	Returns True: success
+	Returns False: existing .srr file not overwritten
 	Raises ValueError if rars in infiles are not the first of the archives.
 	"""
 	try:

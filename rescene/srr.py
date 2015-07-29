@@ -325,13 +325,18 @@ def create_srr(options, infolder, infiles, working_dir):
 #	print("store files: %s" % store_files, file=sys.stderr)
 	try:
 		tmp_srr_name = create_temp_file_name(srr_name)
-		rescene.create_srr(srr_name, infiles, infolder, 
-	                       store_files, save_paths, options.allow_compressed,
-	                       tmp_srr_name=tmp_srr_name)
+		success = rescene.create_srr(srr_name, infiles, infolder, 
+	                                 store_files, save_paths,
+	                                 options.allow_compressed,
+	                                 tmp_srr_name=tmp_srr_name)
 		replace_result(tmp_srr_name, srr_name)
 		mthread.done = True
 		mthread.join()
-		print("SRR file successfully created.", file=sys.stderr)
+		if success:
+			print("SRR file successfully created.")
+		else:
+			# User did not want to overwrite existing file
+			print("SRR file not overwritten.")
 	except (EnvironmentError, ValueError, FileNotFound) as err:
 		# Can not read basic block header
 		# ValueError: compressed SRR
