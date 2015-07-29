@@ -488,6 +488,9 @@ def main(argv=None):
 		sys.stderr.write("""\
 WARNING: SRR files for compressed RARs are like SRS files:
          you can never be sure they will reconstruct!
+
+         Do NOT use this to create SRR files for VobSubs!
+         Use 'pyrescene --vobsubs file.sfv' instead.
 """)
 		print("*"*60, file=sys.stderr)
 	
