@@ -1307,8 +1307,12 @@ def main(argv=None):
 				if os.path.isfile(out):
 					if can_overwrite(out):
 						shutil.copy(vobsub_srr, out)
+						print("SRR file successfully created.")
+					else:
+						print("SRR file not overwritten.")
 				else:
 					shutil.copy(vobsub_srr, out)
+					print("SRR file successfully created.")
 			return 0
 		except ValueError as e:
 			# No RAR5 support yet
