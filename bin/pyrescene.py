@@ -293,15 +293,16 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		# subs not in filename, but the folder is called subs, vobsubs,...
 		pardir = os.path.split(os.path.dirname(sfv))[1].lower()
 		if pardir in (
-			"subs", "vobsubs", "vobsub", "subtitles", "sub",
+			"subs", "vobsubs", "vobsub", "subtitles", "sub", "czsubs",
 			"subpack", "vobsubs-full", "vobsubs-light", "codec",
 			"codecs", "cover", "covers",
 		):
-			# X-Files.1x00.Pilot.DVDRip.XviD-SDG\Subtitles
-			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS\Sub\kns-sm-sub.rar
+			# X-Files.1x00.Pilot.DVDRip.XviD-SDG/Subtitles
+			# Scary.Movie.2000.INTERNAL.DVDivX-KiNESiS/Sub/kns-sm-sub.rar
 			# Play.Misty.For.Me.1971.DVDRip.XviD.INTERNAL-FaRM/Vobsubs-Full/
 			# Kellys.Heroes.1970.iNTERNAL.DVDRip.XviD-BELiAL/Codec/
-			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS\Cover\
+			# Barnstormers.360.2005.DVDRip.XviD-AEROHOLiCS/Cover/
+			# Salems.Lot.2004.DVDRip.XviD-FRAGMENT/CZSubs/sl.frag-czech.sfv
 			continue
 		
 		if (pardir == "proof" or pardir == "proofs"):
@@ -324,6 +325,10 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
 			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
 			#	Subs/CD1/toyst.subs.cd1-iffm.sfv
+			# The.Postman.1997.DVDRip.XviD.AC3.iNTERNAL-FFM
+			#   Subs/CD1/post.subs.cd1-iffm.sfv
+			#   Subs/CD2/post.subs.cd2-iffm.sfv
+			#   Subs/CD3/post.subs.cd3-iffm.sfv
 			continue
 		
 		# subpack inside release dir not, but subpack release itself yes
