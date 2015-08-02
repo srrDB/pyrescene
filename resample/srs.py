@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012-201% pyReScene
+# Copyright (c) 2012-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -202,7 +202,7 @@ def main(argv=None, no_exit=False):
 		if len(args) >= 2: 
 			args1 = args[1]
 
-		# the check has been done before and succeeded
+		# the check has been done before and succeeded (it must be Windows)
 		if not os.path.exists(args0):
 			if os.path.isabs(args0):
 				full = os.path.abspath(args0)
