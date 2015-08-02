@@ -2379,11 +2379,11 @@ def mp3_find_sample_streams(self, tracks, main_mp3_file):
 				# this is the right MP3 file
 				track.check_bytes = track.signature_bytes
 				track.match_offset = block.start_pos
-				track.match_length = min(track.data_length, 
-					                     block.size)
+				track.match_length = min(track.data_length, block.size)
 				tracks[1] = track
 				break
-			else: # this isn't the right MP3 file
+			else:
+				# this isn't the right MP3 file
 				track.match_offset = -1
 				tracks[1] = track
 			# no support for MP3 samples
@@ -2751,7 +2751,12 @@ def mp3_extract_sample_streams(self, tracks, main_mp3_file):
 		if block.type in ("MP3", "fLaC"):
 			track = tracks[1]
 			track.track_file = tempfile.TemporaryFile()
-			track.track_file.write(mr.read_contents())
+			# offset is always zero for now (no sample support)
+			# (start offset must match in mp3_find_sample_streams)
+			offset = track.match_offset - block.start_pos
+			assert offset >= 0, "MP3 read offset can't be negative"
+			assert offset == 0, "MP3 extraction does't support samples"
+			track.track_file.write(mr.read_part(track.match_length, offset))
 			tracks[1] = track
 			break
 	mr.close()
