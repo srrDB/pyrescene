@@ -37,6 +37,7 @@ import warnings
 import locale
 import os
 import shutil
+import zlib
 from io import BytesIO, TextIOBase, TextIOWrapper
 from tempfile import mktemp
 
@@ -453,6 +454,20 @@ def replace_result(src, dest):
 			print("This one lost... deleting temp file.")
 			os.unlink(src)
 			raise
+		
+def calculate_crc32(file_name):
+	"""Calculates crc32 for a given file and show a spinner."""
+	crc = 0
+	count = 0
+	with open(file_name, "rb") as f:
+		x = f.read(65536)
+		while x:
+			count += 1
+			show_spinner(count)
+			crc = zlib.crc32(x, crc)
+			x = f.read(65536)
+		remove_spinner()
+	return crc & 0xFFFFFFFF
 
 ###############################################################################
 
