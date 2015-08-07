@@ -32,16 +32,17 @@ import sys
 import os
 import time
 import traceback
-import zlib
 import fnmatch
 from threading import Thread
 
 import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
-from rescene.utility import show_spinner, remove_spinner, sep
+from rescene.utility import sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
+from rescene.utility import calculate_crc32
 from rescene.utility import create_temp_file_name, replace_result
+	
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -195,19 +196,6 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 					status = 1
 	return status
 
-def calculate_crc32(file_name):
-	crc = 0
-	count = 0
-	with open(file_name, "rb") as f:
-		x = f.read(65536)
-		while x:
-			count += 1
-			show_spinner(count)
-			crc = zlib.crc32(x, crc)
-			x = f.read(65536)
-		remove_spinner()
-	return crc & 0xFFFFFFFF
-	
 def manage_srr(options, in_folder, infiles, working_dir):
 	out_folder = working_dir
 	if options.output_dir:
