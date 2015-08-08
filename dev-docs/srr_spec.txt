@@ -724,9 +724,92 @@ XII. SRS file format specification
 
 See pyReSample implementation for details.
 
-MKV, AVI, MP4, WMV, MP3, FLAC
+The File Data and Track Data blocks are always the same structure within all
+SRS file formats. Where they occur inside the SRS file depends on the file
+container.
 
-TODO: document shared structure and relevant parts of the file formats
+MKV, AVI, MP4, WMV, MP3, FLAC, STREAM
+STREAM: VOB, M2TS, MPEG,...
+
+File data block
+===============
+
+Contains stored tool and file data like size and crc32 from sample file.
+
+    [SRS File Data Block
+        - FLAGS                                             2 bytes
+        - APPLICATION_NAME_SIZE                             2 bytes
+        - APPLICATION_NAME              APPLICATION_NAME_SIZE bytes
+        - FILE_NAME_SIZE                                    2 bytes
+        - FILE_NAME                            FILE_NAME_SIZE bytes
+        - SAMPLE_SIZE                                       8 bytes
+        - CRC32                                             4 bytes
+    ] 
+  
+  FLAGS:
+    0x0: no flags available
+    0x1: simple block fix (no use for it anymore)
+    0x2: attachments removed (used with mkv files)
+  APPLICATION_NAME_SIZE:
+    The maximum length of the name is 65510 (0xFFE6).
+        0xFFFF - 7 - 8 - 8 - 2 = 65510 (0xFFE6)
+  APPLICATION_NAME:
+    UTF-8 must be used as encoding.
+  FILE_NAME_SIZE:
+    The maximum length of the name is 65510 (0xFFE6).
+        0xFFFF - 7 - 8 - 8 - 2 = 65510 (0xFFE6)
+  FILE_NAME:
+    UTF-8 must be used as encoding.
+  SAMPLE_SIZE:
+    Unsigned 64 bit integer
+  CRC32:
+    Unsigned 32 bit integer
+ 
+Track data block
+================
+
+Describes each track of the sample for reconstruction purposes.
+
+    [SRS Track Data Block
+        - FLAGS                                             2 bytes
+        - TRACK_NUMBER                                      2 or 4 bytes
+        - TRACK_SIZE                                        4 or 8 bytes
+        - MATCH_OFFSET                                      8 bytes
+        - SIG_SIZE                                          2 bytes
+        - SIGNATURE                                         SIG_SIZE bytes
+    ]  
+  
+  FLAGS:
+	0x0: no flags set
+	0x4: sample is larger than 2GiB (>= 0x80000000 or 2^16)
+	0x8: big track number (MP4 container has larger possible numbers)
+  TRACK_NUMBER:
+    Size depends on 0x8 flag.
+  TRACK_SIZE:
+    Size depends on 0x4 flag.
+  MATCH_OFFSET
+    Unsigned 64 bit integer pointing to the location in the main file
+    where the track is located.
+  SIG_SIZE:
+    256 bytes by default, but was smaller in earlier versions
+  SIGNATURE:
+	How we recognize the track location if we have no offset.
+		
+STREAM: VOB, M2TS, MPEG
+=======================
+
+The stream format SRS files assume no underlying file container.
+The headers are similar to the MP3 SRS format.
+
+- block signature: 4 bytes
+    STRM: Marker block, size field after is zero
+    SRSF: SRS File block, contains SRS file data block
+    SRST: SRS Track block, contains SRS track data block
+- block size: 4 bytes
+    Indicates the amount of data in the block. (including the 8 byte header)
+- block data
+
+The signature block looks like follows: STRM\x08\x00\x00\x00
 
 
 XIII. In the news / links
