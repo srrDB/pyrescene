@@ -43,6 +43,8 @@ import resample
 from rescene import rarstream, RarReader
 from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
+from rescene.utility import calculate_crc32 as calc_crc32
+from rescene.utility import is_rar
 
 from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
                            GetEbmlUInt, MakeEbmlUInt, EbmlID)
@@ -57,6 +59,7 @@ from resample.fpcalc import fingerprint
 from resample.flac import FlacReader
 from resample.mp3 import Mp3Reader
 from resample.mp3 import decode_id3_size
+from resample.stream import StreamReader
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -92,11 +95,12 @@ class InvalidMatchOffset(ValueError):
 
 # srs.cs ----------------------------------------------------------------------
 class FileType(object):
-	MKV, AVI, MP4, WMV, FLAC, MP3, M2TS, VOB, Unknown =  \
-		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "M2TS", "VOB", "Unknown")
+	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, Unknown =  \
+		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "STREAM", "Unknown")
 
 	# the extensions that are supported
-	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv')
+	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv',
+	                   '.vob', '.m2ts', '.ts', '.mpeg', '.mpg')
 	AudioExtensions = ('.mp3', '.flac')
 	
 	def __init__(self, file_type, archived_file):
@@ -111,11 +115,13 @@ def file_type_info(ifile):
 	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eß£
 	MARKER_AVI = b"\x52\x49\x46\x46" # RIFF
 	MARKER_RAR = b"\x52\x61\x72\x21\x1A\x07\x00" # Rar!...
+	MARKER_RAR5 = b"\x52\x61\x72\x21\x1A\x07\x01\x00"
 	MARKER_MP4 = b"\x66\x74\x79\x70" # ....ftyp
 	MARKER_MP4_3GP = b"\x33\x67\x70\x35" # 3gp5
 	MARKER_WMV = b"\x30\x26\xB2\x75"
 	MARKER_FLAC = b"\x66\x4C\x61\x43" # fLaC
 	MARKER_ID3 = b"\x49\x44\x33" # ID3 (MP3/FLAC file with an ID3v2 container) 
+	MARKER_STREAM = b"STRM\x08\x00\x00\x00" # M2TS, VOB, MPEG,... SRS
 	
 	archived_file_name = ""
 	
@@ -142,11 +148,14 @@ def file_type_info(ifile):
 		rr.close()
 
 		# first file from RAR is the default behavior: no message
-		if not first_file:
+		if not first_file and archived_file_name:
 			print("Using %s from first RAR." % archived_file_name)
 		rs = rarstream.RarStream(ifile, archived_file_name)
 		marker = rs.read(8)
 		rs.close()
+	elif marker.startswith(MARKER_RAR5):
+		print("RAR5 not yet supported.")
+		return FileType(FileType.Unknown, archived_file_name)
 		
 	if marker.startswith(MARKER_MKV):
 		return FileType(FileType.MKV, archived_file_name)
@@ -164,6 +173,8 @@ def file_type_info(ifile):
 		return FileType(FileType.WMV, archived_file_name)
 	elif marker.startswith(MARKER_FLAC):
 		return FileType(FileType.FLAC, archived_file_name)
+	elif marker.startswith(MARKER_STREAM):
+		return FileType(FileType.STREAM, archived_file_name)
 	elif marker.startswith(MARKER_ID3):
 		# can be MP3 or FLAC
 		size = decode_id3_size(marker[6:10])
@@ -185,6 +196,11 @@ def file_type_info(ifile):
 			ofile.seek(-128, os.SEEK_END)
 			if ofile.read(3) == b"TAG":
 				return FileType(FileType.MP3, archived_file_name)
+		
+		# check for stream types based on extension
+		name = ifile.lower()
+		if name.endswith((".vob", ".m2ts", ".ts", ".mpeg", ".mpg")):
+			return FileType(FileType.STREAM, archived_file_name)
 		
 		return FileType(FileType.Unknown, archived_file_name)
 
@@ -300,9 +316,12 @@ class FileData(object):
 	def serialize_as_mp3(self):
 		data = self.serialize()
 		mp3_block = b"SRSF"
-		mp3_block += S_LONG.pack(len(data) + 4 + 4)
+		mp3_block += S_LONG.pack(4 + 4 + len(data))
 		mp3_block += data
 		return mp3_block
+
+	def serialize_as_stream(self):
+		return self.serialize_as_mp3()
 	
 # SampleTrackInfo.cs ----------------------------------------------------------					
 class TrackData(object):
@@ -313,14 +332,14 @@ class TrackData(object):
 	Signature length
 	Signature: how we recognize the track location if we have no offset"""
 	NO_FLAGS = 0x0
-	BIG_FILE = 0x4 # Larger than 2GB
+	BIG_FILE = 0x4 # Larger than 2GiB
 	BIG_TACK_NUMBER = 0x8 # MP4 container has larger possible numbers
 	
 	SUPPORTED_FLAG_MASK = BIG_FILE | BIG_TACK_NUMBER
 	
 	def __init__(self, buff=None):
 		if buff:
-			(self.flags,) = struct.unpack_from("<H", buff, 0)
+			(self.flags,) = S_SHORT.unpack_from(buff, 0)
 			
 			if self.flags & self.BIG_TACK_NUMBER:
 				(self.track_number,) = S_LONG.unpack_from(buff, 2)
@@ -458,6 +477,13 @@ class TrackData(object):
 		except:
 			print("No finger printing data stored!!!")
 			return mp3_block
+
+	def serialize_as_stream(self):
+		data = self.serialize()
+		stream_block = b"SRST"
+		stream_block += S_LONG.pack(8 + len(data))
+		stream_block += data
+		return stream_block
 		
 def read_fingerprint_data(track, data):
 	(track.duration,) = S_LONG.unpack_from(data)
@@ -482,6 +508,8 @@ def sample_class_factory(file_type):
 		return FlacReSample()
 	elif file_type == FileType.MP3:
 		return Mp3ReSample()
+	elif file_type in (FileType.STREAM):
+		return StreamSample()
 	
 # AviReSample.cs --------------------------------------------------------------	
 class AviReSample(ReSample):
@@ -580,6 +608,22 @@ class Mp3ReSample(ReSample):
 		return mp3_extract_sample_streams(self, *args, **kwargs)
 	def rebuild_sample(self, *args, **kwargs):
 		return mp3_rebuild_sample(self, *args, **kwargs)
+	
+class StreamSample(ReSample):
+	file_type = FileType.STREAM
+	
+	def profile_sample(self, *args, **kwargs):
+		return stream_profile_sample(self, *args, **kwargs)
+	def create_srs(self, *args, **kwargs):
+		return stream_create_srs(self, *args, **kwargs)
+	def load_srs(self, *args, **kwargs):
+		return stream_load_srs(self, *args, **kwargs)
+	def find_sample_streams(self, *args, **kwargs):
+		return stream_find_sample_streams(self, *args, **kwargs)
+	def extract_sample_streams(self, *args, **kwargs):
+		return stream_extract_sample_streams(self, *args, **kwargs)
+	def rebuild_sample(self, *args, **kwargs):
+		return stream_rebuild_sample(self, *args, **kwargs)
 	
 def avi_load_srs(self, infile):
 	tracks = {}
@@ -725,6 +769,18 @@ def mp3_load_srs(self, infile):
 		elif block.type == "SRSP":
 			tracks[1] = read_fingerprint_data(tracks[1], mr.read_contents()[8:])
 	mr.close()
+	return srs_data, tracks
+
+def stream_load_srs(self, infile):
+	tracks = {}
+	sr = StreamReader(infile)
+	for block in sr.read():
+		if block.type == "SRSF":
+			srs_data = FileData(sr.read_contents())
+		elif block.type == "SRST":
+			track = TrackData(sr.read_contents())
+			tracks[track.track_number] = track
+	sr.close()
 	return srs_data, tracks
 
 def avi_profile_sample(self, avi_data): # FileData object
@@ -1554,6 +1610,49 @@ def mp3_profile_sample(self, mp3_data):  # FileData object
 		pass
 	return tracks, {}
 
+def stream_profile_sample(self, stream_data):  # FileData object
+	"""Profiles a stream container: look at it as one big blob"""
+	tracks = {}
+	stream_data.crc32 = 0x0  # start value crc
+	meta_length = 0
+	
+	stream_data.crc32 = calc_crc32(stream_data.name)
+		
+	# do track stuff
+	track = TrackData()
+	track.track_number = 1
+	track.data_length = os.path.getsize(stream_data.name)
+			
+	# in profile mode, we want to build track signatures
+	with open(stream_data.name, "rb") as sample:
+		track.signature_bytes = sample.read(SIG_SIZE)
+	
+	tracks[1] = track
+
+	total_size = meta_length
+	
+	print("File Details:   Size           CRC")
+	print("                -------------  --------")
+	print("                {0:>13}  {1:08X}\n".format(sep(stream_data.size), 
+	                                           stream_data.crc32 & 0xFFFFFFFF))
+	
+	print()
+	print("Stream Details: Stream  Length")
+	print("                ------  -------------")
+	for _, track in tracks.items():
+		print("                {0:6n}  {1:>13}".format(track.track_number, 
+		                                               sep(track.data_length)))
+		total_size += track.data_length
+		
+	print()
+	print("Parse Details:   Metadata     Stream Data    Total")
+	print("                 -----------  -------------  -------------")
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+	                        sep(meta_length), 
+	                        sep(total_size - meta_length), sep(total_size)))
+	
+	return tracks, {}
+
 def avi_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		rr = RiffReader(RiffReadMode.AVI, sample)
@@ -1778,7 +1877,20 @@ def mp3_create_srs(self, tracks, sample_data, sample, srs, big_file):
 				# do copy everything else
 				mp3f.write(mr.read_contents())
 		mr.close()
-		
+
+def stream_create_srs(self, tracks, sample_data, sample, srs, big_file):
+	with open(srs, "wb") as streamf:
+		# in store mode, create and write our custom blocks 
+		streamf.write(b"STRM\x08\x00\x00\x00")
+		file_block = sample_data.serialize_as_stream()
+		streamf.write(file_block)
+				
+		for track in tracks.values():
+			if big_file:
+				track.flags |= TrackData.BIG_FILE
+			track_block = track.serialize_as_stream()
+			streamf.write(track_block)
+
 def avi_find_sample_streams(self, tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file,
 		archived_file_name=self.archived_file_name)
@@ -2392,6 +2504,48 @@ def mp3_find_sample_streams(self, tracks, main_mp3_file):
 
 	return tracks
 
+def stream_find_sample_streams(self, tracks, main_file):
+	if is_rar(main_file):
+		stream = rarstream.RarStream(main_file, self.archived_file_name)
+	else:
+		stream = open(main_file, 'rb')
+	try:
+		track = tracks[1]
+		sig_size = len(track.signature_bytes)
+		ramount = 0x10000  # read each time 64KiB
+		
+		# search for a match
+		x = stream.read(ramount)
+		p = b""
+		count = 0
+		while x:
+			show_spinner(count)
+			if p:
+				match = (p + x).find(track.signature_bytes, ramount-sig_size)
+			else:
+				match = x.find(track.signature_bytes)
+			
+			if match > -1:
+				track.check_bytes = track.signature_bytes
+				track.match_offset = stream.tell() - len(x) - len(p) + match
+				track.match_length = sig_size
+				tracks[1] = track
+				break
+			
+			p = x
+			x = stream.read(ramount)
+			count += 1
+		else:
+			# no match found at all
+			track.match_offset = -1
+			tracks[1] = track
+		
+		remove_spinner()
+	finally:
+		stream.close()
+
+	return tracks
+
 def avi_extract_sample_streams(self, tracks, movie):
 	# search for first match offset (possibly skipping some parsing)
 	start_offset = 2 ** 63 # long.MaxValue + 1
@@ -2763,6 +2917,25 @@ def mp3_extract_sample_streams(self, tracks, main_mp3_file):
 
 	return tracks, {}
 	
+def stream_extract_sample_streams(self, tracks, main_file):
+	if is_rar(main_file):
+		stream = rarstream.RarStream(main_file, self.archived_file_name)
+	else:
+		stream = open(main_file, 'rb')
+
+	try:
+		track = tracks[1]
+		track.track_file = tempfile.TemporaryFile()
+		stream.seek(track.match_offset)
+		assert stream.read(len(track.signature_bytes)) == track.signature_bytes
+		stream.seek(track.match_offset)
+		track.track_file.write(stream.read(track.data_length))
+		tracks[1] = track
+	finally:
+		stream.close()
+
+	return tracks, {}
+
 def avi_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0 # Crc32.StartValue
 	rr = RiffReader(RiffReadMode.SRS, path=srs)
@@ -3175,6 +3348,19 @@ def mp3_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 				mp3.write(data)
 				crc = crc32(data, crc)
 	mr.close()
+	
+	ofile = FileData(file_name=out_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
+
+def stream_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
+	crc = 0  # Crc32.StartValue
+	with open(out_file, "wb") as stream:
+		track = tracks[1]
+		track.track_file.seek(0)
+		data = track.track_file.read()
+		crc = crc32(data, crc)
+		stream.write(data)
 	
 	ofile = FileData(file_name=out_file)
 	ofile.crc32 = crc & 0xFFFFFFFF
