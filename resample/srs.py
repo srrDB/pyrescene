@@ -170,7 +170,8 @@ def main(argv=None, no_exit=False):
 				ftype = file_type_info(ifile).file_type
 				# check if we already have the type of the first argument
 				ftype_arg0 = ftype if not ftype_arg0 else ftype_arg0
-				if ftype == resample.FileType.Unknown:
+				if (ftype == FileType.Unknown and
+					ftype_arg0 != FileType.STREAM):
 					msg = ("Could not locate MKV, AVI, MP4, WMV, "
 					       "FLAC or MP3 data "
 					       "in file: %s\n" % os.path.basename(ifile))
@@ -184,12 +185,8 @@ def main(argv=None, no_exit=False):
 			if msg:
 				parser.print_help()
 				pexit(1, msg, False)
-				
+
 		sample = resample.sample_class_factory(ftype_arg0)
-		if ftype_arg0 == FileType.FLAC:
-			ext = "srs"
-		else:
-			ext = ".srs"
 		is_music = ftype_arg0 in (FileType.FLAC, FileType.MP3)
 			
 		t0 = time.clock()
@@ -237,6 +234,7 @@ def main(argv=None, no_exit=False):
 				
 			# almost always, unless a specific sample name was given
 			if not srs_name: 
+				ext = ".srs"
 				if options.directory: # --d
 					d = os.path.dirname(sample_file).rsplit(os.sep, 1)[1]
 					srs_name = os.path.join(out_folder, d + ext)
@@ -244,8 +242,8 @@ def main(argv=None, no_exit=False):
 					dd = os.path.dirname(sample_file).rsplit(os.sep, 2)[1]
 					srs_name = os.path.join(out_folder, dd + ext)
 				else:
-					samp = os.path.basename(sample_file)[:-4]
-					srs_name = os.path.join(out_folder, samp + ext)
+					samp = os.path.basename(sample_file).rsplit(".", 1)
+					srs_name = os.path.join(out_folder, samp[0] + ext)
 			srsdir = os.path.dirname(srs_name)
 			if not os.path.exists(srsdir):
 				pexit(1, "Output directory does not exist: %s\n" % 
@@ -271,7 +269,8 @@ def main(argv=None, no_exit=False):
 				print("Checking that sample exists "
 				      "in the specified full file...")
 				main_file_info = file_type_info(options.check)
-				if main_file_info.file_type != sample.file_type:
+				if (main_file_info.file_type != sample.file_type and
+					sample.file_type != FileType.STREAM):
 					msg = "Sample and -c file not the same format.\n"
 					pexit(1, msg, False)
 				sample.archived_file_name = main_file_info.archived_file
@@ -279,10 +278,11 @@ def main(argv=None, no_exit=False):
 				
 				for track in list(tracks.values()):
 					if ((track.signature_bytes and track.match_offset == 0 and
-						ftype_arg0 != FileType.MP3) or 
-						(ftype_arg0 == FileType.MP3 and 
-						track.match_offset == -1)):
-						# 0 is a legal match offset for MP3
+							ftype_arg0 != FileType.MP3 and
+							ftype_arg0 != FileType.STREAM) or 
+						(track.match_offset == -1 and 
+							ftype_arg0 in (FileType.MP3, FileType.STREAM))):
+						# 0 is a legal match offset for MP3 and STREAM
 						msg = ("\nUnable to locate track signature for"
 						       " track %s. Aborting.\n" % track.track_number)
 						pexit(3, msg, False)
@@ -346,6 +346,8 @@ def main(argv=None, no_exit=False):
 			# should be the same as srs type
 			main_file_info = file_type_info(movie)
 			movie_type = main_file_info.file_type
+			if movie_type == FileType.Unknown:
+				movie_type = FileType.STREAM
 			movi = resample.sample_class_factory(movie_type)
 			movi.archived_file_name = main_file_info.archived_file
 			
@@ -386,10 +388,11 @@ def main(argv=None, no_exit=False):
 				
 				for track in tracks.values():
 					if ((track.signature_bytes and track.match_offset == 0 and
-						ftype_arg0 != FileType.MP3) or 
-						(ftype_arg0 == FileType.MP3 and 
-						track.match_offset == -1)):
-						# 0 is a legal match offset for MP3
+							ftype_arg0 != FileType.MP3 and
+							ftype_arg0 != FileType.STREAM) or 
+						(track.match_offset == -1 and 
+							ftype_arg0 in (FileType.MP3, FileType.STREAM))):
+						# 0 is a legal match offset for MP3 and STREAM
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
 						pexit(3, msg, False)
@@ -405,6 +408,9 @@ def main(argv=None, no_exit=False):
 			for track in tracks.values():
 				if track.signature_bytes and (track.track_file == None or 
 						track.track_file.tell() < track.data_length):
+					if _DEBUG:
+						print("Found: {0}".format(track.track_file.tell()))
+						print("Expected: {0}".format(track.data_length))
 					msg = ("\nUnable to extract correct amount of data for "
 					       "track %s. Aborting.\n" % track.track_number)
 					pexit(4, msg, False)
