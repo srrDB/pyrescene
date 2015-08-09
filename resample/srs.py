@@ -332,7 +332,7 @@ def main(argv=None, no_exit=False):
 					track.track_number, sep(track.data_length), offset, codec))
 				if is_music:
 					try:
-						print("Duration: {0}".format(track.duration))
+						print("Duration: {0} seconds".format(track.duration))
 						print("AcoustID fingerprint: {0}".format( 
 						      track.fingerprint.decode("ascii")))
 					except AttributeError:
