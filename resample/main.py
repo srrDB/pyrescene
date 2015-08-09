@@ -99,8 +99,22 @@ class FileType(object):
 		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "STREAM", "Unknown")
 
 	# the extensions that are supported
-	StreamExtensions = ('.vob', '.m2ts', '.ts', '.mpeg', '.mpg', '.m2v')
-	VideoExtensions = ('.mp4', '.m4v', # M4V: used for some XXX releases
+	# .m4v is used for some non scene samples, xxx samples and music releases
+	# It is the same file format as MP4
+	# VA-Anjunabeats_Vol_7__Mixed_By_Above_And_Beyond-(ANJCD014D)-2CD-2009-TT/
+	#     301-va-anjunabeats_vol_7__bonus_dvd-tt.m4v
+	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
+	#     05_g3_makingofst-xardas.wmv
+	#     06_g3_makingofst-xardas.m4v
+	# Her-Sweet-Hand.11.01.15.Alex.Shy.Definitely.1.Time.Only.XXX.720p.M4V-OHRLY
+	#     Sample/ohrly-hsh115asd1to.sample.m4v
+	# System_Of_A_Down-Aerials-svcd-wcs
+	#     system_of_a_down-aerials-svcd-wcs.m2p
+	# System_Of_A_Down-Aerials-svcd-wcs
+	#     system_of_a_down-aerials-svcd-wcs.m2p
+	StreamExtensions = ('.vob', '.m2ts', '.ts', 
+	                    '.mpeg', '.mpg', '.m2v', '.m2p')
+	VideoExtensions = ('.mp4', '.m4v',  # M4V: used for some XXX releases
 	                   '.avi', '.mkv', '.wmv') + StreamExtensions
 	AudioExtensions = ('.mp3', '.flac')
 	
