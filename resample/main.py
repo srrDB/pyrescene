@@ -100,7 +100,8 @@ class FileType(object):
 
 	# the extensions that are supported
 	StreamExtensions = ('.vob', '.m2ts', '.ts', '.mpeg', '.mpg', '.m2v')
-	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv') + StreamExtensions
+	VideoExtensions = ('.mp4', '.m4v', # M4V: used for some XXX releases
+	                   '.avi', '.mkv', '.wmv') + StreamExtensions
 	AudioExtensions = ('.mp3', '.flac')
 	
 	def __init__(self, file_type, archived_file):
