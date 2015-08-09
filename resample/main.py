@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012-2014 pyReScene
+# Copyright (c) 2012-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -99,8 +99,8 @@ class FileType(object):
 		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "STREAM", "Unknown")
 
 	# the extensions that are supported
-	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv',
-	                   '.vob', '.m2ts', '.ts', '.mpeg', '.mpg')
+	StreamExtensions = ('.vob', '.m2ts', '.ts', '.mpeg', '.mpg', '.m2v')
+	VideoExtensions = ('.avi', '.mp4', '.mkv', '.wmv') + StreamExtensions
 	AudioExtensions = ('.mp3', '.flac')
 	
 	def __init__(self, file_type, archived_file):
@@ -199,7 +199,7 @@ def file_type_info(ifile):
 		
 		# check for stream types based on extension
 		name = ifile.lower()
-		if name.endswith((".vob", ".m2ts", ".ts", ".mpeg", ".mpg")):
+		if name.endswith(FileType.StreamExtensions):
 			return FileType(FileType.STREAM, archived_file_name)
 		
 		return FileType(FileType.Unknown, archived_file_name)
