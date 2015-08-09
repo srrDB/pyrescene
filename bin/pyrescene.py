@@ -70,7 +70,7 @@ from rescene.rar import RarReader, BlockType
 from rescene.utility import empty_folder, _DEBUG, parse_sfv_file
 from rescene.unrar import locate_unrar
 from resample.fpcalc import ExecutableNotFound, MSG_NOTFOUND
-from resample.main import file_type_info, sample_class_factory
+from resample.main import file_type_info, sample_class_factory, FileType
 from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import create_temp_file_name, replace_result
@@ -117,19 +117,25 @@ def get_files(release_dir, extension):
 		# TypeError: must be (buffer overflow), not str
 		return matches
 
+def get_files_list(release_dir, extension_list):
+	"""Gather all files that match an extension from the list."""
+	matches = []
+	try:
+		for dirpath, _dirnames, filenames in os.walk(release_dir):
+			for filename in filenames:
+				fn = filename.lower()
+				for video_ext in extension_list:
+					if fnmatch.fnmatchcase(fn, "*" + video_ext):
+						matches.append(os.path.join(dirpath, filename))
+		return matches
+	except TypeError:
+		# release_dir too long
+		# TypeError: must be (buffer overflow), not str
+		return matches
+
 def get_sample_files(reldir):
-	# .m4v is used for some non scene samples and music releases
-	# It is the same file format as MP4
-	# VA-Anjunabeats_Vol_7__Mixed_By_Above_And_Beyond-(ANJCD014D)-2CD-2009-TT/
-	#     301-va-anjunabeats_vol_7__bonus_dvd-tt.m4v
-	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
-	#     05_g3_makingofst-xardas.wmv
-	#     06_g3_makingofst-xardas.m4v
-	# System_Of_A_Down-Aerials-svcd-wcs
-	#     system_of_a_down-aerials-svcd-wcs.m2p
-	sample_files = (get_files(reldir, "*.avi") + get_files(reldir, "*.mkv") + 
-	                get_files(reldir, "*.mp4") + get_files(reldir, "*.m4v") +
-	                get_files(reldir, "*.wmv"))
+	sample_files = get_files_list(reldir, FileType.VideoExtensions)
+
 	result = []
 	not_samples = []
 	for sample in sample_files:
@@ -1219,6 +1225,10 @@ def main(argv=None):
 			else:
 				_head, tail = os.path.split(release_dir)
 				print(tail)
+
+		exts = "|".join(FileType.VideoExtensions)
+		vidext = re.compile(".*(" + exts + ")$", re.IGNORECASE)
+
 		for procdir in indirs:
 			procdir = os.path.abspath(procdir)
 			for release_dir in get_release_directories(procdir):
@@ -1236,8 +1246,7 @@ def main(argv=None):
 					if sdir is not None:
 						sdir = os.path.join(release_dir, sdir)
 						for sfile in os.listdir(sdir):
-							if re.match(".*\.(avi|mkv|mp4|wmv|vob|m2ts|mpg)",
-									sfile, re.IGNORECASE):
+							if vidext.match(sfile):
 								found = True
 								break
 					if not found:
