@@ -215,12 +215,7 @@ class RarStream(io.IOBase):
 			-> read at most size bytes, returned as a string.
 			If the size argument is negative, read until EOF is reached.
 			Return an empty string at EOF.
-			
-		size > self._packed_file_length: EOFError
 		"""
-		if self._current_position + size > self._packed_file_length:
-			raise EOFError("Trying to read beyond end of file.")
-		
 		# Nothing to read anymore. We are through all archives in the list.
 		if not self._current_volume:
 			return b""
