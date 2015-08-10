@@ -1493,18 +1493,16 @@ def _search(files, folder=""):
 	"""Enumerates all files to store. Yields a generator.
 	Wildcards are accepted for paths and file names.
 	
-	files    list of absolute or relative paths or 
+	files:   list of absolute or relative paths or 
 	         paths relative to supplied folder and can contain wildcards
 	folder:	 location to search for files when
 	         paths are relative in files parameter
 	"""
-	
 	folder = escape_glob(folder)
 
 	for file_name in files:
 		# use path relative to folder if the path isn't relative or absolute 
-		if (os.path.isabs(file_name) or
-		file_name.startswith(os.pardir)):
+		if (os.path.isabs(file_name) or file_name.startswith(os.pardir)):
 			search_name = file_name
 		else:
 			search_name = os.path.join(folder, file_name)
