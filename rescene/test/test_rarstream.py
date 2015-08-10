@@ -55,7 +55,7 @@ class TestRarStream(unittest.TestCase):
 			self.assertEqual(rs.readable(), True)
 			self.assertEqual(rs.seekable(), True)
 			self.assertEqual(rs.read(), b"")
-			self.assertRaises(EOFError, rs.read, 999999)
+			self.assertEqual(rs.read(), b"")
 			rs.seek(0, os.SEEK_SET)
 			rs.read(2)
 			rs.seek(0, os.SEEK_END)
