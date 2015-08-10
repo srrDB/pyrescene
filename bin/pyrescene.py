@@ -769,7 +769,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 				try:
 					srsmain([sample, "-y", "-o", dest_dir, "-c", main], True)
 					copied_files.append(os.path.join(dest_dir, 
-						os.path.basename(sample))[:-4] + ".srs")
+						os.path.basename(sample).rsplit(".", 1)[0] + ".srs"))
 					found = True
 					break
 				except ValueError:
@@ -790,12 +790,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 			keep_txt = False
 			try:
 				srsmain([sample, "-y", "-o", dest_dir], True)
-				if sample[-4:].lower() == "flac":
-					copied_files.append(os.path.join(dest_dir, 
-						os.path.basename(sample))[:-5] + ".srs")
-				else:
-					copied_files.append(os.path.join(dest_dir, 
-						os.path.basename(sample))[:-4] + ".srs")
+				sampbase = os.path.basename(sample).rsplit(".", 1)[0]
+				copied_files.append(os.path.join(dest_dir, sampbase + ".srs"))
 			except ValueError as e:
 				print("SRS creation failed for %s!" % os.path.basename(sample))
 				print()
