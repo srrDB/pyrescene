@@ -503,7 +503,10 @@ def main(argv=None, no_exit=False):
 		fault = fault.strip("\n").rstrip(".")  # prevent double dots
 		if fault == "":
 			fault = "AssertionError"  # must never occur!
-		pexit(2, "Corruption detected: %s. Aborting.\n" % fault)
+		if fault.endswith("Aborting"):
+			pexit(2, "Corruption detected: %s\n" % fault)
+		else:
+			pexit(2, "Corruption detected: %s. Aborting.\n" % fault)
 	except fpcalc.ExecutableNotFound as err:
 		pexit(3, str(err))
 	except AttributeError as err:
