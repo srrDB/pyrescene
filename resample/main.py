@@ -126,7 +126,9 @@ class FileType(object):
 		return self.file_type
 	
 def file_type_info(ifile):
-	"""Decide the type of file based on the magic marker"""
+	"""Decide the type of file based on the magic marker.
+	If the file is a sample (based on extension),
+	it will not be detected as a RAR file. (this can happen for DVDR vobs)"""
 	MARKER_MKV = b"\x1a\x45\xdf\xa3" # .Eß£
 	MARKER_AVI = b"\x52\x49\x46\x46" # RIFF
 	MARKER_RAR = b"\x52\x61\x72\x21\x1A\x07\x00" # Rar!...
@@ -148,7 +150,7 @@ def file_type_info(ifile):
 	if len(marker) < 14:
 		return FileType(FileType.Unknown, archived_file_name)
 		
-	if marker.startswith(MARKER_RAR):
+	if marker.startswith(MARKER_RAR) and utility.is_rar(ifile):
 		# Read first file from the RAR archives
 		rr = RarReader(ifile)
 		first_file = True
