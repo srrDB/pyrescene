@@ -264,8 +264,15 @@ def main(argv=None, no_exit=False):
 			if options.info_only: # -i
 				return pexit(0)
 				
+			# no need to try finding these matches
+			sample_is_rar = (tracks[1].signature_bytes.startswith(b"Rar!")
+				and sample_file.endswith(".vob"))
+			if sample_is_rar:
+				print("The vobsample is a RAR volume.")
+
 			# 2) check sample against main movie file
-			if options.check: # main AVI, MKV,... file to check against
+			# main AVI, MKV,... file to check against
+			if options.check and not sample_is_rar: 
 				print("Checking that sample exists "
 				      "in the specified full file...")
 				main_file_info = file_type_info(options.check)
