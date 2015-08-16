@@ -569,6 +569,59 @@ def create_srr(srr_name, infiles, in_folder="",
 	finally:
 		# when an IOError is raised, we close the file for further cleanup
 		srr.close()
+		
+def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
+	"""
+	srr_name:    path and name of the SRR file to create
+	             (for checking existence)
+	tmp_srr_name the actual file created! To be used with utility helpers.
+	             This will be the same as srr_name when not provided.
+	infile:      RAR (or .vob) to create SRR from
+	
+	Returns True: success
+	Returns False: existing .srr file not overwritten
+	"""
+	try:
+		if not tmp_srr_name:
+			tmp_srr_name = srr_name
+		if not can_overwrite(srr_name):
+			return False
+	except KeyboardInterrupt:
+		if tmp_srr_name == srr_name:
+			# so an existing SRR file won't be removed upon Ctrl+C
+			raise KeyboardInterrupt("DONT_DELETE")
+		else:
+			raise
+	
+	srr = open(tmp_srr_name, "wb")
+	srr.write(SrrHeaderBlock(appname=rescene.APPNAME).block_bytes())
+	
+	try:
+		# STORE ARCHIVE BLOCKS
+		if not os.path.isfile(infile):
+			# TODO: case sensitivity on Unix systems
+			# all lower in sfv and casings in RAR file names
+			msg = "Referenced file not found: %s" % infile
+			_fire(code=MsgCode.FILE_NOT_FOUND, message=msg)
+			srr.close()
+			os.unlink(tmp_srr_name)
+			raise FileNotFound(msg)
+		base = os.path.basename(infile)
+
+		_fire(MsgCode.MSG, message="Processing file: %s." % base)
+		
+		rarblock = SrrRarFileBlock(file_name=base)
+		srr.write(rarblock.block_bytes())
+		
+		rr = RarReader(infile)
+		for block in rr.read_all():
+			# store the raw data for any blocks found
+			srr.write(block.block_bytes())
+				
+		return True
+	finally:
+		# when an IOError is raised, we close the file for further cleanup
+		srr.close()
 
 def _rarreader_usenet(rarfile, read_retries=7):
 	"""Tries redownloading data read_retries times if it fails.

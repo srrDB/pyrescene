@@ -761,6 +761,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
 		found = False
+		srs_result = None
 		if options.sample_verify and not is_music:
 			print("Checking against the following main files:")
 			for mrar in main_rars:
@@ -768,8 +769,9 @@ def generate_srr(reldir, working_dir, options, mthread):
 			for main in main_rars:
 				try:
 					srsmain([sample, "-y", "-o", dest_dir, "-c", main], True)
-					copied_files.append(os.path.join(dest_dir, 
-						os.path.basename(sample).rsplit(".", 1)[0] + ".srs"))
+					srs_result = os.path.join(dest_dir, 
+						os.path.basename(sample).rsplit(".", 1)[0] + ".srs")
+					copied_files.append(srs_result)
 					found = True
 					break
 				except ValueError:
@@ -791,7 +793,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 			try:
 				srsmain([sample, "-y", "-o", dest_dir], True)
 				sampbase = os.path.basename(sample).rsplit(".", 1)[0]
-				copied_files.append(os.path.join(dest_dir, sampbase + ".srs"))
+				srs_result = os.path.join(dest_dir, sampbase + ".srs")
+				copied_files.append(srs_result)
 			except ValueError as e:
 				print("SRS creation failed for %s!" % os.path.basename(sample))
 				print()
@@ -824,6 +827,34 @@ def generate_srr(reldir, working_dir, options, mthread):
 				os.unlink(txt_error_file)
 				
 			sys.stderr = original_stderr
+			
+		# create srr if it was a rared vob
+		if srs_result and sample.endswith(".vob"):
+			# can be useful to show the actual RAR that was used,
+			# based on the info stored in the archive end block
+			sinfo = sample_class_factory(file_type_info(srs_result).file_type)
+			srs_data, tracks = sinfo.load_srs(srs_result)
+			advance = sinfo.file_type == FileType.STREAM
+			
+			if advance and tracks[1].signature_bytes.startswith("Rar!"):
+				path = os.path.dirname(srs_result)
+				base_name = srs_data.sample_name.rsplit(".", 1)[0]
+				vobsrr = os.path.join(path, base_name + ".srr")
+				
+				if os.path.exists(vobsrr):
+					# use a not so nice and clean SRR name
+					# should only be a theoretical possibility
+					vobsrr = os.path.join(path, srs_data.sample_name + ".srr")
+					if os.path.exists(vobsrr):
+						print("What is this sorcery?")
+						advance = False
+
+				if advance:
+					tmp_vobsrr_name = create_temp_file_name(vobsrr)
+					rescene.create_srr_single_volume(
+						vobsrr, sample, tmp_srr_name=tmp_vobsrr_name)
+					replace_result(tmp_vobsrr_name, vobsrr)
+					copied_files.append(vobsrr)
 		
 	# when stored SRS file instead of a sample file
 	# or both, but only one SRS will be added 
