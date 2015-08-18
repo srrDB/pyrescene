@@ -117,6 +117,40 @@ def setup_cli_parser():
 	
 	return parser
 
+def verify_main(sample, tracks, options, pexit):
+	main_file_info = file_type_info(options.check)
+	if (main_file_info.file_type != sample.file_type):
+		# not checking STREAM formats against those that will fail
+		# e.g. m2ts proof on MKV release
+		if sample.file_type != FileType.STREAM:
+			msg = "Sample and -c file not the same format.\n"
+			pexit(1, msg, False)
+		elif main_file_info.file_type in (
+			FileType.AVI, FileType.MKV, FileType.MP4, FileType.WMV,
+			FileType.MP3, FileType.FLAC):
+			print("Skipping: file type not possible for stream.")
+			if _DEBUG:
+				print(sample.file_type)
+				print(main_file_info.file_type)
+			return tracks  # don't do anything
+	sample.archived_file_name = main_file_info.archived_file
+	tracks = sample.find_sample_streams(tracks, options.check)
+	
+	for track in list(tracks.values()):
+		if ((track.signature_bytes and track.match_offset == 0 and
+				sample.file_type not in (FileType.MP3, FileType.STREAM)) or
+			(track.match_offset == -1 and 
+				sample.file_type in (FileType.MP3, FileType.STREAM))):
+			# 0 is a legal match offset for MP3 and STREAM
+			msg = ("\nUnable to locate track signature for"
+			       " track %s. Aborting.\n" % track.track_number)
+			pexit(3, msg, False)
+		elif not track.signature_bytes:
+			# main movie file has more tracks? or empty track?
+			tracks.pop(track.track_number)
+	print("Check Complete. All tracks located.")
+	return tracks
+
 def main(argv=None, no_exit=False):
 	"""
 	no_exit: used when this function is called from an other Python program
@@ -275,28 +309,7 @@ def main(argv=None, no_exit=False):
 			if options.check and not sample_is_rar: 
 				print("Checking that sample exists "
 				      "in the specified full file...")
-				main_file_info = file_type_info(options.check)
-				if (main_file_info.file_type != sample.file_type and
-					sample.file_type != FileType.STREAM):
-					msg = "Sample and -c file not the same format.\n"
-					pexit(1, msg, False)
-				sample.archived_file_name = main_file_info.archived_file
-				tracks = sample.find_sample_streams(tracks, options.check)
-				
-				for track in list(tracks.values()):
-					if ((track.signature_bytes and track.match_offset == 0 and
-							ftype_arg0 != FileType.MP3 and
-							ftype_arg0 != FileType.STREAM) or 
-						(track.match_offset == -1 and 
-							ftype_arg0 in (FileType.MP3, FileType.STREAM))):
-						# 0 is a legal match offset for MP3 and STREAM
-						msg = ("\nUnable to locate track signature for"
-						       " track %s. Aborting.\n" % track.track_number)
-						pexit(3, msg, False)
-					elif not track.signature_bytes:
-						# main movie file has more tracks? or empty track?
-						tracks.pop(track.track_number)
-				print("Check Complete. All tracks located.")
+				tracks = verify_main(sample, tracks, options, pexit)
 			
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
@@ -322,7 +335,7 @@ def main(argv=None, no_exit=False):
 		    	and options.srs_info): # -l
 			srs_data, tracks = sample.load_srs(args0)
 			
-			print("SRS Type   : {0}".format(ftype_arg0))
+			print("SRS Type   : {0}".format(sample.file_type))
 			print("SRS App    : {0}".format(srs_data.appname))
 			msg = unicode("Sample Name: {0}")
 			print(msg.format(srs_data.name))
@@ -395,10 +408,10 @@ def main(argv=None, no_exit=False):
 				
 				for track in tracks.values():
 					if ((track.signature_bytes and track.match_offset == 0 and
-							ftype_arg0 != FileType.MP3 and
-							ftype_arg0 != FileType.STREAM) or 
-						(track.match_offset == -1 and 
-							ftype_arg0 in (FileType.MP3, FileType.STREAM))):
+							sample.file_type != FileType.MP3 and
+							sample.file_type != FileType.STREAM) or 
+						(track.match_offset == -1 and sample.file_type in 
+							(FileType.MP3, FileType.STREAM))):
 						# 0 is a legal match offset for MP3 and STREAM
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
