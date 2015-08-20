@@ -50,6 +50,7 @@ import shutil
 import fnmatch
 import time
 import logging
+import itertools
 
 try:
 	import win32api
@@ -738,14 +739,21 @@ def generate_srr(reldir, working_dir, options, mthread):
 	mthread.wait_for_output()
 	print()
 	
-	def get_media_files():
-		if options.nosrs:
-			return [] # wo don't handle them (traffic, speed, ...)
-		else:
-			return get_sample_files(reldir) + get_music_files(reldir)
+	if options.nosrs:
+		# wo don't handle them (traffic, speed, ...)
+		media_files = [] 
+	else:
+		media_files = get_sample_files(reldir) + get_music_files(reldir)
+		
+	# .mkv and .m2ts samples could have the same .srs name: prevent this
+	same_srs_name = []
+	sbase = lambda x: os.path.basename(x).rsplit(".", 1)[0]
+	for (name, group) in itertools.groupby(map(sbase, media_files)):
+		if len(list(group)) > 1:
+			same_srs_name.append(name)
 	
 	# Create SRS files
-	for sample in get_media_files():
+	for sample in media_files:
 		# avoid copying samples
 		path = os.path.relpath(sample, reldir)
 		dest_dir = os.path.dirname(os.path.join(working_dir, path))
@@ -763,15 +771,23 @@ def generate_srr(reldir, working_dir, options, mthread):
 		found = False
 		srs_result = None
 		if options.sample_verify and not is_music:
+			print("Creating SRS for: %s" % path)
 			print("Checking against the following main files:")
 			for mrar in main_rars:
 				print("\t%s" % mrar)
 			for main in main_rars:
 				try:
 					srsmain([sample, "-y", "-o", dest_dir, "-c", main], True)
-					srs_result = os.path.join(dest_dir, 
-						os.path.basename(sample).rsplit(".", 1)[0] + ".srs")
-					copied_files.append(srs_result)
+					srs_result = os.path.join(dest_dir, sbase(sample) + ".srs")
+					if sbase(sample) in same_srs_name:
+						# prevent overwriting .srs by including full ext
+						base = os.path.basename(sample)
+						new_result = os.path.join(dest_dir, base + ".srs")
+						os.rename(srs_result, new_result)
+						srs_result = new_result
+						copied_files.append(srs_result)
+					else:
+						copied_files.append(srs_result)
 					found = True
 					break
 				except ValueError:
@@ -780,6 +796,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 				logging.info("%s: Sample failed to verify against main files: "
 				             "%s" % (reldir, os.path.basename(sample)))
 		if not found:
+			print("Creating SRS for: %s" % path)
 			original_stderr = sys.stderr
 			txt_error_file = os.path.join(dest_dir, 
 				os.path.basename(sample)) + ".txt"
@@ -792,9 +809,16 @@ def generate_srr(reldir, working_dir, options, mthread):
 			keep_txt = False
 			try:
 				srsmain([sample, "-y", "-o", dest_dir], True)
-				sampbase = os.path.basename(sample).rsplit(".", 1)[0]
-				srs_result = os.path.join(dest_dir, sampbase + ".srs")
-				copied_files.append(srs_result)
+				srs_result = os.path.join(dest_dir, sbase(sample) + ".srs")
+				if sbase(sample) in same_srs_name:
+					# prevent overwriting .srs by including full extension
+					base = os.path.basename(sample)
+					new_result = os.path.join(dest_dir, base + ".srs")
+					os.rename(srs_result, new_result)
+					srs_result = new_result
+					copied_files.append(srs_result)
+				else:
+					copied_files.append(srs_result)
 			except ValueError as e:
 				print("SRS creation failed for %s!" % os.path.basename(sample))
 				print()
@@ -837,13 +861,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 			advance = sinfo.file_type == FileType.STREAM
 			
 			if advance and tracks[1].signature_bytes.startswith("Rar!"):
-				path = os.path.dirname(srs_result)
-				base_name = srs_data.sample_name.rsplit(".", 1)[0]
-				vobsrr = os.path.join(path, base_name + ".srr")
+				vobsrr = srs_result.rsplit(".", 1)[0] + ".srr"
 				
 				if os.path.exists(vobsrr):
 					# use a not so nice and clean SRR name
 					# should only be a theoretical possibility
+					path = os.path.dirname(srs_result)
 					vobsrr = os.path.join(path, srs_data.sample_name + ".srr")
 					if os.path.exists(vobsrr):
 						print("What is this sorcery?")
