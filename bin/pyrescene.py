@@ -747,8 +747,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 		
 	# .mkv and .m2ts samples could have the same .srs name: prevent this
 	same_srs_name = []
-	sbase = lambda x: os.path.basename(x).rsplit(".", 1)[0]
-	for (name, group) in itertools.groupby(map(sbase, media_files)):
+	rbase = lambda x: os.path.relpath(x, reldir).rsplit(".", 1)[0]
+	for (name, group) in itertools.groupby(map(rbase, media_files)):
 		if len(list(group)) > 1:
 			same_srs_name.append(name)
 	
@@ -766,10 +766,16 @@ def generate_srr(reldir, working_dir, options, mthread):
 
 		is_music = sample.lower().endswith((".mp3", ".flac", ".mp2"))
 		
+		if rbase(sample) in same_srs_name:
+			# prevent overwriting .srs by including full ext for collisions
+			base = os.path.basename(sample)
+			srs_result = os.path.join(dest_dir, base + ".srs")
+		else:
+			srs_result = os.path.join(working_dir, rbase(sample) + ".srs")
+
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
 		found = False
-		srs_result = None
 		if options.sample_verify and not is_music:
 			print("Creating SRS for: %s" % path)
 			print("Checking against the following main files:")
@@ -777,17 +783,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 				print("\t%s" % mrar)
 			for main in main_rars:
 				try:
-					srsmain([sample, "-y", "-o", dest_dir, "-c", main], True)
-					srs_result = os.path.join(dest_dir, sbase(sample) + ".srs")
-					if sbase(sample) in same_srs_name:
-						# prevent overwriting .srs by including full ext
-						base = os.path.basename(sample)
-						new_result = os.path.join(dest_dir, base + ".srs")
-						os.rename(srs_result, new_result)
-						srs_result = new_result
-						copied_files.append(srs_result)
-					else:
-						copied_files.append(srs_result)
+					srsmain([sample, "-y", "-o", srs_result, "-c", main], True)
+					copied_files.append(srs_result)
 					found = True
 					break
 				except ValueError:
@@ -808,17 +805,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 			sys.stderr = open(txt_error_file, "wt")
 			keep_txt = False
 			try:
-				srsmain([sample, "-y", "-o", dest_dir], True)
-				srs_result = os.path.join(dest_dir, sbase(sample) + ".srs")
-				if sbase(sample) in same_srs_name:
-					# prevent overwriting .srs by including full extension
-					base = os.path.basename(sample)
-					new_result = os.path.join(dest_dir, base + ".srs")
-					os.rename(srs_result, new_result)
-					srs_result = new_result
-					copied_files.append(srs_result)
-				else:
-					copied_files.append(srs_result)
+				srsmain([sample, "-y", "-o", srs_result], True)
+				copied_files.append(srs_result)
 			except ValueError as e:
 				print("SRS creation failed for %s!" % os.path.basename(sample))
 				print()
