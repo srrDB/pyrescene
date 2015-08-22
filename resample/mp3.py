@@ -31,7 +31,7 @@
 import os
 import struct
 
-from rescene.utility import is_rar
+from rescene.utility import is_rar, _DEBUG
 from rescene.rarstream import RarStream
 from functools import reduce
 
@@ -257,7 +257,8 @@ class Mp3Reader(object):
 	def read(self):
 		for block in self.blocks:
 			self.current_block = block
-			#print(block)
+			if _DEBUG:
+				print(block)
 			yield block
 	
 	def read_contents(self):
