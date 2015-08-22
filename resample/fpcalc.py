@@ -108,32 +108,77 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 		os.close(fd) # we won't use it
 
 		try:
-			with open(stripped, "wb") as tmpf:
-				mr = Mp3Reader(file_name)
-				for block in mr.read():
-					if block.type in ("MP3", "fLaC"): # main music data
-						read = 0
-						to_read = 65536
-						while read < block.size:
-							if read + to_read > block.size:
-								to_read = block.size - read
-							tmpf.write(mr.read_part(to_read, read))
-							read += to_read
-						break # exit for: music data copied
-				mr.close()
+			if recursive < 2:
+				with open(stripped, "wb") as tmpf:
+					mr = Mp3Reader(file_name)
+					for block in mr.read():
+						if block.type in ("MP3", "fLaC"): # main music data
+							read = 0
+							to_read = 65536
+							while read < block.size:
+								if read + to_read > block.size:
+									to_read = block.size - read
+								tmpf.write(mr.read_part(to_read, read))
+								read += to_read
+							break # exit for: music data copied
+					mr.close()
+			else:
+				# no double tagging: try to strip away the crap
+				# Yano2d-Der_Bunte_Hund_Im_Untergrund-WEB-DE-2014-CUSTODES_INT
+				# has Adobe crap and something that looks like ascii art,
+				# but in a hex editor
+				with open(file_name, "rb") as orig:
+					string_index = -1
+					current = 0
+					# 1) find real mp3 data based on certain strings
+					while True:
+						orig.seek(current, os.SEEK_SET)
+						# +3 for border cases overlap
+						bytespart = orig.read(0x10000 + 3)
+						if not len(bytespart):
+							break
+						m1 = bytespart.find(b"Xing")
+						m2 = bytespart.find(b"LAME")
+						matches = filter(lambda x: x >= 0, [m1, m2])
+						if len(matches):
+							string_index = current + min(matches)
+							break
+						current += 0x10000  # 64KiB batches
+
+					if string_index < 0:
+						raise ValueError("Fingerprinting failed: "
+							"no MP3 string found.")
+	
+					# 2) find last MP3 sync block before found string
+					# 256 bytes: random amount that seems enough
+					orig.seek(string_index - 0x100, os.SEEK_SET)	
+					stack = orig.read(0x100)
+					sync_index = stack[:-1].rfind(b"\xFF")
+					while sync_index > -1:
+						if ord(stack[sync_index+1]) & 0xE0 == 0xE0:
+							break
+						sync_index = stack.rfind(b"\xFF", 0, sync_index)
+
+					# 3) write out the cleaned music data to fingerprint on
+					with open(stripped, "wb") as tmpf:	
+						sync_start = string_index - (0x100 + sync_index)
+						orig.seek(sync_start, os.SEEK_SET)
+						tmpf.write(orig.read())
 			
 			duration, fp = fingerprint(stripped, temp_dir, recursive)
 			bad = False # it succeeded (exception otherwise)
 		except:
-			print("----------------------------------------------------")
-			print("Tell me if the .sfv matches the music file!")
-			print("Otherwise your file is most likely totally corrupt.")
-			print("----------------------------------------------------")
+			if recursive == 2:
+				print("----------------------------------------------------")
+				print("Tell me if the .sfv matches the music file!")
+				print("Otherwise your file is most likely totally corrupt.")
+				print("----------------------------------------------------")
 			# this would be a very rare case:
 			# double bad tagging or just bad data?
 			raise
 		finally:
 			# cleanup temporary stripped file
+			print("Removing %s" % stripped)
 			os.remove(stripped)
 		
 	if temp_cleanup:
