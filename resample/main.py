@@ -2506,20 +2506,41 @@ def mp3_find_sample_streams(self, tracks, main_mp3_file):
 			data = mr.read_part(read_size)
 			if track.signature_bytes == data:
 				# this is the right MP3 file
-				track.check_bytes = track.signature_bytes
 				track.match_offset = block.start_pos
 				track.match_length = min(track.data_length, block.size)
-				tracks[1] = track
-				break
-			else:
-				# this isn't the right MP3 file
+			elif len(data[:2]) == 2:
+				# this isn't the right MP3 file?
 				track.match_offset = -1
-				tracks[1] = track
-			# no support for MP3 samples
-			# it must be the same complete MP3 file
+				# only try to search for the signature when the MP3 data block
+				# doesn't start with the MP3 maker
+				# (otherwise too slow for just wrong tracks?)
+				(sync,) = BE_SHORT.unpack(data[:2])
+				if sync & 0xFFE0 != 0xFFE0:
+					track = mp3_match_signature(track, block, mr)
+				# only works for prepended crap; not MP3 sample files
+			else:
+				# very weird border case
+				track.match_offset = -1
+			tracks[1] = track
+			break
 	mr.close()
 
 	return tracks
+
+def mp3_match_signature(track, block, mr):
+	boffset = 0
+	batchsize = 0x10000
+	
+	while boffset <= block.size:
+		size = min(block.size - boffset, batchsize)
+		data = mr.read_part(size, boffset)
+		found_offset = data.find(track.signature_bytes)
+		if found_offset > -1:
+			track.match_offset = boffset + found_offset
+			track.match_length = min(track.data_length, block.size)
+			break
+		boffset += (batchsize - SIG_SIZE + 1)
+	return track
 
 def stream_find_sample_streams(self, tracks, main_file):
 	if is_rar(main_file):
@@ -2926,7 +2947,6 @@ def mp3_extract_sample_streams(self, tracks, main_mp3_file):
 			# (start offset must match in mp3_find_sample_streams)
 			offset = track.match_offset - block.start_pos
 			assert offset >= 0, "MP3 read offset can't be negative"
-			assert offset == 0, "MP3 extraction does't support samples"
 			track.track_file.write(mr.read_part(track.match_length, offset))
 			tracks[1] = track
 			break

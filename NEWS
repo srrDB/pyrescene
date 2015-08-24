@@ -22,6 +22,7 @@ pyReScene 0.6 (2015-08-xx)
  * ReSample: better expected size estimate for broken MP4 files (!= 48 bytes)
  * ReSample: RIFF mp3: KeyError fixed and SRS will create when fpcalc fails.
  * ReSample: construct SRS for some bad MP3 files too + print warning
+ * ReSample: retag mp3 files with extra leading or trailing bytes
  * ReSample: "OverflowError: Python int too large to convert to C long"
              on a bad MP3 file fixed
  * ReSample: new option to keep sample reconstruction failures (-k)
