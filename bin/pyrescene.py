@@ -1349,6 +1349,9 @@ def main(argv=None):
 			print("Warning: ignoring unnecessary parameters.")
 			print("Use -v or --vobsub-srr to include SRR files for vobsubs.")
 		unrar = get_unrar()
+		if not unrar_is_available():
+			print("UnRAR is required for vobsub .srr creation.")
+			return 1
 		sfv = os.path.abspath(options.vobsubs)
 		try:
 			srr_list = create_srr_for_subs(unrar, sfv, working_dir,
