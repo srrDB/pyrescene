@@ -1109,6 +1109,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			release = True
 			break
 
+	custom_dirs_old_music = []
+	OLD_MP3_LIMIT = 10  # arbitrary amount of possible folders we expect
 	if not release:
 		# SFV file in one of the interesting subdirs?
 		interesting_dirs = []
@@ -1116,6 +1118,9 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			# Disc_1 and Disc_2 in mp3 rlz
 			if DISK_FOLDERS.match(dirname):
 				interesting_dirs.append(dirname)
+			elif re.match("^[a-zA-Z0-9_]+$", dirname, re.IGNORECASE):
+				# old MP3 release with custom folders
+				custom_dirs_old_music.append(dirname)
 		
 		for idir in interesting_dirs:
 			for lfile in os.listdir(os.path.join(dirpath, idir)):
@@ -1125,6 +1130,21 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			if release:
 				break
 	
+		# check for old mp3 release when possibilities are limited in folder
+		# San_Quinn-San_Quinn_Collector_Pack-4CD-2003-KPT/
+		#     CD1-Dont_Cross_Me/
+		#     CD2-Live_N_Direct/
+		#     CD3-The_Hustle_Continues/
+		#     CD4-457_Is_The_Code/
+		if not release and len(dirnames) <= OLD_MP3_LIMIT:
+			sfv_count = 0
+			for cdir in custom_dirs_old_music:
+				for lfile in os.listdir(os.path.join(dirpath, cdir)):
+					if lfile.lower().endswith(".sfv"):
+						sfv_count += 1
+						break
+			release = len(dirnames) == sfv_count and sfv_count >= 2
+	
 	# X3.Gold.Edition-Unleashed has DISC
 	if release and not RELEASE_FOLDERS.match(os.path.basename(dirpath)):
 		release = True
@@ -1133,15 +1153,46 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	
 	# season torrent packs have often an additional NFO file in the root
 	# don't detect as a release if this is the case
+	# only difference with old music releases is the '-' in the folder name
 	if len(filenames) == 1 and filenames[0].lower().endswith(".nfo"):
 		# could still be a regular release with multiple CDs
 		# each other subdir must be a release dir -> not reldir itself
-		release = False
+		is_no_pack = False
 		for reldir in dirnames:
 			if not is_release(os.path.join(dirpath, reldir)):
-				release = True
+				is_no_pack = True
 				break
-	
+
+		# MP3 release falsely detected as torrent site pack (nfo in root)
+		# Nine_Inch_Nails-The_Fragile_2CD-1999-Sinned-aPC
+		# |   00-nine_inch_nails-the_fragile_2cd-1999-sinned-apc.nfo
+		# |
+		# +---Left
+		# |       00-nine_inch_nails-the_fragile_2cd-1999-sinned-apc.nfo
+		# |       00-nine_inch_nails-the_fragile_left-1999-sinned-apc.m3u
+		# |       00-nine_inch_nails-the_fragile_left-1999-sinned-apc.sfv
+		# |
+		# \---Right
+		#         00-nine_inch_nails-the_fragile_2cd-1999-sinned-apc.nfo
+		#         00-nine_inch_nails-the_fragile_right-1999-sinned-apc.m3u
+		#         00-nine_inch_nails-the_fragile_right-1999-sinned-apc.sfv
+		if (not is_no_pack and len(custom_dirs_old_music) == 0 and
+			len(dirnames) <= OLD_MP3_LIMIT):
+			for dirname in dirnames:
+				# old MP3 release with custom folders (no '-' in name)
+				if re.match("^[a-zA-Z0-9_]+$", dirname, re.IGNORECASE):
+					custom_dirs_old_music.append(dirname)
+			
+			sfv_count = 0
+			for cdir in custom_dirs_old_music:
+				for lfile in os.listdir(os.path.join(dirpath, cdir)):
+					if lfile.lower().endswith(".sfv"):
+						sfv_count += 1
+						break
+			release = len(dirnames) == sfv_count and sfv_count >= 2
+		else:
+			release = is_no_pack
+			
 	# a release name doesn't have spaces in its folder name
 	(head, tail) = os.path.split(dirpath)
 	if not tail:
