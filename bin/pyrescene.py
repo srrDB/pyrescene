@@ -312,7 +312,7 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			# Salems.Lot.2004.DVDRip.XviD-FRAGMENT/CZSubs/sl.frag-czech.sfv
 			continue
 		
-		if (pardir == "proof" or pardir == "proofs"):
+		if pardir == "proof" or pardir == "proofs":
 			# only if it's one RAR file containing an image
 			sfvfiles = rescene.utility.parse_sfv_file(sfv)[0]
 			if len(sfvfiles) == 1:

@@ -228,11 +228,15 @@ def main(argv=None):
 	
 	rescene.main.can_overwrite = can_overwrite
 
-	if fix_tracks(args[0], options.input_dir, options.output_dir, 
-	              options.always_yes):
-		return 0
-	else:
-		return 1
+	try:
+		if fix_tracks(args[0], options.input_dir, options.output_dir, 
+		              options.always_yes):
+			return 0
+		else:
+			return 1
+	except AttributeError as bad_input:
+		print(bad_input)
+		return 2
 
 if __name__ == "__main__":
 	sys.exit(main())

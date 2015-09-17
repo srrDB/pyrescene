@@ -119,7 +119,7 @@ def setup_cli_parser():
 
 def verify_main(sample, tracks, options, pexit):
 	main_file_info = file_type_info(options.check)
-	if (main_file_info.file_type != sample.file_type):
+	if main_file_info.file_type != sample.file_type:
 		# not checking STREAM formats against those that will fail
 		# e.g. m2ts proof on MKV release
 		if sample.file_type != FileType.STREAM:
