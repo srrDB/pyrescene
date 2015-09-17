@@ -26,7 +26,7 @@ pyReScene
    except when the release new files 
    compared to the ones stored in the existing srr release folder, 
    contains new files. new in the sense of addition e.g. proof jpg
- - add a switch (like -z) for a single executable
+ - add a switch (like -z) for a single executable (compressed RAR reconstruction)
  - add --broken-samples parameter (used with --list-releases option)
  - SRRs for extracted disk image files or burned to disk
     
@@ -34,12 +34,7 @@ pyReSample
 ==========
 
  - Support for additional video formats
-    * VOB (DVDRs)
-    * M2TS (BDRs)
     * OGM
-    * MPEG
-   General .srs file for unsupported data streams instead of .txt files?
-   (no .txt for this at the moment either. CRC will be stored.)
  - Reconstruct LOL AVI samples correctly. (visible skip)
  - try to extract/verify sample from one big AVI (sample across CDs)
    (http://www.srrdb.com/release/details/Bobby.Deerfield.1977.DVDrip.XviD-DnB)
