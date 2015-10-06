@@ -2682,7 +2682,7 @@ def custom_popen(cmd):
 	if _DEBUG: print(" ".join(cmd))
 	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
 	                        stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
-	                        creationflags=creationflags)	
+	                        creationflags=creationflags)
 	
 def copy_data(source_file, destination_file, offset_amount):
 	with open(source_file, 'rb') as source:

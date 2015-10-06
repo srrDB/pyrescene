@@ -450,7 +450,7 @@ def is_storable_fix(release_name):
 			re.match(".*\.(FiX|FIX)(\.|-).*", release_name) or
 			re.match(".*\.DVDR.Fix-.*", release_name) or
 			re.match(".*\.DVDR.REPACK.Fix-.*", release_name))
-	
+
 def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	"""
 	unrar: location to the unrar executable
@@ -472,7 +472,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 		pass # the path already exists
 
 	idx_lang = os.path.join(working_dir, "languages.diz")
-	
+
 	# recursively create SRR and extract RARs
 	def extract_and_create_srr(folder, srr_out=None, first_rars=None):
 		"""
@@ -618,7 +618,7 @@ def extract_rar(unrar, rarfile, destination):
 		head, tail = os.path.split(rarfile)
 		head = win32api.GetShortPathName(head)
 		rarfile = os.path.join(head, tail)
-	extract = custom_popen([unrar, "e", "-ep", "-o+", 
+	extract = custom_popen([unrar, "e", "-ep", "-o+", "-ai",
 	                        rarfile, "*", destination])
 	(stdout, _) = extract.communicate()
 	# even if 'rarfile' isn't the first volume, exctraction still succeeds
@@ -946,9 +946,6 @@ def generate_srr(reldir, working_dir, options, mthread):
 					# No RAR5 support yet
 					logging.warning("{0}: {1}".format(str(e), esfv))
 
-	# TODO: TXT files for m2ts/vob with crc and size?
-	# no, basic .srs file with a single track
-		
 	copied_sfvs = [] # SFVs in the working dir
 	for sfv in sfvs:
 		copied_sfvs.append(copy_to_working_dir(working_dir, reldir, sfv))
