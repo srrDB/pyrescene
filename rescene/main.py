@@ -518,7 +518,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	
 			fname = os.path.relpath(rarfile, in_folder) if save_paths  \
 				else os.path.basename(rarfile)
-			_fire(MsgCode.MSG, message="Processing file: %s." % fname)
+			_fire(MsgCode.MSG, message="Processing file: %s" % fname)
 			
 			rarblock = SrrRarFileBlock(file_name=fname)
 	#		if save_paths:
@@ -608,7 +608,7 @@ def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
 			raise FileNotFound(msg)
 		base = os.path.basename(infile)
 
-		_fire(MsgCode.MSG, message="Processing file: %s." % base)
+		_fire(MsgCode.MSG, message="Processing file: %s" % base)
 		
 		rarblock = SrrRarFileBlock(file_name=base)
 		srr.write(rarblock.block_bytes())
@@ -781,7 +781,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 
 		for rarfile in rarfiles:
 			rarfile = allfiles[rarfile]
-			_fire(MsgCode.MSG, message="Processing file: %s." % rarfile.name)
+			_fire(MsgCode.MSG, message="Processing file: %s" % rarfile.name)
 			
 			rarblock = SrrRarFileBlock(file_name=rarfile.name)
 			srr.write(rarblock.block_bytes())
