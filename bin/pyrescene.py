@@ -204,8 +204,8 @@ def get_proof_files(reldir):
 			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg 
 			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Small.jpg 
 			if (" " not in os.path.basename(proof) and
-				not lproof[:-4].endswith("folder") and
-				"albumartsmall" not in lproof and
+				not os.path.splitext(lproof)[0].endswith("folder") and
+				"albumartsmall" not in os.path.basename(lproof) and
 				not os.path.basename(lproof).startswith("albumart_{")):
 				# must be named like nfo/sfv/rars or start with 00
 				p = os.path.basename(lproof)
@@ -255,6 +255,14 @@ def get_proof_files(reldir):
 								break
 					if similar_named:
 						result.append(proof)
+					else:
+						tpl = "'{0}' ({1} B) not added to SRR for release {2}"
+						msg = tpl.format(
+							os.path.basename(proof),
+							rescene.utility.sep(os.path.getsize(proof)),
+							os.path.basename(reldir))
+						logging.info(msg)
+						print(msg)
 				else:
 					# TODO: smaller proofs can exist too
 					# -> but .startswith("00") already includes those
@@ -263,7 +271,15 @@ def get_proof_files(reldir):
 					# -> but even directly from topsite there can be
 					#    additional unwanted files?
 					# small JPGs are most likely site grabs by scripts
-					pass
+					
+					# log and print the small files info too
+					tpl = "'{0}' ({1} B) not added to SRR for release {2}"
+					msg = tpl.format(
+						os.path.basename(proof),
+						rescene.utility.sep(os.path.getsize(proof)),
+						os.path.basename(reldir))
+					logging.info(msg)
+					print(msg)
 			# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small JPG image file)
 	for proof in rar_files:
 		if "proof" in proof.lower():
