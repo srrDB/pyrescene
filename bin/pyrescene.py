@@ -166,6 +166,19 @@ def get_music_files(reldir):
 	# .mp2: seen in very old releases e.g. u-Ziq-In.Pine.Effect-DAC (1998)
 	return (get_files(reldir, "*.mp3") + get_files(reldir, "*.mp2") +
 			get_files(reldir, "*.flac"))
+	
+def strip_zeros(file_name):
+	"""Sometimes the covers don't have the same leading characters as
+	the .nfo and .sfv file. In this case the .nfo file is most likely
+	renamed too. e.g. Gentleman-Runaway-EP-2003-TLT"""
+	if file_name.startswith(("00-", "00_", "01-", "01_")):
+		return file_name[3:]
+	elif file_name.startswith(("000-", "000_", "001-", "001_")):
+		return file_name[4:]
+	elif file_name.startswith(("0000-", "0000_", "0001-", "0001_")):
+		return file_name[5:]
+	else:
+		return file_name
 
 def get_proof_files(reldir):
 	"""
@@ -195,11 +208,12 @@ def get_proof_files(reldir):
 				"albumartsmall" not in lproof and
 				not os.path.basename(lproof).startswith("albumart_{")):
 				# must be named like nfo/sfv/rars or start with 00
+				p = os.path.basename(lproof)
 				
 				# 00 for mp3 releases. Mostly 00- but 00_ exists too:
 				# VA-Psychedelic_Wild_Diffusion_Part_1-(ESPRODCD01)-CD-2007-hM
 				# or 000- and 01- or 01_
-				if os.path.basename(proof).startswith(("00", "01")):
+				if p.startswith(("00", "01")):
 					result.append(proof)
 					continue
 				# idea is to not have covers that are added later
@@ -207,24 +221,38 @@ def get_proof_files(reldir):
 				s = 10 # first X characters
 				if os.path.getsize(proof) > 100000:
 					similar_named = False
+					basenames = []
+					# grab all interesting extensions first
 					for nfo in get_files(reldir, "*.nfo"):
-						if (os.path.basename(nfo)[:-4][:s].lower() == 
-							os.path.basename(proof)[:-4][:s].lower()):
-							similar_named = True
-							break
+						basenames.append(os.path.basename(nfo)[:-4])
+					for sfv in get_files(reldir, "*.sfv"):
+						basenames.append(os.path.basename(sfv)[:-4])
+					for rar in rar_files:
+						basenames.append(os.path.basename(rar)[:-4])
+
 					# for music releases, NFOs not always start with 00
 					# while all the other files do (sfv, m3u, jpg, cue,...)
 					# e.g. Hmc_-_187_(UDR011)-VLS-1996-TR
-					for sfv in get_files(reldir, "*.sfv"):
-						if (os.path.basename(sfv)[:-4][:s].lower() == 
-							os.path.basename(proof)[:-4][:s].lower()):
+					for bn in basenames:
+						if bn[:s].lower() == p[:s]:
 							similar_named = True
 							break
-					for rar in rar_files:
-						if (os.path.basename(rar)[:-4][:s].lower() == 
-							os.path.basename(proof)[:-4][:s].lower()):
+						elif strip_zeros(bn)[:s].lower() == strip_zeros(p)[:s]:
 							similar_named = True
 							break
+						else:
+							# checks possible group name before the extension
+							# e.g. Global_Underground_017_-_Danny_Tenaglia
+							# _(London)-2000-tronik
+							#   /gu_017_tracklisting-tronik.jpg
+							#   /00-global_underground_017_-_danny_tenaglia
+							#     _(london)-2000-tronik.sfv
+							#   /01_gu_017_-_london_(cd_1)-tronik.cue
+							grprls = bn.lower().split('-')[-1]
+							grpimg = os.path.splitext(proof)[0].split('-')[-1]
+							if grprls == grpimg:
+								similar_named = True
+								break
 					if similar_named:
 						result.append(proof)
 				else:
