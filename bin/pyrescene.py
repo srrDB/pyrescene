@@ -734,8 +734,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 				os.unlink(tmp_srr_name)
 			raise
 		except FileNotFound as e:
-			# rescene doesn't leave a half finished file
-			print(e)
+			# rescene doesn't leave a partially finished file
+			try:
+				print(e)
+			except UnicodeEncodeError:
+				# strange characters in output string
+				pass
 			return False
 		except (ValueError, EnvironmentError) as e:
 			# e.g. 0 byte RAR file
