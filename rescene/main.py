@@ -742,6 +742,8 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 							allfiles[k.lower()] = v
 							found = True
 							break
+						# TODO: both having different capitals
+						# possible, but then renaming occured 
 					if not found:
 						raise FileNotFound("ERROR: '%s' not found." % rarfile)
 		else:
