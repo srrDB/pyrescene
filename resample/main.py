@@ -172,8 +172,8 @@ def file_type_info(ifile):
 			marker = rs.read(8)
 			rs.close()
 		except Exception as ex:
-			print("The RAR file is broken: %s." % os.path.basename(ifile))
 			print(ex)
+			print("File: %s" % os.path.basename(ifile))
 			return FileType(FileType.Unknown, archived_file_name)
 	elif marker.startswith(MARKER_RAR5):
 		print("RAR5 not yet supported.")
