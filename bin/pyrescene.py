@@ -430,6 +430,7 @@ def get_unwanted_sfvs(allsfvs, wantedsfvs):
 def get_start_rar_files(sfv_list):
 	"""
 	Get the main first RAR files to check sample against.
+	Also used for storable fixes check.
 	"""
 	wanted_rars = []
 	for sfv in sfv_list:
@@ -443,6 +444,7 @@ def get_start_rar_files(sfv_list):
 	return wanted_rars
 
 def work_dir_file(relfile, release_dir, working_dir):
+	"""Constructs path to working directory for a release file."""
 	path = os.path.relpath(relfile, release_dir)
 	dest_file = os.path.join(working_dir, path)
 	return dest_file
@@ -452,27 +454,55 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	working_dir: temporary directory with all the files to store in the SRR
 	release_dir: release folder with path
 	copy_file: file somewhere inside the release_dir
-	"""
-	dest_file = work_dir_file(copy_file, release_dir, working_dir)
+	Tries to preserve capitalization on copy from file or sfv.
+	Passed in from copy_file.
 	
+	Returns path to destination file.
+	"""
+	# 1) find the proper file on disk
+	# on Windows it will be found despite capitalization
+	# on Linux it could not when the capitals don't match (file name from sfv)
+	inputfn = os.path.basename(copy_file)
+	for cfile in os.listdir(os.path.dirname(copy_file)):
+		if cfile.lower() == inputfn.lower() and os.path.isfile(cfile):
+			copy_file = os.path.join(os.path.dirname(copy_file), cfile)
+			break
+	
+	# 2) construct the copy to destination 
+	dest_file = work_dir_file(copy_file, release_dir, working_dir)
+
+	# 3) use proper capitalization on both OSes 
+	# - choose the one with capitals
+	# - not conclusive? use original file name
+	actualfn = os.path.basename(dest_file)
+	if actualfn.lower() == actualfn: 
+		# use file name of SFV either way (no difference is possible)
+		cpath = os.path.dirname(dest_file),
+		dest_file = os.path.join(cpath, inputfn)
+
+	# 4) make in between dirs
 	try:
-		# make in between dirs
 		os.makedirs(os.path.dirname(dest_file))
 	except:
 		pass
 	
+	# 5) try to copy over file
 	try:
-		# copy over file
 		shutil.copyfile(copy_file, dest_file)	
 	except IOError as e:
 		print("Could not copy %s." % copy_file)
 		print("Reason: %s" % e)
+		log = True
 		if "[Errno 2] No such file or directory" in str(e) and os.name == "nt":
 			print("Trying again!")
 			try:
 				shutil.copyfile("\\\\?\\" + copy_file, dest_file)
+				log = False
 			except IOError:
 				print("Failed again...")
+				log = True
+		if log:
+			logging.error("Failed to copy {0}: {1}".format(copy_file, e))
 
 	return dest_file
 
@@ -621,7 +651,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	
 	results = []
 	
-	# get first RARs from SFV file
+	# get first RARs from SFV file to extract for vobsub SRR
 	first_rars = get_start_rar_files([sfv])
 	if not len(first_rars):
 		# it was a bad SFV, but an archive with a similar same name might exist
@@ -939,7 +969,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		"LMA.Manager.2007.FiX-RELOADED",
 		"MSC.PATRAN.V2001.R2A.FIX.FOR.RISE-TFL",
 		"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
-		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS", #contains vobsubs
+		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",  # contains vobsubs
 		# missing file main release
 		"Super.Streetfighter.IV.SSFIV.Arcade.Edition.DLC.FIX.READNFO.XBOX360-MoNGoLS",
 		]
@@ -951,6 +981,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 		# prevent duplicate file add e.g. roor-blueruin-1080p-proof.fix.rar
 		# Blue.Ruin.2013.German.DL.Proof.Fix.1080p.BluRay.x264-ROOR
 		work_dir_file(main_rars[0], reldir, working_dir) not in copied_files):
+		
+		
 		copied_files.append(copy_to_working_dir(
 			working_dir, reldir, main_rars[0]))
 	
