@@ -210,10 +210,14 @@ def file_type_info(ifile):
 		# last attempt to detect an MP3 file by using the ID3v1 tag
 		# (last 128 bytes of mp3 file)
 		with open(ifile, 'rb') as ofile:
-			ofile.seek(-128, os.SEEK_END)
-			if ofile.read(3) == b"TAG":
-				return FileType(FileType.MP3, archived_file_name)
-		
+			try:
+				ofile.seek(-128, os.SEEK_END)
+				if ofile.read(3) == b"TAG":
+					return FileType(FileType.MP3, archived_file_name)
+			except EnvironmentError:
+				# IOError possible when RAR file is broken
+				pass
+	
 		# check for stream types based on extension
 		name = ifile.lower()
 		if name.endswith(FileType.StreamExtensions):
