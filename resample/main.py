@@ -151,25 +151,30 @@ def file_type_info(ifile):
 		return FileType(FileType.Unknown, archived_file_name)
 		
 	if marker.startswith(MARKER_RAR) and utility.is_rar(ifile):
-		# Read first file from the RAR archives
-		rr = RarReader(ifile)
-		first_file = True
-		for archf in rr.list_files():
-			# use the first file with a supported file extension
-			# (skipping .srt and other encountered files)
-			extension = FileType.VideoExtensions + FileType.AudioExtensions
-			if archf.endswith(extension):
-				archived_file_name = archf  # first useful file
-				break
-			first_file = False
-		rr.close()
+		try:
+			# Read first file from the RAR archives
+			rr = RarReader(ifile)
+			first_file = True
+			for archf in rr.list_files():
+				# use the first file with a supported file extension
+				# (skipping .srt and other encountered files)
+				extension = FileType.VideoExtensions + FileType.AudioExtensions
+				if archf.endswith(extension):
+					archived_file_name = archf  # first useful file
+					break
+				first_file = False
+			rr.close()
 
-		# first file from RAR is the default behavior: no message
-		if not first_file and archived_file_name:
-			print("Using %s from first RAR." % archived_file_name)
-		rs = rarstream.RarStream(ifile, archived_file_name)
-		marker = rs.read(8)
-		rs.close()
+			# first file from RAR is the default behavior: no message
+			if not first_file and archived_file_name:
+				print("Using %s from first RAR." % archived_file_name)
+			rs = rarstream.RarStream(ifile, archived_file_name)
+			marker = rs.read(8)
+			rs.close()
+		except Exception as ex:
+			print("The RAR file is broken: %s." % os.path.basename(ifile))
+			print(ex)
+			return FileType(FileType.Unknown, archived_file_name)
 	elif marker.startswith(MARKER_RAR5):
 		print("RAR5 not yet supported.")
 		return FileType(FileType.Unknown, archived_file_name)
