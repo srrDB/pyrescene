@@ -1372,8 +1372,12 @@ BTYPES_CLASSES = {
 ###############################################################################
 	
 class RarReader(object):
-	"""A simple Reader class that reads through 
-	RAR or SRR files one block at a time. (No RAR 5)"""
+	"""
+	A simple reader class that reads through RAR or SRR files
+	one block at a time. (No RAR 5)
+	
+	Raises EnvironmentError, ValueError, ArchiveNotFoundError
+	"""
 	RAR, SRR, SFX = list(range(3))
 	
 	def __init__(self, rfile, file_length=0, enable_sfx=False):
