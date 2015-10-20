@@ -36,7 +36,7 @@ import resample
 from resample import file_type_info
 from resample.main import FileType, InvalidMatchOffset
 from resample import fpcalc
-from rescene.utility import sep
+from rescene.utility import sep, is_rar
 from rescene.utility import raw_input, unicode
 from rescene.utility import create_temp_file_name, replace_result
 
@@ -190,6 +190,7 @@ def main(argv=None, no_exit=False):
 		# check the arguments for existence
 		for ifile in args:
 			msg = ""
+			show_help = True
 			ifile_exists = os.path.exists(ifile)
 			
 			if not ifile_exists and os.name == "nt":
@@ -211,13 +212,16 @@ def main(argv=None, no_exit=False):
 					       "in file: %s\n" % os.path.basename(ifile))
 					msg += ("File size: %s bytes\n" % 
 					        sep(os.path.getsize(ifile)))
+					if is_rar(ifile):
+						show_help = False
 			else:
 				msg = "Input file not found: %s\n" % os.path.basename(ifile)
 				if _DEBUG:
 					print(ifile)  # shows the complete path
 				
 			if msg:
-				parser.print_help()
+				if show_help:
+					parser.print_help()
 				pexit(1, msg, False)
 
 		sample = resample.sample_class_factory(ftype_arg0)
