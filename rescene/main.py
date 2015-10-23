@@ -60,6 +60,7 @@ from rescene.utility import parse_sfv_file, parse_sfv_data
 from rescene.utility import filter_sfv_duplicates
 from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
+from rescene.utility import capitalized_fn
 from rescene.osohash import osohash_from
 
 # compatibility with 2.x
@@ -507,17 +508,18 @@ def create_srr(srr_name, infiles, in_folder="",
 		oso_dict = odict()
 		# STORE ARCHIVE BLOCKS
 		for rarfile in rarfiles:
-			if not os.path.isfile(rarfile):
-				# TODO: case sensitivity on Unix systems
+			# take into account case sensitivity on Unix systems
+			(rfexact, rfcapitals) = capitalized_fn(rarfile)
+			if not os.path.isfile(rfexact):
 				# all lower in sfv and casings in RAR file names
-				msg = "Referenced file not found: %s" % rarfile
+				msg = "Referenced file not found: %s" % rfexact
 				_fire(code=MsgCode.FILE_NOT_FOUND, message=msg)
 				srr.close()	  
 				os.unlink(tmp_srr_name)
 				raise FileNotFound(msg)
 	
-			fname = os.path.relpath(rarfile, in_folder) if save_paths  \
-				else os.path.basename(rarfile)
+			fname = os.path.relpath(rfcapitals, in_folder) if save_paths  \
+				else os.path.basename(rfcapitals)
 			_fire(MsgCode.MSG, message="Processing file: %s" % fname)
 			
 			rarblock = SrrRarFileBlock(file_name=fname)
@@ -525,7 +527,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	#			rarblock.flags |= SrrRarFileBlock.PATHS_SAVED
 			srr.write(rarblock.block_bytes())
 			
-			rr = RarReader(rarfile)
+			rr = RarReader(rfexact)
 			for block in rr.read_all():
 				if block.rawtype == BlockType.RarPackedFile:
 					_fire(MsgCode.FBLOCK, message="RAR Packed File Block",
@@ -931,6 +933,7 @@ def _handle_rar(rfile, filelist=None, read_retries=7):
 			
 	next_file = filename(rfile)
 	while exists(next_file):
+		# TODO: fails on mixed capitals on Linux?
 		yield next_file
 		next_file = filename(next_archive(next_file, is_old_style_naming))
 		

@@ -75,6 +75,7 @@ from resample.main import file_type_info, sample_class_factory, FileType
 from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import create_temp_file_name, replace_result
+from rescene.utility import capitalized_fn
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -459,34 +460,23 @@ def copy_to_working_dir(working_dir, release_dir, copy_file):
 	
 	Returns path to destination file.
 	"""
-	# 1) find the proper file on disk
-	# on Windows it will be found despite capitalization
-	# on Linux it could not when the capitals don't match (file name from sfv)
-	inputfn = os.path.basename(copy_file)
-	for cfile in os.listdir(os.path.dirname(copy_file)):
-		if cfile.lower() == inputfn.lower() and os.path.isfile(cfile):
-			copy_file = os.path.join(os.path.dirname(copy_file), cfile)
-			break
-	
-	# 2) construct the copy to destination 
+	# find the proper file on disk (copy_file) and
+	# choose the file name with capitals (capitals)
+	# - not conclusive? use original input file name
+	copy_file, capitals = capitalized_fn(copy_file)
+
+	# construct the path for the destination 
 	dest_file = work_dir_file(copy_file, release_dir, working_dir)
+	
+	# and use proper file captalization
+	cpath = os.path.dirname(dest_file)
+	dest_file = os.path.join(cpath, os.path.basename(capitals))
 
-	# 3) use proper capitalization on both OSes 
-	# - choose the one with capitals
-	# - not conclusive? use original file name
-	actualfn = os.path.basename(dest_file)
-	if actualfn.lower() == actualfn: 
-		# use file name of SFV either way (no difference is possible)
-		cpath = os.path.dirname(dest_file),
-		dest_file = os.path.join(cpath, inputfn)
-
-	# 4) make in between dirs
 	try:
 		os.makedirs(os.path.dirname(dest_file))
 	except:
 		pass
 	
-	# 5) try to copy over file
 	try:
 		shutil.copyfile(copy_file, dest_file)	
 	except IOError as e:
@@ -1108,6 +1098,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		print("This is a know problem for PyPy users.")
 		print("(And sadly others too, but less often.)")
 		# TODO: sure this isn't because of left open file handles?
+		# extracted files had read only attributes. fixed everywhere?
 		if _DEBUG:
 			print("Actual error: {0}".format(str(oserr)))
 	
@@ -1587,6 +1578,7 @@ def main(argv=None):
 		# I've seen this error with CPython too. Something else wrong?
 		# The temp dir was actually removed though.
 		# TODO: sure this isn't because of left open file handles?
+		# extracted files had read only attributes. fixed everywhere?
 		print("Actual error: {0}".format(str(oserr)))
 	
 	# see if we need to eject a disk drive
