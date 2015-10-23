@@ -47,6 +47,7 @@ else:
 from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
 from rescene.utility import filter_sfv_duplicates, same_sfv
 from rescene.utility import is_rar, next_archive, is_good_srr, first_rars, sep
+from rescene.utility import capitalized_fn
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -340,3 +341,49 @@ class TestUtility(unittest.TestCase):
 			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
 			self.skipTest(fmt.format(err))  # 2.6 crash expected
+			
+	def test_grab_file_names_capitals_on_disk(self):
+		tdir = os.path.join(os.pardir, os.pardir, "test_files", "hash_capitals")
+		ofile = "Parlamentet.S06E02.SWEDiSH-SQC_alllower.srr"
+		orig = os.path.join(tdir, ofile)
+		upper = os.path.join(tdir, ofile.upper())
+		lower = os.path.join(tdir, ofile.lower())
+		
+		(a, b) = capitalized_fn(orig)
+		c = os.path.basename(a)
+		d = os.path.basename(b)
+		(e, f) = capitalized_fn(upper)
+		g = os.path.basename(e)
+		h = os.path.basename(f)
+		(i, j) = capitalized_fn(lower)
+		k = os.path.basename(i)
+		l = os.path.basename(j)
+		
+		# first element must match with what is on disk
+		self.assertEqual(c, ofile, "not exact")
+		self.assertEqual(g, ofile, "not exact")
+		self.assertEqual(k, ofile, "not exact")
+		
+		# second element tries to use the input with capitals
+		self.assertEqual(d, ofile, "not with capitals")
+		self.assertEqual(h, ofile.upper(), "when in doubt, use input")
+		self.assertEqual(l, ofile, "use capitals from input when lc file name")
+		
+	def test_grab_file_names_all_lower_on_disk(self):
+		tdir = os.path.join(os.pardir, os.pardir, "test_files", "txt")
+		ofile = "empty_file.txt"
+		orig = os.path.join(tdir, ofile)
+		upper = os.path.join(tdir, ofile.upper())
+
+		(a, b) = capitalized_fn(orig)
+		c = os.path.basename(a)
+		d = os.path.basename(b)
+		(e, f) = capitalized_fn(upper)
+		g = os.path.basename(e)
+		h = os.path.basename(f)
+		
+		self.assertEqual(c, ofile, "not exact")
+		self.assertEqual(g, ofile, "not exact")
+		
+		self.assertEqual(d, ofile, "not with capitals")
+		self.assertEqual(h, ofile.upper(), "not with capitals")

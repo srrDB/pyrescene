@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2011 pyReScene
+# Copyright (c) 2011-2015 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -469,6 +469,43 @@ def calculate_crc32(file_name):
 		remove_spinner()
 	return crc & 0xFFFFFFFF
 
+def capitalized_fn(afile):
+	"""
+	Checks provided file with the file on disk and returns the imput with
+	its exact capitalization on disk. In the second value the capitalization
+	is preserved if it was available.
+	
+	Returns tuple: (exact, capitals)
+	exact: what's on disk
+	captials: the name with capitals
+	"""
+	exact = capitals = afile
+	# 1) find the proper file on disk
+	# on Windows it will be found despite capitalization
+	# on Linux it could not when the capitals don't match (file name from sfv)
+	inputfn = os.path.basename(afile)
+	inputdir = os.path.dirname(afile)
+	for cfile in os.listdir(os.path.dirname(afile)):
+		if (cfile.lower() == inputfn.lower() and 
+		    os.path.isfile(os.path.join(inputdir, cfile))):
+			exact = os.path.join(os.path.dirname(afile), cfile)
+			break
+
+	# 2) use proper capitalization on both OSes 
+	# - choose the one with capitals
+	# - not conclusive? use original file name
+	actualfn = os.path.basename(exact)
+	if actualfn.lower() == actualfn: 
+		# use file name of SFV either way (no difference is possible)
+		cpath = os.path.dirname(afile)
+		capitals = os.path.join(cpath, inputfn)
+	elif inputfn.lower() == inputfn:
+		# actualfn has capitals and input none
+		cpath = os.path.dirname(afile)
+		capitals = os.path.join(cpath, actualfn)
+
+	return exact, capitals
+	
 ###############################################################################
 
 def diff_lists(one, two):
