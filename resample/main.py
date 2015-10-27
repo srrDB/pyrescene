@@ -977,7 +977,18 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 # 				td.track_number = er.current_element.track_number
 # 				tracks[er.current_element.track_number] = td
 				
-			track = tracks[er.current_element.track_number]
+			try:
+				track = tracks[er.current_element.track_number]
+			except KeyError:
+				# X-Men.Days.of.Future.Past.2014
+				#     .THE.ROGUE.CUT.720p.BluRay.x264-SADPANDA
+				# Expected: 54 775 583
+				# Found   : 56 131 584
+				# KeyError: 171157197 (on the track number)
+				# 1 minute duration expected, but only plays for 24 seconds
+				# Invalid element length at 0x011D7141 (after error element)
+				# Sample raced when not completely written yet?
+				raise ValueError("More available data than expected.")
 			track.data_length += er.current_element.length
 			
 			other_length += len(er.current_element.raw_block_header)
