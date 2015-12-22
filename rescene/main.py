@@ -457,7 +457,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	save_paths:  if the path relative to in_folder 
 	             must be stored with the file name e.g. Sample/ or Proof/
 	compressed:  Do we create an SRR or not when encountered compressed files?
-	oso_hash:    Store OSO hashes or not.
+	oso_hash:    Store OSO/ISDb hashes or not.
 	
 	Returns True: success
 	Returns False: existing .srr file not overwritten
@@ -557,7 +557,7 @@ def create_srr(srr_name, infiles, in_folder="",
 				# store the raw data for any blocks found
 				srr.write(block.block_bytes())
 				
-		# STORE OSO HASHES
+		# STORE OSO/ISDb HASHES
 		if oso_hash:
 			for (fname, rarname) in oso_dict.items():
 				try:
@@ -834,7 +834,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 				
 				#TODO: when starting from RARs, detect when incomplete!!!!
 	
-		# STORE OSO HASHES
+		# STORE OSO/ISDb HASHES
 		# Not for Usenet as we can't be 100% sure the hash will be valid
 		srr.close()
 	except KeyboardInterrupt:
@@ -1060,7 +1060,7 @@ def info(srr_file):
 			_fire(MsgCode.AUTHENTCITY, message=msg)
 			
 		elif block.rawtype == BlockType.SrrOsoHash:
-			if _DEBUG: print("OSO hash block found.")
+			if _DEBUG: print("ISDb hash block found.")
 			oso_hashes.append(
 				(block.file_name, block.oso_hash, block.file_size))
 			current_rar = None # end the file size counting

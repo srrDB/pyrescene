@@ -27,7 +27,10 @@ import struct
 from rescene.rarstream import RarStream
 
 def compute_hash(mfile):
-	"""Hash code is based on Media Player Classic. (Gabest)
+	"""
+	Calculates the ISDb hash.
+	The original algorithm for the ISDb protocol was thought out by Gabest.
+	Hash code is based on Media Player Classic. (Gabest)
 	
 	In natural language it calculates:
 		size + 64bit checksum of the first and last 64 KiB
@@ -36,9 +39,9 @@ def compute_hash(mfile):
 	
 	http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 	"""
-	if hasattr(mfile, "seek"): # supplied as a stream/open file handle
+	if hasattr(mfile, "seek"):  # supplied as a stream/open file handle
 		return _osorg_hash(mfile)
-	else: # file on hard drive
+	else:  # file on hard drive
 		stream = open(mfile, mode="rb")
 		try:
 			return _osorg_hash(stream)
@@ -55,9 +58,9 @@ def osohash_from(rar_archive, enclosed_file=None, middle=False):
 	# or list with tuples (path, filename, srr_hash)
 	
 def _length(stream):
-	""" Returns the size of the given file stream. """
+	"""Returns the size of the given file stream."""
 	original_offset = stream.tell()
-	stream.seek(0, 2) # go to the end of the stream
+	stream.seek(0, 2)  # go to the end of the stream
 	size = stream.tell()
 	stream.seek(original_offset)
 	return size

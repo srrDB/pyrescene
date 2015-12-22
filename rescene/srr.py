@@ -134,7 +134,7 @@ def display_info(srr_file):
 		print()
 		
 	if len(info["oso_hashes"]):
-		print("OpenSubtitles.org hashes:")
+		print("ISDb hashes:")
 		for (name, ohash, size) in info["oso_hashes"]:
 			print("\t%s %s %d" % (encodeerrors(name, sys.stdout), ohash, size))
 		print()
@@ -316,6 +316,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		success = rescene.create_srr(srr_name, infiles, infolder, 
 	                                 store_files, save_paths,
 	                                 options.allow_compressed,
+	                                 options.isdb_hash,
 	                                 tmp_srr_name=tmp_srr_name)
 		replace_result(tmp_srr_name, srr_name)
 		mthread.done = True
@@ -405,6 +406,10 @@ def main(argv=None):
 					help="<path>: Specify output file or directory path.")
 	creation.add_option("-i", help="<path>: Specify input base directory.",
 						dest="input_base", metavar="DIRECTORY")	
+	creation.add_option("--no-isdb", 
+						action="store_false", default=True, dest="isdb_hash",
+						help="do not attempt to store ISDb hashes "
+						"(not recommended)")
 	
 #	recon.set_description("")
 	recon.add_option("-r", action="store_true", dest="auto_locate",
