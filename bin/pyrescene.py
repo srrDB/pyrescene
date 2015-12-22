@@ -735,9 +735,10 @@ def generate_srr(reldir, working_dir, options, mthread):
 	# create SRR from RARs or from .mp3 or .flac SFV
 	if len(main_sfvs):
 		try:
-			result = rescene.create_srr(srr, main_sfvs, reldir, [], True, 
-			                            options.compressed,
-									    tmp_srr_name=tmp_srr_name)
+			result = rescene.create_srr(
+			    srr, main_sfvs, reldir, [], True, 
+			    options.compressed, options.isdb_hash,
+				tmp_srr_name=tmp_srr_name)
 			# when the user decides not to overwrite an existing SRR
 			if not result:
 				return False
@@ -808,7 +809,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	print()
 	
 	if options.nosrs:
-		# wo don't handle them (traffic, speed, ...)
+		# we don't handle them (traffic, speed, ...)
 		media_files = [] 
 	else:
 		media_files = get_sample_files(reldir) + get_music_files(reldir)
@@ -1325,9 +1326,14 @@ def main(argv=None):
 					metavar="FILE", 
 					help="file with file names to skip for the stored files")
 
+	# speedup rerun, less traffic, backup textfiles, ...
 	parser.add_option("--no-srs", action="store_true", dest="nosrs",
-					help="disable .srs creation for media files")
-					# speedup rerun, less traffic, backup textfiles ...
+					help="disable all SRS creation (not recommended)")
+	parser.add_option("--no-isdb",
+					action="store_false", default=True, dest="isdb_hash",
+					help="do not attempt to store ISDb hashes "
+					"(not recommended)")
+
 	parser.add_option("-e", "--eject",
 					action="store_true", dest="eject",
 					help="eject DVD drive after processing")

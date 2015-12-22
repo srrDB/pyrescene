@@ -754,7 +754,7 @@ class SrrRarFileBlock(_SrrFileNameBlock):
 		return out
 	
 class SrrOsoHashBlock(_SrrFileNameBlock):
-	"""SRR block that contains an OpenSubtitles.Org hash.
+	"""SRR block that contains an OpenSubtitles.Org/ISDb hash.
 	http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 	
 	|CRC |TY|FLAG| HL |  SIZE          |  OSO HASH      | NL |File name|
@@ -765,7 +765,7 @@ class SrrOsoHashBlock(_SrrFileNameBlock):
 	
 	SIZE:   File Size (8 bytes)
 	        The maximum file size is 0xFFFFFFFFFFFFFFFF bytes
-	OSO HASH: 64bit chksum of the first and last 64k
+	OSO HASH: 64bit chksum of the first and last 64k (ISDb hash)
 	NL: Name Length (2 bytes)
 	    Because HL is also 2 bytes, NL can't use the full range.
 	    0xFFFF - 7 - 8 - 8 - 2 = 65510 (0xFFE6)

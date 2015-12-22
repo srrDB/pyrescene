@@ -61,7 +61,7 @@ class RarStream(io.IOBase):
 	             middle=False, compressed=False):
 		"""
 		If middle is set, the check for being the first RAR volume is skipped.
-		This can be the case when generating OSO hashes.
+		This can be the case when generating OSO/ISDb hashes.
 		If compressed is set, no errors will be thrown for using
 		compressed RAR files.
 		"""
