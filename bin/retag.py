@@ -38,6 +38,7 @@ except ImportError:
 	pass
 
 import rescene
+from rescene.utility import raw_input
 from resample.srs import main as srsmain
 from resample.main import file_type_info, sample_class_factory, FileType
 
