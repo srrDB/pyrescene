@@ -785,6 +785,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 	for nfo in get_files(reldir, "*.nfo"):
 		if os.path.basename(nfo).lower() in ("imdb.nfo"):
 			continue
+		if os.path.basename(nfo).lower() in ("no.nfo"):
+			try:
+				if os.path.getsize(nfo) == 8:
+					continue  # contains the text "no.nfo"
+			except OSError:
+				continue  # file inaccessible
 		copied_files.append(copy_to_working_dir(working_dir, reldir, nfo))
 
 	for m3u in get_files(reldir, "*.m3u"):
