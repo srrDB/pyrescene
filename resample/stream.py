@@ -77,6 +77,8 @@ class StreamReader(object):
 				raise InvalidDataException("Not a stream SRS file!")
 			if marker not in (b"STRM", b"SRSF", b"SRST"):
 				print("Unknown header block encountered")
+			else:
+				marker = marker.decode("ascii")
 
 			# header: block size
 			(size,) = S_LONG.unpack(self._stream.read(4))
