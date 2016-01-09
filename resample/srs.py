@@ -520,6 +520,8 @@ def main(argv=None, no_exit=False):
 		pexit(6, "The stored main video location is not valid. "
 		         "Try again on a different disk or use -m.")
 	except (ValueError, AssertionError) as err:
+		# -when input file is a folder
+		# -data corruption
 		if _DEBUG:
 			traceback.print_exc()
 		# strip leading white spaces for each line

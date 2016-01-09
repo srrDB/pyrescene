@@ -1054,8 +1054,7 @@ def info(srr_file):
 
 		elif block.rawtype == BlockType.RarOldAuthenticity76 or  \
 			 block.rawtype == BlockType.RarOldAuthenticity79:
-			msg = "Old Authenticity block found. (%s)"  \
-				% hex(block.rawtype)
+			msg = "Old Authenticity block found. (%s)" % hex(block.rawtype)
 			if _DEBUG: print(msg)
 			_fire(MsgCode.AUTHENTCITY, message=msg)
 			
