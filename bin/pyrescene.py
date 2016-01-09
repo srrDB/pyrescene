@@ -1117,9 +1117,10 @@ def get_release_directories(path):
 	last_release = ""
 	
 	if os.name != "nt":
-		# wait until the DVD drive is mounted
-		limiter = 0  # prevent endless loop
-		# TODO: check what the actual problem is here. empty directory?
+		# wait until the DVD drive is mounted (max 30 seconds)
+		# limiter prevents endless loop when the input path is an empty folder
+		# normal for an optical drive that is still mounting
+		limiter = 0
 		while not len(os.listdir(path)) and limiter < 30:
 			print("Waiting 5 seconds for mount.")
 			time.sleep(5)
