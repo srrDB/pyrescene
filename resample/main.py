@@ -142,8 +142,11 @@ def file_type_info(ifile):
 	
 	archived_file_name = ""
 	
-	with open(ifile, 'rb') as ofile:
-		marker = ofile.read(14)
+	try:
+		with open(ifile, 'rb') as ofile:
+			marker = ofile.read(14)
+	except IOError:
+		raise ValueError("File locked or a folder")
 		
 	# the file is too small (probably empty)
 	# don't let this function throw an error
