@@ -230,11 +230,32 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 	# something is wrong with the executable
 	try:
 		custom_popen([potential_fpcalc_executable])
-	except (OSError, IOError):
+	except (OSError, IOError) as err:
+		msg = None
+		# Windows help messages
+		try:
+			if err.winerror == 216:  # errno 8
+				msg = "fpcalc.exe has the wrong architecture"
+			elif err.winerror == 193:  # errno 22
+				msg = "fpcalc.exe is not an executable"
+		except:
+			pass
+		
+		# *nix help messages
+		if not msg:
+			try:
+				if err.errno == 13:  # Permission denied
+					msg = "fpcalc has no execution rights"
+				elif err.errno == 8:  # Exec format error
+					msg = "fpcalc has the wrong architecture"
+			except:
+				pass
+		if msg:
+			print(msg)
 		return None
 	except Exception as ex:
 		print("Tell me about this unexpected error below!")
-		print(ex) # any other exception should not happen
+		print(ex)  # any other exception should not happen
 		return None
 	
 	# the executable ran just fine

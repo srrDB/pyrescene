@@ -906,7 +906,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 					sys.stderr = original_stderr
 					os.unlink(tmp_srr_name)
 					empty_folder(working_dir)
-					fpmsg = "Please put the fpcalc executable in your path."
+					fpmsg = "Please put the fpcalc executable in your PATH."
 					raise ExecutableNotFound(fpmsg)
 					
 			sys.stderr.close()
@@ -1563,6 +1563,7 @@ def main(argv=None):
 		print("It can be downloaded from ")
 		print("https://bitbucket.org/acoustid/chromaprint/downloads")
 		print("On Debian, install libchromaprint-tools")
+		print("On openSUSE, install chromaprint-fpcalc")
 		print("----------------------------------------------------")
 		aborted = True
 	finally:
