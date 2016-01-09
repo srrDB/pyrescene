@@ -210,9 +210,9 @@ def main(argv=None, no_exit=False):
 					msg = ("Could not locate MKV, AVI, MP4, WMV, "
 					       "FLAC or MP3 data "
 					       "in file: %s\n" % os.path.basename(ifile))
-					msg += ("File size: %s bytes\n" % 
-					        sep(os.path.getsize(ifile)))
-					if is_rar(ifile):
+					file_size = os.path.getsize(ifile)
+					msg += ("File size: %s bytes\n" % sep(file_size))
+					if is_rar(ifile) or file_size == 0:
 						show_help = False
 			else:
 				msg = "Input file not found: %s\n" % os.path.basename(ifile)
