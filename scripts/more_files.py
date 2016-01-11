@@ -30,8 +30,12 @@ Version 0.3 (2012-09-23)
  
 Version 0.4 (2012-11-25)
  - MP4 and WMV support for -c switch
+ 
+Version 0.5 (2016-01-11)
+ - Issues fixed when output directory is located at input location
+ - VOB and M2TS support for -c switch
 
-Author: Gfy <tsl@yninovg.pbz>"""
+Author: Gfy"""
 
 import os
 import sys
@@ -39,7 +43,7 @@ import optparse
 import shutil
 
 def do_move(dest_dir, dir_to_move):
-	if dest_dir:
+	if dest_dir and os.path.abspath(dest_dir) != dir_to_move:
 		shutil.move(dir_to_move, dest_dir)
 		
 def list_files(fullreldir):
@@ -56,6 +60,10 @@ def main(options, args):
 		print("What should I check for?")
 		sys.exit(1)
 		
+	if not os.path.exists(options.output_dir):
+		print("Trying to create missing output directory")
+		os.makedirs(options.output_dir)
+		
 	parg = args[0]
 	for reldir in os.listdir(parg):
 		fullreldir = os.path.abspath(os.path.join(parg, reldir))
@@ -66,7 +74,8 @@ def main(options, args):
 				(options.usenet and any("usenet" in x for x in sampfiles) or
 				(options.capitals and any(
 					".MKV.txt" in x or ".AVI.txt" in x or
-					".MP4.txt" in x or ".WMV.txt" in x
+					".MP4.txt" in x or ".WMV.txt" in x or
+					".VOB.txt" in x or ".M2TS.txt" in x
 					for x in sampfiles))) or
 				(options.empty and not any(os.path.getsize(
 				        os.path.join(fullreldir, x)) != 0
@@ -78,7 +87,7 @@ if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [arguments] [directory]'\n"
 		"This tool will list all directories with multiple files or none.\n",
-		version="%prog 0.3 (2012-09-23)") # --help, --version
+		version="%prog 0.5 (2016-01-11)")  # --help, --version
 	
 	parser.add_option("-m", "--more", help="more than one", 
 	                  action="store_true", default=False, dest="more")
