@@ -484,11 +484,11 @@ def capitalized_fn(afile):
 	# on Windows it will be found despite capitalization
 	# on Linux it could not when the capitals don't match (file name from sfv)
 	inputfn = os.path.basename(afile)
-	inputdir = os.path.dirname(afile)
-	for cfile in os.listdir(os.path.dirname(afile)):
+	inputdir = os.path.dirname(afile) or os.curdir
+	for cfile in os.listdir(inputdir):
 		if (cfile.lower() == inputfn.lower() and 
 		    os.path.isfile(os.path.join(inputdir, cfile))):
-			exact = os.path.join(os.path.dirname(afile), cfile)
+			exact = os.path.join(inputdir, cfile)
 			break
 
 	# 2) use proper capitalization on both OSes 
@@ -497,11 +497,11 @@ def capitalized_fn(afile):
 	actualfn = os.path.basename(exact)
 	if actualfn.lower() == actualfn: 
 		# use file name of SFV either way (no difference is possible)
-		cpath = os.path.dirname(afile)
+		cpath = inputdir
 		capitals = os.path.join(cpath, inputfn)
 	elif inputfn.lower() == inputfn:
 		# actualfn has capitals and input none
-		cpath = os.path.dirname(afile)
+		cpath = inputdir
 		capitals = os.path.join(cpath, actualfn)
 
 	return exact, capitals
