@@ -369,6 +369,37 @@ class TestUtility(unittest.TestCase):
 		self.assertEqual(h, ofile.upper(), "when in doubt, use input")
 		self.assertEqual(l, ofile, "use capitals from input when lc file name")
 		
+		# same without path prepended
+		cwd = os.getcwd()
+		try:
+			os.chdir(tdir)
+			ofile = "Parlamentet.S06E02.SWEDiSH-SQC_alllower.srr"
+			orig = ofile
+			upper = ofile.upper()
+			lower = ofile.lower()
+			
+			(a, b) = capitalized_fn(orig)
+			c = os.path.basename(a)
+			d = os.path.basename(b)
+			(e, f) = capitalized_fn(upper)
+			g = os.path.basename(e)
+			h = os.path.basename(f)
+			(i, j) = capitalized_fn(lower)
+			k = os.path.basename(i)
+			l = os.path.basename(j)
+			
+			# first element must match with what is on disk
+			self.assertEqual(c, ofile, "not exact")
+			self.assertEqual(g, ofile, "not exact")
+			self.assertEqual(k, ofile, "not exact")
+			
+			# second element tries to use the input with capitals
+			self.assertEqual(d, ofile, "not with capitals")
+			self.assertEqual(h, ofile.upper(), "when in doubt, use input")
+			self.assertEqual(l, ofile, "use capitals from input when lc file name")
+		finally:
+			os.chdir(cwd)
+		
 	def test_grab_file_names_all_lower_on_disk(self):
 		tdir = os.path.join(os.pardir, os.pardir, "test_files", "txt")
 		ofile = "empty_file.txt"
@@ -387,3 +418,26 @@ class TestUtility(unittest.TestCase):
 		
 		self.assertEqual(d, ofile, "not with capitals")
 		self.assertEqual(h, ofile.upper(), "not with capitals")
+
+		# same without path prepended
+		cwd = os.getcwd()
+		try:
+			os.chdir(tdir)
+			ofile = "empty_file.txt"
+			orig = ofile
+			upper = ofile.upper()
+
+			(a, b) = capitalized_fn(orig)
+			c = os.path.basename(a)
+			d = os.path.basename(b)
+			(e, f) = capitalized_fn(upper)
+			g = os.path.basename(e)
+			h = os.path.basename(f)
+			
+			self.assertEqual(c, ofile, "not exact")
+			self.assertEqual(g, ofile, "not exact")
+			
+			self.assertEqual(d, ofile, "not with capitals")
+			self.assertEqual(h, ofile.upper(), "not with capitals")
+		finally:
+			os.chdir(cwd)
