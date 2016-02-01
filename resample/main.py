@@ -93,6 +93,9 @@ class IncompleteSample(Exception):
 class InvalidMatchOffset(ValueError):
 	pass
 
+class InvalidPathValue(ValueError):
+	pass
+
 # srs.cs ----------------------------------------------------------------------
 class FileType(object):
 	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, Unknown =  \
@@ -146,7 +149,11 @@ def file_type_info(ifile):
 		with open(ifile, 'rb') as ofile:
 			marker = ofile.read(14)
 	except IOError:
-		raise ValueError("File locked or a folder")
+		if os.path.isdir(ifile):
+			msg = "The input path does not point to a file"
+			raise InvalidPathValue(msg)
+		else:
+			raise ValueError("Media file locked")
 		
 	# the file is too small (probably empty)
 	# don't let this function throw an error

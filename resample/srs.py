@@ -34,7 +34,7 @@ import traceback
 
 import resample
 from resample import file_type_info
-from resample.main import FileType, InvalidMatchOffset
+from resample.main import FileType, InvalidMatchOffset, InvalidPathValue
 from resample import fpcalc
 from rescene.utility import sep, is_rar
 from rescene.utility import raw_input, unicode
@@ -519,6 +519,9 @@ def main(argv=None, no_exit=False):
 	except InvalidMatchOffset:
 		pexit(6, "The stored main video location is not valid. "
 		         "Try again on a different disk or use -m.")
+	except InvalidPathValue as err:
+		# input path is not a file but a folder
+		pexit(8, str(err))
 	except (ValueError, AssertionError) as err:
 		# -when input file is a folder
 		# -data corruption
