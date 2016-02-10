@@ -44,7 +44,7 @@ from rar import (
     RAR_OS_WIN32, RAR_OS_UNIX,
     write_main, MAIN_HDR_SIZE,
     write_file, file_hdr_size,
-    FILE_PACK_POS, FILE_OS_POS, FILE_VER_POS, FILE_VER_POS, FILE_ATTR_POS,
+    FILE_PACK_POS, FILE_OS_POS, FILE_VER_POS, FILE_METHOD_POS, FILE_ATTR_POS,
     DICT_DEFAULT, DICT_MIN, DICT_MAX, DICT_POS,
     filename_encode, time_encode, size_64_encode,
     DOS_2SEC_BIT, DOS_2SEC_BITS, DOS_MIN_BIT, DOS_MIN_BITS,
@@ -153,6 +153,12 @@ def main():
         elif "normalattr" == arg:
             attr = 1 << ATTR_NORMAL
             i += 1
+        elif "attr" == arg:
+            attr = 0x8000  # no idea yet about this start value
+            for index, char in enumerate(sys.argv[i + 1][::-1]):
+                if char != '-':
+                    attr |= 1 << index
+            i += 2
         elif "dict" == arg:
             dict = int(sys.argv[i + 1])
             if not DICT_MIN <= dict <= DICT_MAX:
@@ -214,6 +220,8 @@ blankend
 \tDo not include any fields in end block
 normalattr
 \tSet "normal" (instead of usual "archive") file attribute bit
+attr
+\tSet archived file attribute e.g. rw-rw-rw- 
 dict <size>
 \tSpecify dictionary size (default is 4096 for Rar 3 and 256 for Rar 2)
 rar2\t"Old" Rar version 2 format
@@ -461,8 +469,18 @@ def parse_ref(ref):
         if 1 << ATTR_NORMAL == attr:
             parser.out("normalattr")
         elif 1 << ATTR_ARCHIVE != attr:
-            parser.error(pos + hdr_pos + FILE_ATTR_POS,
-                "Unexpected file attributes: 0x{:08X}".format(attr))
+            # Attributes: -rw-rw-rw- >>> bin(0x81B6) '0b1000000110110110'
+            if attr & 0x7c00 == 0:  # >>> hex(0x83ff ^ 0xffff)
+                out = ""
+                for i in range(10, 0, -1):
+                    if attr & (1 << (i - 1)):
+                        out += "drwxrwxrwx"[10 - i]
+                    else:
+                        out += '-'
+                parser.out("attr \"" + out + "\"")
+            else:
+                parser.error(pos + hdr_pos + FILE_ATTR_POS,
+					"Unexpected file attributes: 0x{:08X}".format(attr))
         
         hdr_pos += S_FILE_HDR.size
         
