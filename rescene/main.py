@@ -492,7 +492,7 @@ def create_srr(srr_name, infiles, in_folder="",
 		
 		if not len([_store(f, srr, save_paths, in_folder)
 					for f in _search(store_files, in_folder)]):
-			_fire(MsgCode.NO_FILES, message="No files found to add.")
+			_fire(MsgCode.NO_FILES, message="No files found to store.")
 		
 		# COLLECT ARCHIVES
 		rarfiles = []
@@ -762,7 +762,7 @@ def create_srr_fh(srr_name, infiles, allfiles=None,
 		
 		# it skips corrupt files
 		if not len([_store_fh(f, srr) for f in store_files]):
-			_fire(MsgCode.NO_FILES, message="No files found to add.")
+			_fire(MsgCode.NO_FILES, message="No files found to store.")
 
 		# STORE ARCHIVE BLOCKS ------------------------------------------------
 		end_segments_tested = False

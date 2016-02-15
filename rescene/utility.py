@@ -477,7 +477,7 @@ def capitalized_fn(afile):
 	
 	Returns tuple: (exact, capitals)
 	exact: what's on disk
-	captials: the name with capitals
+	captials: the name with capitals (preservation purposes)
 	"""
 	exact = capitals = afile
 	# 1) find the proper file on disk
