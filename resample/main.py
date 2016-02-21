@@ -713,10 +713,8 @@ def mkv_load_srs(self, infile):
 			# do not have a ReSampleTrack element for the track
 			# e.g. Fury.2014.720p.BluRay.x264-SPARKS
 			if current_track_nb in tracks:
-				try:
-					tracks[current_track_nb].codec = elm_content.decode("ascii")
-				except UnicodeDecodeError:  # must never occur
-					tracks[current_track_nb].codec = elm_content
+				tracks[current_track_nb].codec = elm_content.decode(
+				                                    "ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
@@ -1038,10 +1036,8 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 			elm_content = er.read_contents()
 			other_length += len(elm_content)
 			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
-			try:
-				tracks[current_track_nb].codec = elm_content.decode("ascii")
-			except UnicodeDecodeError:  # must never occur
-				tracks[current_track_nb].codec = elm_content
+			tracks[current_track_nb].codec = elm_content.decode(
+			                                    "ascii", errors="ignore")
 		elif etype == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			other_length += len(elm_content)
@@ -2087,10 +2083,8 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 		elif er.element_type == EbmlElementType.TrackCodec:
 			# not necessary, but might be useful for debugging output
 			elm_content = er.read_contents()
-			try:
-				tracksMain[current_track_nb].codec = elm_content.decode("ascii")
-			except UnicodeDecodeError:  # must never occur
-				tracksMain[current_track_nb].codec = elm_content
+			tracksMain[current_track_nb].codec = elm_content.decode(
+			                                        "ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
@@ -2760,10 +2754,8 @@ def mkv_extract_sample_streams(self, tracks, movie):
 		elif er.element_type == EbmlElementType.TrackCodec:
 			# not necessary, but might be useful for debugging output
 			elm_content = er.read_contents()
-			try:
-				tracksMain[current_track_nb].codec = elm_content.decode("ascii")
-			except UnicodeDecodeError:  # must never occur
-				tracksMain[current_track_nb].codec = elm_content
+			tracksMain[current_track_nb].codec = elm_content.decode(
+			                                        "ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
