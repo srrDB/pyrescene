@@ -713,7 +713,12 @@ def generate_srr(reldir, working_dir, options, mthread):
 		working_dir = mkdtemp(prefix="SRR-", dir=options.temp_dir)
 		print("New temp dir: {0}".format(working_dir))
 		
-	print(reldir)
+	try:
+		print(reldir)
+	except UnicodeEncodeError:
+		epath = encodeerrors(reldir, sys.stdout)
+		print(epath)  # chars like \u2013 possible
+		logging.warning("Unexpected character in path: {0}".format(epath))
 	relname = os.path.split(reldir)[1]
 	if options.srr_in_reldir:
 		srr_directory = reldir
@@ -1443,7 +1448,8 @@ def main(argv=None):
 			# when a user does not want to process releases he has already done
 			if options.always_no:
 				return False
-			print("Warning: File %s already exists." % file_path)
+			efile_path = encodeerrors(file_path, sys.stdout)
+			print("Warning: File %s already exists." % efile_path)
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
 				char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -1530,8 +1536,7 @@ def main(argv=None):
 				result = generate_srr(reldir, working_dir, options, mthread)
 				if not result:
 					missing.append(reldir)
-					logging.warning("%s: SRR could not be created." % 
-									reldir)
+					logging.warning("%s: SRR could not be created." % reldir)
 			else:
 				for release_dir in get_release_directories(reldir):
 					try:
@@ -1579,7 +1584,7 @@ def main(argv=None):
 		print("------------------------------------")
 		print("Warning: some SRRs failed to create!")
 		for item in missing:
-			print(item)
+			print(encodeerrors(item, sys.stdout))
 		print("------------------------------------")
 				
 	# delete temporary working dir
