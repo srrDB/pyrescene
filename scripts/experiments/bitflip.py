@@ -15,22 +15,67 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 """Flip a single bit of a file and check the CRC of the file
-until a match is found."""
+until a match is found.
+
+Run with -OO to disable the asserts.
+Download zlib compiled DLL from http://zlib.net/ for more speed.
+
+Running time: 
+less than 10k seconds on a battery powered Windows tablet for a 3.5MB file.
+(< 1 hour/megabyte)
+
+To test if it's working: 
+make a text file and replace the letter a with the letter c. This byte will
+have a single flipped bit in ASCII.
+
+Possible improvements:
+- algorithm optimization: (sub)optimal precalculation step?
+- algorithm optimization: better hardcoded values? (needs experimentation)
+=> skip parameter can be set differently
+- write it all in a fast language?
+=> most in zlib now anyway
+- is PyPy a speed improvement?
+  How does the pure Python combine code compare with calling zlib from Python?
+- whole byte instead of just a flipped bit
+- better output file handling instead of (overwriting) the .bin by default
+
+Author: Gfy"""
 
 import optparse
 import sys
 import time
 import zlib
+from os.path import join, dirname, realpath
+from struct import pack
+
+# for running the script directly from command line
+sys.path.append(join(dirname(realpath(sys.argv[0])), '..', '..'))
+
+from rescene import crc32combine
+
+def precalculate(table, data, range_start, range_end, skip):
+	# ((10k+1) * 2 + 1) large hashtable with tuples for 1MB
+	crc32 = zlib.crc32
+	for start in range(range_start, range_end + 1, skip):
+		end = start + skip
+		if end > range_end:
+			end = range_end
+		# before and after gab
+		table[(range_start, start)] = (
+		    crc32(data[range_start:start]), start-range_start)
+		table[(end, range_end)] = (
+		    crc32(data[end:range_end]), range_end-end)
+	else:
+		# the whole range
+		table[(range_start, range_end)] = (
+		    crc32(data[range_start:range_end]), range_end-range_start)
 
 def main(options, args):
 	file_name = args[0]
-	crc32 = int(args[1], 16)
+	expected_crc32 = int(args[1], 16)  # of the full file
 	if len(args) == 4:
 		range_start = int(args[2], 10)
 		range_end = int(args[3], 10)
-	
-	# http://www.catonmat.net/blog/low-level-bit-hacks-you-absolutely-must-know/
-	# https://docs.python.org/2/library/mmap.html
 	
 	# read complete file into memory
 	with open(file_name, 'rb') as volume:
@@ -39,40 +84,125 @@ def main(options, args):
 	start = 0
 	end = len(data)
 	print("File size: %d" % end)
-	print("Expected CRC32: %0.X" % crc32)
+	print("Expected CRC32: %0.X" % expected_crc32)
 	if len(args) != 4:
 		range_start = start
 		range_end = end
 	if range_end > end:
 		range_end = end
 	print("From %d to %d" % (range_start, range_end))
+	if not (start <= range_start < range_end <= end):
+		print("Invalid search range values provided for the specified file")
+	crc32 = zlib.crc32  # dots slow Python down
+	comb = crc32combine.crc32_combine_function()
+
+	# memoization: precalculate crc32 hashes
+	# 	crc32(crc32(0, seq1, len1), seq2, len2) == 
+	# 		crc32_combine(crc32(0, seq1, len1), crc32(0, seq2, len2), len2)
+	skip = options.skip  # 100 by default
+	lookup = {}
+	crc_begin = crc32(data[0:range_start])
+	crc_begin_len = len(data[0:range_start])
+	crc_end = crc32(data[range_end:])  # 0 on no data
+	crc_end_len = len(data[range_end:])
+	print("Lookup table precalculations ...")
+	precalculate(lookup, data, range_start, range_end, skip)
+	print("%d records." % len(lookup))
 	
-	# naive way and flipping it all
+	def validate_table():
+		# check correctness lookup table
+		actual = crc32(data[range_start:range_end]) & 0xFFFFFFFF
+		for s in range(range_start, range_end + skip, skip):
+			if s > range_end:
+				s = range_end
+			(crc1, _len1) = lookup[(range_start, s)]
+			(crc2, len2) = lookup[(s, range_end)]
+			combined = comb(crc1, crc2, len2) & 0xFFFFFFFF
+			assert actual == combined
+			if s == range_end:
+				break
+		print("Lookup table ok: %d elements" % len(lookup))
+		return True
+	assert validate_table()
+	
+	# algorithm:
+	# The CRCs before and after the part in progress within the working range
+	# gets precalculated and get combined for testing. The different window
+	# borders in the range to search have their hashes precalculated for
+	# combination with the working part later on.
+	# +----------+----------+----------+ (file to check)
+	# +crc_begin-+          +---crc_end+
+	# *-> start  |          |    end <-*
+	#           /            \
+	#      range_start   range_end       [offset from start file]
+	#     / skip-sized partitions \
+	#     *---|---|---|---|---|---*   => skip_count location index
+	# +===========+   |                  crc_before_partition
+	#             |   +================+ crc_after_partition + length
+	#             *-> part_start         [offset from start file]
+	#             |   *-> part_end
+	#             / B \                  cur_byte where a bit is flipped
+	#           *==+                     bpart_crc
+	#                +==*                apart_crc + length
+	# +============+                     ball_crc
+	#                +=================+ aall_crc + length
+	skip_count = part_start = part_end = 0
+	crc_before_partition = crc_begin
+	crc_after_partition = crc_end
+	crc_after_len = crc_end_len
 	for cur_byte in range(range_start, range_end):
-		if cur_byte % 10 == 0:
-			print(cur_byte)
+		if skip_count % (skip) == 0:
+			print(skip_count)
+		if skip_count % skip == 0:  # a new partition starts
+			# use new precalculated info on both sides of the search range
+			part_start = range_start + skip_count
+			(bpcrc, bplen) = lookup[(range_start, part_start)]
+			crc_before_partition = comb(crc_begin, bpcrc, bplen) & 0xFFFFFFFF
+			crc_before_len = crc_begin_len + bplen
+			assert (crc_before_partition == 
+				crc32(data[0:range_start+skip_count]) & 0xffffffff)
 			
-		# calculate crc32
-		first_crc = zlib.crc32(data[start:cur_byte])
-		# TODO: use lookup table instead of recalculation previous ranges
+			part_end = part_start + skip
+			if part_end > range_end:
+				part_end = range_end
+			(apcrc, aplen) = lookup[(part_end, range_end)]
+			crc_after_partition = comb(apcrc, crc_end, crc_end_len) & 0xFFFFFFFF
+			crc_after_len = aplen + crc_end_len
+			assert (crc_after_partition == crc32(data[part_end:]) & 0xffffffff)
+			
+		# calculate crc32: Before and After
+		bpart_crc = crc32(data[part_start:cur_byte]) & 0xFFFFFFFF
+		bpart_crc_len = cur_byte - part_start
+		ball_crc = comb(crc_before_partition, bpart_crc, bpart_crc_len) & 0xFFFFFFFF
+		assert crc_before_len + bpart_crc_len == len(data[0:cur_byte])
+		assert (ball_crc == crc32(data[0:cur_byte]))
 		
-		# 8 bit flips for each byte
-		cur_byte_data = ord(data[cur_byte])
+		apart_crc = crc32(data[cur_byte+1:part_end])
+		apart_len = part_end - cur_byte - 1
+		assert apart_len == len(data[cur_byte+1:part_end])
+		aall_crc = comb(apart_crc, crc_after_partition, crc_after_len)
+		aall_len = apart_len + crc_after_len
+
+		# 8 bitflips for each byte
+		cur_byte_data = ord(data[cur_byte:cur_byte+1])
+		skip_count += 1
 		for i in range(8):
-			flip = chr(cur_byte_data ^ (0x80 >> i))
-			test_crc = zlib.crc32(flip + data[cur_byte+1:end], first_crc)
-			
-			if test_crc == crc32:
+			flip = pack("B", cur_byte_data ^ (0x80 >> i))
+			assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
+			crcflip = crc32(flip, ball_crc)
+			test_crc = comb(crcflip, aall_crc, aall_len)
+
+			if test_crc == expected_crc32:
 				print("Found in %d!" % cur_byte)
 				print("Bit %d" % i)
 				
 				# write out good file
 				outfn = file_name + ".bin"
+				print("Writing fixed file to %s" % outfn)
 				with open(outfn, 'wb') as result:
 					result.write(data[start:cur_byte])
 					result.write(flip)
 					result.write(data[cur_byte+1:end])
-				print("Fixed result written to %s" % outfn)
 				break
 		else:
 			continue  # executed if the loop ended normally (no break)
@@ -80,17 +210,30 @@ def main(options, args):
 	else:
 		print("No single bitflip found that matches the provided CRC32.")
 		
+def print_assertions_enabled():
+	print("Assertions are enabled!")
+	print("Run this script with the Python -O or -OO parameters"
+		" to disable them for faster execution speed.")
+	return True
+		
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog file_name CRC32 [range start] [range end]\n"
-		"This tool will flip each bit and stops when a CRC match is found.\n",
-		version="%prog 0.1 (2014-10-07)") # --help, --version
-	
+		"This tool will flip each bit and stops when a CRC match is found.\n"
+		"CRC32: expected hash of the full file\n"
+		"range: location in the file to search for a flip\n",
+		version="%prog 0.2 (2016-02-27)")  # --help, --version
+
+	parser.add_option("-s", "--skip", help="amount of bytes for window that "
+	                  "needs constant crc32 recalculation for evaluation",
+					  action="store", dest="skip", type="int", default=1000)
+		
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
+		assert print_assertions_enabled()
 		start_time = time.time()
 		(options, args) = parser.parse_args()
 		main(options, args)
-		print("--- %s seconds ---" % (time.time() - start_time))
+		print("--- %.3f seconds ---" % (time.time() - start_time))
