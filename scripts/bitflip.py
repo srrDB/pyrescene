@@ -49,7 +49,7 @@ from os.path import join, dirname, realpath
 from struct import pack
 
 # for running the script directly from command line
-sys.path.append(join(dirname(realpath(sys.argv[0])), '..', '..'))
+sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
 from rescene import crc32combine
 
