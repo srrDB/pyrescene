@@ -95,6 +95,7 @@ def main(options, args):
 		print("Invalid search range values provided for the specified file")
 	crc32 = zlib.crc32  # dots slow Python down
 	comb = crc32combine.crc32_combine_function()
+	bitflip = not options.bytecheck
 
 	# memoization: precalculate crc32 hashes
 	# 	crc32(crc32(0, seq1, len1), seq2, len2) == 
@@ -108,6 +109,8 @@ def main(options, args):
 	print("Lookup table precalculations ...")
 	precalculate(lookup, data, range_start, range_end, skip)
 	print("%d records." % len(lookup))
+	if not bitflip:
+		byte_values = [pack("B", i) for i in range(256)]
 	
 	def validate_table():
 		# check correctness lookup table
@@ -183,29 +186,43 @@ def main(options, args):
 		aall_crc = comb(apart_crc, crc_after_partition, crc_after_len)
 		aall_len = apart_len + crc_after_len
 
-		# 8 bitflips for each byte
-		cur_byte_data = ord(data[cur_byte:cur_byte+1])
 		skip_count += 1
-		for i in range(8):
-			flip = pack("B", cur_byte_data ^ (0x80 >> i))
-			assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
-			crcflip = crc32(flip, ball_crc)
-			test_crc = comb(crcflip, aall_crc, aall_len)
+		cur_byte_data = ord(data[cur_byte:cur_byte+1])
+		if bitflip:
+			# 8 bitflips for each byte
+			for i in range(8):
+				flip = pack("B", cur_byte_data ^ (0x80 >> i))
+				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
+				crcflip = crc32(flip, ball_crc)
+				test_crc = comb(crcflip, aall_crc, aall_len)
 
-			if test_crc == expected_crc32:
-				print("Found in %d!" % cur_byte)
-				print("Bit %d" % i)
-				
-				# write out good file
-				outfn = file_name + ".bin"
-				print("Writing fixed file to %s" % outfn)
-				with open(outfn, 'wb') as result:
-					result.write(data[start:cur_byte])
-					result.write(flip)
-					result.write(data[cur_byte+1:end])
-				break
+				if test_crc == expected_crc32:
+					print("Found in %d!" % cur_byte)
+					print("Bit %d" % i)
+					break
+			else:
+				continue  # executed if the loop ended normally (no break)
 		else:
-			continue  # executed if the loop ended normally (no break)
+			# single byte change
+			for i in range(256):
+				crcflip = crc32(byte_values[i], ball_crc)
+				test_crc = comb(crcflip, aall_crc, aall_len)
+
+				if test_crc == expected_crc32:
+					print("Found in %d!" % cur_byte)
+					print("Value %d" % i)
+					flip = byte_values[i]
+					break
+			else:
+				continue  # executed if the loop ended normally (no break)
+
+		# write out good file
+		outfn = file_name + ".bin"
+		print("Writing fixed file to %s" % outfn)
+		with open(outfn, 'wb') as result:
+			result.write(data[start:cur_byte])
+			result.write(flip)
+			result.write(data[cur_byte+1:end])
 		break  # executed if 'continue' was skipped (break)			
 	else:
 		print("No single bitflip found that matches the provided CRC32.")
@@ -227,6 +244,8 @@ if __name__ == '__main__':
 	parser.add_option("-s", "--skip", help="amount of bytes for window that "
 	                  "needs constant crc32 recalculation for evaluation",
 					  action="store", dest="skip", type="int", default=1000)
+	parser.add_option("--byte", help="check all possibilities for a byte",
+					  action="store_true", dest="bytecheck", default=False)
 		
 	# no arguments given
 	if len(sys.argv) < 2:
