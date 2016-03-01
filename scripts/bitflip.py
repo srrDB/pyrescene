@@ -28,7 +28,8 @@ less than 10k seconds on a battery powered Windows tablet for a 3.5MB file.
 
 To test if it's working: 
 make a text file and replace the letter a with the letter c. This byte will
-have a single flipped bit in ASCII.
+have a single flipped bit in ASCII. Replace it with b to test flipped
+adjacent bits.
 
 Possible improvements:
 - algorithm optimization: (sub)optimal precalculation step?
@@ -39,7 +40,9 @@ Possible improvements:
 - is PyPy a speed improvement?
   How does the pure Python combine code compare with calling zlib from Python?
 - whole byte instead of just a flipped bit
-- better output file handling instead of (overwriting) the .bin by default
+- better output file handling instead of (overwriting) the default .fixed
+
+Doesn't work on a 3 byte file: b'a\r\n' and b'c\r\n'
 
 Author: Gfy"""
 
@@ -101,7 +104,7 @@ def main(options, args):
 		print("Invalid search range values provided for the specified file")
 	crc32 = zlib.crc32  # dots slow Python down
 	comb = crc32combine.crc32_combine_function()
-	bitflip = not options.bytecheck
+	bitflip = not options.bytecheck and not options.bitswitch
 
 	# memoization: precalculate crc32 hashes
 	# 	crc32(crc32(0, seq1, len1), seq2, len2) == 
@@ -115,7 +118,8 @@ def main(options, args):
 	print("Lookup table precalculations ...")
 	precalculate(lookup, data, range_start, range_end, skip)
 	print("%d records." % len(lookup))
-	if not bitflip:
+
+	if options.bytecheck:
 		byte_values = [pack("B", i) for i in range(256)]
 	
 	def validate_table():
@@ -209,7 +213,7 @@ def main(options, args):
 					break
 			else:
 				continue  # executed if the loop ended normally (no break)
-		else:
+		elif options.bytecheck:
 			# single byte change
 			for i in range(256):
 				crcflip = crc32(byte_values[i], ball_crc)
@@ -222,9 +226,27 @@ def main(options, args):
 					break
 			else:
 				continue  # executed if the loop ended normally (no break)
+		elif options.bitswitch:
+			# subset of what bytecheck does, but faster
+			# only works within a byte
+			# http://graphics.stanford.edu/~seander/bithacks.html#SwappingBitsXOR
+			for i in range(7):
+				# will also flip 11 to 00
+				switch = pack("B", cur_byte_data ^ (0x3 << i))
+				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
+				crcswitch = crc32(switch, ball_crc)
+				test_crc = comb(crcswitch, aall_crc, aall_len)
+
+				if test_crc == expected_crc32:
+					print("Found in %d!" % cur_byte)
+					print("Bit %d" % i)
+					flip = switch
+					break
+			else:
+				continue  # executed if the loop ended normally (no break)
 
 		# write out good file
-		outfn = file_name + ".bin"
+		outfn = file_name + ".fixed"
 		print("Writing fixed file to %s" % outfn)
 		with open(outfn, 'wb') as result:
 			result.write(data[start:cur_byte])
@@ -232,7 +254,7 @@ def main(options, args):
 			result.write(data[cur_byte+1:end])
 		break  # executed if 'continue' was skipped (break)			
 	else:
-		print("No single bitflip found that matches the provided CRC32.")
+		print("No change found that matches the provided CRC32.")
 		
 def print_assertions_enabled():
 	print("Assertions are enabled!")
@@ -246,13 +268,15 @@ if __name__ == '__main__':
 		"This tool will flip each bit and stops when a CRC match is found.\n"
 		"CRC32: expected hash of the full file\n"
 		"range: location in the file to search for a flip\n",
-		version="%prog 0.2 (2016-02-27)")  # --help, --version
+		version="%prog 0.3 (2016-03-01)")  # --help, --version
 
 	parser.add_option("-s", "--skip", help="amount of bytes for window that "
 	                  "needs constant crc32 recalculation for evaluation",
 					  action="store", dest="skip", type="int", default=1000)
 	parser.add_option("--byte", help="check all possibilities for a byte",
 					  action="store_true", dest="bytecheck", default=False)
+	parser.add_option("--bitswitch", help="two adjacent bits are switched",
+					  action="store_true", dest="bitswitch", default=False)
 		
 	# no arguments given
 	if len(sys.argv) < 2:
