@@ -18,7 +18,9 @@
 until a match is found.
 
 Run with -OO to disable the asserts.
-Download zlib compiled DLL from http://zlib.net/ for more speed.
+Download zlib compiled DLL from http://zlib.net/ for more speed and 
+put it in your PATH. Use the pyReScene folder structure or 
+copy rescene/crc32combine.py to this dir.
 
 Running time: 
 less than 10k seconds on a battery powered Windows tablet for a 3.5MB file.
@@ -51,7 +53,11 @@ from struct import pack
 # for running the script directly from command line
 sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
 
-from rescene import crc32combine
+try:
+	from rescene import crc32combine
+except ImportError:
+	# for users that just copy the file to the same directory as this file
+	import crc32combine
 
 def precalculate(table, data, range_start, range_end, skip):
 	# ((10k+1) * 2 + 1) large hashtable with tuples for 1MB
@@ -172,13 +178,14 @@ def main(options, args):
 			crc_after_partition = comb(apcrc, crc_end, crc_end_len) & 0xFFFFFFFF
 			crc_after_len = aplen + crc_end_len
 			assert (crc_after_partition == crc32(data[part_end:]) & 0xffffffff)
+# 		print("CRC before partition %.X" % crc_before_partition)
 			
 		# calculate crc32: Before and After
 		bpart_crc = crc32(data[part_start:cur_byte]) & 0xFFFFFFFF
 		bpart_crc_len = cur_byte - part_start
 		ball_crc = comb(crc_before_partition, bpart_crc, bpart_crc_len) & 0xFFFFFFFF
 		assert crc_before_len + bpart_crc_len == len(data[0:cur_byte])
-		assert (ball_crc == crc32(data[0:cur_byte]))
+		assert (ball_crc == crc32(data[0:cur_byte]) & 0xffffffff)
 		
 		apart_crc = crc32(data[cur_byte+1:part_end])
 		apart_len = part_end - cur_byte - 1

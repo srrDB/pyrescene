@@ -31,15 +31,29 @@ import os
 import ctypes
 from ctypes import util
 
+try:
+	from utility import _DEBUG
+except ImportError:
+	# not used within rescene, but the scripts
+	_DEBUG = True
+
 def crc32_combine_function():
 	"""Returns function to zlib when possible.
 	Fallback to Python implementation."""
 	if os.name == 'nt':
 		libpath = util.find_library('zlib1')
+		if not libpath:
+			# try to find it in the current directory
+			curdir = os.path.dirname(os.path.realpath(__file__))
+			curzlib = os.path.join(curdir, "zlib1.dll")
+			if os.path.exists(curzlib):
+				libpath = curzlib
 	else:
 		libpath = util.find_library('z')
 
 	if libpath:
+		if _DEBUG:
+			print(libpath)
 		zlib = ctypes.cdll.LoadLibrary(libpath)
 		return zlib.crc32_combine
 	else:
