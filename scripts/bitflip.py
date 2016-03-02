@@ -42,8 +42,6 @@ Possible improvements:
 - whole byte instead of just a flipped bit
 - better output file handling instead of (overwriting) the default .fixed
 
-Doesn't work on a 3 byte file: b'a\r\n' and b'c\r\n'
-
 Author: Gfy"""
 
 import optparse
@@ -71,13 +69,13 @@ def precalculate(table, data, range_start, range_end, skip):
 			end = range_end
 		# before and after gab
 		table[(range_start, start)] = (
-		    crc32(data[range_start:start]), start-range_start)
+		    crc32(data[range_start:start]) & 0xFFFFFFFF, start-range_start)
 		table[(end, range_end)] = (
-		    crc32(data[end:range_end]), range_end-end)
+		    crc32(data[end:range_end]) & 0xFFFFFFFF, range_end-end)
 	else:
 		# the whole range
 		table[(range_start, range_end)] = (
-		    crc32(data[range_start:range_end]), range_end-range_start)
+		    crc32(data[range_start:range_end]) & 0xFFFFFFFF, range_end-range_start)
 
 def main(options, args):
 	file_name = args[0]
@@ -111,9 +109,9 @@ def main(options, args):
 	# 		crc32_combine(crc32(0, seq1, len1), crc32(0, seq2, len2), len2)
 	skip = options.skip  # 100 by default
 	lookup = {}
-	crc_begin = crc32(data[0:range_start])
+	crc_begin = crc32(data[0:range_start]) & 0xFFFFFFFF
 	crc_begin_len = len(data[0:range_start])
-	crc_end = crc32(data[range_end:])  # 0 on no data
+	crc_end = crc32(data[range_end:]) & 0xFFFFFFFF  # 0 on no data
 	crc_end_len = len(data[range_end:])
 	print("Lookup table precalculations ...")
 	precalculate(lookup, data, range_start, range_end, skip)
@@ -191,21 +189,27 @@ def main(options, args):
 		assert crc_before_len + bpart_crc_len == len(data[0:cur_byte])
 		assert (ball_crc == crc32(data[0:cur_byte]) & 0xffffffff)
 		
-		apart_crc = crc32(data[cur_byte+1:part_end])
+		apart_crc = crc32(data[cur_byte+1:part_end]) & 0xFFFFFFFF
 		apart_len = part_end - cur_byte - 1
 		assert apart_len == len(data[cur_byte+1:part_end])
-		aall_crc = comb(apart_crc, crc_after_partition, crc_after_len)
+		aall_crc = comb(apart_crc, crc_after_partition, crc_after_len) & 0xFFFFFFFF
 		aall_len = apart_len + crc_after_len
+		assert (aall_crc == crc32(data[cur_byte+1:]) & 0xffffffff)
 
 		skip_count += 1
 		cur_byte_data = ord(data[cur_byte:cur_byte+1])
+		
+# 		crc_b = crc32(data[cur_byte:cur_byte+1], ball_crc) & 0xffffffff
+# 		crc_all_orig = comb(crc_b, aall_crc, aall_len) & 0xffffffff
+# 		assert crc_all_orig == crc32(data) & 0xffffffff
+		
 		if bitflip:
 			# 8 bitflips for each byte
 			for i in range(8):
 				flip = pack("B", cur_byte_data ^ (0x80 >> i))
 				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
-				crcflip = crc32(flip, ball_crc)
-				test_crc = comb(crcflip, aall_crc, aall_len)
+				crcflip = crc32(flip, ball_crc) & 0xFFFFFFFF
+				test_crc = comb(crcflip, aall_crc, aall_len) & 0xFFFFFFFF
 
 				if test_crc == expected_crc32:
 					print("Found in %d!" % cur_byte)
@@ -216,8 +220,8 @@ def main(options, args):
 		elif options.bytecheck:
 			# single byte change
 			for i in range(256):
-				crcflip = crc32(byte_values[i], ball_crc)
-				test_crc = comb(crcflip, aall_crc, aall_len)
+				crcflip = crc32(byte_values[i], ball_crc) & 0xFFFFFFFF
+				test_crc = comb(crcflip, aall_crc, aall_len) & 0xFFFFFFFF
 
 				if test_crc == expected_crc32:
 					print("Found in %d!" % cur_byte)
@@ -234,8 +238,8 @@ def main(options, args):
 				# will also flip 11 to 00
 				switch = pack("B", cur_byte_data ^ (0x3 << i))
 				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
-				crcswitch = crc32(switch, ball_crc)
-				test_crc = comb(crcswitch, aall_crc, aall_len)
+				crcswitch = crc32(switch, ball_crc) & 0xFFFFFFFF
+				test_crc = comb(crcswitch, aall_crc, aall_len) & 0xFFFFFFFF
 
 				if test_crc == expected_crc32:
 					print("Found in %d!" % cur_byte)
