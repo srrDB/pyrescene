@@ -32,6 +32,9 @@ have a single flipped bit in ASCII. Replace it with b to test flipped
 adjacent bits.
 
 Possible improvements:
+- from multiprocessing import Pool; joblib
+  https://docs.python.org/2/library/multiprocessing.html
+  http://pythonhosted.org/joblib/parallel.html
 - algorithm optimization: (sub)optimal precalculation step?
 - algorithm optimization: better hardcoded values? (needs experimentation)
 => skip parameter can be set differently
@@ -39,7 +42,6 @@ Possible improvements:
 => most in zlib now anyway
 - is PyPy a speed improvement?
   How does the pure Python combine code compare with calling zlib from Python?
-- whole byte instead of just a flipped bit
 - better output file handling instead of (overwriting) the default .fixed
 
 Author: Gfy"""
