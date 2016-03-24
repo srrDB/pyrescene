@@ -303,8 +303,9 @@ def main(argv=None, no_exit=False):
 				return pexit(0)
 				
 			# no need to try finding these matches
-			sample_is_rar = (tracks[1].signature_bytes.startswith(b"Rar!")
-				and sample_file.endswith(".vob"))
+			# .vob track list always has track number 1
+			sample_is_rar = (sample_file.lower().endswith(".vob") and
+				tracks[1].signature_bytes.startswith(b"Rar!"))
 			if sample_is_rar:
 				print("The vobsample is a RAR volume.")
 
