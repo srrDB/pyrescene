@@ -17,10 +17,19 @@
 """Flip a single bit of a file and check the CRC of the file
 until a match is found.
 
-Run with -OO to disable the asserts.
+INSTALL
+-------
+
 Download zlib compiled DLL from http://zlib.net/ for more speed and 
-put it in your PATH. Use the pyReScene folder structure or 
-copy rescene/crc32combine.py to this dir.
+put it in your PATH. See http://www.computerhope.com/issues/ch000549.htm
+Use the pyReScene folder structure or 
+copy rescene/crc32combine.py to the same folder as this file.
+
+RUN
+---
+
+Run with -OO to disable the asserts. (prevents doing unnecessary checks)
+python.exe -O bitflip.py file.mp3 0199AAFF 
 
 Running time: 
 less than 10k seconds on a battery powered Windows tablet for a 3.5MB file.
@@ -35,12 +44,13 @@ Possible improvements:
 - from multiprocessing import Pool; joblib
   https://docs.python.org/2/library/multiprocessing.html
   http://pythonhosted.org/joblib/parallel.html
+  (it's far from using the whole CPU at the moment)
 - algorithm optimization: (sub)optimal precalculation step?
 - algorithm optimization: better hardcoded values? (needs experimentation)
 => skip parameter can be set differently
 - write it all in a fast language?
 => most in zlib now anyway
-- is PyPy a speed improvement?
+- is PyPy a speed improvement? (it works with PyPy)
   How does the pure Python combine code compare with calling zlib from Python?
 - better output file handling instead of (overwriting) the default .fixed
 
