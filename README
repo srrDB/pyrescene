@@ -33,8 +33,12 @@ locate the missing track data from the full video file.
 Also *MP3* and *FLAC* music files are supported. The tags with all the meta data
 are copied to the SRS file. This can be restored at another time. *fpcalc*
 must be available in your path to use this feature. It can be downloaded from
-https://bitbucket.org/acoustid/chromaprint/downloads. This tool creates
+https://bitbucket.org/acoustid/chromaprint/downloads. This tool creates 120s
 AcoustID music fingerprints. http://acoustid.org/chromaprint
+
+The SRS of *VOB* and *M2TS* files are very small. They serve as verification
+of the sample data stream. The VOB SRS can rebuild the sample, but with
+M2TS this will always fail.
 
 **pyReScene Auto** makes it all a bit easier: one command to create an SRR file.
 It does not require write access to the release directories and it can create

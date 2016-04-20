@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012-2015 pyReScene
+# Copyright (c) 2012-2016 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -45,21 +45,24 @@ from rescene import utility
 from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 from rescene.utility import calculate_crc32 as calc_crc32
 from rescene.utility import is_rar
+from rescene.utility import _DEBUG
 
-from resample.ebml import (EbmlReader, EbmlReadMode, EbmlElementType, 
-                           GetEbmlUInt, MakeEbmlUInt, EbmlID)
+from resample.ebml import EbmlReader, EbmlReadMode, EbmlElementType
+from resample.ebml import GetEbmlUInt, MakeEbmlUInt, EbmlID
 from resample.riff import RiffReader, RiffReadMode, RiffChunkType
 from resample.riff import InvalidMatchOffsetException
 from resample.mov import MovReader, MovReadMode
-from resample.asf import (AsfReader, AsfReadMode, GUID_HEADER_OBJECT, 
-						GUID_DATA_OBJECT, GUID_STREAM_OBJECT, GUID_FILE_OBJECT,
-						GUID_SRS_FILE, GUID_SRS_TRACK, AsfDataPacket,
-						asf_data_get_packet, GUID_SRS_PADDING)
+from resample.asf import AsfReader, AsfReadMode 
+from resample.asf import AsfDataPacket, asf_data_get_packet
+from resample.asf import GUID_HEADER_OBJECT, GUID_DATA_OBJECT
+from resample.asf import GUID_STREAM_OBJECT, GUID_FILE_OBJECT
+from resample.asf import GUID_SRS_FILE, GUID_SRS_TRACK, GUID_SRS_PADDING
 from resample.fpcalc import fingerprint
 from resample.flac import FlacReader
 from resample.mp3 import Mp3Reader
 from resample.mp3 import decode_id3_size
 from resample.stream import StreamReader
+from resample.m2ts import M2tsReader, M2tsReadMode
 
 try:
 	odict = collections.OrderedDict #@UndefinedVariable
@@ -87,6 +90,9 @@ BE_LONGLONG = Struct('>Q')
 
 SIG_SIZE = 256
 
+MARKER_STREAM_SRS = b"STRM\x08\x00\x00\x00"  # VOB, MPEG, M2TS, ... SRS
+MARKER_M2TS_SRS = b"M2TS\x08\x00\x00\x00"  # M2TS SRS (not in use)
+
 class IncompleteSample(Exception):
 	pass
 
@@ -98,8 +104,9 @@ class InvalidPathValue(ValueError):
 
 # srs.cs ----------------------------------------------------------------------
 class FileType(object):
-	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, Unknown =  \
-		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3", "STREAM", "Unknown")
+	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, M2TS, Unknown = \
+		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3",
+		 "STREAM", "M2TS", "Unknown")
 
 	# the extensions that are supported
 	# .m4v is used for some non scene samples, xxx samples and music releases
@@ -141,7 +148,8 @@ def file_type_info(ifile):
 	MARKER_WMV = b"\x30\x26\xB2\x75"
 	MARKER_FLAC = b"\x66\x4C\x61\x43" # fLaC
 	MARKER_ID3 = b"\x49\x44\x33" # ID3 (MP3/FLAC file with an ID3v2 container) 
-	MARKER_STREAM = b"STRM\x08\x00\x00\x00" # M2TS, VOB, MPEG,... SRS
+	MARKER_MPEG = b"\x47"  # transport stream sync byte
+
 	
 	archived_file_name = ""
 	
@@ -205,8 +213,10 @@ def file_type_info(ifile):
 		return FileType(FileType.WMV, archived_file_name)
 	elif marker.startswith(MARKER_FLAC):
 		return FileType(FileType.FLAC, archived_file_name)
-	elif marker.startswith(MARKER_STREAM):
+	elif marker.startswith(MARKER_STREAM_SRS):
 		return FileType(FileType.STREAM, archived_file_name)
+	elif marker.startswith(MARKER_M2TS_SRS):
+		return FileType(FileType.M2TS, archived_file_name)
 	elif marker.startswith(MARKER_ID3):
 		# can be MP3 or FLAC
 		size = decode_id3_size(marker[6:10])
@@ -233,9 +243,28 @@ def file_type_info(ifile):
 				# IOError possible when RAR file is broken
 				pass
 	
-		# check for stream types based on extension
+		# check for stream types based on extension and sync for M2TS
 		name = ifile.lower()
 		if name.endswith(FileType.StreamExtensions):
+			# M2TS disabled since it's not working nor completed
+			# still differences in each track
+# 			if marker[4:].startswith(MARKER_MPEG) and name.endswith(".m2ts"):
+# 				return FileType(FileType.M2TS, archived_file_name)
+
+# Test sample cut with tsMuxeR. It has more/different data:
+# 256: subtitle info; stream does never match (different single bytes and ranges)
+# 10 bytes more for each repeating part -> h to r in fourth byte
+# 
+# 4097: some header does not match (7 bytes header it seems, but 4 bytes are different)
+# 4113: video; large matches, but 4 byte differences
+# 4352: audio; 4 byte differences, regular intervals, but larger than a packet
+# 4353: 4 byte parts in the track data are different
+# 4354: 4 byte headers are different (data matches)
+# 
+# 0: exact match, earlier blocks are repeated the exact same way
+# 31: exact match, but not a lot of data
+# 8191: exact match, but not a lot of data
+
 			return FileType(FileType.STREAM, archived_file_name)
 		
 		return FileType(FileType.Unknown, archived_file_name)
@@ -359,6 +388,9 @@ class FileData(object):
 	def serialize_as_stream(self):
 		return self.serialize_as_mp3()
 	
+	def serialize_as_m2ts(self):
+		return self.serialize_as_mp3()
+
 # SampleTrackInfo.cs ----------------------------------------------------------					
 class TrackData(object):
 	"""Flags: big sample or not?
@@ -520,6 +552,9 @@ class TrackData(object):
 		stream_block += S_LONG.pack(8 + len(data))
 		stream_block += data
 		return stream_block
+	
+	def serialize_as_m2ts(self):
+		return self.serialize_as_stream()
 		
 def read_fingerprint_data(track, data):
 	(track.duration,) = S_LONG.unpack_from(data)
@@ -544,9 +579,11 @@ def sample_class_factory(file_type):
 		return FlacReSample()
 	elif file_type == FileType.MP3:
 		return Mp3ReSample()
-	elif file_type in (FileType.STREAM):
+	elif file_type == FileType.M2TS:
+		return M2tsReSample()
+	elif file_type == FileType.STREAM:
 		return StreamSample()
-	
+
 # AviReSample.cs --------------------------------------------------------------	
 class AviReSample(ReSample):
 	file_type = FileType.AVI
@@ -661,6 +698,23 @@ class StreamSample(ReSample):
 	def rebuild_sample(self, *args, **kwargs):
 		return stream_rebuild_sample(self, *args, **kwargs)
 	
+class M2tsReSample(ReSample):
+	"""Used for m2ts files"""
+	file_type = FileType.M2TS
+	
+	def profile_sample(self, *args, **kwargs):
+		return m2ts_profile_sample(self, *args, **kwargs)
+	def create_srs(self, *args, **kwargs):
+		return m2ts_create_srs(self, *args, **kwargs)
+	def load_srs(self, *args, **kwargs):
+		return m2ts_load_srs(self, *args, **kwargs)
+	def find_sample_streams(self, *args, **kwargs):
+		return m2ts_find_sample_streams(self, *args, **kwargs)
+	def extract_sample_streams(self, *args, **kwargs):
+		return m2ts_extract_sample_streams(self, *args, **kwargs)
+	def rebuild_sample(self, *args, **kwargs):
+		return m2ts_rebuild_sample(self, *args, **kwargs)
+
 def avi_load_srs(self, infile):
 	tracks = {}
 	rr = RiffReader(RiffReadMode.SRS, infile)
@@ -777,7 +831,7 @@ def wmv_load_srs(self, infile):
 def flac_load_srs(self, infile):
 	tracks = {}
 	fr = FlacReader(infile)
-	while(fr.read()):
+	while fr.read():
 		if fr.block_type == ord("s"):
 			srs_data = FileData(fr.read_contents())
 		elif fr.block_type == ord("t"):
@@ -819,6 +873,10 @@ def stream_load_srs(self, infile):
 			tracks[track.track_number] = track
 	sr.close()
 	return srs_data, tracks
+
+def m2ts_load_srs(self, infile):
+	# same as stream SRS file, but the header data is followed by a HDRS block
+	return stream_load_srs(self, infile)
 
 def avi_profile_sample(self, avi_data): # FileData object
 	tracks = {}
@@ -1703,10 +1761,100 @@ def stream_profile_sample(self, stream_data):  # FileData object
 	
 	return tracks, {}
 
+def m2ts_profile_sample(self, m2ts_data):  # FileData object
+	"""Profiles an M2TS container"""
+	tracks = {}
+	m2ts_data.crc32 = 0x0  # start value crc
+	meta_length = 0
+	
+	if _DEBUG:
+		allcrc32 = calc_crc32(m2ts_data.name)
+		
+	def new_track_found(track_number):
+		t = TrackData()
+		t.track_number = track_number
+		return t
+
+	# 32 packets in an aligned unit (6144B) of BDAV MPEG-2 transport stream
+	mr = M2tsReader(path=m2ts_data.name)
+	while mr.read():
+		packet = mr.current_packet
+		track = tracks.setdefault(packet.pid, new_track_found(packet.pid))
+		
+		# 1) doing header
+		meta_length += len(packet.raw_header)
+		m2ts_data.crc32 = crc32(packet.raw_header, m2ts_data.crc32)
+		
+		# 2) doing body
+		data = mr.read_contents()
+		track.data_length += len(data)
+		m2ts_data.crc32 = crc32(data, m2ts_data.crc32)
+
+		# in profile mode, we want to build track signatures
+		b = track.signature_bytes
+		if not b or len(b) < SIG_SIZE:
+			if b:
+				lsig = min(SIG_SIZE, len(b) + packet.size)
+				sig = b
+				sig += data[0:lsig - len(b)]
+				track.signature_bytes = sig
+			else:
+				lsig = min(SIG_SIZE, packet.size)
+				track.signature_bytes = data[0:lsig]
+
+	mr.close()
+
+	total_size = meta_length
+	
+	print("File Details:   Size           CRC")
+	print("                -------------  --------")
+	print("                {0:>13}  {1:08X}\n".format(sep(m2ts_data.size),
+	                                           m2ts_data.crc32 & 0xFFFFFFFF))
+	
+	print()
+	print("Stream Details: Stream  Length")
+	print("                ------  -------------")
+	for _, track in tracks.items():
+		print("                {0:6n}  {1:>13}".format(track.track_number,
+		                                               sep(track.data_length)))
+		total_size += track.data_length
+		
+	print()
+	print("Parse Details:   Metadata     Stream Data    Total")
+	print("                 -----------  -------------  -------------")
+	print("                 {0:>11}  {1:>13}  {2:>13}\n".format(
+	                        sep(meta_length),
+	                        sep(total_size - meta_length), sep(total_size)))
+	
+	if _DEBUG:
+		assert allcrc32 == m2ts_data.crc32
+		
+		# write out all tracks to separate files
+		mr = M2tsReader(path=m2ts_data.name)
+		track_data = {}
+		for track in tracks.keys():
+			track_data[track] = io.BytesIO()
+
+		count = 0
+		while mr.read():
+			count += 1
+			if count % 1000 == 0:
+				print(count)
+			data = mr.read_contents()
+			track_data[mr.current_packet.pid].write(data)
+		
+		for key, tdata in track_data.items():
+			tdata.seek(0)
+			track_name = "".join([m2ts_data.name, ".", str(key)])
+			with open(track_name, "xb") as trck:
+				trck.write(tdata.read())
+
+	return tracks, {}
+
 def avi_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		rr = RiffReader(RiffReadMode.AVI, sample)
-		while(rr.read()):
+		while rr.read():
 			c = rr.current_chunk
 			
 			srsf.write(c.raw_header)
@@ -1747,7 +1895,7 @@ def avi_create_srs(self, tracks, sample_data, sample, srs, big_file):
 def mkv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		er = EbmlReader(EbmlReadMode.MKV, sample)
-		while(er.read()):
+		while er.read():
 			e = er.current_element
 			
 			srsf.write(e.raw_header)
@@ -1799,7 +1947,7 @@ def mkv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 def mp4_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as movf:
 		mr = MovReader(MovReadMode.MP4, sample)
-		while(mr.read()):
+		while mr.read():
 			atom = mr.current_atom
 			
 			if atom.type == b"mdat":
@@ -1827,7 +1975,7 @@ def mp4_create_srs(self, tracks, sample_data, sample, srs, big_file):
 def wmv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as srsf:
 		ar = AsfReader(AsfReadMode.WMV, sample)
-		while(ar.read()):
+		while ar.read():
 			o = ar.current_object
 			
 			srsf.write(o.raw_header)
@@ -1885,7 +2033,7 @@ def wmv_create_srs(self, tracks, sample_data, sample, srs, big_file):
 def flac_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as flacf:
 		fr = FlacReader(sample)
-		while(fr.read()):
+		while fr.read():
 			block = fr.current_block
 			
 			flacf.write(block.raw_header)
@@ -1931,7 +2079,7 @@ def mp3_create_srs(self, tracks, sample_data, sample, srs, big_file):
 def stream_create_srs(self, tracks, sample_data, sample, srs, big_file):
 	with open(srs, "wb") as streamf:
 		# in store mode, create and write our custom blocks 
-		streamf.write(b"STRM\x08\x00\x00\x00")
+		streamf.write(MARKER_STREAM_SRS)
 		file_block = sample_data.serialize_as_stream()
 		streamf.write(file_block)
 				
@@ -1940,6 +2088,35 @@ def stream_create_srs(self, tracks, sample_data, sample, srs, big_file):
 				track.flags |= TrackData.BIG_FILE
 			track_block = track.serialize_as_stream()
 			streamf.write(track_block)
+
+def m2ts_create_srs(self, tracks, sample_data, sample, srs, big_file):
+	with open(srs, "wb") as streamf:
+		# in store mode, create and write our custom blocks 
+		streamf.write(MARKER_M2TS_SRS)
+		file_block = sample_data.serialize_as_m2ts()
+		streamf.write(file_block)
+				
+		for track in tracks.values():
+			if big_file:
+				track.flags |= TrackData.BIG_FILE
+			track_block = track.serialize_as_m2ts()
+			streamf.write(track_block)
+
+		# indicate that headers are following
+		streamf.write(b"HDRS")
+		headers_size = streamf.tell()
+		streamf.write(b"0000")
+
+		# store all 8 bytes of header data
+		mr = M2tsReader(path=sample)
+		while mr.read():
+			streamf.write(mr.current_packet.raw_header)
+			mr.skip_contents()
+		headers_end = streamf.tell()
+		
+		# fix up the size field
+		streamf.seek(headers_size, os.SEEK_SET)
+		streamf.write(S_LONG.pack(headers_end - headers_size + 4))
 
 def avi_find_sample_streams(self, tracks, main_avi_file):
 	rr = RiffReader(RiffReadMode.AVI, main_avi_file,
@@ -2588,7 +2765,7 @@ def stream_find_sample_streams(self, tracks, main_file):
 		
 		# search for a match
 		x = stream.read(ramount)
-		p = b""
+		p = b""  # previous read
 		count = 0
 		while x:
 			show_spinner(count)
@@ -2617,6 +2794,141 @@ def stream_find_sample_streams(self, tracks, main_file):
 		stream.close()
 
 	return tracks
+
+def m2ts_find_sample_streams(self, tracks, main_m2ts_file):
+	mr = M2tsReader(path=main_m2ts_file, read_mode=M2tsReadMode.M2ts,
+	                archived_file_name=self.archived_file_name)
+	source_packet_count = 0
+	done = False
+
+	while mr.read() and not done:
+		assert not mr.read_done
+		# spinner after each aligned unit
+		source_packet_count += 1
+		pskip = 64
+		if source_packet_count % pskip == 0:
+			show_spinner(source_packet_count // pskip)
+
+		packet = mr.current_packet
+		track_number = packet.pid
+		try:
+			track = tracks[track_number]
+		except KeyError:
+			tracks[track_number] = TrackData()
+			tracks[track_number].track_number = track_number
+
+		# it's possible the sample didn't require 
+		# or contain data for all tracks in the main file
+		# if that happens, we obviously don't want to try to match the data
+		# - a track we need to match -and-
+		#   - no location with match found yet -or-
+		#   - whole length of the signature not matched yet
+		if track.signature_bytes and (track.match_offset == 0 or
+			(len(track.check_bytes) < len(track.signature_bytes))):
+			# assume that the data always starts at the start of a packet
+			buff = mr.read_contents()
+
+			# see if a false positive match was detected
+			if 0 < len(track.check_bytes) < len(track.signature_bytes):
+				check_bytes = (
+					track.check_bytes + buff)[:len(track.signature_bytes)]
+				
+				if track.signature_bytes.startswith(check_bytes):
+					track.check_bytes = check_bytes
+				else:
+					# It was only a partial match: start over.
+					track.check_bytes = b""
+					track.match_offset = 0
+					track.match_length = 0
+					if _DEBUG:
+						print("Partial match detected")
+				# this is a bit weird, but if we had a false positive match going 
+				# and discovered it above, we check this packet again
+				# to see if it's the start of a new match 
+				# (behavior copied from mkv. also for m2ts?)
+				
+			if not track.check_bytes:
+				if track.signature_bytes.startswith(buff):
+					track.check_bytes = buff
+					track.match_offset = packet.start_pos + 8
+					track.match_length = min(
+						track.data_length, packet.payload_size)
+			else:
+				track.match_length += min(packet.payload_size,
+					track.data_length - track.match_length)
+		elif track.match_length < track.data_length:
+			track.match_length += min(track.data_length - track.match_length,
+						  packet.payload_size)
+			if track.match_length >= track.data_length:
+				tracks_done = True
+				for track in tracks.values():
+					if track.match_length < track.data_length:
+						tracks_done = False
+						break
+				done = tracks_done
+			mr.skip_contents()
+		else:
+			mr.skip_contents()
+		assert mr.read_done
+	remove_spinner()
+
+	return tracks
+
+def m2ts_extract_sample_streams(self, tracks, main_file):
+	start_offset = 2 ** 63  # long.MaxValue + 1
+	for track in tracks.values():
+		if track.match_offset > 0:
+			start_offset = min(track.match_offset, start_offset)
+
+	try:
+		mr = M2tsReader(read_mode=M2tsReadMode.M2ts, path=main_file,
+		                match_offset=start_offset,
+		                archived_file_name=self.archived_file_name)
+	except InvalidMatchOffsetException as ex:
+		raise InvalidMatchOffset(format(ex))
+	
+	source_packet_count = 0
+	done = False
+	
+	while mr.read() and not done:
+		# spinner after each aligned unit
+		source_packet_count += 1
+		if source_packet_count % 32 == 0:
+			show_spinner(source_packet_count // 32)
+		
+		packet = mr.current_packet
+		track_number = packet.pid
+		if track_number not in tracks:
+			tracks[track_number] = TrackData()
+			tracks[track_number].track_number = track_number
+		track = tracks[track_number]
+
+		# test if located on a chunk with the required data
+		if (packet.start_pos + 192 > track.match_offset):
+			if track.track_file == None:
+				track.track_file = tempfile.TemporaryFile()
+				
+			previously_read = track.track_file.tell()
+			if previously_read < track.data_length:
+				# read in data to temporary file track (whole packets)
+				track.track_file.write(packet.read_contents())
+	
+			if previously_read + 192 >= track.data_length:
+				# check for tracks completion
+				tracks_done = True
+				for track_data in tracks.values():
+					if (track_data.track_file == None or 
+					track_data.track_file.tell() < track_data.data_length):
+						tracks_done = False
+						break
+				done = tracks_done
+		else:
+			mr.skip_contents()
+
+	remove_spinner()
+	
+	mr.close()
+	return tracks, {}  # attachments
 
 def avi_extract_sample_streams(self, tracks, movie):
 	# search for first match offset (possibly skipping some parsing)
@@ -3431,6 +3743,22 @@ def stream_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 		track = tracks[1]
 		track.track_file.seek(0)
 		data = track.track_file.read()
+		crc = crc32(data, crc)
+		stream.write(data)
+	
+	ofile = FileData(file_name=out_file)
+	ofile.crc32 = crc & 0xFFFFFFFF
+	return ofile
+
+def m2ts_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
+	raise NotImplemented()
+	crc = 0  # Crc32.StartValue
+	with open(out_file, "wb") as stream:
+		
+		track = tracks[1]
+		data = b""
+		track.track_file.seek(0)
+		data += track.track_file.read()
 		crc = crc32(data, crc)
 		stream.write(data)
 	

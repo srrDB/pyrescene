@@ -14,7 +14,7 @@ pyReScene 0.6 (2016-02-15) RC2 - umlaut is alive!
  * pyReScene Auto: skipping of known .log files didn't work (e.g. rushchk.log)
  * pyReScene Auto: no empty error reports
  * pyReScene Auto: --skip (-x) and --skip-list options added
- * ReSample: VOB, M2TS and MPEG SRS creation support
+ * ReSample: VOB, M2TS (no reconstruction) and MPEG SRS creation support
  * Resample: "ReSample .NET 1.3 Preview" fix: MKV header compression/stripping
  * ReSample: Faster AVI reconstruction times.
  * ReSample: MemoryError on large MP4s fixed and 
