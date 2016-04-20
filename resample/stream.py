@@ -33,7 +33,9 @@ from rescene.utility import is_rar, _DEBUG
 from rescene.rarstream import RarStream
 
 S_LONG = struct.Struct('<L')  # unsigned long: 4 bytes
+
 STREAM_MARKER = b"STRM"
+M2TS_MARKER = b"M2TS"  # uses the same SRS structure
 
 class InvalidDataException(ValueError):
 	pass
@@ -73,9 +75,9 @@ class StreamReader(object):
 
 			# header: block signature
 			marker = self._stream.read(4)
-			if pos == 0 and marker != STREAM_MARKER:
-				raise InvalidDataException("Not a stream SRS file!")
-			if marker not in (b"STRM", b"SRSF", b"SRST"):
+			if pos == 0 and marker not in (STREAM_MARKER, M2TS_MARKER):
+				raise InvalidDataException("Not a stream or m2ts SRS file!")
+			if marker not in (b"STRM", b"SRSF", b"SRST", b"M2TS", b"HDRS"):
 				print("Unknown header block encountered")
 			else:
 				marker = marker.decode("ascii")
