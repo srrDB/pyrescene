@@ -272,12 +272,12 @@ def file_type_info(ifile):
 # SampleAttachmentInfo.cs -----------------------------------------------------
 class AttachmentData(object):
 	def __init__(self, name, size=0, attachment_file=None):
-		self.size = size
 		self.name = name
+		self.size = size
 		self.attachment_file = attachment_file
 		
 	def __repr__(self, *args, **kwargs):
-		return ("<attachment_data name=%r size=%r>" % self.name, self.size)
+		return ("<attachment_data name=%r size=%r>" % (self.name, self.size))
 
 # SampleFileInfo.cs -----------------------------------------------------------
 class FileData(object):
@@ -1117,7 +1117,7 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 			elm_content = er.read_contents()
 			other_length += len(elm_content)
 			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
-			current_attachment_name = elm_content
+			current_attachment_name = elm_content.decode("utf-8")
 		elif etype == EbmlElementType.AttachedFileData:
 			elm_content = er.read_contents()
 # 			attachments[current_attachment].size = len(elm_content)
@@ -1125,9 +1125,7 @@ def mkv_profile_sample(self, mkv_data): # FileData object
 			attkey = current_attachment_name 
 			while attkey in attachments:
 				attkey += ".dupe"
-			ad = AttachmentData()
-			ad.name = current_attachment_name
-			ad.size = len(elm_content) 
+			ad = AttachmentData(current_attachment_name, len(elm_content))
 			attachments[attkey] = ad
 		else:
 			other_length += er.current_element.length
