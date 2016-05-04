@@ -1,0 +1,874 @@
+Content-Type: multipart/related; start=<op.mhtml.1365294395880.484fb41b423e9e32@192.168.0.177>; boundary=----------YHudOzIXKOGZUHepX5uXes
+Content-Location: http://mpgedit.org/mpgedit/mpeg_format/MP3Format.html
+Subject: =?utf-8?Q?MP3=20File=20Format=20Specification?=
+MIME-Version: 1.0
+
+------------YHudOzIXKOGZUHepX5uXes
+Content-Disposition: inline; filename=MP3Format.html
+Content-Type: text/html; charset=iso-8859-1; name=MP3Format.html
+Content-ID: <op.mhtml.1365294395880.484fb41b423e9e32@192.168.0.177>
+Content-Location: http://mpgedit.org/mpgedit/mpeg_format/MP3Format.html
+Content-Transfer-Encoding: 8bit
+
+<HTML>
+<HEAD>
+  <META NAME="GENERATOR" CONTENT="Adobe PageMill 3.0 Win">
+  <TITLE>MP3 File Format Specification</TITLE>
+  <META NAME="Author" CONTENT="Gabriel Bouvigne">
+  <META NAME="keywords" CONTENT="aac audio code coding compression compressor download encoder iso layer mp2 mp3 mp4 mpg mpeg mpeg2 mpeg4 music natural patent patents perceptual player programming sound source test tests twinvq twin-vq vqf">
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+</HEAD>
+<BODY>
+
+<H1><CENTER><A HREF="mpeghdr.htm">Incomplete; check here!</A></CENTER></H1>
+
+<P><CENTER><TABLE WIDTH="90%" BGCOLOR="#FFFFFF" BORDER="0" CELLSPACING="2"
+CELLPADDING="0">
+  <TR>
+    <TD WIDTH="100%" HEIGHT="38" BGCOLOR="#bbbbbb">
+    <FONT COLOR="#ffffff" SIZE="+2">MPEG Audio Layer I/II/III frame
+    header</FONT></TD> 
+  </TR>
+  <TR>
+    <TD WIDTH="100%" VALIGN="TOP" BACKGROUND="code.gif">
+    <DIR>
+      <P>&nbsp;
+      <P>An MPEG audio file is built up from smaller parts called frames.
+      Generally, frames are independent items. Each frame has its own
+      header and audio informations. As there is no file header, you
+      can cut any part of MPEG file and play it correctly (this should
+      be done on frame boundaries but most applications will handle
+      incorrect headers). However, for Layer III, this is not 100%
+      correct. Due to internal data organization in MPEG Layer III
+      files, frames are often dependent of each other and they cannot
+      be cut off just like that.
+      <P>&nbsp;&nbsp;&nbsp;&nbsp;When you want to read info about an
+      MPEG file, it is usually enough to find the first frame, read
+      its header and assume that the other frames are the same. But
+      this may not be always the case. Variable bitrate MPEG files
+      may use so called bitrate switching, which means that bitrate
+      changes according to the content of each frame. This way lower
+      bitrates may be used in frames where it will not reduce sound
+      quality. This allows making better compression while keeping
+      high quality of sound.
+      <P>&nbsp;&nbsp;&nbsp;&nbsp;The frame header is constituted by
+      the very first four bytes (32bits) in a frame. The first eleven
+      bits (or first twelve bits, see below about frame sync) of a
+      frame header are always set and they are called &quot;frame sync&quot;.
+      Therefore, you can search through the file for the first occurence
+      of frame sync (meaning that you have to find a byte with a value
+      of 255, and followed by a byte with its three (or four) most
+      significant bits set). Then you read the whole header and check
+      if the values are correct. You will see in the following table
+      the exact meaning of each bit in the header. Each value that
+      is specified as reserved, invalid, bad, or not allowed should
+      indicate an invalid header.
+      <P>&nbsp;&nbsp;&nbsp;&nbsp;Frames may have a CRC check. The CRC
+      is 16 bits long and, if it exists, it follows the frame header.
+      After the CRC comes the audio data. You may calculate the CRC
+      of the frame, and compare it with the one you read from the file.
+      This is actually a very good method to check the MPEG frame validity.
+      <P>&nbsp;&nbsp;&nbsp;&nbsp;Here is a presentation of the header
+      content. Characters from A to M are used to indicate different
+      fields. In the table below, you can see details about the content
+      of each field.
+      <P><CENTER><B><FONT SIZE="+2" FACE="Courier New, Courier, mono">AAAAAAAA
+      AAABBCCD EEEEFFGH IIJJKLMM</FONT></B></CENTER>
+      <P><TABLE BORDER="0" CELLSPACING="7" CELLPADDING="0">
+        <TR VALIGN="TOP" BGCOLOR="#BBBBBB">
+          <TD>
+          <B><FONT COLOR="#ffffff" FACE="Arial, Helvetica, sans-serif">Sign</FONT></B></TD> 
+          <TD>
+          <B><FONT COLOR="#ffffff" FACE="Arial, Helvetica, sans-serif">Length<BR>
+          (bits)</FONT></B></TD> 
+          <TD>
+          <B><FONT COLOR="#ffffff" FACE="Arial, Helvetica, sans-serif">Position<BR>
+          (bits)</FONT></B></TD> 
+          <TD>
+          <B><FONT COLOR="#ffffff" FACE="Arial, Helvetica, sans-serif">Description</FONT></B></TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          A</TD> 
+          <TD>
+          11</TD> 
+          <TD>
+          (31-21)</TD> 
+          <TD>
+          Frame sync (all bits set)</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          B</TD> 
+          <TD>
+          2</TD> 
+          <TD>
+          (20,19)</TD> 
+          <TD>
+          <P>MPEG Audio version ID<BR>
+          00 - MPEG Version 2.5 (unofficial)<BR>
+          01 - reserved<BR>
+          10 - MPEG Version 2 (ISO/IEC 13818-3)<BR>
+          11 - MPEG Version 1 (ISO/IEC 11172-3)</P>
+
+          <P>Note: MPEG Version 2.5 is not official standard. It is an
+          extension of the standard used for very low bitrate files. If
+          your decoder does not support this extension, it is recommended
+          for you to use 12 bits for synchronization instead of 11 bits.</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          C</TD> 
+          <TD>
+          2</TD> 
+          <TD>
+          (18,17)</TD> 
+          <TD>
+          Layer description<BR>
+          00 - reserved<BR>
+          01 - Layer III<BR>
+          10 - Layer II<BR>
+          11 - Layer I</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          D</TD> 
+          <TD>
+          1</TD> 
+          <TD>
+          (16)</TD> 
+          <TD>
+          Protection bit<BR>
+          0 - Protected by CRC (16bit crc follows header)<BR>
+          1 - Not protected</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          E</TD> 
+          <TD>
+          4</TD> 
+          <TD>
+          (15,12)</TD> 
+          <TD>
+          <P>Bitrate index<BR>
+          <TABLE BORDER="1" CELLSPACING="0" cellpading="0" CELLPADDING="0">
+            <TR>
+              <TD>
+              bits</TD> 
+              <TD>
+              V1,L1</TD> 
+              <TD>
+              V1,L2</TD> 
+              <TD>
+              V1,L3</TD> 
+              <TD>
+              V2,L1</TD> 
+              <TD>
+              V2, L2 &amp; L3</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0000</TD> 
+              <TD>
+              free</TD> 
+              <TD>
+              free</TD> 
+              <TD>
+              free</TD> 
+              <TD>
+              free</TD> 
+              <TD>
+              free</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0001</TD> 
+              <TD>
+              32</TD> 
+              <TD>
+              32</TD> 
+              <TD>
+              32</TD> 
+              <TD>
+              32</TD> 
+              <TD>
+              8</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0010</TD> 
+              <TD>
+              64</TD> 
+              <TD>
+              48</TD> 
+              <TD>
+              40</TD> 
+              <TD>
+              48</TD> 
+              <TD>
+              16</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0011</TD> 
+              <TD>
+              96</TD> 
+              <TD>
+              56</TD> 
+              <TD>
+              48</TD> 
+              <TD>
+              56</TD> 
+              <TD>
+              24</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0100</TD> 
+              <TD>
+              128</TD> 
+              <TD>
+              64</TD> 
+              <TD>
+              56</TD> 
+              <TD>
+              64</TD> 
+              <TD>
+              32</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0101</TD> 
+              <TD>
+              160</TD> 
+              <TD>
+              80</TD> 
+              <TD>
+              64</TD> 
+              <TD>
+              80</TD> 
+              <TD>
+              40</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0110</TD> 
+              <TD>
+              192</TD> 
+              <TD>
+              96</TD> 
+              <TD>
+              80</TD> 
+              <TD>
+              96</TD> 
+              <TD>
+              48</TD> 
+            </TR>
+            <TR>
+              <TD>
+              0111</TD> 
+              <TD>
+              224</TD> 
+              <TD>
+              112</TD> 
+              <TD>
+              96</TD> 
+              <TD>
+              112</TD> 
+              <TD>
+              56</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1000</TD> 
+              <TD>
+              256</TD> 
+              <TD>
+              128</TD> 
+              <TD>
+              112</TD> 
+              <TD>
+              128</TD> 
+              <TD>
+              64</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1001</TD> 
+              <TD>
+              288</TD> 
+              <TD>
+              160</TD> 
+              <TD>
+              128</TD> 
+              <TD>
+              144</TD> 
+              <TD>
+              80</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1010</TD> 
+              <TD>
+              320</TD> 
+              <TD>
+              192</TD> 
+              <TD>
+              160</TD> 
+              <TD>
+              160</TD> 
+              <TD>
+              96</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1011</TD> 
+              <TD>
+              352</TD> 
+              <TD>
+              224</TD> 
+              <TD>
+              192</TD> 
+              <TD>
+              176</TD> 
+              <TD>
+              112</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1100</TD> 
+              <TD>
+              384</TD> 
+              <TD>
+              256</TD> 
+              <TD>
+              224</TD> 
+              <TD>
+              192</TD> 
+              <TD>
+              128</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1101</TD> 
+              <TD>
+              416</TD> 
+              <TD>
+              320</TD> 
+              <TD>
+              256</TD> 
+              <TD>
+              224</TD> 
+              <TD>
+              144</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1110</TD> 
+              <TD>
+              448</TD> 
+              <TD>
+              384</TD> 
+              <TD>
+              320</TD> 
+              <TD>
+              256</TD> 
+              <TD>
+              160</TD> 
+            </TR>
+            <TR>
+              <TD>
+              1111</TD> 
+              <TD>
+              bad</TD> 
+              <TD>
+              bad</TD> 
+              <TD>
+              bad</TD> 
+              <TD>
+              bad</TD> 
+              <TD>
+              bad</TD> 
+            </TR>
+          </TABLE></P>
+
+          <P>NOTES: All values are in kbps<BR>
+          V1 - MPEG Version 1<BR>
+          V2 - MPEG Version 2 and Version 2.5<BR>
+          L1 - Layer I<BR>
+          L2 - Layer II<BR>
+          L3 - Layer III<BR>
+<BR>
+          &quot;free&quot; means free format. If the correct fixed bitrate
+          (such files cannot use variable bitrate) is different than those
+          presented in upper table it must be determined by the application.
+          This may be implemented only for internal purposes since third
+          party applications have no means to findout correct bitrate.
+          Howewer, this is not impossible to do but demands lots of efforts.<BR>
+          &quot;bad&quot; means that this is not an allowed value</P>
+
+          <P>MPEG files may have variable bitrate (VBR). Each frame may
+          be created with different bitrate. It may be used in all layers.
+          Layer III decoders must support this method. Layer I & II decoders
+          may support it.</P>
+
+          <P>For Layer II there are some combinations of bitrate and mode
+          which are not allowed. Here is a list of allowed combinations.
+          <TABLE BORDER="1" CELLSPACING="0" ALIGN="CENTER" CELLPADDING="0">
+            <TR>
+              <TD>
+              bitrate</TD> 
+              <TD>
+              <P><CENTER>single channel</CENTER></TD>
+              <TD>
+              <P><CENTER>stereo</CENTER></TD>
+              <TD>
+              <P><CENTER>intensity stereo</CENTER></TD>
+              <TD>
+              <P><CENTER>dual channel</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              free</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              32</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              48</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              56</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              64</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              80</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              96</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              112</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              128</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              160</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              192</TD> 
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              224</TD> 
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              256</TD> 
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              320</TD> 
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+            <TR>
+              <TD>
+              384</TD> 
+              <TD BGCOLOR="#ffcccc">
+              <P><CENTER>no</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+              <TD BGCOLOR="#ccffcc">
+              <P><CENTER>yes</CENTER></TD>
+            </TR>
+          </TABLE></TD>
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          F</TD> 
+          <TD>
+          2</TD> 
+          <TD>
+          (11,10)</TD> 
+          <TD>
+          Sampling rate frequency index (values are in Hz) <TABLE BORDER="1"
+          CELLSPACING="0" cellpading="0" CELLPADDING="0">
+            <TR>
+              <TD>
+              bits</TD> 
+              <TD>
+              MPEG1</TD> 
+              <TD>
+              MPEG2</TD> 
+              <TD>
+              MPEG2.5</TD> 
+            </TR>
+            <TR>
+              <TD>
+              00</TD> 
+              <TD>
+              44100</TD> 
+              <TD>
+              22050</TD> 
+              <TD>
+              11025</TD> 
+            </TR>
+            <TR>
+              <TD>
+              01</TD> 
+              <TD>
+              48000</TD> 
+              <TD>
+              24000</TD> 
+              <TD>
+              12000</TD> 
+            </TR>
+            <TR>
+              <TD>
+              10</TD> 
+              <TD>
+              32000</TD> 
+              <TD>
+              16000</TD> 
+              <TD>
+              8000</TD> 
+            </TR>
+            <TR>
+              <TD>
+              11</TD> 
+              <TD>
+              reserv.</TD> 
+              <TD>
+              reserv.</TD> 
+              <TD>
+              reserv.</TD> 
+            </TR>
+          </TABLE></TD>
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          G</TD> 
+          <TD>
+          1</TD> 
+          <TD>
+          (9)</TD> 
+          <TD>
+          Padding bit<BR>
+          0 - frame is not padded<BR>
+          1 - frame is padded with one extra slot<BR>
+          Padding is used to fit the bit rates exactly. For an example:
+          128k 44.1kHz layer II uses a lot of 418 bytes and some of 417
+          bytes long frames to get the exact 128k bitrate. For Layer I
+          slot is 32 bits long, for Layer II and Layer III slot is 8 bits
+          long.</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          H</TD> 
+          <TD>
+          1</TD> 
+          <TD>
+          (8)</TD> 
+          <TD>
+          Private bit. It may be freely used for specific needs of an application.</TD> 
+        </TR>
+        <TR VALIGN="TOP">
+          <TD BGCOLOR="#eeeeee">
+          I</TD> 
+          <TD>
+          2</TD> 
+          <TD>
+          (7,6)</TD> 
+          <TD>
+          Channel Mode<BR>
+          00 - Stereo<BR>
+          01 - Joint stereo (Stereo)<BR>
+          10 - Dual channel (2 mono channels)<BR>
+          11 - Single channel (Mono)<BR>
+<BR>
+          Note: Dual channel files are made of two independant mono channel.
+          Each one uses exactly half the bitrate of the file. Most decoders
+          output them as stereo, but it might not always be the case.<BR>
+          &nbsp;&nbsp;&nbsp;&nbsp;One example of use would be some speech
+          in two different languages carried in the same bitstream, and
+          and appropriate decoder would decode only the choosen language
+          &lt;/&gt;</TD> 
+        </TR>
+      </TABLE>
+    </DIR>
+</TD>
+  </TR>
+</TABLE></CENTER>
+
+</BODY>
+</HTML>
+
+------------YHudOzIXKOGZUHepX5uXes
+Content-Disposition: inline; filename=code.gif
+Content-Type: image/gif; name=code.gif
+Content-Location: http://mpgedit.org/mpgedit/mpeg_format/code.gif
+Content-Transfer-Encoding: Base64
+
+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
+2PMRExXnhJjrxMpTXfZniVqFlWgDC9nWurZgTlUsZVtoWT3qS4bpJOlcHYrIwXBP
+nrX9LM46u5jezhanAEvqa5fLXEXytbnQ/3VpdKebUuqOVbnWzS52s8vd7nr3u+AN
+r3jHS97ymve86E2vetfL3va6973wja9850vfxDkzpzDo2plimsT8ZbaeRUWrcG+n
+X90KZaKxIl/Mrhtbc64yP/VKDIGBq7wGR7hqjWQrzkZkR3Lx9FcprKvMgHjZLX6r
+WBQ2YlS2u8G0mC+1lexlNrkJy/KhtKYby3EtmYYVEbvypSaUsSaHrFVOoUl+yTTM
+i22J2ZcxkoucXHIlG8Li+lq5glW+sj6zrGV/crnLYA4zeZlqPuKq6Kpo7imwhFy8
+J4MtjaJ9kEnFDKMpGhGkDD3sHwOcoI1iNn0o/DKddyW35+JA0IOGov+hj4DoBiZ6
+RuhZlp2J50XPIkjSi0WjJ31pykrnK7altZpDMUPjSycXTY+Om1n9p687D7jP6ERX
+qynt6BADWsAXDl5hTbbD4a76rahO9aENttf84tVPFzv2SW56R7XSEabnW7Swp03t
+alv72tjOtra3ze1ue/vb4A43MvmXR7DRkMyjrWKO8FLL1PLYk7LUsV3ejO40e9HF
+by6uFRE8ybja2N6V9RZg95vLWM+yaQRvmIOPcpBG14jcuN41rmeN1V9dsde7fQfz
+ymPrL7bDxPe6d6bPbeFyMRSTFPc3iEHe00NFfIXS7vADT245CRLpgPqz+bIv6lPu
+Ctrh4s4T08r/U0630lqHLORwxiWUzB6GfMPF/LWng+6SKLbV6BVfysWfruY/Y5zm
+3bI6mYBO9V2UMshk19BmE7b2Nqe97NJ4O9w/N3DfncrVc28xio9s7nf2Je+AD7zg
+B0/4whv+8IhPWTz1WGSDy/uiN7VbWbVGNtC+0pYn/jeReTnjxwsX3/Z24b6fDXbL
+AzzBrLZmpjV/dhjvkny61DnriX1FuTsJ4ro2rVztvqRLbH3paV0PrAMdLF3TWuxP
+lXXJnf5glU8m5V0/6+//TeIK736ILv/8yB3Pdc/JPkg4j3luZWR70pU/8UoL9Wm9
+dXnnW/T6uf4UzJkuK/qd2n/or4f6bZv5/6ObvOlfJ3Wc5VThh1z8ln8k0XrFpjJr
+t3gIyC6/lXDekzMK9oCK53fPN3DSB1IoN2cWSC1dlYG3FGTtR1imR1QfmIIqiEw+
+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
+gggAADs=
+
+------------YHudOzIXKOGZUHepX5uXes--

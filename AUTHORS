@@ -1,0 +1,15 @@
+List ordered by time of first contributions according to
+https://www.openhub.net/p/pyrescene/contributors?query=&sort=newest
+
+umlaut (original .NET implementation)
+gooober (awescript)
+Martin 'vadmium' Panter (rerar, Python 3 support, improvements)
+Gfy <pyrescene@gmail.com> (porting to Python 2, new stuff and maintenance)
+Steffen 'HeeaaD' Matthischke (reconstruction performance increase)
+mechtex (fix commandline arguments for rar 2.xx archivers)
+Simon Zack (some code cleanup)
+Peter 'sticki' Shayt (small improvement)
+emargee [mRg] (bugfixes)
+Jarryd Page (bugfix)
+Skalman (basis for Windows explorer shell extension)
+hurda_ (documentation fix)

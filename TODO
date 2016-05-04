@@ -1,0 +1,50 @@
+pyReScene
+=========
+
+ - SRR support for RAR5 files <supportATrarlab.com>
+ - SRR support for ZIP files
+ - Make SFX volumes rescenable
+ - *.sfv as the first parameter (srr.py. Use Linux shell?)
+ - add, remove, rename stored files from CLI
+ - new block for empty directories? (use empty.txt instead for dirfixes?)
+ - do not create SRR based on empty SFV files (but do so when .mkv in there)
+ - here's an idea: if you find a tool, for example the gui one, to make 
+   the srr process automated, like select target folder > rescene scans it, 
+   makes a new folder somewhere else and copies the finished srrs in a perfect 
+   output structure.
+   i guess they want some tool to scan whatever they have and 
+   rescene-resample etc automated
+   without doing anything
+   meaning all..create srr, check rls for missing samples and resample, 
+   reconstruct avi's from srr etc
+   but not with commands etc i guess..they just want buttons and automatic
+   maybe an app which scans all your drives , checks which rls dont have srr 
+   on site, create srr for them, download srr packages from srrdb and re-sample
+   those rls which have missing Sample
+ - automatically check for rar executables in srr.exe dir
+ - new parameter: it must behave like -n (faster than recreating everything), 
+   except when the release new files 
+   compared to the ones stored in the existing srr release folder, 
+   contains new files. new in the sense of addition e.g. proof jpg
+ - add a switch (like -z) for a single executable (compressed RAR reconstruction)
+ - add --broken-samples parameter (used with --list-releases option)
+ - SRRs for extracted disk image files or burned to disk
+    
+pyReSample
+==========
+
+ - Support for additional video formats
+    * OGM
+ - Reconstruct LOL AVI samples correctly. (visible skip)
+ - try to extract/verify sample from one big AVI (sample across CDs)
+   (http://www.srrdb.com/release/details/Bobby.Deerfield.1977.DVDrip.XviD-DnB)
+   "Successfully rebuilt sample: dnb-bd-sample.avi" .. when before I kept 
+   getting ... "Unable to extract correct amount of data for track 0. Aborting.
+    
+General
+=======
+
+ - http://www.debian.org/doc/packaging-manuals/python-policy/
+ - http://infinitemonkeycorps.net/docs/pph/
+ - http://guide.python-distribute.org/
+   

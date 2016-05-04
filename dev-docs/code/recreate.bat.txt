@@ -1,0 +1,42 @@
+@echo off
+
+set rarfilename=
+set rarfilelist=
+
+srr %1 -p -r -o %~n1
+  IF ERRORLEVEL 1 echo Recreation of srr file failed. & goto :eob
+
+pushd %~n1
+
+IF NOT EXIST CD? (
+    if exist *.part01.rar (
+      (for /f "delims==" %%d in ('dir /b *.part01.rar') do call set rarfilelist=%%rarfilelist%% %%d) 1>nul 2>nul
+    ) else (
+      (for /f "delims==" %%d in ('dir /b *.rar') do call set rarfilelist=%%rarfilelist%% %%d) 1>nul 2>nul    
+    )     
+) ELSE (
+
+    for /d %%t in (CD?) do (
+      pushd %%t
+      (for /f "delims==" %%d in ('dir /b *.rar') do set rarfilename=%%d) 1>nul 2>nul
+      (for /f "delims==" %%d in ('dir /b *.part01.rar') do set rarfilename=%%d) 1>nul 2>nul
+      popd
+      call set rarfilelist=%%rarfilelist%% %%t\%%rarfilename%%
+    )
+    
+)
+
+if exist .\Sample goto :sampledir
+  if not exist *.srs popd & goto :eob
+    mkdir Sample
+    move *.srs .\Sample
+
+:sampledir
+  pushd Sample
+  for %%f in (*.srs) do for %%i in (%rarfilelist%) do call srs %%f ..\%%i & IF NOT ERRORLEVEL 1 goto :step2
+:step2
+  del *.srs
+  popd
+
+popd
+:eob

@@ -1,0 +1,34 @@
+http://www.srrdb.com/release/details/Battlestar.Galactica.2003.WS.DVDRip.XviD-SFM
+The sample that fails to create a bad .avi file has no matching offsets for the tracks stored.
+
+>pysrs battlestar.galactica.2003.ws.dvdrip.xvid-sfm.sample_succeeds.srs CD1\battlestar.galactica.2003.cd1.ws.dvdrip.xvid-sfm.rar
+SRS Load Complete...          Elapsed Time: 0.05s
+Track Extraction Complete...  Elapsed Time: 11.01s
+Rebuild Complete...           Elapsed Time: 11.63s
+
+File Details:   Size           CRC
+                -------------  --------
+Expected    :      11 071 488  984A38A7
+Actual      :      11 071 488  6E568197
+
+This is a known issue for LOL xvid releases.
+Use -k to keep the result for investigation.
+
+Rebuild failed for sample: battlestar.galactica.2003.ws.dvdrip.xvid-sfm.sample.avi
+
+>pysrs battlestar.galactica.2003.ws.dvdrip.xvid-sfm.sample_fails.srs CD1\battlestar.galactica.2003.cd1.ws.dvdrip.xvid-sfm.rar
+SRS Load Complete...          Elapsed Time: 0.05s
+Track Location Complete...    Elapsed Time: 71.93s
+
+Unable to locate track signature for track 0. Aborting.
+
+---
+
+The above behavior is correct. No track location is attempted in the first case [1],
+so the rebuild starts immediately. There are no separate checks in place to verify that
+the provided match offset actually matches with the data found at that location.
+A quick failure check could be added to all the extract sample functions [2],
+but then they need to take into account the possibility to keep the broken sample.
+
+[1] find_sample_streams
+[2] extract_sample_streams

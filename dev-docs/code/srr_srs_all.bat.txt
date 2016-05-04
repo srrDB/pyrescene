@@ -1,0 +1,3 @@
+@echo off
+if not exist # (mkdir #)
+for /d %%d in (*-*) do if not exist #\%%d.srr  call srr_srs_folder.bat %%d & move %%d.srr .\#
