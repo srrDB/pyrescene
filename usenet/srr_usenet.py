@@ -169,16 +169,16 @@ import re
 import traceback
 import socket
 import struct
-try: # Python 1.6+
-	from ConfigParser import ConfigParser #@UnusedImport @UnresolvedImport
-except: # Python 3
-	from configparser import ConfigParser #@Reimport @UnresolvedImport
+try:  # Python 1.6+
+	from ConfigParser import ConfigParser  # @UnusedImport @UnresolvedImport
+except:  # Python 3
+	from configparser import ConfigParser  # @Reimport @UnresolvedImport
 
 import yenc
 import nzb_utils
 from os.path import abspath, join, dirname, basename, realpath
 
-#from binascii import hexlify
+# from binascii import hexlify
 
 # for running the script directly from command line
 sys.path.append(join(dirname(realpath(sys.argv[0])), '..'))
@@ -191,10 +191,10 @@ from rescene.utility import basestring
 __version_info__ = ('1', '7')
 __version__ = '.'.join(__version_info__)
 
-EXTRA_SERVERS = [ # now in srr_usenet.cfg
+EXTRA_SERVERS = [  # now in srr_usenet.cfg
 	# NNTP_SERVER, NNTP_PORT, NNTP_LOGIN, NNTP_PASSWORD, (readermode)
-	#("", 119, "", ""),
-	#("", 119, "", "", True),
+	# ("", 119, "", ""),
+	# ("", 119, "", "", True),
 				]
 
 NNTP_SERVER = ""
@@ -205,7 +205,7 @@ NNTP_PORT = 119
 IGNORE_CRC_ERRORS = True
 
 # don't try first server twice if no CLI server is specified
-NO_CLI_SERVER = 0 # yes there is: all the EXTRA_SERVERS count: index 0
+NO_CLI_SERVER = 0  # yes there is: all the EXTRA_SERVERS count: index 0
 
 # Not a whole first segment is downloaded, only the first few lines
 # more are grabbed when needed
@@ -219,7 +219,7 @@ def be_efficient():
 """Set the default timeout in floating seconds for new socket objects.
 A value of None indicates that new socket objects have no timeout.
 When the socket module is first imported, the default is None."""
-nntplib.socket.setdefaulttimeout(180.0) # 3 minutes
+nntplib.socket.setdefaulttimeout(180.0)  # 3 minutes
 
 # add functionality to nntplib to grab only the first few lines
 class NNTP(nntplib.NNTP):
@@ -231,7 +231,7 @@ class NNTP(nntplib.NNTP):
 			raise nntplib.NNTPReplyError(resp)
 		resp, article_nr, msg_id = resp.split(None, 4)[:3]
 		article_nr = int(article_nr)
-		
+
 		# http://q-lang.sourceforge.net/qcalc/qdoc_12.html#SEC132
 		# The shutdown function terminates data transmission on a
 		# socket. You can stop reading, writing or both, depending on
@@ -241,9 +241,9 @@ class NNTP(nntplib.NNTP):
 		self.file.close()
 		self.sock.close()
 		del self.file, self.sock
-		
+
 		return resp, article_nr, msg_id, list_body
-	
+
 	def getlongresp_little(self, max_nb_lines=DEFAULT_LINES):
 		"""Internal: get a response plus following text from server.
 		Raise various errors if the response indicates an error.
@@ -255,11 +255,11 @@ class NNTP(nntplib.NNTP):
 			raise nntplib.NNTPTemporaryError(resp)
 		if resp.startswith('5'):
 			raise nntplib.NNTPPermanentError(resp)
-		
+
 		try:
-			resplist = nntplib.LONGRESP #@UndefinedVariable
-		except AttributeError: # Python 3
-			resplist = nntplib._LONGRESP #@UndefinedVariable
+			resplist = nntplib.LONGRESP  # @UndefinedVariable
+		except AttributeError:  # Python 3
+			resplist = nntplib._LONGRESP  # @UndefinedVariable
 		if resp[:3] not in resplist:
 			raise nntplib.NNTPReplyError(resp)
 		data_list = []
@@ -272,13 +272,13 @@ class NNTP(nntplib.NNTP):
 				break
 			if line.startswith(b'..'):
 				# http://www.yenc.org/develop.htm
-				# the NNTP-protocol requires to double a dot in the first 
-				# colum when a line is sent - and to detect a double dot 
+				# the NNTP-protocol requires to double a dot in the first
+				# colum when a line is sent - and to detect a double dot
 				# (and remove one of them) when receiving a line.
 				line = line[1:]
 			data_list.append(line)
 		return resp, data_list
-	
+
 	def getline(self):
 		# RFC 3977 (NNTP) line limit is 512 octets
 		line = self.file.readline(1000)
@@ -291,119 +291,119 @@ class NNTP(nntplib.NNTP):
 
 def _decode_yenc(data, partial_data=False, crc_behaviour=IGNORE_CRC_ERRORS):
 	return yenc.decode(data, partial_data, crc_behaviour)
-	
-class IncompleteNzb(Exception): 
+
+class IncompleteNzb(Exception):
 	pass
-		
-class Repack(Exception): 
+
+class Repack(Exception):
 	pass
-	
+
 class NNTPFile(io.IOBase):
 	"""Represents a logical file posted to Usenet."""
 	def __init__(self, server, nzb_file):
-		self.server = server 
-		self.new_server = False # we need this to close the connection
+		self.server = server
+		self.new_server = False  # we need this to close the connection
 		self.nzb_file = nzb_file
 		self.segments = {}
-		self.data = {} # the actual data of the segment
-		self.group = False # Send GROUP command before grabbing segment
-		
-		self.nb_segments = 0 # highest number defined in the NZB
+		self.data = {}  # the actual data of the segment
+		self.group = False  # Send GROUP command before grabbing segment
+
+		self.nb_segments = 0  # highest number defined in the NZB
 		for segment in nzb_file.segments:
 			self.segments[segment.number] = segment
 			self.segments[segment.number].decoded_size = 0
 			if segment.number > self.nb_segments:
 				self.nb_segments = segment.number
-				
+
 		# not true for NZBs with missing segments
 		# assert len(self.segments) == self.nb_segments
 		# disabling could increase success rate? strange, but who knows...
 		# assert self.nb_segments != 0
-		
+
 		self.name = nzb_utils.parse_name(nzb_file.subject)
 		self.is_rar = is_rar(self.name)
-		
+
 		self._file_size = 0
 		self._current_position = 0
 		self._segment_size_first = 0
-		
+
 		# Active when the first segment is downloaded
 		self._inactive = True
 		self._did_seek = False
 		self._end_magic_before = False
-		
+
 		# only ignore CRC errors on RAR files
 		self.ignore_crc_errors = IGNORE_CRC_ERRORS
 		if not self.is_rar:
 			self.ignore_crc_errors = False
-			
+
 	def init_data(self, server_nb=0):
 		"""Used for wiping the data array clean so we can retry 
 		the bad segments again.
 		"""
-		#TODO: keep good segments! (saves bandwidth)
-		#  how do we know which ones were good? 
+		# TODO: keep good segments! (saves bandwidth)
+		#  how do we know which ones were good?
 		#    -> they passed the CRC check
 		#  this isn't saved anywhere yet
 		#    -> not worth the time
 		#    => it does for PS3 releases with hundreds of separate files
-		
+
 		self.data = {}
 		self._file_size = 0
 		self._current_position = 0
 		self._segment_size_first = 0
 		self._inactive = True
 		self._end_magic_before = False
-		
+
 		# reset offsets from the MAGIC
 		for segment in self.segments:
 			self.segments[segment].magic_shift = 0
 			self.segments[segment].magic_shift_offset = 0
-			
+
 		# don't close the original server picked upon creation
 		# close the connection of a changed server upon retries
 		if self.new_server:
 			self.server.quit()
 		# it'll let the last one time out
-			
+
 		# change the server here too (so we try other servers if it fails)
 		while server_nb > len(EXTRA_SERVERS) - 1:
 			server_nb -= len(EXTRA_SERVERS)
 			if server_nb < 0:
 				server_nb = 0
-			
+
 		self.server = NNTP(*EXTRA_SERVERS[server_nb])
 		print(self.server.getwelcome())
 		self.new_server = True
-		
+
 		# but how do we close the connection to the last extra server?
 		# -> time-out will do for the least used server
-		
+
 		print("--init-data--")
-		
+
 	def __getitem__(self, val):
 		"""Makes it subscriptable: no issues when os.path stuff or sorting
 		is used on this object. Returns slice of file name."""
 		return self.name.__getitem__(val)
-	
+
 	def __len__(self):
 		"""Returns the length of the name of the file."""
 		return self.name.__len__()
-	
+
 	def __str__(self):
 		"""Returns the name of the file."""
 		return self.name
-	
+
 	def rfind(self, *args):
 		# for Python 2.6
 		return self.name.rfind(*args)
-	
+
 	def close(self):
 		"""No need to have this closed. Gives problems either way."""
-#		print("CLOSE is called.")
-#		# close the connection of a changed server upon retries
-#		if self.new_server:
-#			self.server.quit()
+# 		print("CLOSE is called.")
+# 		# close the connection of a changed server upon retries
+# 		if self.new_server:
+# 			self.server.quit()
 
 	def grab_segment(self, message_id, nb_lines=-1):
 		"""nb_lines: amount of the first lines that should be grabbed
@@ -419,7 +419,7 @@ class NNTPFile(io.IOBase):
 				# always use a new connection for these little grabs
 				for server in EXTRA_SERVERS:
 					try:
-						s = NNTP(*server) # scatter tuple
+						s = NNTP(*server)  # scatter tuple
 						try:
 							s.set_debuglevel(options.nntp_debug_level)
 							if self.group:
@@ -438,25 +438,25 @@ class NNTPFile(io.IOBase):
 						print("Connecting to '%s' failed." % server[0])
 			else:
 				result = server.body(article_id)
-				try: # Python 3
+				try:  # Python 3
 					[resp, [article_number, msg_id, lines]] = result
 					# Restore Python 2 layout
 					result = (resp, article_number, msg_id, lines)
-				except ValueError: # Python < 3
+				except ValueError:  # Python < 3
 					pass
 				return result
-			
+
 			# we need to fail if we are here (so we don't return None)
 			raise nntplib.NNTPError("Failure on all servers.")
-			
+
 		def decode_yenc_body(data):
-			if nb_lines > 1: # not the full segment is grabbed
+			if nb_lines > 1:  # not the full segment is grabbed
 				return _decode_yenc(data, partial_data=True,
 				                    crc_behaviour=self.ignore_crc_errors)
 			else:
 				return _decode_yenc(data, partial_data=False,
 				                    crc_behaviour=self.ignore_crc_errors)
-				
+
 		if self.group:
 			# Send GROUP before download
 			# it can fail on some servers, try next group in the list
@@ -468,37 +468,37 @@ class NNTPFile(io.IOBase):
 					break
 				except nntplib.NNTPTemporaryError as error:
 					# too many messages for some servers
-					#print(error)
-					#traceback.print_exc()
+					# print(error)
+					# traceback.print_exc()
 					pass
 				except nntplib.NNTPPermanentError as error:
 					# NNTPPermanentError: 501 newsgroup
 					# NNTPPermanentError: 502 Authentication Failed
 					print(error)
 					pass
-		
+
 		ydata = None
 		try:
 			ydata = receive_body(self.server, "<%s>" % message_id)
 			# (response, number, id, list lines of article's body
-			# where number is the article number (as a string) and 
+			# where number is the article number (as a string) and
 			# id is the message id (enclosed in '<' and '>').)
 			dpart = decode_yenc_body(ydata[3])
 			# Exception: ('CRC32 checksum failed', 2821898260L, 1224983450)
 		except (nntplib.NNTPError, yenc.YencException, yenc.CrcError) as error:
 			print("Main server: " + str(error))
 			dpart = None
-			
+
 			# try to get the part on one of the other servers
 			for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
 				try:
 					print("Trying %s." % server[0])
-					s = NNTP(*server) # scatter tuple
-					
+					s = NNTP(*server)  # scatter tuple
+
 					try:
 						s.set_debuglevel(options.nntp_debug_level)
 						print(s.getwelcome())
-						
+
 						if self.group:
 							for group in self.nzb_file.groups:
 								try:
@@ -516,7 +516,7 @@ class NNTPFile(io.IOBase):
 					except nntplib.NNTPError as error:
 						print(error)
 						print("Article not found on '%s' either." % server[0])
-						
+
 					s.quit()
 				except (nntplib.NNTPError, socket.error) as error:
 					# what causes socket.error here?
@@ -528,9 +528,9 @@ class NNTPFile(io.IOBase):
 		if self._inactive:
 			self._file_size = dpart['file_size']
 			self._inactive = False
-				
-		print("Segment size: %6dB; grabbed %6dB (%s), segment number: %d" % 
-				(dpart['part_size'], len(dpart['data']), 
+
+		print("Segment size: %6dB; grabbed %6dB (%s), segment number: %d" %
+				(dpart['part_size'], len(dpart['data']),
 				self.name, dpart['part_number']))
 		sys.stdout.flush()
 
@@ -544,43 +544,43 @@ class NNTPFile(io.IOBase):
 				print("    Expected file: %s" % self.name)
 				print("    Received file: %s" % dpart['file_name'])
 				raise nntplib.NNTPError("Unexpected file data received.")
-			
-			# Segment size: 384000B; grabbed    249B (sublime-hangover2.r00), 
+
+			# Segment size: 384000B; grabbed    249B (sublime-hangover2.r00),
 			# segment number: 218
 			# -> it should say segment number: 1
 			""" The last file of a split volume archive has the same amount of
 			segments set as a previous volume. There is a large chance that
 			the segment won't exist. Pick the highest segment number. """
 			pnumber = self.nb_segments
-		
+
 		self.segments[pnumber].decoded_size = dpart['part_size']
 		self.data[pnumber] = dpart['data']
-		
+
 	def tell(self):
 		"""Return the current stream position."""
 		return self._current_position
-	
+
 	def readable(self):
 		"""Return True if the stream can be read from. 
 		If False, read() will raise IOError.
 		"""
 		return True
-	
+
 	def seekable(self):
 		"""Return True if the stream supports random access. 
 		If False, seek(), tell() and truncate() will raise IOError.
 		"""
 		return True
-	
+
 	def file_size(self):
 		"""Size of the file."""
 		if self._inactive:
-#			print("Grabbing part of a segment in 'file_size()'.")
+# 			print("Grabbing part of a segment in 'file_size()'.")
 			# no need to grab the full segment for just the size
 			# 2 lines: the first yEnc header lines; no data
 			self._read_first_segment(nb_lines=2)
-		return self._file_size	
-	
+		return self._file_size
+
 	def seek(self, offset, origin=os.SEEK_SET):
 		"""Change the stream position to the given byte offset. offset is 
 		interpreted relative to the position indicated by origin. 
@@ -595,19 +595,19 @@ class NNTPFile(io.IOBase):
 		"""
 		if self._inactive:
 			# begin of stream: avoid doing initial grab here
-			if offset == 0 and (origin == os.SEEK_SET or 
+			if offset == 0 and (origin == os.SEEK_SET or
 			(origin == os.SEEK_CUR and self._current_position == 0)):
 				self._current_position = 0
 				return self._current_position
-#			print("Grabbing part of a segment in 'seek()'.")
+# 			print("Grabbing part of a segment in 'seek()'.")
 			self._first_inactive_grab()
-			
+
 		destination = 0
 		if origin == os.SEEK_SET:
 			destination = offset
 		elif origin == os.SEEK_CUR:
-			destination =  self._current_position + offset
-		elif origin == os.SEEK_END: # offset must be negative or zero
+			destination = self._current_position + offset
+		elif origin == os.SEEK_END:  # offset must be negative or zero
 			destination = self._file_size + offset
 
 		if destination < 0:
@@ -618,7 +618,7 @@ class NNTPFile(io.IOBase):
 
 		self._did_seek = True
 		return self._current_position
-	
+
 	def _which_segment(self, offset):
 		"""Tells which segment is needed for a given offset."""
 		if offset < 0:
@@ -629,36 +629,36 @@ class NNTPFile(io.IOBase):
 		# parts start counting from 1
 		fix = 1
 		nb_times = offset // self._segment_size_first
-		
+
 		# exact amount of times? result one time less, except for zero
 		if (offset % self._segment_size_first) == 0 and nb_times != 0:
 			fix = 0
 		part_number = nb_times + fix
-		
+
 		# it fails here if the last segment(s) isn't in the nzb
 		# assert 0 < part_number <= self.nb_segments
-		
+
 		# spart_offset: offset from the start of part_number; offset inside
 		# the segment part_number
 		spart_offset = offset - (self._segment_size_first * (part_number - 1))
-#		assert spart_offset <= self._segment_size_first
+# 		assert spart_offset <= self._segment_size_first
 		return (part_number, spart_offset)
-	
+
 	def _read_first_segment(self, nb_lines=-1):
 		self.grab_segment(self.segments[1].message_id, nb_lines)
-		
+
 		# show the =yend error when trying full segment first
 		if self.segments[1].decoded_size == 0:
 			self.grab_segment(self.segments[1].message_id, -1)
-			
+
 		self._segment_size_first = self.segments[1].decoded_size
 		self._inactive = False
 
 	def _first_inactive_grab(self):
 		amount = DEFAULT_LINES if self.is_rar else -1
 		self._read_first_segment(amount)
-		self._inactive = False	
-		
+		self._inactive = False
+
 	def read(self, size=-1):
 		"""read([size])
 			-> read at most size bytes, returned as a string.
@@ -669,63 +669,63 @@ class NNTPFile(io.IOBase):
 		code isn't used for SRR creation but for enclosed file access.
 		(very high possibility you would have more trouble without anyway)
 		"""
-		if self._inactive and size == -1: # whole file is read
+		if self._inactive and size == -1:  # whole file is read
 			self._read_first_segment()
-		elif self._inactive: # grab the first few bytes
+		elif self._inactive:  # grab the first few bytes
 			self._first_inactive_grab()
 		if self._current_position == self._file_size:
 			return b""
-		
+
 		def is_not_edge_segment(segment_nb):
 			return segment_nb != 1 and segment_nb != self.nb_segments
-		
-		assert self._file_size != 0	
+
+		assert self._file_size != 0
 		assert size >= -1
 		assert self._current_position <= self._file_size
-		
+
 		# for debugging
 		if self.name == "dwdd.7156-diff.rar" and self._current_position > 9999:
 			pass
-		
+
 		# check if we have the data of the current start offset
 		(spart_nb, spart_offset) = self._which_segment(self._current_position)
 		# spart_offset: offset from the start of spart_nb
 		orig_spart_offset = spart_offset
-		
+
 		# MAGIC: change start position for one segment only
 		try:
 			extra = self.segments[spart_nb].magic_shift
-			if (self._current_position < 
+			if (self._current_position <
 			    self.segments[spart_nb].magic_shift_offset):
 				extra = 0
 		except (KeyError, AttributeError):
 			extra = 0
-#		print("Extra shift: %d" % extra)
+# 		print("Extra shift: %d" % extra)
 		spart_offset += extra
 
 		# utility functions for the MAGIC
 		def get_basic_header(offset):
 			""" offset: offset within the start segment """
-			shead = self.data[spart_nb][offset:offset+7]
+			shead = self.data[spart_nb][offset:offset + 7]
 			def try_to_complete(shead):
 				if len(shead) != 7:
 					try:
-						shead += self.data[spart_nb+1][0:7-len(shead)]
+						shead += self.data[spart_nb + 1][0:7 - len(shead)]
 					except KeyError:
 						try:
 							self.grab_segment(
-								self.segments[spart_nb+1].message_id)
-							shead = try_to_complete(shead)						
+								self.segments[spart_nb + 1].message_id)
+							shead = try_to_complete(shead)
 						except KeyError:
 							pass
-#						print("SHOW this: grabbing basic header failed!")
-#						traceback.print_exc()
+# 						print("SHOW this: grabbing basic header failed!")
+# 						traceback.print_exc()
 				return shead
 			return try_to_complete(shead)
 		def get_blocktype_basic_header(offset):
 			shead = get_basic_header(offset)
 			if len(shead) != 7:
-				return 0xFF # not a block type
+				return 0xFF  # not a block type
 			return struct.unpack("<HBHH", shead)[1]
 		def get_flags_basic_header(offset):
 			shead = get_basic_header(offset)
@@ -737,7 +737,7 @@ class NNTPFile(io.IOBase):
 			# will fail for P0W4 0x00 RAR end blocks
 			return block_type in range(0x72, 0x7B + 1)
 		def is_rar_header(offset):
-			# more advanced testing possible, 
+			# more advanced testing possible,
 			# but it's a good enough heuristic
 			btype = get_blocktype_basic_header(offset)
 			return is_rar_block(btype)
@@ -748,17 +748,17 @@ class NNTPFile(io.IOBase):
 			seg_nb: the number of the segment we are in
 			        this is often max(segments) or max(segments) - 1 
 			Returns the (changed) start offset.
-			""" 
+			"""
 			# we can go 6 bytes back (and forward) "without problem"
 			if self.new_server and amount == 7:
 				amount = 19
 			test_range = [0] + list(range(-1, -amount, -1)) + list(range(1, amount))
-		
+
 			for hoffset in test_range:
 				# we do have a correct RAR data block?
 				if is_rar_header(spart_offset + hoffset):
 					# RAR block found! Woohoo!
-					if hoffset != 0: # we were not directly on the money
+					if hoffset != 0:  # we were not directly on the money
 						print("MAGIC is happening! "
 						      "(shifting %+d byte(s))" % hoffset)
 						sys.stdout.flush()
@@ -768,9 +768,9 @@ class NNTPFile(io.IOBase):
 							self.segments[seg_nb].magic_shift = hoffset
 						self.segments[seg_nb].magic_shift_offset = spart_offset
 						return spart_offset + hoffset
-					break # stop looping if 0 matches
+					break  # stop looping if 0 matches
 			# default behaviour when there is no match at all
-			return spart_offset # nothing found: do nothing
+			return spart_offset  # nothing found: do nothing
 
 		read_to_end = False
 		# see if we need to grab more segments
@@ -782,7 +782,7 @@ class NNTPFile(io.IOBase):
 		# check for the last segment we need to get
 		(end_part, end_offset) = self._which_segment(
 		                             self._current_position + size)
-		
+
 		# download in between segments if necessary
 		# +1: end segment needs to be grabbed too (is excluded in range())
 		for i in range(spart_nb, end_part + 1):
@@ -794,31 +794,31 @@ class NNTPFile(io.IOBase):
 					amount = DEFAULT_LINES
 				else:
 					amount = -1
-				if read_to_end: # but grab all when there is no amount given
+				if read_to_end:  # but grab all when there is no amount given
 					amount = -1
-				
+
 				try:
 					message_id = self.segments[i].message_id
 				except KeyError:
 					raise IncompleteNzb("Segment %d missing!" % i)
-					
+
 				# download not more data than necessary for RR meta data
-				if (be_efficient() and i == end_part and 
+				if (be_efficient() and i == end_part and
 					is_not_edge_segment(spart_nb)):
 					result = self.server.head("<%s>" % message_id)
-					lines = 0 # 'Lines: 6103'
-					try: # Python 3
+					lines = 0  # 'Lines: 6103'
+					try:  # Python 3
 						# [resp, ArticleInfo(number, message_id, lines)]
 						[_resp, [_article_number, _msg_id, lines]] = result
 						headers = lines
-					except ValueError: # Python < 3
+					except ValueError:  # Python < 3
 						headers = result[3]
 					for hline in headers:
 						match = re.match(b"Lines: (\d+)", hline, re.I)
 						if match:
 							lines = int(match.group(1))
 							break
-					if lines > 10: # arbitrary number
+					if lines > 10:  # arbitrary number
 						line_size = self.segments[i].bytes // lines
 						# yEnc overhead (around 2%)
 						new_line_size = line_size
@@ -829,31 +829,31 @@ class NNTPFile(io.IOBase):
 						amount = end_offset // int(new_line_size) + 1
 						# but always more than 2 lines! otherwise no new data
 						amount = amount if amount > 2 else 3
-					#print(lines, line_size, end_offset, amount)
+					# print(lines, line_size, end_offset, amount)
 				self.grab_segment(message_id, amount)
-				
+
 				# try to fix one (or more) byte off yEnc (CRC) errors here
 				# it's for the RR: somewhere in the file and RAR
 				# when actual size is different than advertised size
 				if i == spart_nb and is_rar(self.name):
 					# minimum size split archives used is 15 million bytes
-#					and self._current_position > 10000000):
+# 					and self._current_position > 10000000):
 					spart_offset = do_magic(spart_offset, i)
-					
+
 			# in rare cases the data array is empty
 			if not len(self.data[i]):
 				self.grab_segment(self.segments[i].message_id)
-			assert self.data[i] #TODO: gets tripped! not anymore?
-			
+			assert self.data[i]  # TODO: gets tripped! not anymore?
+
 		# do (additional) MAGIC on RAR end block if RR block and end block
 		# are part of the same segment
 		# or a seek operation occured before this read
 		# block with 6 trailing 0-bytes exits
 		bleft = self._file_size - self._current_position
-		if (is_rar(self.name) and bleft in (20, 18, 7, 9, 11, 13, 14, 16, 26) 
+		if (is_rar(self.name) and bleft in (20, 18, 7, 9, 11, 13, 14, 16, 26)
 		                      and not self._end_magic_before):
 			# we don't want MAGIC occuring on the last bytes
-			# if we have already done the first 7 bytes 
+			# if we have already done the first 7 bytes
 			# -> it could try a shift if the CRC32 has one of the blocktypes
 			self._end_magic_before = True
 			# only do MAGIC if we are exactly at the start of the last block
@@ -866,15 +866,15 @@ class NNTPFile(io.IOBase):
 					number += 7
 				if flags & rar.RarEndArchiveBlock.VOLNUMBER:
 					number += 2
-#				print(hexlify(self.data[spart_nb][-7-6:]).decode('ascii'))
-#				if self.data[spart_nb].endswith(bytearray(7 + 6)):
-#					# for some old RARs (7 + 6 exra bytes are zeros)
-#					print("Trying to fix some RARE case.")
-#					number += 6
-#				print("Flagcheck: %d, %d" % (number, bleft))
+# 				print(hexlify(self.data[spart_nb][-7-6:]).decode('ascii'))
+# 				if self.data[spart_nb].endswith(bytearray(7 + 6)):
+# 					# for some old RARs (7 + 6 exra bytes are zeros)
+# 					print("Trying to fix some RARE case.")
+# 					number += 6
+# 				print("Flagcheck: %d, %d" % (number, bleft))
 				if number == bleft:
-					bad_gab = (self.segments[spart_nb].decoded_size 
-					               - len(self.data[spart_nb]))	
+					bad_gab = (self.segments[spart_nb].decoded_size
+					               - len(self.data[spart_nb]))
 					if bad_gab > 7:
 						spart_offset = do_magic(spart_offset, spart_nb,
 						                        bad_gab + 1)
@@ -882,7 +882,7 @@ class NNTPFile(io.IOBase):
 						spart_offset = do_magic(spart_offset, spart_nb)
 				if number + 6 == bleft and bleft == 26:
 					spart_offset = do_magic(spart_offset, spart_nb)
-				
+
 		# build the wanted range of data
 		# 0) check if more data is needed for the first/last segment
 		if spart_nb == 1:
@@ -890,26 +890,26 @@ class NNTPFile(io.IOBase):
 				print("More data needed! Grabbing... (first segment)")
 				sys.stdout.flush()
 				self.grab_segment(self.segments[1].message_id)
-				
-				if (is_rar(self.name) and 
+
+				if (is_rar(self.name) and
 					self.segments[1].decoded_size != len(self.data[1])):
 					spart_offset = do_magic(spart_offset, spart_nb)
 
-		odiff = orig_spart_offset - spart_offset # 0 if nothing is wrong		
-				
+		odiff = orig_spart_offset - spart_offset  # 0 if nothing is wrong
+
 		# check the last segment too
 		data_size = len(self.data[end_part]) + odiff
 		if data_size < end_offset:
 			print("More data needed! Grabbing... (segment %d)" % end_part)
 			sys.stdout.flush()
 			self.grab_segment(self.segments[end_part].message_id)
-				
+
 		#--- start file magic -------------------------------------------------
 		# handle first byte missing of RAR (never seen this yet?)
 		# will never be used because rarreader reads the 3rd byte first?
 		if is_rar(self.name) and self._current_position == 0:
-#			print("Is RAR and reading from the start!")
-#			print(hexlify(self.data[1][0:6]).decode('ascii'))
+# 			print("Is RAR and reading from the start!")
+# 			print(hexlify(self.data[1][0:6]).decode('ascii'))
 			marker = b"Rar!\x1a\x07\x00"
 			for missing in range(1, len(b"Rar!") + 1):
 				if self.data[1].startswith(marker[missing:]):
@@ -919,22 +919,22 @@ class NNTPFile(io.IOBase):
 					self.data[1] = (marker[:missing] + self.data[1])
 					print("MAGIC2: Adding first missing RAR byte(s)!")
 					break
-		
+
 		# MAGIC for all other cases (for RAR volumes with many files)
-		# we are probably reading a rar basic header block	
+		# we are probably reading a rar basic header block
 		if is_rar(self.name) and size == 7 and self._did_seek:
-#			self._current_position == 0):
+# 			self._current_position == 0):
 			spart_offset_after = do_magic(spart_offset, spart_nb)
-			
+
 			# check header crc to verify we are actually on a block
-			# -> will need to read the full header 
+			# -> will need to read the full header
 			#    (can be in the next segment for a part)
 			# do it the easy less correct way: check flags based on RAR block
-			
+
 			# do deep data inspection and apply magic if necassary
 			flags = get_flags_basic_header(spart_offset_after)
 			btype = get_blocktype_basic_header(spart_offset_after)
-			
+
 			try:
 				if not flags & ~rar.BTYPES_CLASSES[btype].SUPPORTED_FLAG_MASK:
 					# ONLY allowed flags are used
@@ -942,23 +942,23 @@ class NNTPFile(io.IOBase):
 			except KeyError:
 				# probably not on a RAR block
 				pass
-		odiff = orig_spart_offset - spart_offset # 0 if nothing is wrong		
-			
+		odiff = orig_spart_offset - spart_offset  # 0 if nothing is wrong
+
 		#--- return data ------------------------------------------------------
-		self._did_seek = False # reset
-		
+		self._did_seek = False  # reset
+
 		# 1) handle the first segment of which to get data from
 		data_begin = self.data[spart_nb][spart_offset:]
 		dsize = len(data_begin)
 		if dsize >= size:
 			self._current_position += size
-#			print(hexlify(data_begin[:size]).decode('ascii'))
+# 			print(hexlify(data_begin[:size]).decode('ascii'))
 			return data_begin[:size]
 		else:
 			self._current_position += dsize
 			# odiff: prevent KeyError by not entering while loop
 			size -= dsize + odiff
-		
+
 		# 2) handle the following segments to get data from
 		next_segment = spart_nb + 1
 		data = b""
@@ -975,11 +975,11 @@ class NNTPFile(io.IOBase):
 				size -= segment_size
 			next_segment += 1
 		assert self._current_position <= self._file_size
-		
+
 		self._inactive = False
-#		print(hexlify(data_begin + data).decode('ascii'))
+# 		print(hexlify(data_begin + data).decode('ascii'))
 		return data_begin + data
-	
+
 	def __eq__(self, other):
 		# for sorting
 		if isinstance(other, basestring):
@@ -989,30 +989,30 @@ class NNTPFile(io.IOBase):
 			amount = (self.nb_segments == other.nb_segments and
 					len(self.segments) == len(other.segments))
 			try:
-				diff = [k for k in self.segments 
+				diff = [k for k in self.segments
 				        if self.segments[k] != other.segments[k]]
 			except KeyError:
 				# the other file doesn't have a segment this one has
 				return False
 			return (amount and not len(diff))
-		except AttributeError: # fails on nb_segments
+		except AttributeError:  # fails on nb_segments
 			# it compares with a real file in rescene lib
 			return self.name == other
 	__hash__ = None  # Avoid DeprecationWarning in Python < 3
-	
+
 	def __lt__(self, other):
 		"""The sort routines are guaranteed to use __lt__ when making 
 		comparisons between two objects.
 		"""
 		try:
 			return self.name < other.name
-		except AttributeError: 
+		except AttributeError:
 			return self.name < other
-	
+
 	def has_first_segment(self):
 		"""Tests if the NZB has segment 1 for the file."""
 		return 1 in self.segments
-	
+
 	def stat_last_segment(self):
 		"""Returns:
 		- resp: server response if successful
@@ -1026,13 +1026,13 @@ class NNTPFile(io.IOBase):
 			return True
 		print("STAT last segment of %s" % self.name)
 		sys.stdout.flush()
-		
+
 		# no need to STAT if the data already exists
 		if not self.nb_segments in self.data:
 			if self.group:
 				self.server.group(self.nzb_file.groups[0])
 			try:
-				(resp, _nr, _id) = self.server.stat("<%s>" % 
+				(resp, _nr, _id) = self.server.stat("<%s>" %
 			                   self.segments[self.nb_segments].message_id)
 				success = resp.startswith("223 ")
 			except nntplib.NNTPTemporaryError:
@@ -1041,7 +1041,7 @@ class NNTPFile(io.IOBase):
 				# try to STAT on the other servers
 				for server in EXTRA_SERVERS[NO_CLI_SERVER:]:
 					try:
-						s = NNTP(*server) # scatter tuple
+						s = NNTP(*server)  # scatter tuple
 						try:
 							s.set_debuglevel(options.nntp_debug_level)
 							if self.group:
@@ -1052,8 +1052,8 @@ class NNTPFile(io.IOBase):
 									except nntplib.NNTPTemporaryError as error:
 										pass
 										# print(error)
-							
-							(resp, _nr, _id) = self.server.stat("<%s>" % 
+
+							(resp, _nr, _id) = self.server.stat("<%s>" %
 								self.segments[self.nb_segments].message_id)
 							if resp.startswith("223 "):
 								s.quit()
@@ -1070,14 +1070,14 @@ class NNTPFile(io.IOBase):
 					        nntplib.NNTPTemporaryError) as error:
 						print(error)
 						print("Connecting to '%s' failed." % server[0])
-					
+
 				print("%s has no last segment." % self.name)
 				return False
 			else:
 				return True
 		else:
 			return True
-		
+
 	def stat_first_segment(self):
 		"""This does not STAT, but grabs the first bytes from the article."""
 		self._first_inactive_grab()
@@ -1099,37 +1099,37 @@ def create_srr(nzb_path, options):
 	if not output_dir:
 		output_dir = dirname(nzb_path)
 
-	nntp_files = {}	# everything
-	to_store = []	# saved in the SRR file
-	sfvs = []		# we use this to find all the other files
+	nntp_files = {}  # everything
+	to_store = []  # saved in the SRR file
+	sfvs = []  # we use this to find all the other files
 	result = False  # no SRR file is created
-	
+
 	read_retries = 3 * len(EXTRA_SERVERS)
 	server = connect_server()
-#	try:
-#		server = connect_server()
-#	except socket.error as error:
-#		# (<class 'socket.error'>, error(10061, '
-#		# first always fails with an ipv6 server, unless -d 1 is used
-#		print(error)
-#		#options.nntp_debug_level = 1 # results in a more spammy console
-#		options.nntp_debug_level = 0
-#		server = connect_server()
+# 	try:
+# 		server = connect_server()
+# 	except socket.error as error:
+# 		# (<class 'socket.error'>, error(10061, '
+# 		# first always fails with an ipv6 server, unless -d 1 is used
+# 		print(error)
+# 		#options.nntp_debug_level = 1 # results in a more spammy console
+# 		options.nntp_debug_level = 0
+# 		server = connect_server()
 
 	# Preparing files, removing crap ------------------------------------------
 	for nzb_file in nzb_utils.read_nzb(nzb_path):
 		nfile = NNTPFile(server, nzb_file)
-		nfile.group = options.group # GROUP command for NNTP server
-		
-		# file is posted twice or resumed: pick the best version 
+		nfile.group = options.group  # GROUP command for NNTP server
+
+		# file is posted twice or resumed: pick the best version
 		# or merge the segments of the "two" files
 		old = nntp_files.get(nfile.name, nfile)
 		if old != nfile:
 			print("Choosing between two same files %s." % old.name)
 			oldsum = sum(old.segments[s].bytes for s in old.segments)
 			newsum = sum(nfile.segments[s].bytes for s in nfile.segments)
-#			print("Old size: %d, %d" % (oldsum, old.segments[1].bytes))
-#			print("New size: %d, %d" % (newsum, nfile.segments[1].bytes))
+# 			print("Old size: %d, %d" % (oldsum, old.segments[1].bytes))
+# 			print("New size: %d, %d" % (newsum, nfile.segments[1].bytes))
 			# choose the file with the largest size
 			# this file has the smallest segments or is more complete
 			if newsum > oldsum:
@@ -1137,7 +1137,7 @@ def create_srr(nzb_path, options):
 				old = nfile
 		nntp_files[nfile.name] = old
 		extension = nfile.name[-4:].lower()
-		
+
 		if extension in (".nfo", ".jpg", ".png", ".bmp", ".srs"):
 			to_store.append(nfile)
 		if extension == ".sfv":
@@ -1146,19 +1146,19 @@ def create_srr(nzb_path, options):
 				to_store.append(nfile)
 			else:
 				sfvs.append(nfile)
-				
+
 	# fail if one of the RAR files doesn't have the first segment
 	for nfile in nntp_files.values():
 		if is_rar(nfile.name) and not nfile.has_first_segment():
 			server.quit()
 			raise IncompleteNzb("Incomplete RAR file found: %s" % nfile.name)
-		
+
 		# we won't do known repacks either
 		if (re.match("ich\d+.part\d+.rar", nfile.name, re.I) or
 			re.match("zed\d+.part\d+.rar", nfile.name, re.I) or
 			"kere.ws" in nfile.name):
 			raise Repack("Repack detected: %s" % nfile.name)
-		
+
 		# fail if kere.ws rename is detected
 		if (nfile.name[-4:].lower() == ".rar" and len(nfile.name) == 20 + 4
 		and re.match("^[a-zA-Z0-9]{20}$", nfile.name[:-4])):
@@ -1179,7 +1179,7 @@ def create_srr(nzb_path, options):
 				(newe, newc, _newerr) = parse_sfv_file(sfile)
 				index = unique.index(sfile.name)
 				(olde, oldc, _olderr) = parse_sfv_file(uniqfile[index])
-				if len(newe) > len(olde) or (len(newe) == len(olde) 
+				if len(newe) > len(olde) or (len(newe) == len(olde)
 				                             and len(newc) > len(oldc)):
 					print("Using the better SFV file.")
 					uniqfile[index] = sfile
@@ -1187,13 +1187,13 @@ def create_srr(nzb_path, options):
 				print(error)
 				traceback.print_exc()
 	sfvs = uniqfile
-	#TODO: do the same for other files? (no duplicate nfos ect.)
+	# TODO: do the same for other files? (no duplicate nfos ect.)
 	# maybe when doing SRS files
 
 	sfvs.sort()
 	assert sfvs == sorted(sfvs)
 	for sfile in sfvs:
-		# SFVs we want to have at the end of the SRR	
+		# SFVs we want to have at the end of the SRR
 		if re.match(".*(extras|proof|sample|subpack).*", sfile.name, re.I):
 			sfvs.remove(sfile)
 			sfvs.append(sfile)
@@ -1202,7 +1202,7 @@ def create_srr(nzb_path, options):
 	# nfos at the top
 	nfos = []
 	storefiles = []
-	
+
 	for afile in to_store:
 		# remove automated sample screen shots: _s.jpg
 		if afile.name.endswith("_s.jpg"):
@@ -1216,7 +1216,7 @@ def create_srr(nzb_path, options):
 			print("JPG check:", end=" ")
 			size = sum(f.bytes for f in afile.segments.values())
 			# check the resolution? -> no, IMDb raised the resolution
-			if size < 9000: # I have seen valid 10KiB images
+			if size < 9000:  # I have seen valid 10KiB images
 				print("image not added.")
 				continue
 			else:
@@ -1241,10 +1241,10 @@ def create_srr(nzb_path, options):
 			nfos.append(afile)
 		else:
 			storefiles.append(afile)
-		
+
 	# put NFOs at the top in the SRR file
 	to_store = nfos + storefiles
-	
+
 	# Do the actual rescening -------------------------------------------------
 	try:
 		if not options.dry_run and not options.fuckup:
@@ -1259,11 +1259,11 @@ def create_srr(nzb_path, options):
 				# the SFV had no contents or could not be grabbed
 				NO_SFV = True
 				print(error)
-				
+
 				print("No SFV: trying again from the first RARs.")
-				begin = [nntp_files[b].name for b in 
+				begin = [nntp_files[b].name for b in
 				         rescene.utility.first_rars(nntp_files.keys())]
-				
+
 				try:
 					rescene.create_srr_fh(srrf, begin, nntp_files, to_store,
 					                      stat=not options.nostat,
@@ -1275,62 +1275,62 @@ def create_srr(nzb_path, options):
 					# "SFX support not on or not a RAR archive."
 					# e.g. when a RAR volume exists of only zero bytes
 					print(error)
-					result = False # SRR creation failed
+					result = False  # SRR creation failed
 				except RuntimeError: pass
 			except Repack:
 				raise
-			except RuntimeError: pass # don't try again if STAT failed
+			except RuntimeError: pass  # don't try again if STAT failed
 
-			# unreproducable Skalman^ bug: how do you get here without 
+			# unreproducable Skalman^ bug: how do you get here without
 			# creating a srr or raising an error??
 			if not os.path.isfile(srrf):
 				# it failed on STAT!
-				
-#				print("SHOW ME THIS!!!")
+
+# 				print("SHOW ME THIS!!!")
 				# check your own logs, you've seen it
 				# it failed on STAT probably
-				
+
 				print(srrf)
 				print("no sfv: %d" % NO_SFV)
 				print("result: %d" % result)
 			else:
 				SUBDIR = ""
-#				srr_info = rescene.info(srrf)
-				
+# 				srr_info = rescene.info(srrf)
+
 				# TODO: change priorities of the output dirs in the future
 				if NO_SFV:
 					SUBDIR = "srr_no_sfv"
-#				if srr_info['compression']:
-#					SUBDIR = "srr_compressed_rars"
-				
-				if SUBDIR: # move SRR to a subdirectory 
+# 				if srr_info['compression']:
+# 					SUBDIR = "srr_compressed_rars"
+
+				if SUBDIR:  # move SRR to a subdirectory
 					try:
-						os.renames(srrf, 
+						os.renames(srrf,
 							join(output_dir, SUBDIR, release_name + ".srr"))
 					except:
-						print("Moving '%s' to '%s' failed." % (release_name + 
+						print("Moving '%s' to '%s' failed." % (release_name +
 						      ".srr", join(output_dir, SUBDIR)))
-	
+
 		if options.fuckup:
-			assert False # not letting this fucking stuff up either...
-#			from rar import RarReader, BlockType
-#			# SFVs were stored in the SRR without their data
-#			srr = join(output_dir, release_name + ".srr")
-#			for sfv in sfvs:
-#				for block in RarReader(srr):
-#					if (block.rawtype == BlockType.SrrStoredFile and
-#						(block.file_name == sfv.name)):
-#						block_position = block.block_position
-#						header_size = block.header_size
-#						break # reading would fail after this
-#				before_size = block_position + header_size
-#				with open(srr, 'rb') as f:
-#					before = f.read(before_size)
-#					after = f.read()
-#				with open(srr, 'wb') as f:
-#					f.write(before)
-#					f.write(sfv.read())
-#					f.write(after)
+			assert False  # not letting this fucking stuff up either...
+# 			from rar import RarReader, BlockType
+# 			# SFVs were stored in the SRR without their data
+# 			srr = join(output_dir, release_name + ".srr")
+# 			for sfv in sfvs:
+# 				for block in RarReader(srr):
+# 					if (block.rawtype == BlockType.SrrStoredFile and
+# 						(block.file_name == sfv.name)):
+# 						block_position = block.block_position
+# 						header_size = block.header_size
+# 						break # reading would fail after this
+# 				before_size = block_position + header_size
+# 				with open(srr, 'rb') as f:
+# 					before = f.read(before_size)
+# 					after = f.read()
+# 				with open(srr, 'wb') as f:
+# 					f.write(before)
+# 					f.write(sfv.read())
+# 					f.write(after)
 			# No files were stored in the SRR
 			srrf = abspath(join(output_dir, release_name + ".srr"))
 			if not os.path.isfile(srrf):
@@ -1342,9 +1342,9 @@ def create_srr(nzb_path, options):
 			print("SRR file ======== CREATED ========.")
 		else:
 			print("NOTHING created.")
-		server.quit() # socket.timeout: timed out
+		server.quit()  # socket.timeout: timed out
 	return result
-		
+
 def create_srr_nzbmove(nzb_file):
 	"""Error/success handling"""
 	def move_nzb(source, destination):
@@ -1362,8 +1362,8 @@ def create_srr_nzbmove(nzb_file):
 			move_nzb(nzb_file, new)
 	except (socket.error, socket.timeout):
 		print("No network connection.")
-#			print("Could not connect to the first server. Aborting.")
-#			print("socket.timeout while trying to send QUIT")
+# 			print("Could not connect to the first server. Aborting.")
+# 			print("socket.timeout while trying to send QUIT")
 		print("%s won't be moved." % nzb_file)
 		print("Going to sleep for 5 minutes.")
 		import time
@@ -1381,7 +1381,7 @@ def create_srr_nzbmove(nzb_file):
 		sys.exit(1)
 	except (IncompleteNzb, rescene.FileNotFound) as error:
 		print("ERROR: %s" % error)
-		#if not options.dry_run:
+		# if not options.dry_run:
 		new = join(dirname(nzb_file), "bad", basename(nzb_file))
 		move_nzb(nzb_file, new)
 	except Repack as error:
@@ -1400,8 +1400,8 @@ def create_srr_nzbmove(nzb_file):
 		# the problem was the news server
 		print("%s failed." % nzb_file)
 		print(error)
-#		traceback.print_exc()
-		
+# 		traceback.print_exc()
+
 		faildir = "failure"
 		try:
 			ename = error.args[0]
@@ -1416,18 +1416,18 @@ def create_srr_nzbmove(nzb_file):
 	except Exception:
 		print("Unknown failure")
 		traceback.print_exc()
-		
+
 		faildir = "unknownerror"
 		if not options.dry_run:
 			new = join(dirname(nzb_file), faildir, basename(nzb_file))
 			move_nzb(nzb_file, new)
-		
+
 def process_dir(path, amount):
 	"""Does not fail if the NZB files are removed."""
 	try:
 		for gfile in glob.iglob(path + "/*.nzb"):
 			amount += 1
-			create_srr_nzbmove(gfile)	
+			create_srr_nzbmove(gfile)
 	except IOError:
 		# try again until everything is done
 		amount = process_dir(path, amount)
@@ -1435,10 +1435,10 @@ def process_dir(path, amount):
 
 def main(options, args):
 	rescene.change_rescene_name_version("pyReScene Usenet %s" % __version__)
-	
+
 	global NNTP_LOGIN, NNTP_PASSWORD, NNTP_SERVER, NNTP_PORT, \
            NO_CLI_SERVER, EXTRA_SERVERS
-	
+
 	def create_template(config):
 		"""Will try the server specified on the CLI."""
 		sname = "server_ArbitraryNameHere"
@@ -1461,15 +1461,15 @@ def main(options, args):
 		config.set(sname, "password", password)
 		config.set(sname, "readermode", False)
 		return config
-	
+
 	create_config_file = False
 	if os.path.isfile(options.config_file):
 		config = ConfigParser()
 		config.read(options.config_file)
 		if not len(config.sections()):
-			create_config_file = True 
+			create_config_file = True
 			print("No servers specified in '%s'." % options.config_file)
-		else: # Read servers from config file
+		else:  # Read servers from config file
 			priorities = []
 			servers = []
 			for sec in config.sections():
@@ -1486,27 +1486,27 @@ def main(options, args):
 			EXTRA_SERVERS = list(zip(*sorted(zip(priorities, servers))))[1]
 	else:
 		create_config_file = True
-		
+
 	if create_config_file:
 		config = ConfigParser()
-		if len(EXTRA_SERVERS): # write old hardcoded servers to file
+		if len(EXTRA_SERVERS):  # write old hardcoded servers to file
 			print("Writing hard coded servers to config file...",
 				end=" ")
 			for server in EXTRA_SERVERS:
-				sname = "server_" + server[0] # second part is arbitrary
+				sname = "server_" + server[0]  # second part is arbitrary
 				config.add_section(sname)
-				config.set(sname, "priority", # easier to change order
+				config.set(sname, "priority",  # easier to change order
 				           (EXTRA_SERVERS.index(server) + 1) * 2)
 				config.set(sname, "enabled", True)
 				config.set(sname, "host", server[0])
 				config.set(sname, "port", server[1])
 				config.set(sname, "username", server[2])
 				config.set(sname, "password", server[3])
-				if len(server) > 4: # necessary for reader.ipv6.xsnews.nl
+				if len(server) > 4:  # necessary for reader.ipv6.xsnews.nl
 					config.set(sname, "readermode", server[4])
 				else:
 					config.set(sname, "readermode", False)
-		else: # Example template
+		else:  # Example template
 			print("Writing {template} in the config file...",
 				end=" ")
 			config = create_template(config)
@@ -1521,26 +1521,26 @@ def main(options, args):
 	NNTP_LOGIN = options.username
 	NNTP_PASSWORD = options.password
 	if NNTP_SERVER == "":
-		(NNTP_SERVER, NNTP_PORT, 
+		(NNTP_SERVER, NNTP_PORT,
 		NNTP_LOGIN, NNTP_PASSWORD, _) = EXTRA_SERVERS[0]
 		# no CLI, so we start from index 1 for EXTRA_SERVERS to avoid
 		# using the server twice; default values used
-		NO_CLI_SERVER = 1 # we don't use the first extra server
-		
+		NO_CLI_SERVER = 1  # we don't use the first extra server
+
 	amount = len(EXTRA_SERVERS)
-	print("There %s %d server%s that can be used." % 
+	print("There %s %d server%s that can be used." %
 	     ("are" if amount != 1 else "is", amount, "s" if amount != 1 else ""))
 
 	global DEFAULT_LINES, IGNORE_CRC_ERRORS
 	IGNORE_CRC_ERRORS = not options.crc
-	
+
 	# will work better on some servers, but more bandwidth needed
 	if options.largeseg:
 		DEFAULT_LINES = -1
-	
+
 	if options.group:
 		print("Sending GROUP command before downloading.")
-	
+
 	amount = 0
 	for element in args:
 		if os.path.isfile(element) and element.endswith(".nzb"):
@@ -1551,7 +1551,7 @@ def main(options, args):
 		else:
 			print("WTF are you supplying me? NZBs and/or dirs please.")
 	else:
-		print("%d NZB%s processed. Done!" % 
+		print("%d NZB%s processed. Done!" %
 		      (amount, "s" if amount != 1 else ""))
 
 if __name__ == '__main__':
@@ -1560,49 +1560,49 @@ if __name__ == '__main__':
 		"This tool will generate a SRR file based on a NZB file.\n"
 		"The nzb file will be moved to a dir success or failure.\n"
 		"SRR files for compressed RARs will be moved to a separate subdir.",
-		version="%%prog %s" % __version__) # --help, --version
+		version="%%prog %s" % __version__)  # --help, --version
 
 	parser.add_option("-o", help="SRR output DIRECTORY\n"
 				"The default directory is where the NZB files are located. "
 				"The NZBs will be moved and the SRR files will appear.",
-				dest="output_dir", metavar="DIRECTORY", default=None)	
+				dest="output_dir", metavar="DIRECTORY", default=None)
 	parser.add_option("-n", "--dry-run", help="do no harm",
 	                  action="store_true", dest="dry_run", default=False)
-	parser.add_option("-g", "--group", help="send group command before downloading", 
+	parser.add_option("-g", "--group", help="send group command before downloading",
 	                  action="store_true", dest="group", default=False)
-	parser.add_option("-c", "--check-crc", help="fail on CRC32 errors", 
+	parser.add_option("-c", "--check-crc", help="fail on CRC32 errors",
 	                  action="store_true", dest="crc", default=False)
-	parser.add_option("-x", "--no-stat", 
-					  help="STAT sometimes takes time and does not fail often", 
+	parser.add_option("-x", "--no-stat",
+					  help="STAT sometimes takes time and does not fail often",
 	                  action="store_true", dest="nostat", default=False)
 	parser.add_option("-a", "--full-segments",
 	                  help="grab all segment data, no fancy stuff"
-	                  + " "*16 + "(a lot more bandwidth will be used)", 
+	                  + " "*16 + "(a lot more bandwidth will be used)",
 	                  action="store_true", dest="largeseg", default=False)
-	parser.add_option("-d", help="debug level Usenet server: 0-2", 
+	parser.add_option("-d", help="debug level Usenet server: 0-2",
 	                  type="int", dest="nntp_debug_level", default=0)
-	cmd_folder = dirname(abspath(sys.argv[0]))	
+	cmd_folder = dirname(abspath(sys.argv[0]))
 	cfg_file = join(cmd_folder, "srr_usenet.cfg")
-	parser.add_option("-f", "--settings", "--config", 
+	parser.add_option("-f", "--settings", "--config",
 	                  help="path to the servers configuration file"
-	                  " (%s by default)" % basename(cfg_file), 
+	                  " (%s by default)" % basename(cfg_file),
 	                  dest="config_file", default=cfg_file)
 	parser.add_option("--fixfuckup", help="will fix whatever fuckup I did",
 	                  action="store_true", dest="fuckup", default=False)
-	
+
 	auth = optparse.OptionGroup(parser, "Usenet server configuration")
 	auth.set_description("All the necessary Usenet server info. No SSL.")
 	parser.add_option_group(auth)
-	
-	auth.add_option("-s", "--server", help="Usenet server address", 
+
+	auth.add_option("-s", "--server", help="Usenet server address",
 				metavar="SERVER", default=NNTP_SERVER, dest="server")
-	auth.add_option("-t", "--port", help="port 119 by default", 
-				metavar="PORT", default=NNTP_PORT, dest="port")	
-	auth.add_option("-l", "--login", help="server username", 
+	auth.add_option("-t", "--port", help="port 119 by default",
+				metavar="PORT", default=NNTP_PORT, dest="port")
+	auth.add_option("-l", "--login", help="server username",
 				metavar="USERNAME", default=NNTP_LOGIN, dest="username")
-	auth.add_option("-p", "--password", help="server password", 
+	auth.add_option("-p", "--password", help="server password",
 				metavar="PASSWORD", default=NNTP_PASSWORD, dest="password")
-		
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

@@ -60,46 +60,46 @@ try:
 	import nzb_utils
 except ImportError:
 	print("Can't import the nzb_utils module.")
-	
+
 def is_sample(file_name):
 	BEGIN = ".*("
 	END = ")((\.vol\d+\+\d+)?.par2)?$"
 	exts = ""
-	
+
 	if options.avisample:
-		exts += "|\.avi" 
+		exts += "|\.avi"
 	if options.mkvsample:
-		exts += "|\.mkv" 
+		exts += "|\.mkv"
 	if options.mp4sample:
-		exts += "|\.mp4" 
+		exts += "|\.mp4"
 	if options.wmvsample:
-		exts += "|\.wmv" 
+		exts += "|\.wmv"
 	if options.vobsample:
-		exts += "|\.vob" 
+		exts += "|\.vob"
 	if options.m2tssample:
-		exts += "|\.m2ts" 
-	
-	if exts == "": # those that are currently SRSable
+		exts += "|\.m2ts"
+
+	if exts == "":  # those that are currently SRSable
 		print("No extensions given. Testing for AVI and MKV.")
 		exts = "\.avi|\.mkv"
-	else: # strip leading |
+	else:  # strip leading |
 		exts = exts[1:]
-	
+
 	match = BEGIN + exts + END
 	return re.match(match, file_name.lower())
-	
+
 def extract_sample(nzb_file, output_dir):
 	sample_nzb = nzb_utils.empty_nzb_document()
 	sample_found = False
-	
+
 	for nfile in nzb_utils.read_nzb(nzb_file):
 		file_name = nzb_utils.parse_name(nfile.subject)
-	
+
 		if is_sample(file_name):
-			if int(options.max_size) > 0: # we need to check the size
+			if int(options.max_size) > 0:  # we need to check the size
 				size = sum([seg.bytes for seg in nfile.segments])
 				if int(options.max_size) < size:
-					continue # not a sample, skip it
+					continue  # not a sample, skip it
 			sample_found = True
 			nzb_utils.add_file(sample_nzb, nfile)
 
@@ -111,7 +111,7 @@ def extract_sample(nzb_file, output_dir):
 			pass
 		with open(snzb_file, "w") as sample:
 			sample.write(nzb_utils.get_xml(sample_nzb))
-	
+
 def main(options, args):
 	def check_file(pfile):
 		if pfile[-4:].lower() == ".nzb":
@@ -123,7 +123,7 @@ def main(options, args):
 				extract_sample(pfile, output_dir)
 			except:
 				print("Broken NZB!")
-	
+
 	for element in args:
 		if os.path.isdir(element):
 			for lfile in os.listdir(element):
@@ -132,18 +132,18 @@ def main(options, args):
 			check_file(element)
 		else:
 			print("Only existing files or directories are accepted.")
-			
+
 class TestRegex(unittest.TestCase):
 	""" Code to test the correctness of the sample detection. """
 	def test_avi_in_name(self):
 		avi = ("[1080]-[FULL]-[#a.b.foreign@EFNet]-[ UCL.2010-2011.Play-Offs."
 			"Salzburg.vs.Tel.Aviv.DUTCH.WS.PDTV.XviD-iFH ]-[03/97] \"ucl."
 			"2010.2011.playoffs.salzburg.tel.aviv-ifh.r00\" yEnc (1/61)")
-		
+
 		file_name = nzb_utils.parse_name(avi)
-		self.assertEqual(file_name, 
+		self.assertEqual(file_name,
 						"ucl.2010.2011.playoffs.salzburg.tel.aviv-ifh.r00")
-		
+
 		global options
 		options = optparse.Values()
 		options.__dict__.update(
@@ -151,14 +151,14 @@ class TestRegex(unittest.TestCase):
 			wmvsample=True, vobsample=True, m2tssample=True,
 		)
 		self.assertFalse(is_sample(file_name), "detected as sample")
-		
-		
+
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [directories] [NZBs] [options]'\n"
 		"This tool will create new NZB files with only the sample "
 		"related data in the 'samples' subdir.\n",
-		version="%prog 0.5 (2015-04-19)") # --help, --version
+		version="%prog 0.5 (2015-04-19)")  # --help, --version
 
 	parser.add_option("-o", dest="output_dir", metavar="DIRECTORY",
 					help="moves the new NZB files to DIRECTORY and a "
@@ -174,11 +174,11 @@ if __name__ == '__main__':
 	parser.add_option("-v", "--vob", dest="vobsample",
 					help="create NZBs for vobsamples", action="store_true")
 	parser.add_option("-2", dest="m2tssample",
-					help="create NZBs for blu-ray samples: .m2ts", 
+					help="create NZBs for blu-ray samples: .m2ts",
 					action="store_true")
 	parser.add_option("-s", dest="max_size", metavar="SIZE", default=-1,
 					help="the sample can be max SIZE bytes large")
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

@@ -31,7 +31,7 @@ import sys
 import rescene
 
 try:
-	import py2exe #@UnresolvedImport #@UnusedImport
+	import py2exe  # @UnresolvedImport #@UnusedImport
 except:
 	pass
 
@@ -44,11 +44,11 @@ class BuildFindUnrarExe(build_py):
 		dist.console = [{
 		    'script': "rescene/unrar.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
-		},]
+		}, ]
 		dist.command_options["py2exe"]["bundle_files"] = ('setup script', 1)
 		self.run_command('py2exe')
 		build_py.run(self)
-		
+
 class BuildSpecificExe(build_py):
 	"""Custom build command for specific EXE build."""
 	description = "build a specific pyReScene EXE file"
@@ -56,7 +56,7 @@ class BuildSpecificExe(build_py):
 		# The format is (long option, short option, description).
 		("path=", "p", "internal path to script e.g. 'rescene/unrar.py'"),
 	]
-	
+
 	def initialize_options(self, *args, **kwargs):
 		self.path = None
 		build_py.initialize_options(self, *args, **kwargs)
@@ -70,7 +70,7 @@ class BuildSpecificExe(build_py):
 		dist.console = [{
 		    'script': self.path,
 		    'icon_resources': [(1, 'images/icon.ico')]
-		},]
+		}, ]
 		dist.command_options["py2exe"]["bundle_files"] = ('setup script', 1)
 		# enable to have one large .exe with everything:
 		# dist.zipfile = None
@@ -81,9 +81,9 @@ config_dict = {
     "name": "pyReScene",
     "packages": ["rescene", "resample"],
     "scripts": [
-		"bin/srr.py", 
-		"bin/srs.py", 
-		"bin/pyrescene.py", 
+		"bin/srr.py",
+		"bin/srs.py",
+		"bin/pyrescene.py",
 		"bin/preprardir.py",
 		"bin/retag.py"
 	],
@@ -115,7 +115,7 @@ config_dict = {
         "Topic :: System :: Archiving :: Backup",
         "Topic :: Sociology :: History",
         "Topic :: Utilities"
-    ], # http://pypi.python.org/pypi?:action=list_classifiers
+    ],  # http://pypi.python.org/pypi?:action=list_classifiers
     "long_description": """\
 pyReScene is a port of ReScene .NET to the Python programming language.
 ReScene is a mechanism for backing up and restoring the metadata from "scene" 
@@ -129,7 +129,7 @@ A detailed explanation can be found on http://rescene.wikidot.com/
 	"options": {
 		'py2exe': {
 			'bundle_files': 2,  # bundle everything but the Python interpreter
-			'optimize': 2,      # 2 = extra optimization (like python -OO)
+			'optimize': 2,  # 2 = extra optimization (like python -OO)
 			'compressed': True  # compressed zipfile
 		}
 	},
@@ -163,7 +163,7 @@ A detailed explanation can be found on http://rescene.wikidot.com/
 		    'icon_resources': [(1, 'images/icon.ico')]
 		}
 	],
-			
+
 	"cmdclass": {
 		"unrar": BuildFindUnrarExe,
 		"exe": BuildSpecificExe,
@@ -183,8 +183,8 @@ def main():
 	build a specific .exe file not in the build above
 	$ python setup.py exe --path "usenet/srr_usenet.py"
 	"""
-		
-	if "py2exe" in sys.argv:	
+
+	if "py2exe" in sys.argv:
 		# files to output in the dist dir with the executables
 		# http://www.py2exe.org/index.cgi/data_files
 		py2exe_data_files = [("", [
@@ -199,9 +199,9 @@ def main():
 			"AUTHORS",
 		])]
 		config_dict['data_files'] = py2exe_data_files
-		
+
 		# TODO: pywin32 a required dependency?
-		
+
 	# Only for Python 2.6:
 	# ? UserDict      imported from rescene.ordereddict
 	# ? psyco         imported from yenc
