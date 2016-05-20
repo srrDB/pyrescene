@@ -33,37 +33,37 @@ def merge_nzbs(nzbdir):
 	             if not os.path.isdir(e) and e[-4:].lower() == ".nzb"]
 	if len(nzb_files) > 1:
 		nzb_files.sort(key=lambda f: len(f))
-		
+
 		read_nzbs = {}
 		for nfile in nzb_files:
-			read_nzbs[nfile] = nzb_utils.read_nzb(nfile) 
-		
+			read_nzbs[nfile] = nzb_utils.read_nzb(nfile)
+
 		doc = nzb_utils.empty_nzb_document()
 		for nzb in nzb_files:
 			for nfile in read_nzbs[nzb]:
-				nzb_utils.add_file(doc, nfile)	
-		
+				nzb_utils.add_file(doc, nfile)
+
 		# shortest directory name we will overwrite
 		with open(nzb_files[0], "w") as nzb:
 			nzb.write(nzb_utils.get_xml(doc))
-		
+
 		# remove other nzb files
 		for nzbfile in nzb_files[1:]:
 			print("Removing %s" % os.path.basename(nzbfile))
 			os.remove(nzbfile)
-	
+
 def main(options, args):
 	main_dir = os.path.abspath(args[0])
 	for ldir in os.listdir(main_dir):
 		if os.path.isdir(ldir):
-			merge_nzbs(os.path.join(main_dir, ldir))	
-	
+			merge_nzbs(os.path.join(main_dir, ldir))
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [input dir]'\n"
 		"This tool will merge a split up NZB file. "
 		"All files must be in their own releasedir.\n",
-		version="%prog 0.1 (2012-01-31)") # --help, --version
+		version="%prog 0.1 (2012-01-31)")  # --help, --version
 
 	# no arguments given
 	if len(sys.argv) < 2:

@@ -29,7 +29,7 @@ def main(options, args):
 	(start, end) = (int(start), int(end))
 	process_dir = args[1]
 	print("Start: %d days, end: %d days." % (start, end))
-	
+
 	if options.output_dir:
 		print("Moving NZB files to %s" % options.output_dir)
 
@@ -54,18 +54,18 @@ def main(options, args):
 					print(nzbfile)
 		else:
 			print("Bad NZB file: %s" % nzbfile)
-		
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog from-to directory\n"
 			  "       e.g. %prog 1000-1200 . -o /will/move/nzbs/to\n"
 		"This tool will list or move NZB files between a certain age, "
 		"expressed in days.\n",
-		version="%prog 1.0 (2011-12-15)") # --help, --version
-	
+		version="%prog 1.0 (2011-12-15)")  # --help, --version
+
 	parser.add_option("-o", help="where to move the matched NZBs to.",
 					dest="output_dir", metavar="DIRECTORY", default=None)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

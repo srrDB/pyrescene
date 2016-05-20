@@ -16,7 +16,7 @@
 
 # https://docs.newzbin2.es/index.php/Newzbin:NZB_Specs
 
-import pynzb # http://pypi.python.org/pypi/pynzb/
+import pynzb  # http://pypi.python.org/pypi/pynzb/
 import os
 import io
 import re
@@ -28,10 +28,10 @@ def read_nzb(nzb_file):
 	""" Returns empty list for empty NZB files. """
 	print("Reading %s." % os.path.basename(nzb_file))
 	def parse(pnzb_file):
-		try: # file on disk
+		try:  # file on disk
 			with open(pnzb_file, "rb") as bfile:
 				return pynzb.nzb_parser.parse(bfile.read())
-		except: # an open file object
+		except:  # an open file object
 			return pynzb.nzb_parser.parse(pnzb_file.read())
 
 	try:
@@ -69,7 +69,7 @@ def read_nzb(nzb_file):
 			return []
 		fixed_nzb.seek(0)
 		return parse(fixed_nzb)
-	
+
 def parse_name(subject):
 	""" Grabs the file name from the subject of the Usenet posting. 
 	Return the whole subject if the file name isn't parseable. 
@@ -78,7 +78,7 @@ def parse_name(subject):
 	if match:
 		return match.group(1).strip('"')
 	else:
-		# "Because the poster used a non-standard subject line, the system was 
+		# "Because the poster used a non-standard subject line, the system was
 		# unable to determine the filename with certainty."
 		match = re.search(".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
 		if match:
@@ -148,17 +148,17 @@ def _equality_test(self, other):
 pynzb.base.NZBSegment.__eq__ = _equality_test
 
 # pynzb library only supports parsing
-#'add_group', 'add_segment', 'date', 'groups', 'poster', 'segments', 'subject'
+# 'add_group', 'add_segment', 'date', 'groups', 'poster', 'segments', 'subject'
 
 def empty_nzb_document():
 	""" Creates xmldoc XML document for a NZB file. """
 	# http://stackoverflow.com/questions/1980380/how-to-render-a-doctype-with-pythons-xml-dom-minidom
 	imp = minidom.getDOMImplementation()
-	dt = imp.createDocumentType("nzb", "-//newzBin//DTD NZB 1.1//EN", 
+	dt = imp.createDocumentType("nzb", "-//newzBin//DTD NZB 1.1//EN",
 	                            "http://www.newzbin.com/DTD/nzb/nzb-1.1.dtd")
 	doc = imp.createDocument("http://www.newzbin.com/DTD/2003/nzb", "nzb", dt)
 	# http://stackoverflow.com/questions/2306149/how-to-write-xml-elements-with-namespaces-in-python
-	doc.documentElement.setAttribute('xmlns', 
+	doc.documentElement.setAttribute('xmlns',
 	                                 'http://www.newzbin.com/DTD/2003/nzb')
 	return doc
 
@@ -179,20 +179,20 @@ def add_file(document, nzb_file):
 	""" document: xml.dom.minidom.Document object """
 	top_element = document.documentElement
 	file_element = document.createElement("file")
-	
+
 	# add file attributes
 	file_element.setAttribute("poster", nzb_file.poster)
 	file_element.setAttribute("date", _date_to_posix(nzb_file.date))
 	file_element.setAttribute("subject", nzb_file.subject)
-	
+
 	# groups
 	groups = document.createElement("groups")
 	for group in nzb_file.groups:
 		g = document.createElement("group")
 		g.appendChild(document.createTextNode(group))
 		groups.appendChild(g)
-	file_element.appendChild(groups)	
-	
+	file_element.appendChild(groups)
+
 	# segments
 	segments = document.createElement("segments")
 	for segment in nzb_file.segments:
@@ -201,9 +201,9 @@ def add_file(document, nzb_file):
 		s.setAttribute("number", str(segment.number))
 		s.appendChild(document.createTextNode(segment.message_id))
 		segments.appendChild(s)
-	file_element.appendChild(segments)	
-	
-	top_element.appendChild(file_element)	
+	file_element.appendChild(segments)
+
+	top_element.appendChild(file_element)
 	return document
 
 def list_filenames(nzb_file):
@@ -214,4 +214,4 @@ def list_filenames(nzb_file):
   <group>alt.binaries.x264</group>
  <segments>
  </groups> 
-"""	
+"""
