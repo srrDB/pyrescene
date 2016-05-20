@@ -40,7 +40,7 @@ from rescene.utility import sep, is_rar
 from rescene.utility import raw_input, unicode
 from rescene.utility import create_temp_file_name, replace_result
 
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG"))  # leave empty for False
 
 def can_overwrite(file_path, yes_option=False):
 	if not yes_option and os.path.isfile(file_path):
@@ -55,28 +55,28 @@ def can_overwrite(file_path, yes_option=False):
 def setup_cli_parser():
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog  <sample file> [<full file>] [options]\n\n"
-		
+
 	"To create a ReSample file (SRS), pass in the sample file.\n"
 	"This can be an AVI, MKV, MP4, WMV, MP3 or FLAC file.\n"
 	"	ex: srs sample.mkv --dd\n"
 	"To recreate a sample, pass in the SRS file and the full movie file\n"
 	"or the first file of a RAR set containing the full movie.\n"
 	"	ex: srs sample.srs full.mkv\n"
-	"	or: srs sample.srs full.rar\n"), 
-	version="%prog " + resample.__version__) # --help, --version
-	
+	"	or: srs sample.srs full.rar\n"),
+	version="%prog " + resample.__version__)  # --help, --version
+
 	creation = optparse.OptionGroup(parser, "Creation options")
 	display = optparse.OptionGroup(parser, "Display options")
 	output = optparse.OptionGroup(parser, "Output options")
 	parser.add_option_group(creation)
 	parser.add_option_group(display)
 	parser.add_option_group(output)
-	
+
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
-	
-	creation.add_option("-b", "--big-file", 
+
+	creation.add_option("-b", "--big-file",
 				action="store_true", dest="big_file", default=False,
 				help="Big file. Enables support for 'samples' over 2GB.")
 	creation.add_option("-c", "--check",
@@ -86,19 +86,19 @@ def setup_cli_parser():
 
 	display.add_option("-i", "--info", action="store_true", dest="info_only",
 			   help="Display sample info only. Does not create .srs file.")
-	display.add_option("-l", "--srs-info", 
+	display.add_option("-l", "--srs-info",
 			   action="store_true", dest="srs_info",
 			   help="List SRS info only (use only with .srs input file).")
 
-	output.add_option("--d", 
+	output.add_option("--d",
 				action="store_true", dest="directory", default=False,
 				help="Use sample directory name "
 				"as basis for generated .srs file name.")
-	output.add_option("--dd", 
+	output.add_option("--dd",
 				action="store_true", dest="parent_directory", default=False,
 				help="Use parent directory name "
 				"as basis for generated .srs file name.")
-	output.add_option("--ddd", dest="srs_parent_directory", 
+	output.add_option("--ddd", dest="srs_parent_directory",
 				action="store_true", default=False,
 				help="Same as above, but puts the .srs file "
 				"in the parent directory.")
@@ -114,7 +114,7 @@ def setup_cli_parser():
 				action="store_true", default=False,
 				help="Keep samples that reconstructed, but failed CRC check. "
 				"Not applicable for music to prevent data loss.")
-	
+
 	return parser
 
 def verify_main(sample, tracks, options, pexit):
@@ -135,11 +135,11 @@ def verify_main(sample, tracks, options, pexit):
 			return tracks  # don't do anything
 	sample.archived_file_name = main_file_info.archived_file
 	tracks = sample.find_sample_streams(tracks, options.check)
-	
+
 	for track in list(tracks.values()):
 		if ((track.signature_bytes and track.match_offset == 0 and
 				sample.file_type not in (FileType.MP3, FileType.STREAM)) or
-			(track.match_offset == -1 and 
+			(track.match_offset == -1 and
 				sample.file_type in (FileType.MP3, FileType.STREAM))):
 			# 0 is a legal match offset for MP3 and STREAM
 			msg = ("\nUnable to locate track signature for"
@@ -156,10 +156,10 @@ def main(argv=None, no_exit=False):
 	no_exit: used when this function is called from an other Python program
 	"""
 	parser = setup_cli_parser()
-	
+
 	if argv is None:
 		argv = sys.argv[1:]
-		
+
 	def pexit(status, msg="", error_print=True):
 		if not no_exit:
 			parser.exit(status, msg)
@@ -170,29 +170,29 @@ def main(argv=None, no_exit=False):
 				raise ValueError(msg)
 			else:
 				return 0
-		
+
 	# no arguments given
 	if not len(argv):
 		# show application usage
 		parser.print_help()
 		return pexit(0)
-	
+
 	(options, args) = parser.parse_args(args=argv)
-	
-	if ((options.directory and options.parent_directory) or 
-		(options.directory and options.srs_parent_directory) or 
+
+	if ((options.directory and options.parent_directory) or
+		(options.directory and options.srs_parent_directory) or
 		(options.parent_directory and options.srs_parent_directory)):
 		pexit(1, "Make up your mind with the d's...\n")
-		
+
 	try:
 		ftype_arg0 = ""
-			
+
 		# check the arguments for existence
 		for ifile in args:
 			msg = ""
 			show_help = True
 			ifile_exists = os.path.exists(ifile)
-			
+
 			if not ifile_exists and os.name == "nt":
 				if os.path.isabs(ifile):
 					full = os.path.abspath(ifile)
@@ -200,7 +200,7 @@ def main(argv=None, no_exit=False):
 					full = os.getcwd() + os.sep + ifile
 				ifile = "\\\\?\\" + full
 				ifile_exists = os.path.exists(ifile)
-		
+
 			if ifile_exists:
 				ftype = file_type_info(ifile).file_type
 				# check if we already have the type of the first argument
@@ -218,7 +218,7 @@ def main(argv=None, no_exit=False):
 				msg = "Input file not found: %s\n" % os.path.basename(ifile)
 				if _DEBUG:
 					print(ifile)  # shows the complete path
-				
+
 			if msg:
 				if show_help:
 					parser.print_help()
@@ -226,15 +226,15 @@ def main(argv=None, no_exit=False):
 
 		sample = resample.sample_class_factory(ftype_arg0)
 		is_music = ftype_arg0 in (FileType.FLAC, FileType.MP3)
-			
+
 		t0 = time.clock()
-		
+
 		# for Windows long path work around
 		args0 = ""
 		args1 = ""
-		if len(args) >= 1: 
+		if len(args) >= 1:
 			args0 = args[0]
-		if len(args) >= 2: 
+		if len(args) >= 2:
 			args1 = args[1]
 
 		# the check has been done before and succeeded (it must be Windows)
@@ -249,34 +249,34 @@ def main(argv=None, no_exit=False):
 		if len(args) == 1 and not args0.lower().endswith(".srs"):
 			# create SRS file
 			sample_file = os.path.abspath(args0)
-	
-			if (os.path.getsize(sample_file) >= 0x80000000 and 
+
+			if (os.path.getsize(sample_file) >= 0x80000000 and
 				not options.big_file):
 				pexit(1, "Samples over 2GiB are not supported without the"
 				         " -b switch. Are you sure it's a sample?\n", False)
-				
+
 			out_folder = os.path.abspath(os.curdir)
 			srs_name = None
 
-			if options.output_dir: # -o
+			if options.output_dir:  # -o
 				if options.output_dir[-4:].lower() == ".srs":
 					srs_name = options.output_dir
 				else:
 					out_folder = options.output_dir
-			elif options.srs_parent_directory: # --ddd
+			elif options.srs_parent_directory:  # --ddd
 				# parent directory of the Sample dir
 				out_folder = os.path.dirname(sample_file).rsplit(os.sep, 1)[0]
 			if not os.path.exists(out_folder):
 				pexit(1, "Output directory does not exist: %s\n" %
 				         out_folder, False)
-				
+
 			# almost always, unless a specific sample name was given
-			if not srs_name: 
+			if not srs_name:
 				ext = ".srs"
-				if options.directory: # --d
+				if options.directory:  # --d
 					d = os.path.dirname(sample_file).rsplit(os.sep, 1)[1]
 					srs_name = os.path.join(out_folder, d + ext)
-				elif options.parent_directory: # --dd
+				elif options.parent_directory:  # --dd
 					dd = os.path.dirname(sample_file).rsplit(os.sep, 2)[1]
 					srs_name = os.path.join(out_folder, dd + ext)
 				else:
@@ -284,24 +284,24 @@ def main(argv=None, no_exit=False):
 					srs_name = os.path.join(out_folder, samp[0] + ext)
 			srsdir = os.path.dirname(srs_name)
 			if not os.path.exists(srsdir):
-				pexit(1, "Output directory does not exist: %s\n" % 
+				pexit(1, "Output directory does not exist: %s\n" %
 				         srsdir, False)
-					
+
 			# 1) Profile the sample
 			sample_file_data = resample.FileData(file_name=sample_file)
 			try:
 				tracks, attachments = sample.profile_sample(sample_file_data)
 			except resample.IncompleteSample as err:
 				pexit(2, str(err), False)
-	
+
 			if not len(tracks):
 				pexit(2, "No A/V data was found. "
 				         "The sample is likely corrupted.\n", False)
-			
+
 			# show sample information only, no SRS creation
-			if options.info_only: # -i
+			if options.info_only:  # -i
 				return pexit(0)
-				
+
 			# no need to try finding these matches
 			# .vob track list always has track number 1
 			sample_is_rar = (sample_file.lower().endswith(".vob") and
@@ -311,22 +311,22 @@ def main(argv=None, no_exit=False):
 
 			# 2) check sample against main movie file
 			# main AVI, MKV,... file to check against
-			if options.check and not sample_is_rar: 
+			if options.check and not sample_is_rar:
 				print("Checking that sample exists "
 				      "in the specified full file...")
 				tracks = verify_main(sample, tracks, options, pexit)
-			
+
 			# ask the user for permission to replace an existing SRS file
 			if not can_overwrite(srs_name, options.always_yes):
 				return pexit(0, "\nOperation aborted.\n", False)
-			
+
 			srs_name_tmp = create_temp_file_name(srs_name)
-				
-			sample.create_srs(tracks, sample_file_data, sample_file, 
+
+			sample.create_srs(tracks, sample_file_data, sample_file,
 			                  srs_name_tmp, options.big_file)
-			
+
 			replace_result(srs_name_tmp, srs_name)
-			
+
 			if no_exit:
 				# just print the file name from pyReScene Auto
 				# (looks nicer for music)
@@ -334,12 +334,12 @@ def main(argv=None, no_exit=False):
 			else:
 				success_name = srs_name
 			print("Successfully created SRS file: %s" % success_name)
-		
+
 		# showing SRS info
 		elif (len(args) == 1 and args0.lower().endswith(".srs")
-		    	and options.srs_info): # -l
+		    	and options.srs_info):  # -l
 			srs_data, tracks = sample.load_srs(args0)
-			
+
 			print("SRS Type   : {0}".format(sample.file_type))
 			print("SRS App    : {0}".format(srs_data.appname))
 			msg = unicode("Sample Name: {0}")
@@ -358,11 +358,11 @@ def main(argv=None, no_exit=False):
 				if is_music:
 					try:
 						print("Duration: {0} seconds".format(track.duration))
-						print("AcoustID fingerprint: {0}".format( 
+						print("AcoustID fingerprint: {0}".format(
 						      track.fingerprint.decode("ascii")))
 					except AttributeError:
-						pass # SRS without fingerprint information
-			
+						pass  # SRS without fingerprint information
+
 		# reconstructing sample
 		elif len(args) == 2 and args0.lower().endswith(".srs"):
 			# reconstruct sample
@@ -375,63 +375,63 @@ def main(argv=None, no_exit=False):
 				movie_type = FileType.STREAM
 			movi = resample.sample_class_factory(movie_type)
 			movi.archived_file_name = main_file_info.archived_file
-			
-			out_folder = "." # current directory
+
+			out_folder = "."  # current directory
 			if options.output_dir:
 				out_folder = options.output_dir
-				
+
 			if not os.path.exists(out_folder):
 				try:
 					os.makedirs(out_folder)
 				except:
 					print("Creating output folder failed.")
-					
+
 			# 1) Read in the SRS file
 			srs_data, tracks = sample.load_srs(srs)
-			
+
 			t1 = time.clock()
-			total = t1-t0
+			total = t1 - t0
 			print("SRS Load Complete...          "
 			      "Elapsed Time: {0:.2f}s".format(total))
-			
+
 			skip_location = True
 			for track in tracks.values():
 				if track.match_offset == 0:
 					skip_location = False
 					break
-				
+
 			# 2) Find the sample streams in the main movie file
 			# always do this search for music files
-			if (is_music or not skip_location or 
+			if (is_music or not skip_location or
 			    options.no_stored_match_offset):
 				tracks = movi.find_sample_streams(tracks, movie)
-				
+
 				t1 = time.clock()
-				total = t1-t0
+				total = t1 - t0
 				print("Track Location Complete...    "
 				      "Elapsed Time: {0:.2f}s".format(total))
-				
+
 				for track in tracks.values():
 					if ((track.signature_bytes and track.match_offset == 0 and
 							sample.file_type != FileType.MP3 and
-							sample.file_type != FileType.STREAM) or 
-						(track.match_offset == -1 and sample.file_type in 
+							sample.file_type != FileType.STREAM) or
+						(track.match_offset == -1 and sample.file_type in
 							(FileType.MP3, FileType.STREAM))):
 						# 0 is a legal match offset for MP3 and STREAM
 						msg = ("\nUnable to locate track signature for track"
 						       " %s. Aborting.\n" % track.track_number)
 						pexit(3, msg, False)
-						
+
 			# 3) Extract those sample streams to memory
 			tracks, attachments = movi.extract_sample_streams(tracks, movie)
 			t1 = time.clock()
-			total = t1-t0
+			total = t1 - t0
 			print("Track Extraction Complete...  "
 			      "Elapsed Time: {0:.2f}s".format(total))
-			
+
 			# 4) Check for failure
 			for track in tracks.values():
-				if track.signature_bytes and (track.track_file == None or 
+				if track.signature_bytes and (track.track_file == None or
 						track.track_file.tell() < track.data_length):
 					if _DEBUG:
 						print("Found: {0}".format(track.track_file.tell()))
@@ -439,41 +439,41 @@ def main(argv=None, no_exit=False):
 					msg = ("\nUnable to extract correct amount of data for "
 					       "track %s. Aborting.\n" % track.track_number)
 					pexit(4, msg, False)
-					
+
 			# 5) Ask user for overwrite permission
 			result_file = os.path.join(out_folder, srs_data.name)
 			if not can_overwrite(result_file, options.always_yes):
 				pexit(1, "\nOperation aborted.\n", False)
-				
+
 			# 6) Recreate the sample
 			out_file = create_temp_file_name(result_file)
-			sfile = sample.rebuild_sample(srs_data, tracks, attachments, 
+			sfile = sample.rebuild_sample(srs_data, tracks, attachments,
 										  srs, out_file)
-			
+
 			t1 = time.clock()
-			total = t1-t0
+			total = t1 - t0
 			print("Rebuild Complete...           "
 			      "Elapsed Time: {0:.2f}s".format(total))
-			
+
 			# 7) Close and delete the temporary files
 			for track in tracks.values():
 				if track.track_file:
 					track.track_file.close()
 			for attachment in attachments.values():
 				attachment.attachment_file.close()
-				
+
 			print("\nFile Details:   Size           CRC")
 			print("                -------------  --------")
 			print("Expected    :   {0:>13}  {1:08X}".format(
 				sep(srs_data.size), srs_data.crc32))
 			print("Actual      :   {0:>13}  {1:08X}\n".format(
 				sep(sfile.size), sfile.crc32))
-			
+
 			if sfile.crc32 == srs_data.crc32:
 				replace_result(out_file, result_file)
 				print("\nSuccessfully rebuilt sample: %s" % srs_data.name)
 			else:
-				#TODO: try again with the correct interleaving for LOL samples
+				# TODO: try again with the correct interleaving for LOL samples
 				if not is_music:
 					print("This is a known issue for LOL xvid releases.")
 					# also for some DOCUMENT releases
@@ -507,14 +507,14 @@ def main(argv=None, no_exit=False):
 						else:
 							replace_result(out_file, result_file)
 							os.unlink(result_file)
-					
+
 				msg = "\nRebuild failed for sample: %s\n" % srs_data.name
 				pexit(5, msg, False)
-				
+
 		else:
 			parser.print_help()
 			pexit(1)
-		
+
 		return pexit(0)
 
 	except InvalidMatchOffset:
@@ -543,7 +543,7 @@ def main(argv=None, no_exit=False):
 		if str(err).startswith("Compressed RARs"):
 			# AttributeError: Compressed RARs are not supported
 			pexit(4, "Cannot verify sample against compressed RARs.")
-		elif (str(err) == 
+		elif (str(err) ==
 			"You must start with the first volume from a RAR set"):
 			pexit(5, str(err))
 		else:
