@@ -81,13 +81,13 @@ def precalculate(table, data, range_start, range_end, skip):
 			end = range_end
 		# before and after gab
 		table[(range_start, start)] = (
-		    crc32(data[range_start:start]) & 0xFFFFFFFF, start-range_start)
+		    crc32(data[range_start:start]) & 0xFFFFFFFF, start - range_start)
 		table[(end, range_end)] = (
-		    crc32(data[end:range_end]) & 0xFFFFFFFF, range_end-end)
+		    crc32(data[end:range_end]) & 0xFFFFFFFF, range_end - end)
 	else:
 		# the whole range
 		table[(range_start, range_end)] = (
-		    crc32(data[range_start:range_end]) & 0xFFFFFFFF, range_end-range_start)
+		    crc32(data[range_start:range_end]) & 0xFFFFFFFF, range_end - range_start)
 
 def main(options, args):
 	file_name = args[0]
@@ -95,11 +95,11 @@ def main(options, args):
 	if len(args) == 4:
 		range_start = int(args[2], 10)
 		range_end = int(args[3], 10)
-	
+
 	# read complete file into memory
 	with open(file_name, 'rb') as volume:
 		data = volume.read()
-		
+
 	start = 0
 	end = len(data)
 	print("File size: %d" % end)
@@ -117,7 +117,7 @@ def main(options, args):
 	bitflip = not options.bytecheck and not options.bitswitch
 
 	# memoization: precalculate crc32 hashes
-	# 	crc32(crc32(0, seq1, len1), seq2, len2) == 
+	# 	crc32(crc32(0, seq1, len1), seq2, len2) ==
 	# 		crc32_combine(crc32(0, seq1, len1), crc32(0, seq2, len2), len2)
 	skip = options.skip  # 100 by default
 	lookup = {}
@@ -131,7 +131,7 @@ def main(options, args):
 
 	if options.bytecheck:
 		byte_values = [pack("B", i) for i in range(256)]
-	
+
 	def validate_table():
 		# check correctness lookup table
 		actual = crc32(data[range_start:range_end]) & 0xFFFFFFFF
@@ -147,7 +147,7 @@ def main(options, args):
 		print("Lookup table ok: %d elements" % len(lookup))
 		return True
 	assert validate_table()
-	
+
 	# algorithm:
 	# The CRCs before and after the part in progress within the working range
 	# gets precalculated and get combined for testing. The different window
@@ -182,9 +182,9 @@ def main(options, args):
 			(bpcrc, bplen) = lookup[(range_start, part_start)]
 			crc_before_partition = comb(crc_begin, bpcrc, bplen) & 0xFFFFFFFF
 			crc_before_len = crc_begin_len + bplen
-			assert (crc_before_partition == 
-				crc32(data[0:range_start+skip_count]) & 0xffffffff)
-			
+			assert (crc_before_partition ==
+				crc32(data[0:range_start + skip_count]) & 0xffffffff)
+
 			part_end = part_start + skip
 			if part_end > range_end:
 				part_end = range_end
@@ -193,33 +193,33 @@ def main(options, args):
 			crc_after_len = aplen + crc_end_len
 			assert (crc_after_partition == crc32(data[part_end:]) & 0xffffffff)
 # 		print("CRC before partition %.X" % crc_before_partition)
-			
+
 		# calculate crc32: Before and After
 		bpart_crc = crc32(data[part_start:cur_byte]) & 0xFFFFFFFF
 		bpart_crc_len = cur_byte - part_start
 		ball_crc = comb(crc_before_partition, bpart_crc, bpart_crc_len) & 0xFFFFFFFF
 		assert crc_before_len + bpart_crc_len == len(data[0:cur_byte])
 		assert (ball_crc == crc32(data[0:cur_byte]) & 0xffffffff)
-		
-		apart_crc = crc32(data[cur_byte+1:part_end]) & 0xFFFFFFFF
+
+		apart_crc = crc32(data[cur_byte + 1:part_end]) & 0xFFFFFFFF
 		apart_len = part_end - cur_byte - 1
-		assert apart_len == len(data[cur_byte+1:part_end])
+		assert apart_len == len(data[cur_byte + 1:part_end])
 		aall_crc = comb(apart_crc, crc_after_partition, crc_after_len) & 0xFFFFFFFF
 		aall_len = apart_len + crc_after_len
-		assert (aall_crc == crc32(data[cur_byte+1:]) & 0xffffffff)
+		assert (aall_crc == crc32(data[cur_byte + 1:]) & 0xffffffff)
 
 		skip_count += 1
-		cur_byte_data = ord(data[cur_byte:cur_byte+1])
-		
+		cur_byte_data = ord(data[cur_byte:cur_byte + 1])
+
 # 		crc_b = crc32(data[cur_byte:cur_byte+1], ball_crc) & 0xffffffff
 # 		crc_all_orig = comb(crc_b, aall_crc, aall_len) & 0xffffffff
 # 		assert crc_all_orig == crc32(data) & 0xffffffff
-		
+
 		if bitflip:
 			# 8 bitflips for each byte
 			for i in range(8):
 				flip = pack("B", cur_byte_data ^ (0x80 >> i))
-				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
+				assert data[cur_byte:cur_byte + 1] == pack("B", cur_byte_data)
 				crcflip = crc32(flip, ball_crc) & 0xFFFFFFFF
 				test_crc = comb(crcflip, aall_crc, aall_len) & 0xFFFFFFFF
 
@@ -249,7 +249,7 @@ def main(options, args):
 			for i in range(7):
 				# will also flip 11 to 00
 				switch = pack("B", cur_byte_data ^ (0x3 << i))
-				assert data[cur_byte:cur_byte+1] == pack("B", cur_byte_data)
+				assert data[cur_byte:cur_byte + 1] == pack("B", cur_byte_data)
 				crcswitch = crc32(switch, ball_crc) & 0xFFFFFFFF
 				test_crc = comb(crcswitch, aall_crc, aall_len) & 0xFFFFFFFF
 
@@ -267,17 +267,17 @@ def main(options, args):
 		with open(outfn, 'wb') as result:
 			result.write(data[start:cur_byte])
 			result.write(flip)
-			result.write(data[cur_byte+1:end])
-		break  # executed if 'continue' was skipped (break)			
+			result.write(data[cur_byte + 1:end])
+		break  # executed if 'continue' was skipped (break)
 	else:
 		print("No change found that matches the provided CRC32.")
-		
+
 def print_assertions_enabled():
 	print("Assertions are enabled!")
 	print("Run this script with the Python -O or -OO parameters"
 		" to disable them for faster execution speed.")
 	return True
-		
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog file_name CRC32 [range start] [range end]\n"
@@ -293,7 +293,7 @@ if __name__ == '__main__':
 					  action="store_true", dest="bytecheck", default=False)
 	parser.add_option("--bitswitch", help="two adjacent bits are switched",
 					  action="store_true", dest="bitswitch", default=False)
-		
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

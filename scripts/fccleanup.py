@@ -17,7 +17,7 @@
 # MA 02110-1301, USA.
 
 import os, sys, optparse
-sys.path.append(os.path.join(os.getcwd(),'..'))
+sys.path.append(os.path.join(os.getcwd(), '..'))
 from tempfile import mkstemp
 from rescene.rar import RarReader, BlockType, SrrHeaderBlock
 
@@ -27,10 +27,10 @@ def process(rootdir):
             if file[-4:].lower() == ".srr":
                 fpath = os.path.join(root, file)
                 fix(fpath)
-                
-        if not options.r: # not recursive
+
+        if not options.r:  # not recursive
             break
-        
+
 def fix(srr_file):
     print("Fixing %s" % srr_file)
     blocks = RarReader(srr_file).read_all()
@@ -39,14 +39,14 @@ def fix(srr_file):
     fixeddir = os.path.join(os.path.dirname(srr_file), "fixed")
     try:
         os.makedirs(fixeddir)
-    except: pass # Path already exists
-    
+    except: pass  # Path already exists
+
     # create a temporarily file
     tmpfd, tmpname = mkstemp(prefix="remove_", suffix=".srr", dir=fixeddir)
     tmpfile = os.fdopen(tmpfd, "wb")
-    
+
     try:
-        for block in blocks: 
+        for block in blocks:
             if block.rawtype == BlockType.SrrHeader:
 #                tmpfile.write(block.bytes())
                 tmpfile.write(SrrHeaderBlock(
@@ -66,31 +66,31 @@ def fix(srr_file):
     except:
         os.unlink(tmpname)
         raise
-       
+
 def main(options, args):
 #    print(options)
 #    print(args)
     for dir in args:
         process(dir)
-        
+
 if __name__ == '__main__':
     parser = optparse.OptionParser(
     usage="Usage: %prog [options] srr directory'\n"
     "This tool will fix SRR files for FireScene.\n"
-    "SRR files merged with 'ReScene Database Cleanup Script 1.0' don't put " 
-    "all stored file blocks at the beginning of the SRR file.", 
-    version="%prog 0.1") # --help, --version
-    
+    "SRR files merged with 'ReScene Database Cleanup Script 1.0' don't put "
+    "all stored file blocks at the beginning of the SRR file.",
+    version="%prog 0.1")  # --help, --version
+
     param = optparse.OptionGroup(parser, "Parameter list")
     parser.add_option_group(param)
-    
-    param.add_option("-r", help="Recurse subdirectories.", 
+
+    param.add_option("-r", help="Recurse subdirectories.",
                      action="store_true", default=False)
-     
+
     # no arguments given
     if len(sys.argv) < 2:
         print(parser.format_help())
-    else:       
+    else:
         (options, args) = parser.parse_args()
         main(options, args)
         print("Done.")

@@ -3,29 +3,29 @@ import unittest
 import sys
 
 def get_show_info(release_name):
-	
+
 	return re.match(fullPattern, release_name)
 
 # we can detect miniseries
 
-#(?(id/name)yes-pattern|no-pattern)
+# (?(id/name)yes-pattern|no-pattern)
 
-regular = ("[\.-]?((?<![a-zA-Z])[sS](?P<season>\d?\d)(?![\dxX])[\.]?|" # season: S2 or s02
-		   "(?<![xX])[eE][pP]?(\d{1,3})|[eE][pP]?(\d{1,3})"		  # episode: e1, E02 or E112, Ep10, Ep9
-		   "((\.[eE]|-?[eE]?)" # 24.S01E13.12.Noon-1PM.INTERNAL.DVDRip.XviD-RETRO; . sep
-		   "\d{2,3})+)+") # double episode XXX: can it be 1#?
+regular = ("[\.-]?((?<![a-zA-Z])[sS](?P<season>\d?\d)(?![\dxX])[\.]?|"  # season: S2 or s02
+		   "(?<![xX])[eE][pP]?(\d{1,3})|[eE][pP]?(\d{1,3})"  # episode: e1, E02 or E112, Ep10, Ep9
+		   "((\.[eE]|-?[eE]?)"  # 24.S01E13.12.Noon-1PM.INTERNAL.DVDRip.XviD-RETRO; . sep
+		   "\d{2,3})+)+")  # double episode XXX: can it be 1#?
 
-fov = ("\.?(?<!\d)(?P<fseason>\d{1,2})[x](?P<fepisode>\d{2,3})" # season/episode
+fov = ("\.?(?<!\d)(?P<fseason>\d{1,2})[x](?P<fepisode>\d{2,3})"  # season/episode
 	   "([\._-]((?P<feseason>\d{1,2})[x])?)?"
-	   "(?P<feepisode>(?<![\.])\d{2,3})?[\._]?") # multiple episode
+	   "(?P<feepisode>(?<![\.])\d{2,3})?[\._]?")  # multiple episode
 
-#retro = "\.[eE][pP](\d{2,3})" # Un.Gars.Une.Fille.Ep020.FRENCH.DVDRiP.XViD.INT-uGuF
+# retro = "\.[eE][pP](\d{2,3})" # Un.Gars.Une.Fille.Ep020.FRENCH.DVDRiP.XViD.INT-uGuF
 
 
 iso8601 = ("((?P<year>(19|20)?\d\d)"
-		   "(?P<sep>[-\.]?)" # separator
+		   "(?P<sep>[-\.]?)"  # separator
 		   "(?P<month>0[1-9]|1[012])"
-		   "(?P=sep)" # same separator; \n: nth group
+		   "(?P=sep)"  # same separator; \n: nth group
 		   "(?P<day>0[1-9]|[12][0-9]|3[01]))(?=.+(HDTV|PDTV|DSR|TVRip|dTV|SATRip).+)")
 
 daterev = ("((?P<rday>0[1-9]|[12][0-9]|3[01])"
@@ -59,7 +59,7 @@ matches = [
 		 "The.7pm.Project.2010.01.03.WS.PDTV.XviD-RTA",
 		 "The.7pm.Project.2010-01-03.WS.PDTV.XviD-RTA",
 		 "Boxing.A.Ward.vs.A.Green.20100616.PDTV.XviD-MaM",
-		 
+
 		 "24.S07E24.PREAIR.DVDRip.XviD-TOPAZ",
 		 "24.S7E24.PREAIR.DVDRip.XviD-TOPAZ",
 		 "24.S7E124.PREAIR.DVDRip.XviD-TOPAZ",
@@ -103,7 +103,7 @@ matches = [
 		 "Top.Gear.The.Best.Of.Season.1.and.2.REPACK.DVDRip.XviD-EPiSODE",
 		 "XIII.2008.Miniseries.Part.1.DVDRip.XviD-aAF",
 		 "Wuthering.Heights.Part.1.2009.STV.720p.Bluray.x264-hV",
-		 
+
 		 ]
 
 nomatch = [
@@ -113,7 +113,7 @@ nomatch = [
 		   "The.Animatrix.2003.720p.BluRay.x264-HANGOVER",
 		   "Friends.S10xE01.UNCUT.DVDRip",
 		   "Drawing.Clipart.2000.DVDR...",
-		   "24.1X01.AC3.iNTERNAL.DVDRip_WS_XviD-FoV", # yes/no?
+		   "24.1X01.AC3.iNTERNAL.DVDRip_WS_XviD-FoV",  # yes/no?
 		   "The.Mean.Season.1985.DVDRip.XviD-VH-PROD",
 		   "Intercontinental.Le.Mans.Cup.2011.Silverstone.00.48-00.00.720p.HDTV.x264-WHEELS",
 		   "Open.Season.2.2008.FLEMiSH.STV.DVDRip.XviD-CaRRe",
@@ -141,30 +141,30 @@ class TestAll(unittest.TestCase):
 	def test_all(self):
 		for rel in matches:
 			m = re.match(fullPattern, rel)
-#			print(rel)
+# 			print(rel)
 			assert m is not None
-		#	print(m.groups())
-#			print(m.groupdict())
-		
+		# 	print(m.groups())
+# 			print(m.groupdict())
+
 		for rel in nomatch:
 			m = re.match(fullPattern, rel)
-#			print(rel)
-#			if m:
-#				print(m.groups())
+# 			print(rel)
+# 			if m:
+# 				print(m.groups())
 			assert m is None
-			
+
 	def test_date(self):
-				
+
 		r = get_show_info("mlqksdjf")
-		
-		
-		
+
+
+
 # when this file is not imported, but ran directly
 if __name__ == '__main__':
 	suites = list()
 	suites.append(unittest.TestLoader().loadTestsFromTestCase(TestAll))
 	alltests = unittest.TestSuite(suites)
-	
+
 	kw = dict()
 	if sys.version_info >= (3, 2) or sys.version_info >= (2, 7):
 		kw.update(buffer=True)

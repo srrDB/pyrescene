@@ -33,30 +33,30 @@ def main(options, args):
 		if not lfile.endswith(".srr"):
 			continue
 		srr = info(lfile)
-		
+
 		has_nfo = False
 		for sfile in srr['stored_files']:
 			if sfile.endswith(".nfo"):
 				has_nfo = True
-				
+
 		if not options.nonfo:
 			has_nfo = False
-		
+
 		# for each stored lfile: max 3 comment lines
-		if (len(srr['sfv_comments']) > 
+		if (len(srr['sfv_comments']) >
 				3 * len(srr['archived_files']) and not has_nfo):
 			print(lfile)
-		
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [directory]\n"
 		"This tool will list SRR files with more than three comment lines.\n"
 		"For non foreign series, a lot of those will be repacks.",
-		version="%prog 1.1 (2011-12-22)") # --help, --version
-	
+		version="%prog 1.1 (2011-12-22)")  # --help, --version
+
 	parser.add_option("-n", "--no-nfo", help="result can not contain nfo",
 					  action="store_true", dest="nonfo", default=False)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

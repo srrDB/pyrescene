@@ -33,18 +33,18 @@ import optparse
 def read_txt(txt_file):
 	with open(txt_file, "U") as f:
 		return set(f.readlines())
-	
+
 def print_releases(rellist):
 	for line in rellist:
 		print(line.replace("\n", ""))
-				
+
 def main(options, args):
 	mainl = read_txt(args[0])
 	newl = read_txt(args[1])
-	
-#	print(len(newl.difference(mainl)))
-#	print(len(mainl.intersection(newl)))
-	
+
+# 	print(len(newl.difference(mainl)))
+# 	print(len(mainl.intersection(newl)))
+
 	if options.dupe:
 		print_releases(mainl.intersection(newl))
 	if options.uniq:
@@ -53,13 +53,13 @@ def main(options, args):
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [main db txt] [list of new rels]\n",
-		version="%prog 0.1 (2012-02-05)") # --help, --version
-	
-	parser.add_option("-d", "--duplicates", help="prints dupes", 
+		version="%prog 0.1 (2012-02-05)")  # --help, --version
+
+	parser.add_option("-d", "--duplicates", help="prints dupes",
 	                  action="store_true", default=False, dest="dupe")
-	parser.add_option("-u", "--uniques", help="prints uniques", 
+	parser.add_option("-u", "--uniques", help="prints uniques",
 	                  action="store_true", default=False, dest="uniq")
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
