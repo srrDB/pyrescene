@@ -30,7 +30,7 @@ def give_range(begin, end):
     for i in range(begin, end + 1):
         for j in range(i, end + 1):
             yield (i, j)
-            
+
 cache = dict()
 
 def get_crc(range, previous=None):
@@ -49,12 +49,12 @@ def get_crc(range, previous=None):
 def bruteforce():
     for (begin, end) in give_range(0, size):
     #    print("%d - %d" % (begin, end))
-        
+
         crc = get_crc((begin, end), file)
         if tofind == crc or tofind == (crc & 0xffffffff) or tofind == ~crc:
             print("start: %d, end: %d" % (begin, end))
-            sys.exit()   
-    
+            sys.exit()
+
     #    crcfirst = get_crc((begin, end))
     #    for (be, en) in give_range(end, size):
     #        crc = get_crc((be, en), crcfirst)
@@ -62,7 +62,7 @@ def bruteforce():
     #            print("start: %d, end: %d" % (begin, end))
     #            print("start: %d, end: %d" % (be, en))
     #            sys.exit()
-    
+
     #    percentage = ((begin + 1) / size) * 100
     #    if round(percentage, 1) % 5 == 0:
     #        print("%d%% checked" % round(percentage))
@@ -70,10 +70,10 @@ def bruteforce():
 
 def calc_prev_crc():
     print(rrblock.block_position)
-    print(rrblock.block_position+rrblock.header_size)
-    print(rrblock.block_position+rrblock.header_size+rrblock.add_size)
-    d = bytes[rrblock.block_position+rrblock.header_size:
-              rrblock.block_position+rrblock.header_size+rrblock.add_size]
+    print(rrblock.block_position + rrblock.header_size)
+    print(rrblock.block_position + rrblock.header_size + rrblock.add_size)
+    d = bytes[rrblock.block_position + rrblock.header_size:
+              rrblock.block_position + rrblock.header_size + rrblock.add_size]
     print(len(d))
     assert zlib.crc32(d) == zlib.crc32(d, ~0xffffffff)
     crc = zlib.crc32(d, ~0x0fffffff)
@@ -86,7 +86,7 @@ def calc_prev_crc():
         print("%x" % (crc))
         sys.exit()
 
-calc_prev_crc()            
+calc_prev_crc()
 
 print("Nothing found.")
 

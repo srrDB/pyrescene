@@ -61,16 +61,16 @@ def doit(inpfile, splitat):
 	print("Splitting file %s at position %d" % (inpfile, Nsplitat))
 	f = open(inpfile, "rb", 0)
 
-	f.seek(0,2)	 # seek to EOF
-	siz = f.tell() # get length
-	f.seek(0,0)	 # reset to beginning of file
+	f.seek(0, 2)  # seek to EOF
+	siz = f.tell()  # get length
+	f.seek(0, 0)  # reset to beginning of file
 
 	if (Nsplitat > siz):
 		print("Error: input file smaller than specified split at position!")
 		sys.exit(5)
 
 	RdInp_WrOutp(Nsplitat, f, "SPLIT1.OUT")
-	RdInp_WrOutp(siz-Nsplitat, f, "SPLIT2.OUT")
+	RdInp_WrOutp(siz - Nsplitat, f, "SPLIT2.OUT")
 	f.close
 
 #-----------------------------------------------------------------------------
@@ -81,9 +81,9 @@ def start():
 		print("\nError: Insufficient number of arguments")
 		progusage()
 		sys.exit(1)
-	#below requires python 2.6 or higher
-	#print("Args: {0} ... {1}" .format(sys.argv[1],sys.argv[2]))
-	doit(sys.argv[1],sys.argv[2])
+	# below requires python 2.6 or higher
+	# print("Args: {0} ... {1}" .format(sys.argv[1],sys.argv[2]))
+	doit(sys.argv[1], sys.argv[2])
 
 #-----------------------------------------------------------------------------
 

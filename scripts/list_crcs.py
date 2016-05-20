@@ -25,10 +25,10 @@ try:
 	from rescene import info
 except ImportError:
 	print("Can't import the 'rescene' module.")
-	
+
 def list_srr(sfile):
 	for key, value in info(sfile)['archived_files'].items():
-#		print(os.path.basename(sfile)[:-4]),
+# 		print(os.path.basename(sfile)[:-4]),
 		print("%s\t%s" % (key, value.crc32))
 
 def main(options, args):
@@ -48,8 +48,8 @@ if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [srr files] [directories]'\n"
 		"This tool will list the CRCs of the archived files.\n",
-		version="%prog 0.1 (2012-11-01)") # --help, --version
-	
+		version="%prog 0.1 (2012-11-01)")  # --help, --version
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
