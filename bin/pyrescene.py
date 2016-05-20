@@ -596,7 +596,7 @@ def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 				continue
 			
 			# search for idx files and store their language info
-			for efile in os.listdir(dest):
+			for efile in sorted(os.listdir(dest)):
 				if efile[-4:].lower() == ".idx":
 					language_lines = []
 					with open(os.path.join(dest, efile), "rb") as idx:
