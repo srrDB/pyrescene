@@ -33,30 +33,29 @@ except ImportError:
 	pass
 
 import rescene
-			
+
 def main(options, args):
 	srr_list = args
-	
+
 	if not options.output_name:
 		destination = args[0][:-4] + "_joined.srr"
 	else:
 		destination = options.output_name
-		
+
 	rescene.merge_srrs(srr_list, destination)
-			
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [srr1, srr2,...] -o output file'\n"
 		"This tool will join together two or more SRR files.",
-		version="%prog 1.0 (2011-12-27)") # --help, --version
-	
-	parser.add_option("-o", dest="output_name", 
+		version="%prog 1.0 (2011-12-27)")  # --help, --version
+
+	parser.add_option("-o", dest="output_name",
 					help="name (and path) of the new SRR file")
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-		

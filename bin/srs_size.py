@@ -35,7 +35,7 @@ except ImportError:
 
 from resample.main import file_type_info, sample_class_factory
 from rescene.utility import sep
-			
+
 def main(options, args):
 	for  dirpath, _dirnames, filenames in os.walk(args[0]):
 		for sfile in filenames:
@@ -46,22 +46,21 @@ def main(options, args):
 				if srs_data.size > int(options.size):
 					print(f)
 					print(sep(srs_data.size))
-			
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog directory -s size'\n"
 		"This tool will list SRS files greater than a certain size.",
-		version="%prog 0.2 (2013-04-20)") # --help, --version
+		version="%prog 0.2 (2013-04-20)")  # --help, --version
 	# 0.1 (2012-10-27)
 	# 0.2 (2013-04-20)
-	
-	parser.add_option("-s", dest="size", 
+
+	parser.add_option("-s", dest="size",
 					help="minimum size of the original sample")
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-		

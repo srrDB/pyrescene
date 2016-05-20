@@ -65,7 +65,7 @@
 
 # This helper is shared by many different actual scripts. It is not intended to
 # be packaged or installed, it is only a developer convenience. By the time
-# pyReScene is actually installed somewhere, the environment should 
+# pyReScene is actually installed somewhere, the environment should
 # already be set up properly without the help of this tool.
 
 import sys

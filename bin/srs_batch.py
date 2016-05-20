@@ -44,18 +44,18 @@ def main(options, args):
 	outdir = os.path.normpath(os.path.abspath(options.output_dir))
 	print("Input: {0}".format(indir))
 	print("Output: {0}".format(outdir))
-	
+
 	for dirpath, _dirnames, filenames in os.walk(indir):
 		subdirs = os.path.relpath(dirpath, indir)
 		for pfile in filenames:
 			if pfile.lower().endswith((".avi", ".mkv", ".wmv", ".mp4")):
 				create_srs(dirpath, pfile, outdir, subdirs)
-					
+
 def create_srs(sample_dir, sample_file, output_dir, path):
 	print(sample_dir)
 	dest_dir = os.path.join(output_dir, path)
 	sample = os.path.join(sample_dir, sample_file)
-	
+
 	if not os.path.isdir(dest_dir):
 		os.makedirs(dest_dir)
 
@@ -67,20 +67,20 @@ def create_srs(sample_dir, sample_file, output_dir, path):
 		srsmain([sample, "-y", "-o", dest_dir], True)
 	except ValueError:
 		keep_txt = True
-			
+
 	sys.stderr.close()
 	if not keep_txt:
 		os.unlink(txt_error_file)
-		
+
 	sys.stderr = original_stderr
-	
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog -i input_directory -o output_directory\n"
 		"This tool creates .srs or .txt files for video files"
 		" found in the input directory.\nOverwrites existing files.",
 		version="%prog 1.1 (2015-07-21)")  # --help, --version
-	
+
 	parser.add_option("-i", dest="input_dir", metavar="DIRECTORY",
 					help="folder with release folders")
 	parser.add_option("-o", dest="output_dir", metavar="DIRECTORY",
