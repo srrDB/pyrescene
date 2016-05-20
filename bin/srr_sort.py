@@ -46,7 +46,7 @@ def check_compression(srr_file):
 			if block.compression_method != COMPR_STORING:
 				return True
 	return False
-		
+
 def check_empty(srr_file):
 	for block in RarReader(srr_file):
 		if block.rawtype == BlockType.RarPackedFile:
@@ -67,7 +67,7 @@ def check_repack(srr_file):
 	tmatch = ("rpk", "repack", "-r.part01.rar", "-r.rar")
 	for block in RarReader(srr_file):
 		if block.rawtype == BlockType.SrrRarFile:
-			matchf = lambda keyword: keyword in block.file_name 
+			matchf = lambda keyword: keyword in block.file_name
 			if any(map(matchf, tmatch)):
 				return True
 	return False
@@ -108,7 +108,7 @@ def check_for_no_ext(srr_file, extension):
 			block.file_name.lower().endswith(extension)):
 			return False
 	return True
-		
+
 def check_for_ext(srr_file, extension):
 	for block in RarReader(srr_file):
 		if (block.rawtype == BlockType.SrrStoredFile and
@@ -116,7 +116,7 @@ def check_for_ext(srr_file, extension):
 			return True
 	return False
 
-rar_sizes = 0 #bytes
+rar_sizes = 0  # bytes
 
 def check(srr_file):
 	try:
@@ -124,7 +124,7 @@ def check(srr_file):
 		if options.verify or options.multiple:
 			info = rescene.info(srr_file)
 			global rar_sizes
-			rar_sizes += sum([info['rar_files'][f].file_size 
+			rar_sizes += sum([info['rar_files'][f].file_size
 			                  for f in info['rar_files']])
 			if options.multiple:
 				sets = []
@@ -135,7 +135,7 @@ def check(srr_file):
 						sets.append(base)
 				result |= len(info["archived_files"]) > len(sets)
 				# print(sets) # useful to check ordering
-			
+
 		if options.dirfix:
 			if "dirfix" in srr_file.lower() or "nfofix" in srr_file.lower():
 				print(srr_file)
@@ -143,12 +143,12 @@ def check(srr_file):
 			group = srr_file[:-4].rsplit("-")[-1]
 			if group == group.lower():
 				result |= True
-			if "." in group: # does not have a group name
+			if "." in group:  # does not have a group name
 				result |= True
 			fn = os.path.split(srr_file)[1]
 			if fn == fn.lower():
 				result |= True
-				
+
 		if options.compressed:
 			result |= check_compression(srr_file)
 		if options.empty:
@@ -182,7 +182,7 @@ def check(srr_file):
 		# the storing of a srr_file failed -> corrupt SRR
 		print("Something wrong with reading %s" % srr_file)
 		print(err)
-		
+
 def main(options, args):
 	for element in args:
 		if os.path.isdir(element):
@@ -199,19 +199,19 @@ def main(options, args):
 		print("%.2f MiB" % (rar_sizes / 1024 / 1024))
 		print("%.2f GiB" % (rar_sizes / 1024 / 1024 / 1024))
 		print("%.2f TiB" % (rar_sizes / 1024 / 1024 / 1024 / 1024))
-			
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [directories] [srrs] [options]'\n"
 		"This tool will list compressed, empty or SRR files with images.\n"
 		"It optionally moves them to a given output directory.",
-		version="%prog 1.0 (2012-09-20)") # --help, --version
-	
+		version="%prog 1.0 (2012-09-20)")  # --help, --version
+
 	parser.add_option("-c", "--compressed", help="list compressed SRRs",
-					  action="store_true", dest="compressed", default=False)	
+					  action="store_true", dest="compressed", default=False)
 	parser.add_option("-e", "--empty", help="list SRRs with no RAR data",
 					  action="store_true", dest="empty", default=False)
-	
+
 
 	parser.add_option("-v", "--verify", help="check whole SRR for correctness "
 					  "and return full RAR sizes at the end",
@@ -228,17 +228,17 @@ if __name__ == '__main__':
 
 	parser.add_option("-f", "--nofiles", help="list SRRs if no files are stored",
 					  action="store_true", dest="nofiles", default=False)
-	parser.add_option("-m", "--multiple", 
+	parser.add_option("-m", "--multiple",
 	                  help="list SRRs with multiple archived files",
 					  action="store_true", dest="multiple", default=False)
-	
+
 	parser.add_option("-s", "--nosfv", help="list SRRs without SFV",
 					  action="store_true", dest="nosfv", default=False)
 	parser.add_option("-n", "--nonfo", help="list SRRs without NFO",
 					  action="store_true", dest="nonfo", default=False)
 	parser.add_option("--txt", help="list SRRs with TXT files",
 					  action="store_true", dest="txt", default=False)
-	
+
 	parser.add_option("-r", "--repack", help="list SRRs with -rpk., -r. in RAR name",
 					  action="store_true", dest="repack", default=False)
 	parser.add_option("-2", "--p2p", help="not all RARs are lower case",
@@ -247,17 +247,17 @@ if __name__ == '__main__':
 					  action="store_true", dest="lowercase", default=False)
 	parser.add_option("-d", "--dirfix", help="dirfixes and nfofixes",
 					  action="store_true", dest="dirfix", default=False)
-	
+
 	parser.add_option("-o", dest="output_dir", metavar="DIRECTORY",
 					help="moves the matched SRR files to the given DIRECTORY")
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-		
+
 """ 
 >>> list = os.listdir(".")
 >>> def get_name(name):
