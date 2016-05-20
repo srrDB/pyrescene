@@ -32,7 +32,7 @@ import struct
 from rescene.utility import is_rar, _DEBUG
 from rescene.rarstream import RarStream
 
-S_BYTE = struct.Struct('<B')   # 1 byte: C unsigned char -> Python int
+S_BYTE = struct.Struct('<B')  # 1 byte: C unsigned char -> Python int
 S_SHORT = struct.Struct('>H')  # unsigned short: 2 bytes
 
 PACKET_SIZE = 192
@@ -41,7 +41,7 @@ PAYLOAD_SIZE = PACKET_SIZE - HEADER_SIZE
 
 class InvalidDataException(ValueError):
 	pass
-	
+
 class InvalidMatchOffsetException(ValueError):
 	pass
 
@@ -68,7 +68,7 @@ class Packet(object):
 		    "continuity_counter={2:X} pid={3}>".format(
 		        self.start_pos, self.adaptation_field,
 		        self.continuity_counter, self.pid))
-		
+
 class M2tsReader(object):
 	"""Implements a simple Reader class that reads M2TS files."""
 	def __init__(self, read_mode=M2tsReadMode.M2ts, path=None, stream=None,
@@ -88,10 +88,10 @@ class M2tsReader(object):
 
 		self.current_packet = None
 		self.current_offset = 0
-		
+
 		if self._file_length < 192:
 			raise InvalidDataException("File too small")
-		
+
 		# faster reconstructing when match_offset is provided
 		if match_offset >= 8 and match_offset < self._file_length:
 			# use lowest muliple of 192 < offset as a starting point
@@ -106,7 +106,7 @@ class M2tsReader(object):
 			self._stream.seek(0)
 
 	def read(self):
-		# read() is invalid at this time: read_contents() or 
+		# read() is invalid at this time: read_contents() or
 		# skip_contents() must be called before read() can be called again
 		assert self.read_done or self.mode == M2tsReadMode.SRS
 
@@ -114,7 +114,7 @@ class M2tsReader(object):
 		self._stream.seek(self.current_offset)
 		# TP_extra_header (4 Bytes) + MPEG-2 transport stream header (4 B)
 		header = self._stream.read(HEADER_SIZE)
-		
+
 		if not len(header):
 			return False
 
@@ -160,7 +160,7 @@ class M2tsReader(object):
 		if self.mode != M2tsReadMode.SRS:
 			buff = self._stream.read(PAYLOAD_SIZE)
 		return buff
-		
+
 	def skip_contents(self):
 		"""Skips over the payload data to the next packet."""
 		if not self.read_done:
@@ -172,10 +172,10 @@ class M2tsReader(object):
 		try:  # close the file/stream
 			self._stream.close()
 		except:
-			pass	
-		
+			pass
+
 	def __del__(self):
 		try:  # close the file/stream
 			self._stream.close()
 		except:
-			pass	
+			pass

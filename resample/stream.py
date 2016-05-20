@@ -39,17 +39,17 @@ M2TS_MARKER = b"M2TS"  # uses the same SRS structure
 
 class InvalidDataException(ValueError):
 	pass
-	
+
 class Block(object):
 	def __init__(self, size, block_type, start_pos):
 		self.size = size
 		self.type = block_type
 		self.start_pos = start_pos
-	
+
 	def __repr__(self, *args, **kwargs):
 		return "<Block type={0} size={1} start_pos={2}>".format(
 			self.type, self.size, self.start_pos)
-		
+
 class StreamReader(object):
 	"""Implements a simple Reader class that reads STREAM-SRS files."""
 	def __init__(self, path=None, stream=None, archived_file_name=""):
@@ -67,7 +67,7 @@ class StreamReader(object):
 
 		self.current_block = None
 		self.blocks = []
-		
+
 		pos = 0
 		while pos < self._file_length:
 			if pos + 8 > self._file_length:
@@ -96,7 +96,7 @@ class StreamReader(object):
 			pos += size
 			if pos > self._file_length:
 				raise InvalidDataException("SRS file too small!")
-			
+
 			self._stream.seek(pos)
 		self._stream.seek(0)
 
@@ -104,7 +104,7 @@ class StreamReader(object):
 		for block in self.blocks:
 			self.current_block = block
 			yield block
-	
+
 	def read_contents(self):
 		"""Skips the marker and size fields"""
 		self._stream.seek(self.current_block.start_pos + 8, os.SEEK_SET)
@@ -114,10 +114,10 @@ class StreamReader(object):
 		try:  # close the file/stream
 			self._stream.close()
 		except:
-			pass	
-		
+			pass
+
 	def __del__(self):
 		try:  # close the file/stream
 			self._stream.close()
 		except:
-			pass	
+			pass
