@@ -39,9 +39,11 @@ import platform
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
+	str2 = str
 	range = xrange  #@ReservedAssignment
 	str = unicode   #@ReservedAssignment
 else:
+	str2 = str
 	unicode = str   #@ReservedAssignment
 
 from rescene.utility import SfvEntry, parse_sfv_file, parse_sfv_data
@@ -328,15 +330,16 @@ class TestUtility(unittest.TestCase):
 
 	def test_sep(self):
 		try:
+			# 3: Locale must be None, a string, or an iterable of two strings
+			en = str2("English")  # 2: bytes, 3: unicode string
+			nl = str2("Dutch_Belgium.1252")
+			self.assertEqual(sep(1000000, en), "1,000,000")
 			if int(platform.win32_ver()[0]) >= 8:
 				# \xa0 on Windows 8 (non-breaking space)
-				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
-				                 b"1\xa0000\xa0000")
+				self.assertEqual(sep(1000000, nl), b"1\xa0000\xa0000")
 			else:
 				# Windows 7 and lower
-				self.assertEqual(sep(1000000, b"Dutch_Belgium.1252"),
-			                     "1.000.000")
-			self.assertEqual(sep(1000000, b"English"), "1,000,000")
+				self.assertEqual(sep(1000000, nl), "1.000.000")
 		except locale.Error as err:
 			fmt = '"Dutch_Belgium.1252" and "English" locales: {0}'
 			# Python 2.6 does not have the skipTest() method
