@@ -124,7 +124,10 @@ Changelog version 1.7 (2015-06-28)
  - Divide by zero error prevented
  - Better error handling
  - Handle capitalised extensions correctly
- 
+
+Changelog
+ - _newzNZB.nfo files are not included
+
 Could be added:
  - nntps connections: http://bugs.python.org/issue1926
     -> paranoid much?
@@ -1210,6 +1213,9 @@ def create_srr(nzb_path, options):
 			continue
 		if afile.name == "UsenetSpaceCowboys.nfo":
 			print("UsenetSpaceCowboys.nfo file removed!")
+			continue
+		if afile.name == "_newzNZB.nfo":
+			print("_newzNZB.nfo file removed!")
 			continue
 		# remove small IMDb images
 		if afile.name.endswith((".jpg",)) and "proof" not in afile.name.lower():
