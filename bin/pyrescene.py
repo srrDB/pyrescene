@@ -928,7 +928,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 			srs_data, tracks = sinfo.load_srs(srs_result)
 			advance = sinfo.file_type == FileType.STREAM
 
-			if advance and tracks[1].signature_bytes.startswith("Rar!"):
+			if advance and tracks[1].signature_bytes.startswith(b"Rar!"):
 				vobsrr = srs_result.rsplit(".", 1)[0] + ".srr"
 
 				if os.path.exists(vobsrr):
