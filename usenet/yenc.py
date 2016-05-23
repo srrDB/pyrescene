@@ -21,22 +21,22 @@
 
 from zlib import crc32
 
-import logging # http://docs.python.org/library/logging.html
+import logging  # http://docs.python.org/library/logging.html
 import re
 import sys
 
-try: # check for the compiled C library
+try:  # check for the compiled C library
 	import _yenc
 	HAVE_YENC = True
 	print("Using FAST yEnc implementation.")
 except ImportError:
 	HAVE_YENC = False
 	print("Using SLOW yEnc implementation.")
-	
+
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
-	range = xrange #@ReservedAssignment
+	range = xrange  # @ReservedAssignment
 
 #------------------------------------------------------------------------------
 
@@ -62,8 +62,8 @@ def decode(data, seg_part=False, ignore_crc=False):
 		yenc, data = yCheck(data)
 		ybegin, ypart, yend = yenc
 		decoded_data = None
-		
-		#Deal with non-yencoded posts
+
+		# Deal with non-yencoded posts
 		if not ybegin:
 			print("Non yEnc encoded data found!")
 			found = False
@@ -82,14 +82,14 @@ def decode(data, seg_part=False, ignore_crc=False):
 			decoded_data = b'\r\n'.join(data)
 			ybegin = {b'size': len(decoded_data), b'name': "UNKNOWN"}
 
-		#Deal with yenc encoded posts
+		# Deal with yenc encoded posts
 		elif ybegin and (yend or (not yend and seg_part)):
 			if not b'name' in ybegin:
 				logging.debug("Possible corrupt header detected "
 							  "=> ybegin: %s", ybegin)
 			# Decode data
 			if HAVE_YENC:
-				decoded_data, crc = _yenc.decode_string(b''.join(data))[:2] #@UndefinedVariable
+				decoded_data, crc = _yenc.decode_string(b''.join(data))[:2]  # @UndefinedVariable
 				partcrc = (crc ^ -1) & 0xFFFFFFFF
 			else:
 				data = b''.join(data)
@@ -115,50 +115,50 @@ def decode(data, seg_part=False, ignore_crc=False):
 					_partcrc = None
 					logging.debug("Corrupt header detected "
 								  "=> yend: %s", yend)
-	
+
 				if not (_partcrc == partcrc):
 					raise CrcError(_partcrc, partcrc, decoded_data)
 		else:
-			#print(yenc)
-			# ({'total': '15', 'line': '128', 'part': '15', 
-			#   'name': 'mdj.104-diff.r00', 'size': '15000000'}, 
-			#  {'begin': '14000001', 'end': '15000000'}, 
+			# print(yenc)
+			# ({'total': '15', 'line': '128', 'part': '15',
+			#   'name': 'mdj.104-diff.r00', 'size': '15000000'},
+			#  {'begin': '14000001', 'end': '15000000'},
 			#  None)
 			raise YencException("No =yend: segment data is not all there")
-		
+
 		# '=ypart begin=400001 end=500000' line can be omitted
-		if not ypart: # fill it in ourselves
+		if not ypart:  # fill it in ourselves
 			ypart = {b'begin': 1, b'end': ybegin[b'size']}
 			# in this case are 2 =ybegin parameters 'missing' too:
 			# =ybegin line=128 size=3566 name=k-9-vrs.sfv
 			# part= and total= (but these are optional according to the spec)
 			ybegin.setdefault(b'part', 1)
-		
-		#print(ybegin, ypart, yend)
-		# ({'line': '128', 'part': '1', 'name': 
-		# 'Fringe S01E07 X264 720p 2Audio (2009-12-06).nfo', 'size': '3554'}, 
-		# {'begin': '1', 'end': '3554'}, 
+
+		# print(ybegin, ypart, yend)
+		# ({'line': '128', 'part': '1', 'name':
+		# 'Fringe S01E07 X264 720p 2Audio (2009-12-06).nfo', 'size': '3554'},
+		# {'begin': '1', 'end': '3554'},
 		# {'part': '1', 'pcrc32': '13fca903', 'size': '3554'})
 
 		return {
 			'data': decoded_data,
 			# KeyError: 'part'
 			'part_number': int(ybegin[b'part']),
-			'part_begin': int(ypart[b'begin']), # in the the joined file
-			'part_end': int(ypart[b'end']), # counts from 1 onwards
+			'part_begin': int(ypart[b'begin']),  # in the the joined file
+			'part_end': int(ypart[b'end']),  # counts from 1 onwards
 			'part_size': int(ypart[b'end']) - int(ypart[b'begin']) + 1,
 			'file_size': int(ybegin[b'size']),
 			'file_name': ybegin[b'name'],
 		}
 	else:
 		raise YencException("No data available to decode.")
-	
+
 def yCheck(data):
 	ybegin = None
 	ypart = None
 	yend = None
-	
-	## Check head
+
+	# # Check head
 	for i in range(10):
 		try:
 			if data[i].startswith(b'=ybegin '):
@@ -170,17 +170,17 @@ def yCheck(data):
 
 				ybegin = ySplit(data[i], splits)
 
-				if data[i+1].startswith(b'=ypart '):
-					ypart = ySplit(data[i+1])
-					data = data[i+2:]
+				if data[i + 1].startswith(b'=ypart '):
+					ypart = ySplit(data[i + 1])
+					data = data[i + 2:]
 					break
 				else:
-					data = data[i+1:]
+					data = data[i + 1:]
 					break
 		except IndexError:
 			break
 
-	## Check tail
+	# # Check tail
 	for i in range(-1, -11, -1):
 		try:
 			if data[i].startswith(b'=yend '):
@@ -189,13 +189,13 @@ def yCheck(data):
 				break
 		except IndexError:
 			break
-	
+
 	return ((ybegin, ypart, yend), data)
 
 # Example: =ybegin part=1 line=128 size=123 name=-=DUMMY=- abc.par
 YSPLIT_RE = re.compile(br'([a-zA-Z0-9]+)=')
 
-def ySplit(line, splits = None):
+def ySplit(line, splits=None):
 	fields = {}
 
 	if splits:
@@ -207,7 +207,7 @@ def ySplit(line, splits = None):
 		return fields
 
 	for i in range(0, len(parts), 2):
-		key, value = parts[i], parts[i+1]
+		key, value = parts[i], parts[i + 1]
 		fields[key] = value.strip()
 
 	return fields
@@ -220,7 +220,7 @@ def strip(data):
 		data.pop()
 
 	# http://www.yenc.org/develop.htm
-	# the NNTP-protocol requires to double a dot in the first colum 
+	# the NNTP-protocol requires to double a dot in the first colum
 	# when a line is sent - and to detect a double dot (and remove one of them)
 	# when receiving a line.
 	for i in range(len(data)):
@@ -245,14 +245,14 @@ Pure Python code:
 if __name__ == '__main__':
 	try:
 		import _yenc
-		
-		if ('Freddie' in _yenc.__doc__): #@UndefinedVariable
+
+		if ('Freddie' in _yenc.__doc__):  # @UndefinedVariable
 			print("Using Freddie's version (fastest).")
-		else: # https://bitbucket.org/dual75/yenc
+		else:  # https://bitbucket.org/dual75/yenc
 			print("C module for yEnc encoding and decoding.")
 	except ImportError:
 		print("Pure Python yEnc encoding and decoding.")
 		try:
-			import psyco #@UnusedImport
+			import psyco  # @UnusedImport
 		except ImportError:
 			print("No Psyco available: 25-30% slower.")

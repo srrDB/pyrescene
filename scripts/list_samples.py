@@ -25,7 +25,7 @@ try:
     from rescene import info
 except ImportError:
     print("Can't import the 'rescene' module.")
-    
+
 def list_srr(sfile):
     for stored_file in info(sfile)['stored_files']:
         if stored_file[-4:] == ".srs":
@@ -49,8 +49,8 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(
         usage="Usage: %prog [srr files] [directories]'\n"
         "This tool will list all .srr files with a .srs file in them.\n",
-        version="%prog 0.1 (2011-11-20)") # --help, --version
-    
+        version="%prog 0.1 (2011-11-20)")  # --help, --version
+
     # no arguments given
     if len(sys.argv) < 2:
         print(parser.format_help())

@@ -24,7 +24,7 @@ def main(options, args):
 	for nzbfile in os.listdir(nzbdir):
 		if not nzbfile.endswith(".nzb"):
 			continue
-		
+
 		with open(os.path.join(nzbdir, nzbfile), "r") as file:
 			for line in file.readlines():
 				match = re.match(
@@ -32,13 +32,13 @@ def main(options, args):
 				if match:
 					print(nzbfile)
 					break
-		
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog directory\n"
 		"Lists uncle eric's posts. (often repacks)",
-		version="%prog 1.0 (2011-12-15)") # --help, --version
-	
+		version="%prog 1.0 (2011-12-15)")  # --help, --version
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

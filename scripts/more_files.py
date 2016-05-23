@@ -45,7 +45,7 @@ import shutil
 def do_move(dest_dir, dir_to_move):
 	if dest_dir and os.path.abspath(dest_dir) != dir_to_move:
 		shutil.move(dir_to_move, dest_dir)
-		
+
 def list_files(fullreldir):
 	# list all file in a given directory, including subdirs
 	sampfiles = []
@@ -55,15 +55,15 @@ def list_files(fullreldir):
 	return sampfiles
 
 def main(options, args):
-	if (not options.more and not options.none and 
+	if (not options.more and not options.none and
 		not options.usenet and not options.capitals and not options.empty):
 		print("What should I check for?")
 		sys.exit(1)
-		
+
 	if not os.path.exists(options.output_dir):
 		print("Trying to create missing output directory")
 		os.makedirs(options.output_dir)
-		
+
 	parg = args[0]
 	for reldir in os.listdir(parg):
 		fullreldir = os.path.abspath(os.path.join(parg, reldir))
@@ -82,27 +82,27 @@ def main(options, args):
 				        for x in sampfiles))):
 				print(reldir)
 				do_move(options.output_dir, fullreldir)
-				
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [arguments] [directory]'\n"
 		"This tool will list all directories with multiple files or none.\n",
 		version="%prog 0.5 (2016-01-11)")  # --help, --version
-	
-	parser.add_option("-m", "--more", help="more than one", 
+
+	parser.add_option("-m", "--more", help="more than one",
 	                  action="store_true", default=False, dest="more")
-	parser.add_option("-n", "--none", help="no files in dir", 
+	parser.add_option("-n", "--none", help="no files in dir",
 	                  action="store_true", default=False, dest="none")
-	parser.add_option("-e", "--empty", help="empty files in dir", 
+	parser.add_option("-e", "--empty", help="empty files in dir",
 	                  action="store_true", default=False, dest="empty")
-	parser.add_option("-u", "--usenet", help="usenet-space-cowbys.info", 
+	parser.add_option("-u", "--usenet", help="usenet-space-cowbys.info",
 	                  action="store_true", default=False, dest="usenet")
 	parser.add_option("-c", "--capitals", help=".MKV.txt, .AVI.txt"
-					  ", MP4.txt or WMV.txt", 
+					  ", MP4.txt or WMV.txt",
 	                  action="store_true", default=False, dest="capitals")
 	parser.add_option("-o", help="move the found directories to this location",
 				dest="output_dir", metavar="DIRECTORY", default=None)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())

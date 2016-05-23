@@ -34,7 +34,7 @@ import re
 import subprocess
 import shutil
 import tarfile
-from contextlib import closing # used for tarfile on Python 2.6
+from contextlib import closing  # used for tarfile on Python 2.6
 
 try:
 	import _preamble
@@ -49,11 +49,11 @@ from rescene.unrar import locate_unrar
 def main(options, args):
 	input_dir = args[0]
 	output_dir = args[1]
-	
+
 	if not os.path.isdir(input_dir):
 		print("The input argument must be a directory.")
 		return 1
-	
+
 	if not os.path.isdir(output_dir):
 		try:
 			os.makedirs(output_dir)
@@ -62,7 +62,7 @@ def main(options, args):
 		if not os.path.isdir(output_dir):
 			print("The output argument must be a directory.")
 			return 1
-	
+
 	try:
 		extract_rarbin(input_dir, output_dir)
 	except OSError:
@@ -96,9 +96,9 @@ def copy_license_file(output_dir):
 			shutil.copy(licfile, output_dir)
 			return True
 	except KeyError:
-		pass # KeyError: 'appdata' on Linux
+		pass  # KeyError: 'appdata' on Linux
 	if os.name == "posix":
-		locations = ["~", "/etc", "/usr/lib", 
+		locations = ["~", "/etc", "/usr/lib",
 					"/usr/local/lib", "/usr/local/etc"]
 		for loc in locations:
 			loc = os.path.expanduser(loc)
@@ -108,7 +108,7 @@ def copy_license_file(output_dir):
 					shutil.copy(reg, output_dir)
 					return True
 	return False
-	
+
 def extract_rarbin(source, dest, unrar=locate_unrar()):
 	dest = os.path.abspath(dest)
 	for fname in os.listdir(source):
@@ -133,9 +133,9 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 						os.rename(os.path.join(dest, "rar", "rar"),
 						          os.path.join(dest, new_name))
 						print("done.")
-					except: # WindowsError: # [Error 183]
+					except:  # WindowsError: # [Error 183]
 						# ERROR_ALREADY_EXISTS
-						os.unlink(os.path.join(dest, "rar", "rar"))	
+						os.unlink(os.path.join(dest, "rar", "rar"))
 						print("failed.")
 					os.rmdir(os.path.join(dest, "rar"))
 			else:
@@ -153,13 +153,13 @@ def extract_rarbin(source, dest, unrar=locate_unrar()):
 					try:
 						# for rarln271.sfx and others
 						name = os.path.basename(name)
-						os.rename(os.path.join(dest, name), 
+						os.rename(os.path.join(dest, name),
 								  os.path.join(dest, new_name))
 						if extract.wait() == 1:
 							print("done. (Non fatal error(s) occurred)")
 						else:
 							print("done.")
-					except: # WindowsError: # [Error 183]
+					except:  # WindowsError: # [Error 183]
 						# ERROR_ALREADY_EXISTS
 						os.unlink(os.path.join(dest, name))
 						print("failed.")
@@ -181,14 +181,14 @@ def get_rar_date_name(file_name):
 			try:
 				if block.file_name in ("Rar.exe", "Rar.Exe", "rar\\rar", "rar"):
 					t = block.file_datetime
-					return ("%d-%02d-%02d" % (t[0], t[1], t[2]), 
+					return ("%d-%02d-%02d" % (t[0], t[1], t[2]),
 					                          block.os_file_name())
 			except Exception:
 				pass
 	elif tarfile.is_tarfile(file_name):
 		with closing(tarfile.open(file_name)) as tf:
 			mtime = tf.getmember("rar/rar").mtime
-			return (datetime.fromtimestamp(mtime).strftime("%Y-%m-%d"), 
+			return (datetime.fromtimestamp(mtime).strftime("%Y-%m-%d"),
 			        "rar/rar")
 	return None, None
 
@@ -204,10 +204,10 @@ class VersionTag(object):
 			self.x64 = True
 		else:
 			self.x64 = False
-			
+
 	def __str__(self, *args, **kwargs):
-		return "%d%02d%s" % (self.large, self.small, self.beta)		
-	
+		return "%d%02d%s" % (self.large, self.small, self.beta)
+
 def versiontag(file_name):
 	"""Returns version tag object."""
 	# Windows
@@ -234,11 +234,11 @@ def versiontag(file_name):
 
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
-	
+
 	# needed for py2exe
 	creationflags = 0
 	if sys.platform == 'win32':
-		creationflags = 0x08000000 # CREATE_NO_WINDOW
+		creationflags = 0x08000000  # CREATE_NO_WINDOW
 
 	# 3xPIPE seems unreliable, at least on osx
 	try:
@@ -260,7 +260,7 @@ def custom_popen(cmd):
 	finally:
 		if null:
 			null.close()
-			
+
 	return proc
 
 if __name__ == '__main__':
@@ -268,9 +268,9 @@ if __name__ == '__main__':
 	usage=("Usage: %prog [input dir] [output dir]\n"
 	"This tool will extract RAR executables in preparation for "
 	"compressed RAR support for pyReScene.\n"
-	"Example usage: %prog Z:\\rar\\windows C:\\pyReScene\\rar"), 
-	version="%prog " + rescene.__version__) # --help, --version
-	
+	"Example usage: %prog Z:\\rar\\windows C:\\pyReScene\\rar"),
+	version="%prog " + rescene.__version__)  # --help, --version
+
 	parser.add_option("-b", "--beta", dest="enable_beta", default=False,
 					  action="store_true",
 					  help="extract beta versions too")
@@ -281,4 +281,3 @@ if __name__ == '__main__':
 	else:
 		(options, args) = parser.parse_args()
 		sys.exit(main(options, args))
-	

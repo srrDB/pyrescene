@@ -36,12 +36,12 @@ from .mp3 import decode_id3_size
 
 # All numbers are big-endian coded.
 # All numbers are unsigned unless otherwise specified.
-BE_BYTE = struct.Struct('>B') # unsigned char: 1 byte
-BE_LONG = struct.Struct('>L') # unsigned long: 4 bytes
-	
+BE_BYTE = struct.Struct('>B')  # unsigned char: 1 byte
+BE_LONG = struct.Struct('>L')  # unsigned long: 4 bytes
+
 class InvalidDataException(ValueError):
 	pass
-	
+
 class Block(object):
 	def __init__(self, size, block_type):
 		"""Block type is either an ASCII text string or an integer"""
@@ -49,21 +49,21 @@ class Block(object):
 		self.type = block_type
 		self.raw_header = b""
 		self.start_pos = -1
-		
+
 	def is_last_block(self):
 		"""Last block before the frame data."""
 		# Never last block when self.type is a decoded string
 		return not isinstance(self.type, str) and self.type & 0x80
-	
+
 	def is_frame_data(self):
 		"""It isn't actually a block."""
 		# Sync code '11111111 111110'
 		return self.type == 0xFF
-	
+
 	def __repr__(self, *args, **kwargs):
-		return "<Block type=%s size=%d start_pos=%d>" % (self.type, 
+		return "<Block type=%s size=%d start_pos=%d>" % (self.type,
 		                                self.size, self.start_pos)
-		
+
 class FlacReader(object):
 	"""Implements a simple Reader class that reads through FLAC  
 	or FLAC-SRS files one block at a time."""
@@ -86,22 +86,22 @@ class FlacReader(object):
 
 	def read(self):
 		assert self.read_done
-		
+
 		block_start_position = self._flac_stream.tell()
 		self.current_block = None
 		self.read_done = False
-		
+
 		if block_start_position == self._file_length:
 			return False
-		
+
 		self._block_header = self._flac_stream.read(4)
 		# METADATA_BLOCK_HEADER
-		# <1>    Last-metadata-block flag: '1' if this block is the last 
+		# <1>    Last-metadata-block flag: '1' if this block is the last
 		#        metadata block before the audio blocks, '0' otherwise.
 		# <7>    BLOCK_TYPE
-		# <24>   Length (in bytes) of metadata to follow 
+		# <24>   Length (in bytes) of metadata to follow
 		#        (does not include the size of the METADATA_BLOCK_HEADER)
-		
+
 		if self._block_header == b"fLaC":
 			self.block_type = "fLaC"
 			self.current_block = Block(0, self.block_type)
@@ -109,7 +109,7 @@ class FlacReader(object):
 			self.current_block.start_pos = block_start_position
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			return True
-		
+
 		# ID3v2
 		if self._block_header.startswith(b"ID3"):
 			self.block_type = "ID3"
@@ -121,7 +121,7 @@ class FlacReader(object):
 			self.current_block.start_pos = block_start_position
 			self._flac_stream.seek(block_start_position, os.SEEK_SET)
 			return True
-		
+
 		# ID3v1
 		if self._block_header.startswith(b"TAG"):
 			self.block_type = "TAG"
@@ -132,7 +132,7 @@ class FlacReader(object):
 			return True
 
 		(self.block_type,) = BE_BYTE.unpack_from(self._block_header, 0)
-		if self.block_type == 0xFF: # frame data
+		if self.block_type == 0xFF:  # frame data
 			block_length = self._file_length - block_start_position
 			# check for ID3v1 tag
 			self._flac_stream.seek(self._file_length - 128)
@@ -141,21 +141,21 @@ class FlacReader(object):
 			self._block_header = b""
 		else:
 			(block_length,) = BE_LONG.unpack(b"\x00" + self._block_header[1:])
-		
+
 		# sanity check on block length
 		end_offset = block_start_position + block_length
 		if (end_offset > self._file_length):
-			raise InvalidDataException("Invalid block length at 0x%08X" % 
+			raise InvalidDataException("Invalid block length at 0x%08X" %
 			                           block_start_position)
-			
+
 		self.current_block = Block(block_length, self.block_type)
 		self.current_block.raw_header = self._block_header
 		self.current_block.start_pos = block_start_position
-		
+
 		self._flac_stream.seek(block_start_position, os.SEEK_SET)
 
 		return True
-	
+
 	def read_contents(self):
 		# if read_done is set, we've already read or skipped it.
 		# back up and read again?
@@ -169,11 +169,11 @@ class FlacReader(object):
 		self._flac_stream.seek(hl, os.SEEK_CUR)
 		buff = self._flac_stream.read(self.current_block.size)
 		return buff
-		
+
 	def skip_contents(self):
 		if not self.read_done:
 			self.read_done = True
-			self._flac_stream.seek(self.current_block.start_pos + 
+			self._flac_stream.seek(self.current_block.start_pos +
 			                       len(self.current_block.raw_header) +
 				                   self.current_block.size, os.SEEK_SET)
 
@@ -187,16 +187,15 @@ class FlacReader(object):
 		data = self._flac_stream.read(size)
 		self._flac_stream.seek(initial_offset, os.SEEK_SET)
 		return data
-		
+
 	def close(self):
-		try: # close the file/stream
-			self._flac_stream.close()
-		except:
-			pass	
-		
-	def __del__(self):
-		try: # close the file/stream
+		try:  # close the file/stream
 			self._flac_stream.close()
 		except:
 			pass
-			
+
+	def __del__(self):
+		try:  # close the file/stream
+			self._flac_stream.close()
+		except:
+			pass

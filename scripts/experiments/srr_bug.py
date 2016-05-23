@@ -11,5 +11,5 @@ for file in glob.glob(dir + "*.srr"):
 	except EnvironmentError as e:
 		print(e)
 		os.rename(os.path.join(dir, file), os.path.join(dir, "incomplete", file))
-#	except:
-#		pass
+# 	except:
+# 		pass

@@ -57,9 +57,9 @@ def fix_tracks(srr_file, input_dir, output_dir, always_yes=False):
 			pass
 		if not os.path.isdir(output_dir):
 			raise AttributeError("Could not create output location.")
-	
+
 	stored_files = rescene.info(srr_file)['stored_files']
-	
+
 	# extract non SRS files
 	successes = 0
 	failures = 0
@@ -71,7 +71,7 @@ def fix_tracks(srr_file, input_dir, output_dir, always_yes=False):
 		else:
 			print("Extracting %s" % sfile)
 			rescene.extract_files(srr_file, output_dir, True, sfile)
-		
+
 	# fix music files that can be found
 	for srs in srs_files:
 		print("Using %s" % srs)
@@ -96,13 +96,13 @@ def fix_tracks(srr_file, input_dir, output_dir, always_yes=False):
 			failures += 1
 		finally:
 			os.remove(out)
-		
+
 	print("\n\n%d/%d files succeeded. %d failure%s. %s" % (
-		successes, failures + successes, failures, 
+		successes, failures + successes, failures,
 		"" if failures == 1 else "s",
-		"" if not skips else "%s skip%s." % 
+		"" if not skips else "%s skip%s." %
 	    	(skips, "" if skips == 1 else "s")))
-		
+
 def fix_tagging(srs, output_dir, input_dir, always_yes):
 	"""Fixes the meta data tags of a music track.
 	srs: srs file location
@@ -120,7 +120,7 @@ def fix_tagging(srs, output_dir, input_dir, always_yes):
 
 	original_name = srs_info.sample_name
 	print("Fixing %s" % original_name)
-	
+
 	musicf = join_fix_case(input_dir, original_name)
 	out_subfolder = os.path.dirname(os.path.relpath(srs, output_dir))
 	if not os.path.isfile(musicf):
@@ -131,14 +131,14 @@ def fix_tagging(srs, output_dir, input_dir, always_yes):
 			print("Track not found")
 			raise ValueError("not found")
 	print("From %s" % musicf)
-	
+
 	out_location = os.path.join(output_dir, out_subfolder)
 	srs_parameters = [srs, musicf, "-o", out_location]
 	if always_yes:
 		srs_parameters.append("-y")
 
 	# can throw ValueError on pexit()
-	srsmain(srs_parameters, no_exit=True) 
+	srsmain(srs_parameters, no_exit=True)
 
 	return True
 
@@ -157,9 +157,9 @@ def join_fix_case(good_base, *parts):
 	# check if input is already correct
 	joined_input = os.path.join(good_base, *parts)
 	if os.path.exists(joined_input):
-		return joined_input 
+		return joined_input
 
-	corrected_path = good_base 
+	corrected_path = good_base
 	for p in parts:
 		if not os.path.exists(os.path.join(corrected_path, p)):
 			listing = os.listdir(corrected_path)
@@ -181,9 +181,9 @@ def main(argv=None):
 	parser = OptionParser(
 	usage=("Usage: %prog file.srr -i input_dir -o output_dir\n"
 	"This tool fixes the tags of music files.\n"
-	"Example usage: %prog rls.srr --output D:\\rls\\"), 
-	version="%prog " + rescene.__version__) # --help, --version
-	
+	"Example usage: %prog rls.srr --output D:\\rls\\"),
+	version="%prog " + rescene.__version__)  # --help, --version
+
 	parser.add_option("-i", "--input", dest="input_dir", metavar="DIR",
 					default=".", help="Specifies input directory. "
 					"The default input path is the current directory.")
@@ -195,26 +195,26 @@ def main(argv=None):
 	parser.add_option("-n", "--always-no", dest="always_no", default=False,
 					action="store_true", help="never overwrite existing files "
 					"with the extracted stored files from the SRR")
-	
+
 	if argv is None:
 		argv = sys.argv[1:]
-		
+
 	# no arguments given
 	if not len(argv):
 		# show application usage
 		parser.print_help()
 		return 0
-	
+
 	(options, args) = parser.parse_args(args=argv)
-	
+
 	# no SRR file provided
 	if not len(args):
 		parser.print_help()
 		return 1
-	
+
 	def can_overwrite(file_path):
-		retvalue = True 
-		if (not options.always_yes and 
+		retvalue = True
+		if (not options.always_yes and
 		    not options.always_no and os.path.isfile(file_path)):
 			print("Warning: File %s already exists." % file_path)
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
@@ -225,12 +225,12 @@ def main(argv=None):
 		elif options.always_no and os.path.isfile(file_path):
 			print("(not replaced)")
 			retvalue = False
-		return retvalue 
-	
+		return retvalue
+
 	rescene.main.can_overwrite = can_overwrite
 
 	try:
-		if fix_tracks(args[0], options.input_dir, options.output_dir, 
+		if fix_tracks(args[0], options.input_dir, options.output_dir,
 		              options.always_yes):
 			return 0
 		else:
@@ -241,4 +241,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
 	sys.exit(main())
-	
