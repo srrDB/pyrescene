@@ -66,22 +66,22 @@ def main(options, args):
 		f = open(sql, 'r')
 		for line in f.readlines():
 			relname, srr = parseSql(line)
-			relFileMapping.setdefault(relname, []).append(srr) 
+			relFileMapping.setdefault(relname, []).append(srr)
 			fileRelMapping[srr] = relname
-				
+
 			# show info while parsing
 			if options.releases:
 				print(relname)
 			if options.srrs:
 				print(srr)
 		f.close()
-	
+
 	def read_nzb(nzb):
 		doc = parse(nzb, bufsize=1000)
 		for file_node in doc.getElementsByTagName("file"):
 			subject = file_node.getAttribute("subject")
 			relname, srr = parseSubject(subject)
-			if srr == None: 
+			if srr == None:
 				unknown.append(subject)
 				if options.unknowns:
 					print(subject)
@@ -90,25 +90,25 @@ def main(options, args):
 				relFileMapping.setdefault(relname,
 					[]).append(srr)
 				fileRelMapping[srr] = relname
-					
+
 				# show info while parsing
 				if options.releases:
 					print(relname)
 				if options.srrs:
 					print(srr)
-					
+
 				# create new nzb files to download samples/srrs/...
 				if (options.separate and
 				not relname.startswith("Con.")):
 					# Con.Artist, Con.Air folders are not possible in Windows
 					newdoc = Document()
 					top_element = doc.createElementNS(
-										"http://www.newzbin.com/DTD/2003/nzb", 
+										"http://www.newzbin.com/DTD/2003/nzb",
 										"nzb")
 					newdoc.appendChild(top_element)
 					top_element.appendChild(file_node)
-					
-					try: # when the "release name" has a \
+
+					try:  # when the "release name" has a \
 						f = os.path.join(options.separate, relname + ".nzb")
 						print("Writing nzb %s" % os.path.basename(f))
 						with open(f, "ab") as nzb_file:
@@ -129,8 +129,8 @@ def main(options, args):
 			except Exception as e:
 				print("Reading NZB file(s) failed. Trying SQL.")
 				print("Reading %s" % os.path.basename(nzb))
-#				read_tvbinz(nzb)
-				
+# 				read_tvbinz(nzb)
+
 	if options.rename_dir:
 		print("This does not for SRR files that need to be merged.")
 		failed = []
@@ -144,21 +144,21 @@ def main(options, args):
 					failed.append(bad)
 			else:
 				print("File '%s' not in NZB." % file)
-				
+
 		printList(failed)
-		
+
 	if options.join_dir:
 		# join srr files from a multiple cd release before renaming
 		failed = []
 		failed_join = []
 		haveSubs = []
-		
+
 		# rel -> srr: "dupe" files (e.g. a repost)
 		# srr -> rel: needs to be joined
 		for release in relFileMapping.keys():
 			# remove duplicates and sort
 			files = sorted(set(relFileMapping[release]))
-			
+
 			# a file with the name 'subs' or 'extras' in it? put it at the end
 			for file in files:
 				if re.match(".*(subs|extras|proof|sample).*", file, re.I):
@@ -166,39 +166,39 @@ def main(options, args):
 					files.append(file)
 					haveSubs.append(release)
 			relFileMapping[release] = files
-			
-			if len(files) > 1: # join SRR files to renamed one
+
+			if len(files) > 1:  # join SRR files to renamed one
 				if options.joins:
 					print(release)
 					for srr in files:
-						print("\t%s" % srr) 
+						print("\t%s" % srr)
 				else:
 					bad = joinSrr(options.join_dir, release, files)
 					if bad:
 						failed_join.append(bad)
-			else: # rename SRR file
+			else:  # rename SRR file
 				bad = renameSrr(options.join_dir, file, release)
 				if bad:
 					failed.append(bad)
-		
+
 		print("Failed files: ")
 		printList(failed)
 		print("Have subs SRR files: ")
 		printList(set(haveSubs))
 		print("Failed to join files: ")
 		printList(failed_join)
-		
+
 	# list all SRR files under the release name
 	if options.both:
 		for release in relFileMapping.keys():
 			print(release)
 			for srr in relFileMapping[release]:
-				print("\t%s" % srr)	 
-		
+				print("\t%s" % srr)
+
 	if options.list_dir:
 		# lists all files in the given directory without their extension
 		# so it can be used for the list search on srrdb.com
-		for file in os.listdir(options.list_dir):	
+		for file in os.listdir(options.list_dir):
 			if os.path.isfile(os.path.join(options.list_dir, file)):
 				print(file[:-4])
 
@@ -216,37 +216,37 @@ def renameSrr(dir, file, releaseName):
 			new = os.path.join(dir, "unrenamed", file)
 			print("Renaming %s to %s..." % (old, new))
 			try:
-				os.renames(old, new)	
+				os.renames(old, new)
 			except: pass
 			return file
 	except UnicodeEncodeError:
 		pass
-	
+
 def joinSrr(dir, release, files):
 	dir = os.path.abspath(dir)
 	try:
 		os.makedirs(os.path.join(dir, "joined"))
-	except: pass # Path already exists
-	
+	except: pass  # Path already exists
+
 	try:
 		merge_srrs((os.path.join(dir, f) for f in files),
 					os.path.join(dir, "joined", release + ".srr"),
 					"pyReScene Merge Script")
 		# move original unjoined files
 		for f in files:
-			os.renames(os.path.join(dir, f), 
+			os.renames(os.path.join(dir, f),
 					   os.path.join(dir, "joined-orig", f))
 	except:
 		# one of the files was not found
 		return files
-		
+
 def printList(list):
 	for item in list:
 		print("\t%s" % item)
-					
-def parseSubject(subject): #[#altbin@EFNet]-[FULL]-[RELNAM
+
+def parseSubject(subject):  # [#altbin@EFNet]-[FULL]-[RELNAM
 	exts = "\.(srr|srs|avi|mkv)"
-	#exts = "\.(avi)"
+	# exts = "\.(avi)"
 	patternEfnet = (".*\[(.*EFNet|#a.b.teevee)\]-(?:\[(FULL|PART|Movie-Info.org)\]-)?"
 					"\[?\s?(?P<release>[^\s\[\]]+(?=(\]|\s.*\]|-\s)))"
 					"(\s.*)?\]?-?"
@@ -255,7 +255,7 @@ def parseSubject(subject): #[#altbin@EFNet]-[FULL]-[RELNAM
 				   " - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
 	patternAbmm = ("#a.b.mm@efnet - req \d+ - (?P<release>[^\s]+)"
 				   " - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
-				
+
 	m = re.match(patternEfnet, subject, re.IGNORECASE)
 	if m:
 		return m.group("release", "file")
@@ -299,14 +299,14 @@ def parse_name(subject):
 	if match:
 		return match.group(1).strip('"')
 	else:
-		# "Because the poster used a non-standard subject line, the system was 
+		# "Because the poster used a non-standard subject line, the system was
 		# unable to determine the filename with certainty."
 		match = re.search(".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
 		if match:
 			return match.group("filename")
 		else:
 			return subject
-	
+
 def parseSql(line):
 	pattern = "\(\d+, '(?P<file>.*)', '(?P<release>.*)'.*"
 	m = re.match(pattern, line, re.IGNORECASE)
@@ -319,7 +319,7 @@ class TestParse(unittest.TestCase):
 	def test_parse_sql(self):
 		line = "(1, 'FILENAME.srr', 'REL-NAME'),"
 		self.assertEqual(parseSql(line), ("REL-NAME", "FILENAME.srr"))
-		
+
 	def test_parse(self):
 		teevee = ("""[71733]-[FULL]-[#a.b.teevee@EFNet]-"""
 				"[ REL-NAME ]-[23/29] - &quot;"
@@ -343,7 +343,7 @@ class TestParse(unittest.TestCase):
 		abmm = ('#a.b.mm@efnet - req 83717 - REL-NAME - "FILENAME.mkv"')
 		sample = ("[5804]-[#a.b.hdtv.x264@EFNet]-[REL-NAME SAMPLE]- "
 				'"FILENAME.mkv" (4/4)')
-		
+
 		self.assertEqual(parseSubject(teevee3), ("REL-NAME", "FILENAME.srr"))
 		self.assertEqual(parseSubject(teevee), ("REL-NAME", "FILENAME.srr"))
 		self.assertEqual(parseSubject(teevee2), ("REL-NAME", "FILENAME.mkv"))
@@ -360,49 +360,49 @@ if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [nzb files] [options]'\n"
 		"This tool will list the scene names and the srr name.\n",
-		version="%prog 0.2 (2011-10-19)") # --help, --version
-	
-	parser.add_option("-r", "--releases", help="prints releases", 
+		version="%prog 0.2 (2011-10-19)")  # --help, --version
+
+	parser.add_option("-r", "--releases", help="prints releases",
 					 action="store_true", default=False, dest="releases")
-	parser.add_option("-s", "--srrs", help="prints SRRs", 
+	parser.add_option("-s", "--srrs", help="prints SRRs",
 					 action="store_true", default=False, dest="srrs")
-	parser.add_option("-b", "--both", help="prints both releases and the SRRs", 
+	parser.add_option("-b", "--both", help="prints both releases and the SRRs",
 					 action="store_true", default=False, dest="both")
 	parser.add_option("-j", "--joins", help="prints SRRs to be joined"
-					 "(no actual joining will occur)", 
+					 "(no actual joining will occur)",
 					 action="store_true", default=False, dest="joins")
-	parser.add_option("-u", "--unknowns", help="prints unparseable subjects", 
+	parser.add_option("-u", "--unknowns", help="prints unparseable subjects",
 					 action="store_true", default=False, dest="unknowns")
-	
+
 	parser.add_option("--rename", help="renames SRR files in DIRECTORY "
-					 "(stop using this one)", 
+					 "(stop using this one)",
 					 dest="rename_dir", metavar="DIRECTORY")
-	parser.add_option("--join", 
-					 help="joins before renaming SRR files in DIRECTORY", 
+	parser.add_option("--join",
+					 help="joins before renaming SRR files in DIRECTORY",
 					 dest="join_dir", metavar="DIRECTORY")
-	parser.add_option("--list", help="list release names of SRR files", 
+	parser.add_option("--list", help="list release names of SRR files",
 					 dest="list_dir", metavar="DIRECTORY")
 	parser.add_option("--separate", dest="separate", metavar="DIRECTORY",
 					 help="split NZB to [release name].nzb in DIRECTORY")
-	parser.add_option("--folder-join", 
+	parser.add_option("--folder-join",
 					 help="joins before renaming SRR files in DIRECTORY. "
-					 "No nzb necessary. Joins SRRs found in given folder.", 
+					 "No nzb necessary. Joins SRRs found in given folder.",
 					 dest="folderjoin", metavar="DIRECTORY")
-	
+
 	parser.add_option("--unittest", help="runs the unit tests", dest="test",
 					 action="store_true", default=False)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
-	else:	   
+	else:
 		(options, args) = parser.parse_args()
 		if options.test:
 			suite = unittest.TestLoader().loadTestsFromTestCase(TestParse)
 			unittest.TextTestRunner(verbosity=2).run(suite)
 		else:
 			main(options, args)
-		
+
 """
 Shows which lines in new.txt aren't in mine.txt:
 cat mine.txt new.txt | sort | uniq -d | cat new.txt - | sort | uniq -u

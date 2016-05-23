@@ -39,7 +39,7 @@ fpcalc_executable = ""
 
 class ExecutableNotFound(Exception):
 	"""The fpcalc.exe executable isn't found."""
-	
+
 def fingerprint(file_name, temp_dir=None, recursive=0):
 	"""Calculates the fingerprint of the given file.
 	temp_dir: optional temporary directory to use
@@ -48,7 +48,7 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 	bad = False
 	fpcalc = find_fpcalc_executable()
 	temp_cleanup = False
-	
+
 	try:
 		file_name = file_name.decode('ascii')
 	except:
@@ -61,12 +61,12 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 		temp_cleanup = True
 		name_suffix = make_temp_suffix(file_name)
 		(fd, tmpname) = tempfile.mkstemp(name_suffix, dir=temp_dir)
-		os.close(fd) # we won't use it
+		os.close(fd)  # we won't use it
 		with open(file_name, "rb") as music_file:
 			with open(tmpname, "wb") as tmpf:
 				tmpf.write(music_file.read())
 		file_name = tmpname
-	
+
 	# Set fingerprint length to 120 seconds
 	# older fpcalc versions default to 60 seconds
 	fprint = custom_popen([fpcalc, '-length', '120', file_name])
@@ -78,18 +78,18 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 			duration = line[len(b"DURATION="):]
 		elif line.startswith(b"FINGERPRINT="):
 			fp = line[len(b"FINGERPRINT="):]
-#		ERROR: couldn't open the file
-#		ERROR: unable to calculate fingerprint for file
+# 		ERROR: couldn't open the file
+# 		ERROR: unable to calculate fingerprint for file
 		elif line.startswith(b"ERROR: couldn't open the file"):
 			bad = True
-#		ERROR: couldn't find stream information in the file
-#		ERROR: unable to calculate fingerprint for file X.srs, skipping
+# 		ERROR: couldn't find stream information in the file
+# 		ERROR: unable to calculate fingerprint for file X.srs, skipping
 		elif line.startswith(b"ERROR: couldn't find stream"):
 			bad = True
-		
+
 	if not duration or not fp:
 		bad = True
-		
+
 	if bad:
 		# strip any recognized tags from the music file and try again
 		# (ID3v2 tag around RIFF file)
@@ -101,18 +101,18 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 			raise ValueError("Fingerprinting failed.")
 		else:
 			recursive += 1
-			
+
 		print("Stripping recognized tags for better fpcalc detection.")
 		name_suffix = make_temp_suffix(file_name)
 		(fd, stripped) = tempfile.mkstemp(name_suffix, dir=temp_dir)
-		os.close(fd) # we won't use it
+		os.close(fd)  # we won't use it
 
 		try:
 			if recursive < 2:
 				with open(stripped, "wb") as tmpf:
 					mr = Mp3Reader(file_name)
 					for block in mr.read():
-						if block.type in ("MP3", "fLaC"): # main music data
+						if block.type in ("MP3", "fLaC"):  # main music data
 							read = 0
 							to_read = 65536
 							while read < block.size:
@@ -120,7 +120,7 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 									to_read = block.size - read
 								tmpf.write(mr.read_part(to_read, read))
 								read += to_read
-							break # exit for: music data copied
+							break  # exit for: music data copied
 					mr.close()
 			else:
 				# no double tagging: try to strip away the crap
@@ -148,25 +148,25 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 					if string_index < 0:
 						raise ValueError("Fingerprinting failed: "
 							"no MP3 string found.")
-	
+
 					# 2) find last MP3 sync block before found string
 					# 256 bytes: random amount that seems enough
-					orig.seek(string_index - 0x100, os.SEEK_SET)	
+					orig.seek(string_index - 0x100, os.SEEK_SET)
 					stack = orig.read(0x100)
 					sync_index = stack[:-1].rfind(b"\xFF")
 					while sync_index > -1:
-						if ord(stack[sync_index+1]) & 0xE0 == 0xE0:
+						if ord(stack[sync_index + 1]) & 0xE0 == 0xE0:
 							break
 						sync_index = stack.rfind(b"\xFF", 0, sync_index)
 
 					# 3) write out the cleaned music data to fingerprint on
-					with open(stripped, "wb") as tmpf:	
+					with open(stripped, "wb") as tmpf:
 						sync_start = string_index - (0x100 + sync_index)
 						orig.seek(sync_start, os.SEEK_SET)
 						tmpf.write(orig.read())
-			
+
 			duration, fp = fingerprint(stripped, temp_dir, recursive)
-			bad = False # it succeeded (exception otherwise)
+			bad = False  # it succeeded (exception otherwise)
 		except:
 			if recursive == 2:
 				print("----------------------------------------------------")
@@ -180,14 +180,14 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 			# cleanup temporary stripped file
 			print("Removing %s" % stripped)
 			os.remove(stripped)
-		
+
 	if temp_cleanup:
 		print("Removing %s" % tmpname)
 		os.remove(tmpname)
-		
+
 	if bad:
 		raise ValueError("Fingerprinting failed.")
-	
+
 	return duration, fp
 
 def find_fpcalc_executable():
@@ -195,18 +195,18 @@ def find_fpcalc_executable():
 	global fpcalc_executable
 	if fpcalc_executable:
 		return fpcalc_executable
-	
+
 	# see if it's in the path + other predefined locations
 	# when running from source: check current directory
 	# when running from source: check bin directory
 	script_dir = os.path.dirname(os.path.abspath(
 	                             inspect.getfile(inspect.currentframe())))
 	bin_dir = os.path.join(script_dir, "..", "bin")
-	
+
 	path = os.pathsep.join([script_dir, bin_dir, module_path(),
 	                        os.getenv('PATH', "")])
 	result = find_executable("fpcalc", path=path)
-	
+
 	result = check_fpcalc_validity(result)
 
 	if result:
@@ -215,7 +215,7 @@ def find_fpcalc_executable():
 		return fpcalc_executable
 	else:
 		raise ExecutableNotFound(MSG_NOTFOUND)
-	
+
 def check_fpcalc_validity(potential_fpcalc_executable):
 	"""It tries to run the executable to check viability.
 	Windows: (empty fpcalc.exe file in path)
@@ -226,7 +226,7 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 	# fpcalc was not found
 	if potential_fpcalc_executable is None:
 		return None
-	
+
 	# something is wrong with the executable
 	try:
 		custom_popen([potential_fpcalc_executable])
@@ -240,7 +240,7 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 				msg = "fpcalc.exe is not an executable"
 		except:
 			pass
-		
+
 		# *nix help messages
 		if not msg:
 			try:
@@ -257,7 +257,7 @@ def check_fpcalc_validity(potential_fpcalc_executable):
 		print("Tell me about this unexpected error below!")
 		print(ex)  # any other exception should not happen
 		return None
-	
+
 	# the executable ran just fine
 	return potential_fpcalc_executable
 
@@ -268,7 +268,7 @@ def make_temp_suffix(file_name):
 	else:
 		nm += file_name[-4:]
 	return nm
-	
+
 # http://www.py2exe.org/index.cgi/WhereAmI
 def we_are_frozen():
 	"""Returns whether we are frozen via py2exe.
@@ -284,13 +284,13 @@ def module_path():
 
 def custom_popen(cmd):
 	"""disconnect cmd from parent fds, read only from stdout"""
-	
+
 	# needed for py2exe
 	creationflags = 0
 	if sys.platform == 'win32':
-		creationflags = 0x08000000 # CREATE_NO_WINDOW
+		creationflags = 0x08000000  # CREATE_NO_WINDOW
 
 	# run command
-	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, 
-							stdin=subprocess.PIPE, stderr=subprocess.STDOUT, 
+	return subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE,
+							stdin=subprocess.PIPE, stderr=subprocess.STDOUT,
 							creationflags=creationflags)

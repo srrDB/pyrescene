@@ -31,32 +31,31 @@ def main(options, args):
 				start_count(rellist, options.reverse)
 		else:
 			print("WTF are you supplying me?")
-			
+
 def start_count(rellist, reverse):
 	cleaned = map(lambda x:  (x.split('-'))[-1], rellist)
 	grouped = {}
 
 	for (key, elemiter) in itertools.groupby(sorted(cleaned)):
 		grouped[key] = sum(1 for _ in elemiter)
-	
+
 	# print the results
 	for key in sorted(grouped, key=grouped.__getitem__, reverse=reverse):
 		print("%3d;%s" % (grouped[key], key))
-	
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [files]'\n"
 		"This tool will group groups and list a count based on directories"
 		"or a list of releasenames in a text file.\n",
-		version="%prog 0.1 (2012-03-22)") # --help, --version
+		version="%prog 0.1 (2012-03-22)")  # --help, --version
 
-	parser.add_option("-r", "--reverse", help="reversed output", 
+	parser.add_option("-r", "--reverse", help="reversed output",
 	                  action="store_true", dest="reverse", default=False)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-	

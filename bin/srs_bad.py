@@ -38,11 +38,11 @@ except ImportError:
 from rescene.main import info, extract_files
 from resample.main import file_type_info, sample_class_factory, FileType
 from rescene.utility import empty_folder
-			
+
 def main(options, args):
 	if not options.txt and not options.verify:
 		print("Add the parameter -t or -s.")
-		
+
 	tempdir = tempfile.mkdtemp(prefix="pyReScene-srs_bad-")
 	for dirpath, dirnames, filenames in os.walk(args[0]):
 		dirnames.sort()
@@ -51,12 +51,12 @@ def main(options, args):
 				srrf = os.path.join(dirpath, sfile)
 				handle_srr(srrf, options, tempdir)
 	os.rmdir(tempdir)
-				
+
 def handle_srr(srr_file, options, temporary_directory):
 	srrinfo = info(srr_file)
 	extracting_needed = False
 	printout = set()
-	
+
 	# check txt files/check if extraction is needed
 	for stored_file in srrinfo["stored_files"].keys():
 		if stored_file.endswith(".srs") and options.verify:
@@ -91,13 +91,13 @@ def handle_srr(srr_file, options, temporary_directory):
 			print(srr_file)
 			for srs in sorted(printout):
 				print("-> %s" % srs)
-			
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog directory options'\n"
 		"This tool will list SRR files with 'sample' issues.\n"
 		"It works recursively and will write many temporary files on disk.",
-		version="%prog 0.1 (2013-12-02)") # --help, --version
+		version="%prog 0.1 (2013-12-02)")  # --help, --version
 	# 0.1 (2013-12-02)
 
 	parser.add_option("-s", dest="verify", action="store_true",
@@ -108,11 +108,10 @@ if __name__ == '__main__':
 					help="list only the release names")
 	parser.add_option("-p", dest="path", action="store_true",
 					help="list only the release paths")
-		
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-		

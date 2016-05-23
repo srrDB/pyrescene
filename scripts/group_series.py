@@ -38,7 +38,7 @@ def main(options, args):
                 while line:
                     rellist.append(line)
                     line = relnames.readline()
-                    
+
             # try to group the releases together
             for release in rellist:
                 m = re.match("(.*)S\d+E\d+.*", release, re.IGNORECASE)
@@ -52,24 +52,24 @@ def main(options, args):
                         if re.match(foreign, m.group(0), re.I):
                             continue
                     cleaned.append(normalize(m.group(1)))
-                    
+
             for (key, iterator) in itertools.groupby(cleaned):
                 grouped[key] = sum(1 for _ in iterator)
-                #print("%03d;%s" % (sum(1 for _ in iter), key))
-            
+                # print("%03d;%s" % (sum(1 for _ in iter), key))
+
             # print the results
             for key in sorted(grouped, key=grouped.__getitem__, reverse=True):
                 print("%3d;%s" % (grouped[key], key))
         else:
             print("WTF are you supplying me?")
-         
+
 if __name__ == '__main__':
     parser = optparse.OptionParser(
         usage="Usage: %prog [txt files]'\n"
         "This tool will group series and list a count.\n",
-        version="%prog 0.1 (2011-11-23)") # --help, --version
-    
-    parser.add_option("-f", "--skip-foreign", 
+        version="%prog 0.1 (2011-11-23)")  # --help, --version
+
+    parser.add_option("-f", "--skip-foreign",
                 help="does not add some foreign and subpacks to the count",
                 action="store_true", dest="foreign", default=False)
 
@@ -79,4 +79,3 @@ if __name__ == '__main__':
     else:
         (options, args) = parser.parse_args()
         main(options, args)
-    

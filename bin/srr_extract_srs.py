@@ -40,27 +40,27 @@ def main(options, args):
 		raise AttributeError("Not enough parameters.")
 	srr = args[0]
 	output_folder = args[1]
-	
+
 	if not srr.endswith(".srr"):
 		raise AttributeError("The first parameter must be an SRR file.")
 	if not os.path.isdir(output_folder):
 		raise AttributeError("The second attribute must be a directory.")
-	
+
 	srs_files = []
 	for sfile in rescene.info(srr)["stored_files"].keys():
 		if sfile.endswith(".srs"):
 			srs_files.append(sfile)
-	
+
 	for srs in srs_files:
 		print(srs)
-		rescene.extract_files(srr, output_folder, 
+		rescene.extract_files(srr, output_folder,
 		                      extract_paths=True, packed_name=srs)
-			
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog file.srr output_directory'\n"
 		"This tool will extract only .srs files from an SRR file.",
-		version="%prog 1.0 (2013-11-21)") # --help, --version
+		version="%prog 1.0 (2013-11-21)")  # --help, --version
 
 	# no arguments given
 	if len(sys.argv) < 2:

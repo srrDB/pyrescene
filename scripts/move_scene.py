@@ -24,14 +24,14 @@ import itertools
 def main(options, args):
 	rellist = args[0]
 	tododirs = args[1:]
-	
+
 	if os.path.isfile(rellist):
 		with open(rellist, 'r') as rel:
 			groups = get_groups(rel)
 		print("Got the groups: %d groups." % len(groups))
 	else:
 		print("WTF are you supplying me?")
-		
+
 	for tododir in tododirs:
 		if os.path.isdir(tododir):
 			print("Processing directory '%s'." % tododir)
@@ -52,40 +52,39 @@ def main(options, args):
 					else:
 						dest = os.path.join(tododir, "scene", elem)
 					os.renames(os.path.join(tododir, elem), dest)
-		
+
 def get_groupname(release):
 	release = release.replace(".nzb", "").replace(".srr", "")
 	return (release.split('-'))[-1]
-			
+
 def get_groups(rellist):
 	cleaned = map(get_groupname, rellist)
-	return [key.replace("\n", "").replace("\r", "") 
+	return [key.replace("\n", "").replace("\r", "")
 	        for (key, _) in itertools.groupby(sorted(cleaned))]
 
-#	grouped = {}
+# 	grouped = {}
 #
-#	for (key, elemiter) in itertools.groupby(sorted(cleaned)):
-#		grouped[key] = sum(1 for _ in elemiter)
-#	
-#	# print the results
-#	for key in sorted(grouped, key=grouped.__getitem__, reverse=reverse):
-#		print("%3d;%s" % (grouped[key], key))
-	
+# 	for (key, elemiter) in itertools.groupby(sorted(cleaned)):
+# 		grouped[key] = sum(1 for _ in elemiter)
+#
+# 	# print the results
+# 	for key in sorted(grouped, key=grouped.__getitem__, reverse=reverse):
+# 		print("%3d;%s" % (grouped[key], key))
+
 if __name__ == '__main__':
 	parser = optparse.OptionParser(
 		usage="Usage: %prog [rellist scene releases] [dir]'\n"
 		"This tool will move the releases from all the groups that are in "
 		"the release list.\n",
-		version="%prog 0.1 (2012-05-13)") # --help, --version
+		version="%prog 0.1 (2012-05-13)")  # --help, --version
 
 	parser.add_option("-o", help="output DIRECTORY\n"
 				"The default directory is 'scene'.",
 				dest="output_dir", metavar="DIRECTORY", default=None)
-	
+
 	# no arguments given
 	if len(sys.argv) < 2:
 		print(parser.format_help())
 	else:
 		(options, args) = parser.parse_args()
 		main(options, args)
-	
