@@ -1001,12 +1001,26 @@ def info(srr_file):
 			if f is None:
 				f = FileInfo()
 				f.file_name = block.file_name
-				f.file_size = block.unpacked_size
+				if (block.unpacked_size != 0xffffffffffffffff and  # 1
+				    block.unpacked_size != 0xffffffff):  # 2
+					f.file_size = block.unpacked_size  # normal case
+				else:
+					# 1) custom RAR packers used: last RAR contains the size
+					# Street.Fighter.V-RELOADED or Magic.Flute-HI2U or 0x0007
+					# 2) crap group that doesn't store the correct size at all:
+					# The.Powerpuff.Girls.2016.S01E08.HDTV.x264-QCF
+					f.file_size = 0
 				f.unicode_filename = block.unicode_filename
 				f.orig_filename = block.orig_filename
 				f.compression = block.is_compressed()
 				if f.compression:
 					compression = True
+			if block.unpacked_size == 0xffffffff and not f.compression:
+				# 2) above int was correct? it must match at the end
+				f.file_size += block.packed_size
+			if block.unpacked_size != 0xffffffffffffffff and f.file_size == 0:
+				# 1) expected the last RAR (first with the proper value)
+				f.file_size = block.unpacked_size
 			# crc of the file is the crc stored in
 			# the last archive that has the file
 			f.crc32 = "%08X" % block.file_crc
