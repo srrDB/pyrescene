@@ -205,6 +205,9 @@ VIII. History - Databases and community
 	  2014-10-12: 1,700,000
 	  2014-10-23: 1,900,000
 	  2014-10-27: 2,000,000
+	  2015-03-04: 2,200,000
+	  2015-06-14: 2,400,000
+	  2016-05-27: 3,000,000
   
   (data gathered from Tweets and old backups)
   
