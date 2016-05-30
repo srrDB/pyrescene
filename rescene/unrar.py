@@ -65,14 +65,14 @@ def locate_windows():
 				unrar = locate_in_path()
 			if not unrar:
 				# makes it work anyway when located in the same directory
-				unrar = "UnRAR.exe" 
+				unrar = "UnRAR.exe"
 				if not os.path.exists(unrar):
 					print("-----------------------------------------------")
 					print("Install WinRAR to use all the functionalities.")
 					print("Freeware 'UnRAR for Windows' is already enough.")
 					print("http://www.rarlab.com/rar_add.htm")
 					print("-----------------------------------------------")
-			
+
 	return unrar
 
 def try_registry():

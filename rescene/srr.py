@@ -42,7 +42,7 @@ from rescene.utility import raw_input
 from rescene.utility import encodeerrors
 from rescene.utility import calculate_crc32
 from rescene.utility import create_temp_file_name, replace_result
-	
+
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -51,7 +51,7 @@ rescene.change_rescene_name_version(rescene.APPNAME)
 class MessageThread(Thread):
 	done = False
 	sleeptime = 0.2
-	
+
 	def __init__(self, messages_to_display=None):
 		Thread.__init__(self)
 		self.daemon = True
@@ -62,14 +62,14 @@ class MessageThread(Thread):
 		else:
 			self.all = False
 		self.done = False
-			
+
 	def set_messages(self, messages):
 		self.messages = messages
 		self.all = False
-		
+
 	def set_all(self, status):
 		self.all = status
-			
+
 	def run(self):
 		while True and (not self.done or len(o.events)):
 			if len(o.events):
@@ -77,20 +77,20 @@ class MessageThread(Thread):
 					if event.code in self.messages or self.all:
 						print(event.message, file=sys.stderr)
 				o.events = []
-			time.sleep(self.sleeptime) # in seconds
+			time.sleep(self.sleeptime)  # in seconds
 		return
-	
+
 	def wait_for_output(self):
 		"""We've got response back from the rescene functions.
 		Wait until all those messages are printed before continuing."""
 		while len(o.events):
 			time.sleep(self.sleeptime)
-	
+
 mthread = MessageThread()
 
 def report_error(status, message):
 	parser.exit(status, message)
-	
+
 def report_unsupported_flag():
 	report_error("Warning: Unsupported flag value encountered in SRR file. "
 				 "This file may use features not supported in this version "
@@ -99,46 +99,46 @@ def report_unsupported_flag():
 def display_info(srr_file):
 	"""Print out different sections with SRR info."""
 	info = rescene.info(srr_file)
-	
+
 	print("Creating Application:")
 	if info["appname"] == "":
 		info["appname"] = "Unknown"
 	print("\t%s\n" % info["appname"])
-	
+
 	if info["compression"]:
 		print("SRR for compressed RARs.\n")
-	
+
 	if len(info["stored_files"]):
 		print("Stored files:")
 		for sfile in info["stored_files"].values():
 			print("\t{0: >9}  {1}".format(sep(sfile.file_size),
 				encodeerrors(sfile.file_name, sys.stdout)))
 		print()
-		
+
 	if len(info["rar_files"]):
 		print("RAR files:")
 		for sfile in info["rar_files"].values():
 			try:
-				print("\t%s %s %d" % (sfile.file_name, sfile.crc32, 
+				print("\t%s %s %d" % (sfile.file_name, sfile.crc32,
 								sfile.file_size))
-			except AttributeError: # No SFV file is used
+			except AttributeError:  # No SFV file is used
 				print("\t%s %d" % (encodeerrors(sfile.file_name, sys.stdout),
 				                   sfile.file_size))
 		print()
-		
+
 	if len(info["archived_files"]):
 		print("Archived files:")
 		for sfile in info["archived_files"].values():
 			print("\t%s %s %d" % (encodeerrors(sfile.file_name, sys.stdout),
 			                      sfile.crc32, sfile.file_size))
 		print()
-		
+
 	if len(info["oso_hashes"]):
 		print("ISDb hashes:")
 		for (name, ohash, size) in info["oso_hashes"]:
 			print("\t%s %s %d" % (encodeerrors(name, sys.stdout), ohash, size))
 		print()
-		
+
 	if len(info["sfv_comments"]):
 		print("SFV comments:")
 		for sfvline in info["sfv_comments"]:
@@ -164,10 +164,10 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 				if not auto_locate:
 					print("File %s not found. Skipping." % afile.file_name)
 					status = 2
-				else: # look for possible renames
+				else:  # look for possible renames
 					same_size_list = []
 					for root, _dirnames, filenames in os.walk(in_folder):
-						for fn in fnmatch.filter(filenames, 
+						for fn in fnmatch.filter(filenames,
 									"*" + os.path.splitext(name)[1]):
 							f = os.path.join(root, fn)
 							if os.path.getsize(f) == afile.file_size:
@@ -179,7 +179,7 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 						crc = calculate_crc32(f)
 						if afile.crc32 == "%0.8X" % crc:
 							found = True
-							print("File OK: %s matches %s." % 
+							print("File OK: %s matches %s." %
 									(f, afile.file_name))
 							break
 						else:
@@ -201,17 +201,17 @@ def manage_srr(options, in_folder, infiles, working_dir):
 	if options.output_dir:
 		out_folder = options.output_dir
 	save_paths = options.paths
-	
-	if options.list_info: # -l
+
+	if options.list_info:  # -l
 		# no messages. prevents mangled output in case there are any
-		# e.g. new style comment block on 
+		# e.g. new style comment block on
 		# Friday.the.13th.Part.2.1981.720p.BluRay.x264-CULTHD
-		mthread.set_messages([]) 
+		mthread.set_messages([])
 		display_info(infiles[0])
-	elif options.list_details: # -e
-		mthread.set_messages([]) 
+	elif options.list_details:  # -e
+		mthread.set_messages([])
 		rescene.print_details(infiles[0])
-	elif options.verify: # -q
+	elif options.verify:  # -q
 		s = verify_extracted_files(infiles[0], in_folder, options.auto_locate)
 		if s == 0:
 			print("All files OK!")
@@ -220,30 +220,30 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		else:
 			print("Corrupt and/or missing files!")
 		return s
-	elif options.extract: # -x
+	elif options.extract:  # -x
 		status = 0
 		mthread.set_messages([])
-		
+
 		# append release name to the output path for all extracted files
-		if options.parent: # -d (additional usage for this option)
+		if options.parent:  # -d (additional usage for this option)
 			srr = os.path.basename(infiles[0])
 			out_folder = os.path.join(out_folder, os.path.splitext(srr)[0])
-		
+
 		# extract ALL possible files
 		files = rescene.extract_files(infiles[0], out_folder, save_paths)
-		
+
 		# show which files are extracted + success or not
 		for efile, success in files:
-			file_name = efile[len(out_folder)+1:]
+			file_name = efile[len(out_folder) + 1:]
 			if success:
 				print("{0}: extracted.".format(file_name))
 			else:
 				status = 1
 				print("{0}: not extracted!".format(file_name), file=sys.stderr)
 		return status
-	elif options.store_files: # -s
+	elif options.store_files:  # -s
 		mthread.set_messages([MsgCode.STORING])
-		rescene.add_stored_files(infiles[0], options.store_files, 
+		rescene.add_stored_files(infiles[0], options.store_files,
 		                         in_folder, save_paths)
 	else:
 		# reconstruct (certain) volumes
@@ -258,10 +258,10 @@ def manage_srr(options, in_folder, infiles, working_dir):
 					hints[a] = b
 				except:
 					parser.exit(1, "Invalid hint (-H) value: %s" % hint)
-			
+
 		try:
-			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths, 
-			                    hints, options.no_auto_crc, 
+			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths,
+			                    hints, options.no_auto_crc,
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir,
 			                    options.volume is None, options.volume)
@@ -283,7 +283,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 def create_srr(options, infolder, infiles, working_dir):
 	msgs = [MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN, MsgCode.MSG]
 	if options.verbose:
-		msgs += [MsgCode.BLOCK, MsgCode.FBLOCK, MsgCode.RBLOCK, 
+		msgs += [MsgCode.BLOCK, MsgCode.FBLOCK, MsgCode.RBLOCK,
 		         MsgCode.NO_FILES]
 		mthread.set_all(True)
 	mthread.set_messages(msgs)
@@ -291,29 +291,29 @@ def create_srr(options, infolder, infiles, working_dir):
 	store_files = options.store_files
 	save_paths = options.paths
 	out_folder = working_dir
-	
+
 	srr_name = ""
 	if options.output_dir:
 		if options.output_dir[-4:].lower() == ".srr":
 			srr_name = options.output_dir
 		else:
 			out_folder = options.output_dir
-	
+
 	if not srr_name:
-		if options.parent: # -d
-			srr_name = os.path.join(out_folder, 
+		if options.parent:  # -d
+			srr_name = os.path.join(out_folder,
 		                        os.path.split(infolder)[-1] + ".srr")
 		else:
-			srr_name = os.path.join(out_folder, 
+			srr_name = os.path.join(out_folder,
 								os.path.basename(infiles[0])[:-4] + ".srr")
-			
-#	print("SRR name: %s" % srr_name, file=sys.stderr)
-#	print("infiles: %s" % infiles, file=sys.stderr)
-#	print("infolder: %s" % infolder, file=sys.stderr)
-#	print("store files: %s" % store_files, file=sys.stderr)
+
+# 	print("SRR name: %s" % srr_name, file=sys.stderr)
+# 	print("infiles: %s" % infiles, file=sys.stderr)
+# 	print("infolder: %s" % infolder, file=sys.stderr)
+# 	print("store files: %s" % store_files, file=sys.stderr)
 	try:
 		tmp_srr_name = create_temp_file_name(srr_name)
-		success = rescene.create_srr(srr_name, infiles, infolder, 
+		success = rescene.create_srr(srr_name, infiles, infolder,
 	                                 store_files, save_paths,
 	                                 options.allow_compressed,
 	                                 options.isdb_hash,
@@ -332,7 +332,7 @@ def create_srr(options, infolder, infiles, working_dir):
 		# ValueError: The file is too small.
 		# EmptySfv: can't create a useful file in this case
 		# FileNotFound: Linux file systems are case sensitive
-		
+
 		# make sure there is no broken SRR file/temporary file left
 		try:
 			os.unlink(srr_name)
@@ -348,7 +348,7 @@ def main(argv=None):
 	global parser
 	parser = optparse.OptionParser(
 	usage=("Usage: %prog [input file list] [options]\n"
-	"To create a ReScene file (.srr), use the .sfv file(s) accompanied" 
+	"To create a ReScene file (.srr), use the .sfv file(s) accompanied"
 	" with the archives or pick the first .rar file(s).\n"
 	"All files referenced by the .sfv"
 	" must be in the same folder as the .sfv file.\n"
@@ -357,9 +357,9 @@ def main(argv=None):
 	"\t\tsrr CD1/cd1.sfv CD2/cd2.sfv -s *.nfo -s other.file -d -p\n"
 	"To reconstruct a release, use the SRR file created from the release.\n"
 	"	ex:"
-	"\tsrr file.srr"), 
-	version="%prog " + rescene.__version__) # --help, --version
-	
+	"\tsrr file.srr"),
+	version="%prog " + rescene.__version__)  # --help, --version
+
 	display = optparse.OptionGroup(parser, "Display options")
 	creation = optparse.OptionGroup(parser, "Creation options")
 	recon = optparse.OptionGroup(parser, "Reconstruction options")
@@ -368,7 +368,7 @@ def main(argv=None):
 	parser.add_option_group(creation)
 	parser.add_option_group(recon)
 	parser.add_option_group(edit)
-	
+
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
 					  help="assume Y(es) for all prompts")
@@ -378,17 +378,17 @@ def main(argv=None):
 	parser.add_option("-v", help="enable verbose (technical) creation",
 						action="store_true", dest="verbose", default=False)
 	# TODO: get all the messages in order
-	
-	display.add_option("-l", "--list", 
+
+	display.add_option("-l", "--list",
 					  action="store_true", dest="list_info", default=False,
 					  help="list SRR file contents")
-	display.add_option("-e", "--details", 
+	display.add_option("-e", "--details",
 					  action="store_true", dest="list_details", default=False,
 					  help="list detailed SRR file info")
-	display.add_option("-q", "--verify", 
+	display.add_option("-q", "--verify",
 					  action="store_true", dest="verify", default=False,
 					  help="verify extracted RAR contents")
-	
+
 	creation.add_option("-c", "--compressed",
 					 action="store_true", dest="allow_compressed",
 					 help="allow SRR creation for compressed RAR files")
@@ -405,67 +405,67 @@ def main(argv=None):
 	creation.add_option("-o", dest="output_dir", metavar="DIRECTORY",
 					help="<path>: Specify output file or directory path.")
 	creation.add_option("-i", help="<path>: Specify input base directory.",
-						dest="input_base", metavar="DIRECTORY")	
-	creation.add_option("--no-isdb", 
+						dest="input_base", metavar="DIRECTORY")
+	creation.add_option("--no-isdb",
 						action="store_false", default=True, dest="isdb_hash",
 						help="do not attempt to store ISDb hashes "
 						"(not recommended)")
-	
-#	recon.set_description("")
+
+# 	recon.set_description("")
 	recon.add_option("-r", action="store_true", dest="auto_locate",
 					 help="attempt to auto-locate renamed files "
 					 "(must have the same extension)", default=False)
-	recon.add_option("-f", "--fake-file", 
+	recon.add_option("-f", "--fake-file",
 					 action="store_true", dest="fake", default=False,
 					 help="fills RAR with fake data when the archived file "
 					 "isn't found (e.g. no extras) "
 					 "this option implies --no-autocrc")
-	recon.add_option("-m", "--volume", dest="volume", 
+	recon.add_option("-m", "--volume", dest="volume",
 					metavar="VOLUME", help="Specify a single RAR volume "
 					"to reconstruct. Provide the extension or file name. "
 					"End name with * to trigger entire subset reconstruction.")
-	recon.add_option("-u", "--no-autocrc", 
+	recon.add_option("-u", "--no-autocrc",
 					 action="store_true", dest="no_auto_crc", default=False,
 					 help="disable automatic CRC checking during reconstruction")
 	recon.add_option("-H", help="<oldname:newname list>: Specify alternate "
 					"names for extracted files.  ex: srr example.srr -H "
 					"orginal.mkv:renamed.mkv;original.nfo:renamed.nfo",
 					metavar="HINTS", dest="hints")
-	recon.add_option("-z", "--rar-dir", dest="rar_executable_dir", 
+	recon.add_option("-z", "--rar-dir", dest="rar_executable_dir",
 					metavar="DIRECTORY",
 					help="Directory with preprocessed RAR executables created"
 					" by the preprardir.py script. This is necessary to "
 					"reconstruct compressed archives.")
-	recon.add_option("-t", "--temp-dir", dest="temp_dir", 
+	recon.add_option("-t", "--temp-dir", dest="temp_dir",
 					metavar="DIRECTORY", help="Specify directory "
 					"for temp files while reconstructing compressed RARs.")
-	
-#	creation.set_description("These options are used for creating an SRR file.")
+
+# 	creation.set_description("These options are used for creating an SRR file.")
 	edit.add_option("-x", "--extract",
 					  	action="store_true", dest="extract", default=False,
 					  	help="extract SRR stored files only")
 	edit.add_option("-s", help="<file list>: Store additional files in the"
 						" SRR (wildcards supported)", action="append",
 						metavar="FILES", dest="store_files")
-	
+
 	if argv is None:
 		argv = sys.argv[1:]
-		
+
 	# no arguments given
 	if not len(argv):
 		# show application usage
 		parser.print_help()
 		return 0
-	
+
 	(options, infiles) = parser.parse_args(args=argv)
-	
+
 	def can_overwrite(file_path):
-		retvalue = True 
-		if (not options.always_yes and 
+		retvalue = True
+		if (not options.always_yes and
 		    not options.always_no and os.path.isfile(file_path)):
 			# make sure no messages pop up after our question
 			time.sleep(MessageThread.sleeptime)
-			
+
 			print("Warning: File %s already exists." % file_path)
 			char = raw_input("Do you wish to continue? (Y/N): ").lower()
 			while char not in ('y', 'n'):
@@ -474,13 +474,13 @@ def main(argv=None):
 				retvalue = False
 		elif options.always_no and os.path.isfile(file_path):
 			retvalue = False
-		return retvalue 
-	
+		return retvalue
+
 	rescene.main.can_overwrite = can_overwrite
-	
+
 	if options.temp_dir and not os.path.isdir(options.temp_dir):
 		report_error(1, "Provided temporary directory not found.\n")
-	
+
 	if options.allow_compressed:
 		print("*"*60, file=sys.stderr)
 		sys.stderr.write("""\
@@ -491,11 +491,11 @@ WARNING: SRR files for compressed RARs are like SRS files:
          Use 'pyrescene --vobsubs file.sfv' instead.
 """)
 		print("*"*60, file=sys.stderr)
-	
+
 	try:
 		mthread.start()
 		working_dir = os.path.abspath(os.path.curdir)
-		
+
 		# check existence and type of the input files
 		for infile in infiles:
 			ext = infile[-4:].lower()
@@ -506,15 +506,15 @@ WARNING: SRR files for compressed RARs are like SRS files:
 				print(parser.format_help(), file=sys.stderr)
 				report_error(1, "Input file type not recognized: %s\n" %
 							 infile)
-				
+
 		if not len(infiles):
 			print(parser.format_help(), file=sys.stderr)
 			report_error(1, "No input file(s) specified.\n")
-			
+
 		infolder = working_dir
-		if options.input_base: # -i
+		if options.input_base:  # -i
 			infolder = options.input_base
-			
+
 		if infiles[0].endswith(".srr"):
 			parser.exit(manage_srr(options, infolder, infiles, working_dir))
 		else:
@@ -522,14 +522,14 @@ WARNING: SRR files for compressed RARs are like SRS files:
 	except KeyboardInterrupt:
 		print(file=sys.stderr)
 		print("Ctrl+C pressed. Aborting.", file=sys.stderr)
-		parser.exit(130) # http://tldp.org/LDP/abs/html/exitcodes.html
+		parser.exit(130)  # http://tldp.org/LDP/abs/html/exitcodes.html
 	except Exception as err:
 		traceback.print_exc()
 		parser.exit(99, "Unexpected Error: %s" % err)
 	finally:
 		mthread.done = True
 		mthread.join(0.5)
-#		mthread.join(None)
+# 		mthread.join(None)
 
 if __name__ == "__main__":
 	if "--profile" in sys.argv:
