@@ -47,16 +47,16 @@ def compute_hash(mfile):
 			return _osorg_hash(stream)
 		finally:
 			stream.close()
-			
+
 def osohash_from(rar_archive, enclosed_file=None, middle=False):
 	"""If enclosed_file is not supplied, the srr_hash will be calculated based
 	on the first file in the archive(s). To get a list of the files inside the
 	archive, use RarReader.list_files().
 	middle: not the first RAR archive from the set is expected in the stream"""
 	return _osorg_hash(RarStream(rar_archive, enclosed_file, middle))
-	#TODO: return dict with srr_hash for each file in the archive
+	# TODO: return dict with srr_hash for each file in the archive
 	# or list with tuples (path, filename, srr_hash)
-	
+
 def _length(stream):
 	"""Returns the size of the given file stream."""
 	original_offset = stream.tell()
@@ -64,7 +64,7 @@ def _length(stream):
 	size = stream.tell()
 	stream.seek(original_offset)
 	return size
-	
+
 def _osorg_hash(stream):
 	"""Expects an open file object. 
 	
@@ -83,7 +83,7 @@ def _osorg_hash(stream):
 	if is there any reason to change these sizes, let us know. """
 	HASH_CHUNK_SIZE = 64 * 1024
 	srr_hash = filesize = _length(stream)
-	
+
 	# TODO: make it work for smaller sizes too
 	if filesize < HASH_CHUNK_SIZE:
 		raise ValueError("The file is smaller than 64 KiB.")
@@ -91,10 +91,10 @@ def _osorg_hash(stream):
 	buffer_begin = stream.read(HASH_CHUNK_SIZE)
 	stream.seek(-HASH_CHUNK_SIZE, 2)
 	buffer_end = stream.read(HASH_CHUNK_SIZE)
-	bytesize = struct.calcsize("Q") # unsigned long long
+	bytesize = struct.calcsize("Q")  # unsigned long long
 	for index in range(0, HASH_CHUNK_SIZE, bytesize):
 		srr_hash += struct.unpack_from("<Q", buffer_begin, index)[0]
-		srr_hash = srr_hash & 0xFFFFFFFFFFFFFFFF # to remain as 64bit number
+		srr_hash = srr_hash & 0xFFFFFFFFFFFFFFFF  # to remain as 64bit number
 		srr_hash += struct.unpack_from("<Q", buffer_end, index)[0]
 		srr_hash = srr_hash & 0xFFFFFFFFFFFFFFFF
 

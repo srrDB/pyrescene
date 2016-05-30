@@ -55,7 +55,7 @@ class TestHash(unittest.TestCase):
 			self.fail(msg)
 		self.assertEqual("8e245d9679d31e12", osohash)
 		self.assertEqual(12909756, file_size)
-		#self.assertEqual("61f7751fc2a72bfb", compute_hash("D:\dummy.bin")[0])
+		# self.assertEqual("61f7751fc2a72bfb", compute_hash("D:\dummy.bin")[0])
 
 	def test_exceptions(self):
 		self.assertRaises(TypeError, compute_hash, None)
@@ -63,9 +63,9 @@ class TestHash(unittest.TestCase):
 		stream = io.BytesIO()
 		stream.close()
 		self.assertRaises(ValueError, compute_hash, stream)
-		
+
 	def test_rars(self):
-		rar_file = join("..", "..", "test_files", 
-						"store_split_folder_old_srrsfv_windows", 
+		rar_file = join("..", "..", "test_files",
+						"store_split_folder_old_srrsfv_windows",
 						"winrar2.80.rar")
 		self.assertRaises(ValueError, osohash_from, rar_file)

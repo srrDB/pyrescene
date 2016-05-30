@@ -52,7 +52,7 @@ except ImportError:
 #   ECHO %NAME%         check
 #   SET NAME=           clear
 #   SETX NAME VALUE     set environment variables permanently
-_DEBUG = bool(os.environ.get("RESCENE_DEBUG")) # leave empty for False
+_DEBUG = bool(os.environ.get("RESCENE_DEBUG"))  # leave empty for False
 
 # disables the spinner from showing while doing some processing
 _SPINNER = not bool(os.environ.get("RESCENE_NO_SPINNER"))
@@ -81,10 +81,10 @@ def deprecated(func):
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
 	# prefer 3.x behaviour
-	range = xrange #@ReservedAssignment
-	str = unicode #@ReservedAssignment
-	unicode = unicode #@ReservedAssignment # Export to other modules
-	
+	range = xrange  # @ReservedAssignment
+	str = unicode  # @ReservedAssignment
+	unicode = unicode  # @ReservedAssignment # Export to other modules
+
 	def fsunicode(path):
 		"""Converts a file system "str" object to Unicode"""
 		if isinstance(path, unicode):
@@ -92,19 +92,19 @@ if sys.hexversion < 0x3000000:
 		encoding = sys.getfilesystemencoding()
 		return path.decode(encoding or sys.getdefaultencoding())
 else:
-	unicode = str #@ReservedAssignment
+	unicode = str  # @ReservedAssignment
 	def fsunicode(path):
 		return path
 
 try:  # Python < 3
-	raw_input = raw_input #@ReservedAssignment
+	raw_input = raw_input  # @ReservedAssignment
 except NameError:  # Python 3
-	raw_input = input #@ReservedAssignment
+	raw_input = input  # @ReservedAssignment
 
 try:  # Python < 3
-	basestring = basestring #@ReservedAssignment
+	basestring = basestring  # @ReservedAssignment
 except NameError:  # Python 3
-	basestring = str #@ReservedAssignment
+	basestring = str  # @ReservedAssignment
 
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""
@@ -117,11 +117,11 @@ class SfvEntry(object):
 	def set_crc_32(self, value):
 		if not bool(re.match("^[\dA-F]{1,8}$", value, re.IGNORECASE)):
 			raise ValueError(value + " is not a CRC32 hash.")
-		# Baywatch.S11E11.DVDRiP.XViD-NODLABS.srr CRC is missing a zero			
+		# Baywatch.S11E11.DVDRiP.XViD-NODLABS.srr CRC is missing a zero
 		self.__crc32 = value.rjust(8, "0")
 
 	crc32 = property(get_crc_32, set_crc_32, "The crc32 hash.")
-		
+
 	def __lt__(self, other):
 		"""The sort routines are guaranteed to use __lt__ when making 
 		   comparisons between two objects."""
@@ -134,19 +134,19 @@ class SfvEntry(object):
 				if bool(re.match("\.[r-v]\d{2}$", ext_other)):
 					return True
 				else:
-					return self.file_name < other.file_name # .rar < .r00
+					return self.file_name < other.file_name  # .rar < .r00
 			elif ext_other == ".rar":
 				if bool(re.match("\.[r-v]\d{2}$", ext_self)):
 					return False
 				else:
-					return self.file_name < other.file_name # .r00 > .rar
+					return self.file_name < other.file_name  # .r00 > .rar
 		# .part1.rar < .part2.rar, r99 < s00, 001 < 002
 		return self.file_name < other.file_name
-		
+
 	def __repr__(self):
 		return self.file_name + " " + self.crc32
-	
-	def __eq__(self, other): 
+
+	def __eq__(self, other):
 		if type(other) is type(self):
 			return (self.file_name.lower() == other.file_name.lower() and
 			        self.crc32.lower() == other.crc32.lower())
@@ -154,7 +154,7 @@ class SfvEntry(object):
 
 	def __ne__(self, other):
 		return not self.__eq__(other)
-	
+
 	__hash__ = None  # Avoid DeprecationWarning in Python < 3
 
 def parse_sfv_data(file_data):
@@ -167,15 +167,15 @@ def parse_sfv_data(file_data):
 	http://en.wikipedia.org/wiki/Extended_ASCII
 	Other text is decoded from latin1 using the "replace" error handler.
 	"""
-	entries = []   # SfvEntry objects
+	entries = []  # SfvEntry objects
 	comments = []
-	errors = []    # unrecognized stuff
-	
+	errors = []  # unrecognized stuff
+
 	# .sfv files without any \n line breaks exist
 	# e.g. Need_for_Speed_Underground_2_JPN_NGC-WRG (\r\r instead)
 	# (are those made like that or altered on transfer?)
 	file_data = file_data.replace(b"\r", b"\n")
-	
+
 	for line in file_data.split(b"\n"):
 		if not line.strip():
 			# ignore blank lines in parsed result
@@ -189,24 +189,24 @@ def parse_sfv_data(file_data):
 			line = line.rstrip()
 			try:
 				text = line.decode("latin-1")
-				text = text.replace("\t", "    ") # convert tabs
-				index = text.rindex(" ") # ValueError: substring not found
+				text = text.replace("\t", "    ")  # convert tabs
+				index = text.rindex(" ")  # ValueError: substring not found
 				filename = text[:index].strip()
 				# A SFV can contain multiple white spaces
-				crc = text[index+1:].lstrip()
+				crc = text[index + 1:].lstrip()
 				# ValueError: bad CRC e.g. char > F
 				entries.append(SfvEntry(filename, crc))
 			except ValueError:
 				line = line.decode("latin-1", "replace")
 				errors.append(line)
-		
+
 	return entries, comments, errors
 
 def parse_sfv_file(sfv_file):
 	"""Parses an SFV file with parse_sfv_data().
 	Accepts an open binary file object or a file name."""
 	try:
-		sfv_file.seek(0) # start at the beginning of the stream
+		sfv_file.seek(0)  # start at the beginning of the stream
 		sfv_data = sfv_file.read()
 	except AttributeError:
 		try:
@@ -249,13 +249,13 @@ def next_archive(rfile, is_old=False):
 	def inc(extension):
 		# create an array of a string so we can manipulate it
 		extension = list(extension)
-		i = len(extension) - 1 # last element
+		i = len(extension) - 1  # last element
 		while extension[i] == "9":
 			extension[i] = "0"
-			i -= 1 # go a character back
-		else: # also works with "rstuv"
+			i -= 1  # go a character back
+		else:  # also works with "rstuv"
 			extension[i] = chr(ord(extension[i]) + 1)
-		return "".join(extension) # array back to string
+		return "".join(extension)  # array back to string
 
 	if re.match(".*\.part\d*.rar$", rfile, re.IGNORECASE) and not is_old:
 		return inc(rfile[:-4]) + rfile[-4:]
@@ -286,19 +286,19 @@ def first_rars(file_iter):
 		if re.match(".*(\.part0*1\.rar|(?<!\d)\.rar)$", rar, re.IGNORECASE):
 			return True
 		# when there is a digit before the .rar
-		if (re.match(".*\.rar$", rar, re.IGNORECASE) and 
+		if (re.match(".*\.rar$", rar, re.IGNORECASE) and
 		    not re.match(".*part\d+\.rar$", rar, re.IGNORECASE)):
 			return True
 		if rar.endswith((".000", ".001")):
 			return True
 		return False
-	
+
 	def is_dotrar(rar):
 		return rar.lower().endswith(".rar")
-	
+
 	# all items will need to be checked at least once: full generator run
 	input_files = list(file_iter)
-	
+
 	firsts = list(filter(is_first, input_files))
 	# .000? then no .001
 	for first in filter(lambda x: x.endswith(".000"), firsts):
@@ -318,7 +318,7 @@ def first_rars(file_iter):
 		if len(have_r00_follower):
 			firsts = have_r00_follower
 		elif len(input_files) > 1:
-			firsts = [] # probably incomplete, so detect nothing
+			firsts = []  # probably incomplete, so detect nothing
 		# else: empty list firsts or
 		# there is only a single .rar file provided with a weird name
 		# e.g. name.part3.rar (and it gets detected)
@@ -342,7 +342,7 @@ def joinpath(path, start=""):
 	Each path element is an individual directory, subdirectory or file
 	name. Raises ValueError if an element name is not supported by the
 	OS."""
-	
+
 	illegal_names = frozenset(
 		("", os.path.curdir, os.path.pardir, os.path.devnull))
 	for elem in path:
@@ -356,7 +356,7 @@ def sep(number, loc=''):
 	The function is locale aware."""
 	locale.setlocale(locale.LC_ALL, loc)
 	return locale.format('%d', number, True)
-	
+
 def show_spinner(amount):
 	"""amount: a number"""
 	if _SPINNER:
@@ -366,7 +366,7 @@ def remove_spinner():
 	"""removes spinner with the backspace char"""
 	if _SPINNER:
 		sys.stdout.write("\b")
-	
+
 def empty_folder(folder_path):
 	if os.name == "nt" and win32api_available:
 		folder_path = win32api.GetShortPathName(folder_path)
@@ -397,13 +397,13 @@ def remove_folder(path):
 			except OSError:
 				try:
 					os.remove("\\\\?\\" + fullname)
-				except OSError: # it's a dir?
+				except OSError:  # it's a dir?
 					remove_folder(fullname)
 	try:
 		os.rmdir(path)
 	except OSError:
 		os.rmdir("\\\\?\\" + path)
-		
+
 def create_temp_file_name(output_file):
 	"""Creates file name for the temporary file based on the name of the
 	output file to create/overwrite later.
@@ -412,11 +412,11 @@ def create_temp_file_name(output_file):
 	dirname = os.path.dirname(output_file)
 	prefix = os.path.basename(output_file)
 	tmpfile = mktemp(".tmp", prefix + "-", dirname)
-	
+
 	# Windows long path support
 	if os.name == "nt":
 		tmpfile = "\\\\?\\" + os.path.abspath(tmpfile)
-	
+
 	return tmpfile
 
 def replace_result(src, dest):
@@ -454,7 +454,7 @@ def replace_result(src, dest):
 			print("This one lost... deleting temp file.")
 			os.unlink(src)
 			raise
-		
+
 def calculate_crc32(file_name):
 	"""Calculates crc32 for a given file and show a spinner."""
 	crc = 0
@@ -486,16 +486,16 @@ def capitalized_fn(afile):
 	inputfn = os.path.basename(afile)
 	inputdir = os.path.dirname(afile) or os.curdir
 	for cfile in os.listdir(inputdir):
-		if (cfile.lower() == inputfn.lower() and 
+		if (cfile.lower() == inputfn.lower() and
 		    os.path.isfile(os.path.join(inputdir, cfile))):
 			exact = os.path.join(inputdir, cfile)
 			break
 
-	# 2) use proper capitalization on both OSes 
+	# 2) use proper capitalization on both OSes
 	# - choose the one with capitals
 	# - not conclusive? use original file name
 	actualfn = os.path.basename(exact)
-	if actualfn.lower() == actualfn: 
+	if actualfn.lower() == actualfn:
 		# use file name of SFV either way (no difference is possible)
 		cpath = inputdir
 		capitals = os.path.join(cpath, inputfn)
@@ -505,23 +505,23 @@ def capitalized_fn(afile):
 		capitals = os.path.join(cpath, actualfn)
 
 	return exact, capitals
-	
+
 ###############################################################################
 
 def diff_lists(one, two):
 	"""Accepts two lists."""
-#	d = difflib.Differ() #linejunk=ignore_newline)
-#	oneclean = []
-#	twoclean = []
-#	for line in one:
-#		oneclean.append(line.encode('ascii', 'replace'))
-#	for line in two:
-#		twoclean.append(line.encode('ascii', 'replace'))
-#	#a = d.compare(oneclean, twoclean)
-#	print("\n".join(list(a)))
-#	
+# 	d = difflib.Differ() #linejunk=ignore_newline)
+# 	oneclean = []
+# 	twoclean = []
+# 	for line in one:
+# 		oneclean.append(line.encode('ascii', 'replace'))
+# 	for line in two:
+# 		twoclean.append(line.encode('ascii', 'replace'))
+# 	#a = d.compare(oneclean, twoclean)
+# 	print("\n".join(list(a)))
+#
 
-	#TODO: remove empty lines?
+	# TODO: remove empty lines?
 
 	a = difflib.ndiff(one, two, cleanlines)
 	(pos, neg, no) = (0, 0, 0)
@@ -533,10 +533,10 @@ def diff_lists(one, two):
 		elif line[:1] in "-":
 			neg += 1
 			res.append("-")
-		else: # ? or space
+		else:  # ? or space
 			no += 1
 			res.append(" ")
-	#print(res)
+	# print(res)
 	return pos, neg, no
 
 def cleanlines(line):
@@ -561,7 +561,7 @@ def encodeerrors(text, textio, errors="replace"):
 	
 	If the string is not encodable to the output stream,
 	the string is passed through a codec error handler."""
-	
+
 	encoding = getattr(textio, "encoding", None)
 	if encoding is None:
 		if isinstance(textio, TextIOBase):
@@ -571,7 +571,7 @@ def encodeerrors(text, textio, errors="replace"):
 			return text
 		# Otherwise assume semantics like Python 2's "file" object
 		encoding = sys.getdefaultencoding()
-	
+
 	try:
 		text.encode(encoding, textio.errors or "strict")
 	except UnicodeEncodeError:
@@ -621,4 +621,3 @@ def decodetext(tbytes, *pos, **kw):
 ;
 ; Total 1 File(s)	Combined CRC32 Checksum: 83a20923
 """
-	

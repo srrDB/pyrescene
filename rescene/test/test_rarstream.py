@@ -40,11 +40,11 @@ class TestRarStream(unittest.TestCase):
 
 	path = os.path.join(os.pardir, os.pardir, "test_files")
 	folder = "store_split_folder_old_srrsfv_windows"
-	
-	def test_folder_multiple(self):	
+
+	def test_folder_multiple(self):
 		# with path and multiple files in folder / split volumes
-		rs = RarStream(os.path.join(self.path, self.folder, 
-		                            "store_split_folder.rar"), 
+		rs = RarStream(os.path.join(self.path, self.folder,
+		                            "store_split_folder.rar"),
 		                            "txt/users_manual4.00.txt")
 		with open(os.path.join(self.path, "txt", "users_manual4.00.txt"),
 				  "rb") as txt_file:
@@ -60,12 +60,12 @@ class TestRarStream(unittest.TestCase):
 			rs.read(2)
 			rs.seek(0, os.SEEK_END)
 			self.assertRaises(IndexError, rs.seek, -1)
-		self.assertEqual(rs.list_files(), 
-						  ["txt\\empty_file.txt", 
-						   "txt\\little_file.txt", 
+		self.assertEqual(rs.list_files(),
+						  ["txt\\empty_file.txt",
+						   "txt\\little_file.txt",
 						   "txt\\users_manual4.00.txt"])
 		self.assertRaises(NotImplementedError, rs.readinto, "")
-		
+
 	def test_file(self):
 		""" Tests if the file in the rar archive is the same as the
 			extracted version. """
@@ -74,11 +74,11 @@ class TestRarStream(unittest.TestCase):
 		rs = RarStream(rar_file)
 		with open(txt_file, "rb") as tfile:
 			self.assertEqual(rs.read(), tfile.read())
-			
-		rar_file = os.path.join(self.path, 
+
+		rar_file = os.path.join(self.path,
 				"store_split_folder_old_srrsfv_windows", "winrar2.80.rar")
 		txt_file = os.path.join(self.path, "txt", "unicode_dos.nfo")
-		rs = RarStream(rar_file, "unicode_dos.nfo") # 3.316 bytes
+		rs = RarStream(rar_file, "unicode_dos.nfo")  # 3.316 bytes
 		with open(txt_file, "rb") as tfile:
 			rs.seek(3316)
 			self.assertEqual(rs.seek(6316), rs.tell())
@@ -94,7 +94,7 @@ class TestRarStream(unittest.TestCase):
 			self.assertEqual(rs.read(), tfile.read())
 		rs.close()
 		self.assertEqual(rs.closed, True, "Stream not closed")
-	
+
 		txt_file = os.path.join(self.path, "txt", "unicode_mac.nfo")
 		rs = RarStream(rar_file, "unicode_mac.nfo")
 		with open(txt_file, "rb") as tfile:
@@ -103,39 +103,39 @@ class TestRarStream(unittest.TestCase):
 			tfile.seek(333)
 			rs.seek(333)
 			self.assertEqual(rs.read(), tfile.read())
-			
+
 	def test_read_nothing(self):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		rs = RarStream(rar_file)
 		self.assertEqual(b"", rs.read(0))
-		
+
 	def test_not_first_rar(self):
 		# AttributeError: You must start with the first volume from a RAR set
-		self.assertRaises(AttributeError, RarStream, os.path.join(self.path, 
+		self.assertRaises(AttributeError, RarStream, os.path.join(self.path,
 						  "store_split_folder_old_srrsfv_windows",
 						  "store_split_folder.r00"))
-	
+
 	def test_error_srr_file(self):
 		# AttributeError: The extension must be one form a rar archive.
-		self.assertRaises(AttributeError, RarStream, os.path.join(self.path, 
+		self.assertRaises(AttributeError, RarStream, os.path.join(self.path,
 						  "store_split_folder_old_srrsfv_windows",
 						  "store_split_folder.srr"))
-		
+
 	def test_error_unknown_file(self):
 		rar_file = os.path.join(self.path, "store_little", "store_little.rar")
 		self.assertRaises(AttributeError, RarStream, rar_file, "file.txt")
-	
+
 	def test_error_archive_not_found(self):
 		# ArchiveNotFoundError: [Errno 2] No such file or directory: '/'
 		self.assertRaises(ArchiveNotFoundError, RarStream, "/")
-	
+
 	def test_error_compressed_rar(self):
-		compr = os.path.join(os.pardir, os.pardir, "test_files", 
+		compr = os.path.join(os.pardir, os.pardir, "test_files",
 		                     "best_little", "best_little.rar")
 		# AttributeError: Compressed RARs are not supported
 		self.assertRaises(AttributeError, RarStream, compr)
 		RarStream(compr, compressed=True)
-		
+
 	def test__check_function(self):
 		# http://superuser.com/questions/325643/how-do-i-create-a-null-rar/
 		small_rar = io.BytesIO()
@@ -148,12 +148,12 @@ class TestRarStream(unittest.TestCase):
 
 class TestFakeFile(unittest.TestCase):
 	"""For testing the FakeFile class."""
-	
+
 	def test_error(self):
 		ff = FakeFile(100)
 		self.assertRaises(IndexError, ff.seek, 101)
 		self.assertRaises(IndexError, ff.seek, -1, os.SEEK_SET)
-		
+
 	def test_fake_file(self):
 		ff = FakeFile(100)
 		self.assertEqual(ff.length(), 100)
@@ -174,9 +174,9 @@ class TestFakeFile(unittest.TestCase):
 		ff.seek(33, os.SEEK_CUR)
 		self.assertEqual(len(ff.read()), 67)
 		ff.read(0)
-		
+
 	def test_zlib_crc32(self):
 		"""Data from FakeFile must be usable by zlib.crc32."""
 		ff = FakeFile(100)
 		data = ff.read(50)
-		zlib.crc32(data) # don't crash on this
+		zlib.crc32(data)  # don't crash on this
