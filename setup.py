@@ -92,7 +92,8 @@ config_dict = {
     "author": "Gfy",
     "author_email": "pyrescene@gmail.com",
     "url": "https://bitbucket.org/Gfy/pyrescene",
-    "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads",
+    "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads/pyReScene-"
+	                + rescene.__version__ + ".zip",
     "license": "MIT",
     "keywords": ["rescene", "srr", "resample", "srs", "repackage", "rar",
 	            "avi", "mkv", "mp4", "wmv", "warez", "scene", "compressed",
@@ -182,6 +183,11 @@ def main():
 	
 	build a specific .exe file not in the build above
 	$ python setup.py exe --path "usenet/srr_usenet.py"
+	
+	http://peterdowns.com/posts/first-time-with-pypi.html
+	
+	python setup.py register -r pypitest
+	python setup.py sdist upload -r pypitest
 	"""
 
 	if "py2exe" in sys.argv:
