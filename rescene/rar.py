@@ -245,8 +245,8 @@ class SrrFlags():
 BLOCK_NAME = {
 	0x69: "SRR Volume Header", # i
 	0x6A: "SRR Stored File", # j
-	0x6B: "SRR OSO Hash", # unused
-	0x6C: "SRR", # unused
+	0x6B: "SRR ISDb Hash",  # OSO hash previously
+	0x6C: "SRR Padding",
 	0x6D: "SRR", # unused
 	0x6E: "SRR", # unused
 	0x6F: "SRR", # unused
