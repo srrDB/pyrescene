@@ -50,7 +50,7 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 	temp_cleanup = False
 
 	try:
-		file_name = file_name.decode('ascii')
+		file_name.encode('ascii')
 	except:
 		# file has special characters
 		# I don't know how to pass those to fpcalc
