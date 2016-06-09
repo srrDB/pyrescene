@@ -357,7 +357,8 @@ def main(argv=None):
 	"\t\tsrr CD1/cd1.sfv CD2/cd2.sfv -s *.nfo -s other.file -d -p\n"
 	"To reconstruct a release, use the SRR file created from the release.\n"
 	"	ex:"
-	"\tsrr file.srr"),
+	"\tsrr file.srr\n"
+	"Do not use this command to create srr files from vobsubs! Use Auto."),
 	version="%prog " + rescene.__version__)  # --help, --version
 
 	display = optparse.OptionGroup(parser, "Display options")
