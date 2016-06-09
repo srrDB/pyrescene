@@ -373,6 +373,12 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 								skip = False
 					if skip:
 						continue
+				else:
+					# the proof RAR is missing: make sure the SRR can still be
+					# created by not including this sfv to the main sfv list
+					msg = "Proof RAR cannot be found: {0}"
+					logging.warning(msg.format(rar))
+					continue
 
 		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
 			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
