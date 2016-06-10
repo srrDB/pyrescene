@@ -1006,7 +1006,8 @@ def info(srr_file):
 					f.file_size = block.unpacked_size  # normal case
 				else:
 					# 1) custom RAR packers used: last RAR contains the size
-					# Street.Fighter.V-RELOADED or Magic.Flute-HI2U or 0x0007
+					# Street.Fighter.V-RELOADED, Magic.Flute-HI2U
+					# Groups: RELOADED, HI2U, 0x0007 and 0x0815
 					# 2) crap group that doesn't store the correct size at all:
 					# The.Powerpuff.Girls.2016.S01E08.HDTV.x264-QCF
 					f.file_size = 0
@@ -1432,7 +1433,8 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 		
 	file_size_candidate = os.path.getsize(src)
 	if (file_size_candidate != block.unpacked_size and
-		block.unpacked_size != 4294967295):
+		block.unpacked_size != 4294967295 and
+		block.unpacked_size != 18446744073709551615):
 		raise InvalidFileSize("Data file is not the correct size: %s.\n"
 			"Found: %d bytes.\nExpected: %d bytes.\n" % 
 			(src, os.path.getsize(src), block.unpacked_size))
@@ -2168,6 +2170,12 @@ class CompressedRarFile(io.IOBase):
 		size_full = block.unpacked_size
 #		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
+		
+		# RELOADED custom RAR packer: figure out correct file size
+		if (block.unpacked_size == 0xffffffffffffffff):
+			srr_file = block.fname
+			archived = info(srr_file)["archived_files"]
+			size_full = archived[block.file_name].file_size
 		
 		def get_previous_block():
 			previous = None
