@@ -1172,7 +1172,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	rarfs = None # RAR Volume that is being reconstructed
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
-	running_crc = 0
+	running_crc = 0  # of bytes used in packaging a single file accross volumes
 	compressed_block_encountered = False  # mixed blocks e.g. .PNG file
 	
 	skip_volume = False # helps to reconstruct a single volume
@@ -1464,9 +1464,13 @@ def _auto_locate_renamed(name, size, in_folder):
 	return ""
 		
 def _repack(block, rarfs, in_folder, srcfs, running_crc, skip_rar_crc):
-	"""Adds a file to the RAR archive."""
+	"""
+	Adds a file to the RAR archive.
+	running_crc: CRC of the bytes used in packaging the file
+	skip_rar_crc: whether to display CRC warnings
+	"""
 	bytes_copied_inc = 0
-	file_crc = 0
+	file_crc = 0  # CRC of the file inside a single RAR volume
 
 	while bytes_copied_inc < block.packed_size:
 		# grab the correct amount of data from the extracted file
@@ -1491,18 +1495,22 @@ def _repack(block, rarfs, in_folder, srcfs, running_crc, skip_rar_crc):
 			
 		bytes_copied_inc += bytes_to_copy
 	
-	def file_end():
-		return block.flags & RarPackedFileBlock.SPLIT_AFTER == 0
-
 	if not skip_rar_crc:
+		def file_end():
+			return block.flags & RarPackedFileBlock.SPLIT_AFTER == 0
+		def running_crc_fail():
+			return block.file_crc != running_crc & 0xffffffff
+
+		# CRC check of file in the volume (last volume is across all of them)
 		if not file_end() and block.file_crc != file_crc & 0xffffffff:
-			_fire(MsgCode.CRC, message="CRC mismatch in RAR file: %s" % 
-				  rarfs.name)
+			msg = "CRC mismatch in RAR volume: %s" % rarfs.name
+			_fire(MsgCode.CRC, message=msg)
 			print("%08x %08x" % (block.file_crc, file_crc & 0xffffffff), 
 				  rarfs.name)
-		elif file_end() and block.file_crc != running_crc & 0xffffffff:
-			_fire(MsgCode.CRC, message="CRC mismatch in file: %s" % 
-				  block.file_name)
+		elif file_end() and running_crc_fail() and not block.is_compressed():
+			# running_crc is on compressed data, so not applicable there
+			msg = "CRC mismatch in file: %s" % block.file_name
+			_fire(MsgCode.CRC, message=msg)
 			print("%08x %08x" % (block.file_crc, running_crc & 0xffffffff), 
 				  block.file_name, rarfs.name)
 			
