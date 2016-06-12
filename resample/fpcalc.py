@@ -139,7 +139,7 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 							break
 						m1 = bytespart.find(b"Xing")
 						m2 = bytespart.find(b"LAME")
-						matches = filter(lambda x: x >= 0, [m1, m2])
+						matches = [x for x in [m1, m2] if x >= 0]
 						if len(matches):
 							string_index = current + min(matches)
 							break
@@ -155,7 +155,8 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 					stack = orig.read(0x100)
 					sync_index = stack[:-1].rfind(b"\xFF")
 					while sync_index > -1:
-						if ord(stack[sync_index + 1]) & 0xE0 == 0xE0:
+						next_byte = ord(stack[sync_index:sync_index + 1])
+						if next_byte & 0xE0 == 0xE0:
 							break
 						sync_index = stack.rfind(b"\xFF", 0, sync_index)
 
@@ -173,6 +174,7 @@ def fingerprint(file_name, temp_dir=None, recursive=0):
 				print("Tell me if the .sfv matches the music file!")
 				print("Otherwise your file is most likely totally corrupt.")
 				print("----------------------------------------------------")
+				# Alpha_Blondy_and_The_Wailers-Jerusalem-1986-YARD track 3
 			# this would be a very rare case:
 			# double bad tagging or just bad data?
 			raise
