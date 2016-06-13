@@ -159,15 +159,19 @@ def change_rescene_name_version(new_name):
 		raise AttributeError("Application name too long.")
 	rescene.APPNAME = new_name
 
-def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
+def extract_files(srr_file, out_folder, extract_paths=True,
+                  packed_name="", matcher=None):
 	"""
 	If packed_name is given, 
-		we only try to extract all files with that name.
+		it tries to extract all files with that name only.
 		(It is possible for an SRR file to have a file with the same name
 		if they have different paths.)
-		If it is a relative path, we only extract a single file.
+		If it is a relative path, it only extracts a single file.
 	If extract_paths is True, 
-		we try to re-create the file with its stored path.
+		it tries to re-create the file with its stored path.
+	If matcher is provided and not packed_name,
+		it uses this function with one input parameter to find out
+		if a file has to be extracted instead of using packed_name.
 	Returns tuple: (extracted location, bool: extracted or overwritten)
 	"""
 	extracted_files = []
@@ -176,9 +180,11 @@ def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
 		packed file or not: write each file if no name is specified or only
 		those whose path/name matches. (only name if no path is specified)"""
 		out_file = _opath(block, extract_paths, out_folder)
-		if not packed_name or packed_name ==  \
-			os.path.basename(packed_name) == os.path.basename(out_file) or  \
-			os.path.normpath(packed_name) == block.os_file_name():
+		if ((not packed_name and not matcher) or 
+			(not packed_name and matcher and matcher(block.file_name)) or 
+			packed_name ==
+		    os.path.basename(packed_name) == os.path.basename(out_file) or
+		    os.path.normpath(packed_name) == block.os_file_name()):
 			success = _extract(block, out_file)
 			extracted_files.append((out_file, success))
 			return success
