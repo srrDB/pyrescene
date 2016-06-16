@@ -26,6 +26,7 @@
 
 import io
 import os
+import struct
 import unittest
 
 from resample import mp3
@@ -120,6 +121,115 @@ class TestDoubleId3v2(unittest.TestCase):
 		self.mp3stream.write(b"\xE0")
 		offset = mp3.last_id3v2_before_sync(self.mp3stream, 0x10004)
 		self.assertEqual(10, offset)
+		
+	def test_parse_double_good(self):
+		"""Check if parsing works for two good ID3v2 tags in the SRS file.
+		POP_ETC-POP_ETC-2012-CaHeSo/09-pop_etc-i_wanna_be_your_man.mp3"""
+		stream = io.BytesIO()
+		writeId3v2Tag(stream, 42)
+		writeId3v2Tag(stream, 42)
+		writeSrsFileTag(stream, 11)
+		writeId3v1Tag(stream)
+		
+		# test if parsing succeeds
+		mr = mp3.Mp3Reader(stream=stream)
+		generator = mr.read()
+
+		id3one = next(generator)
+		self.assertEqual(0, id3one.start_pos)
+		self.assertEqual(42, id3one.size)
+
+		id3two = next(generator)
+		self.assertEqual(42, id3two.start_pos)
+		self.assertEqual(42, id3two.size)
+
+		srstrack = next(generator)
+		self.assertEqual(42 + 42, srstrack.start_pos)
+		self.assertEqual(11, srstrack.size)
+
+		next(generator)
+
+		self.assertRaises(StopIteration, next, generator)
+
+	def test_parse_double_good_bad_good(self):
+		stream = io.BytesIO()
+		writeId3v2Tag(stream, 42)
+		stream.write(b"CRAPCRAP")
+		writeId3v2Tag(stream, 42)
+		writeSrsFileTag(stream, 11)
+		writeId3v1Tag(stream)
+		
+		# test if parsing succeeds
+		mr = mp3.Mp3Reader(stream=stream)
+		generator = mr.read()
+
+		# crap and second tag get counted with the first one
+		id3one = next(generator)
+		self.assertEqual(0, id3one.start_pos)
+		self.assertEqual(42 + 8 + 42, id3one.size)
+
+		srstrack = next(generator)
+		self.assertEqual(42 + 8 + 42, srstrack.start_pos)
+		self.assertEqual(11, srstrack.size)
+
+		next(generator)
+
+		self.assertRaises(StopIteration, next, generator)
+
+	def test_parse_loop_id3v2_srs(self):
+		stream = io.BytesIO()
+		writeId3v2Tag(stream, 20)
+		writeId3v2Tag(stream, 20)
+		writeId3v2Tag(stream, 20)
+		writeSrsFileTag(stream, 20)
+		
+		# test if parsing succeeds
+		mr = mp3.Mp3Reader(stream=stream)
+		generator = mr.read()
+
+		id3one = next(generator)
+		self.assertEqual(0, id3one.start_pos)
+		self.assertEqual(20, id3one.size)
+
+		next(generator)
+		next(generator)
+
+		srstrack = next(generator)
+		self.assertEqual(60, srstrack.start_pos)
+		self.assertEqual(20, srstrack.size)
+
+		self.assertRaises(StopIteration, next, generator)
+
+	def test_parse_loop_id3v2_bad_mp3(self):
+		stream = io.BytesIO()
+		writeId3v2Tag(stream, 20)
+		writeId3v2Tag(stream, 20)
+		writeId3v2Tag(stream, 20)
+		
+		# 1 bad byte + 4 bytes mp3 data
+		stream.write(b"\x11\xFF\xE0\x33\x44")
+		
+		# test if parsing succeeds
+		mr = mp3.Mp3Reader(stream=stream)
+		generator = mr.read()
+
+		id3one = next(generator)
+		self.assertEqual(0, id3one.start_pos)
+		self.assertEqual(20, id3one.size)
+
+		next(generator)
+
+		id3three = next(generator)
+		self.assertEqual(40, id3three.start_pos)
+		self.assertEqual(20, id3three.size)
+
+		# bad data between last good id3 and mp3 is counted with mp3 data
+		# this is because there can be a lot of crap following the tags
+		mp3track = next(generator)
+		self.assertEqual(60, mp3track.start_pos)
+		self.assertEqual(5, mp3track.size)
+
+		self.assertRaises(StopIteration, next, generator)
 
 class TestDoubleEndTags(unittest.TestCase):
 	"""MP3 files can become too large and the end data is repeated.
@@ -209,6 +319,12 @@ def writeMp3Data(stream, size=20):
 def writeId3v1Tag(stream):
 	stream.write(b"TAG")
 	stream.write(b"1" * (128 - 3))
+
+def writeSrsFileTag(stream, size=20):
+	assert size >= 8, "8 byte header minimum"
+	stream.write(b"SRSF")
+	stream.write(struct.pack("<L", size))
+	stream.write(b"S" * (size - 8))
 
 if __name__ == "__main__":
 	unittest.main()
