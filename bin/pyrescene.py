@@ -845,6 +845,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 			pass
 
 		is_music = sample.lower().endswith((".mp3", ".flac", ".mp2"))
+		is_ts = sample.lower().endswith((".m2ts", ".ts"))
 
 		if rbase(sample) in same_srs_name:
 			# prevent overwriting .srs by including full ext for collisions
@@ -856,7 +857,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
 		found = False
-		if options.sample_verify and not is_music:
+		if options.sample_verify and not is_music and not is_ts:
 			print("Creating SRS for: %s" % path)
 			print("Checking against the following main files:")
 			for mrar in main_rars:
