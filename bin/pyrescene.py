@@ -1068,8 +1068,10 @@ def generate_srr(reldir, working_dir, options, mthread):
 						to_remove.append(stored_file)
 						logging.critical("%s: SFV verification failed for %s."
 										% (reldir, srs_data.name))
-				except IOError:  # TODO: supported, no? then remove this
-					logging.critical("%s: FLAC with ID3 tag: %s." %
+				except Exception:
+					# previously: for FLAC with ID3 tags (always ok now?)
+					# now: to prevent failure of srr creation due to bugs
+					logging.critical("%s: Couldn't load srs data of %s." %
 						             (reldir, os.path.basename(stored_file)))
 					to_remove.append(stored_file)
 
