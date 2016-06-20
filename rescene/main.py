@@ -159,15 +159,19 @@ def change_rescene_name_version(new_name):
 		raise AttributeError("Application name too long.")
 	rescene.APPNAME = new_name
 
-def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
+def extract_files(srr_file, out_folder, extract_paths=True,
+                  packed_name="", matcher=None):
 	"""
 	If packed_name is given, 
-		we only try to extract all files with that name.
+		it tries to extract all files with that name only.
 		(It is possible for an SRR file to have a file with the same name
 		if they have different paths.)
-		If it is a relative path, we only extract a single file.
+		If it is a relative path, it only extracts a single file.
 	If extract_paths is True, 
-		we try to re-create the file with its stored path.
+		it tries to re-create the file with its stored path.
+	If matcher is provided and not packed_name,
+		it uses this function with one input parameter to find out
+		if a file has to be extracted instead of using packed_name.
 	Returns tuple: (extracted location, bool: extracted or overwritten)
 	"""
 	extracted_files = []
@@ -176,9 +180,11 @@ def extract_files(srr_file, out_folder, extract_paths=True, packed_name=""):
 		packed file or not: write each file if no name is specified or only
 		those whose path/name matches. (only name if no path is specified)"""
 		out_file = _opath(block, extract_paths, out_folder)
-		if not packed_name or packed_name ==  \
-			os.path.basename(packed_name) == os.path.basename(out_file) or  \
-			os.path.normpath(packed_name) == block.os_file_name():
+		if ((not packed_name and not matcher) or 
+			(not packed_name and matcher and matcher(block.file_name)) or 
+			packed_name ==
+		    os.path.basename(packed_name) == os.path.basename(out_file) or
+		    os.path.normpath(packed_name) == block.os_file_name()):
 			success = _extract(block, out_file)
 			extracted_files.append((out_file, success))
 			return success
@@ -1006,7 +1012,8 @@ def info(srr_file):
 					f.file_size = block.unpacked_size  # normal case
 				else:
 					# 1) custom RAR packers used: last RAR contains the size
-					# Street.Fighter.V-RELOADED or Magic.Flute-HI2U or 0x0007
+					# Street.Fighter.V-RELOADED, Magic.Flute-HI2U
+					# Groups: RELOADED, HI2U, 0x0007 and 0x0815
 					# 2) crap group that doesn't store the correct size at all:
 					# The.Powerpuff.Girls.2016.S01E08.HDTV.x264-QCF
 					f.file_size = 0
@@ -1171,7 +1178,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	rarfs = None # RAR Volume that is being reconstructed
 	srcfs = None # File handle for the stored files
 	rebuild_recovery = False
-	running_crc = 0
+	running_crc = 0  # of bytes used in packaging a single file accross volumes
 	compressed_block_encountered = False  # mixed blocks e.g. .PNG file
 	
 	skip_volume = False # helps to reconstruct a single volume
@@ -1432,7 +1439,8 @@ def _locate_file(block, in_folder, hints, auto_locate_renamed):
 		
 	file_size_candidate = os.path.getsize(src)
 	if (file_size_candidate != block.unpacked_size and
-		block.unpacked_size != 4294967295):
+		block.unpacked_size != 4294967295 and
+		block.unpacked_size != 18446744073709551615):
 		raise InvalidFileSize("Data file is not the correct size: %s.\n"
 			"Found: %d bytes.\nExpected: %d bytes.\n" % 
 			(src, os.path.getsize(src), block.unpacked_size))
@@ -1462,9 +1470,13 @@ def _auto_locate_renamed(name, size, in_folder):
 	return ""
 		
 def _repack(block, rarfs, in_folder, srcfs, running_crc, skip_rar_crc):
-	"""Adds a file to the RAR archive."""
+	"""
+	Adds a file to the RAR archive.
+	running_crc: CRC of the bytes used in packaging the file
+	skip_rar_crc: whether to display CRC warnings
+	"""
 	bytes_copied_inc = 0
-	file_crc = 0
+	file_crc = 0  # CRC of the file inside a single RAR volume
 
 	while bytes_copied_inc < block.packed_size:
 		# grab the correct amount of data from the extracted file
@@ -1489,18 +1501,22 @@ def _repack(block, rarfs, in_folder, srcfs, running_crc, skip_rar_crc):
 			
 		bytes_copied_inc += bytes_to_copy
 	
-	def file_end():
-		return block.flags & RarPackedFileBlock.SPLIT_AFTER == 0
-
 	if not skip_rar_crc:
+		def file_end():
+			return block.flags & RarPackedFileBlock.SPLIT_AFTER == 0
+		def running_crc_fail():
+			return block.file_crc != running_crc & 0xffffffff
+
+		# CRC check of file in the volume (last volume is across all of them)
 		if not file_end() and block.file_crc != file_crc & 0xffffffff:
-			_fire(MsgCode.CRC, message="CRC mismatch in RAR file: %s" % 
-				  rarfs.name)
+			msg = "CRC mismatch in RAR volume: %s" % rarfs.name
+			_fire(MsgCode.CRC, message=msg)
 			print("%08x %08x" % (block.file_crc, file_crc & 0xffffffff), 
 				  rarfs.name)
-		elif file_end() and block.file_crc != running_crc & 0xffffffff:
-			_fire(MsgCode.CRC, message="CRC mismatch in file: %s" % 
-				  block.file_name)
+		elif file_end() and running_crc_fail() and not block.is_compressed():
+			# running_crc is on compressed data, so not applicable there
+			msg = "CRC mismatch in file: %s" % block.file_name
+			_fire(MsgCode.CRC, message=msg)
 			print("%08x %08x" % (block.file_crc, running_crc & 0xffffffff), 
 				  block.file_name, rarfs.name)
 			
@@ -2168,6 +2184,12 @@ class CompressedRarFile(io.IOBase):
 		size_full = block.unpacked_size
 #		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
+		
+		# RELOADED custom RAR packer: figure out correct file size
+		if (block.unpacked_size == 0xffffffffffffffff):
+			srr_file = block.fname
+			archived = info(srr_file)["archived_files"]
+			size_full = archived[block.file_name].file_size
 		
 		def get_previous_block():
 			previous = None
