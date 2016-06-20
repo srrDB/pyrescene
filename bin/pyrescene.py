@@ -1103,6 +1103,11 @@ def generate_srr(reldir, working_dir, options, mthread):
 		if os.path.basename(cfile) in options.skip_list:
 			print("Skipped over stored file: %s" % os.path.basename(cfile))
 			copied_files.remove(cfile)
+		if options.skip_regex:
+			retestpath = os.path.relpath(cfile, working_dir)
+			if skipre.match(retestpath):
+				copied_files.remove(cfile)
+				print("Skipped over stored file: %s" % os.path.basename(cfile))
 
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
@@ -1340,12 +1345,18 @@ def main(argv=None):
 					help="set custom temporary directory")
 					# used for vobsub creation
 
-	parser.add_option("-x", "--skip", dest="skip_list", metavar="NAME",
-					action="append",
-					help="exclude these files from the stored files")
-	parser.add_option("--skip-list", dest="skip_file", default="",
-					metavar="FILE",
-					help="file with file names to skip for the stored files")
+	parser.add_option("-x", "--skip",
+	                  dest="skip_list", metavar="NAME", action="append",
+	                  help="exclude these files from the stored files")
+	parser.add_option("--skip-list",
+	                  dest="skip_file", default="", metavar="FILE",
+	                  help="file with file names to skip for the stored files")
+	parser.add_option("--skip-regex",
+	                  dest="skip_regex", default="",
+	                  help="regex to skip files files to store. matched to "
+	                  "the path inside the release dir. "
+	                  "use ^ and $ to match whole path. "
+	                  "e.g. ^.*/sitename\.nfo$ (case ignored)")
 
 	# speedup rerun, less traffic, backup textfiles, ...
 	parser.add_option("--no-srs", action="store_true", dest="nosrs",
@@ -1529,6 +1540,20 @@ def main(argv=None):
 			return 1  # failure
 		with open(options.skip_file, 'r') as skiplist:
 			options.skip_list = skiplist.read().splitlines()
+	if options.skip_regex:
+		global skipre
+		try:
+			skipre = re.compile(options.skip_regex, re.IGNORECASE)
+			if skipre.match("test.sfv"):
+				msg = "Not a good idea to ignore SFV files in the regex!"
+				logging.warning(msg)
+		except Exception as e:
+			# use --skip-regex "*" to trigger this
+			print("Unrecognized regular expression: %s" % e)
+			print("Some examples: (case always ignored)")
+			print("\t^.*/sitename\.nfo$")
+			print("\t^sample/.*\._s.jpg$")
+			return 1  # failure
 
 	drive_letters = []
 	aborted = False
