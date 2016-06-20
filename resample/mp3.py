@@ -85,9 +85,8 @@ class Mp3Reader(object):
 				self._mp3_stream = open(path, 'rb')
 		elif stream:
 			self._mp3_stream = stream
-		self._mp3_stream.seek(0, 2)
+		self._mp3_stream.seek(0, 2)  # reset on ID3v2 tag search
 		self._file_length = self._mp3_stream.tell()
-		self._mp3_stream.seek(0)
 
 		self.current_block = None
 
@@ -95,7 +94,7 @@ class Mp3Reader(object):
 		begin_main_content = 0
 
 		# easier for corner case ("ID3" multiple times before sync)
-		id3v2_block = None
+		last_id3v2 = None
 
 		# parse the whole file immediately!
 		# 1) check for ID3v2 (beginning of mp3 file)
@@ -105,16 +104,22 @@ class Mp3Reader(object):
 		# (representing up to 256MB) are used in the size description to avoid
 		# the introduction of 'false syncsignals'.
 		# http://id3.org/id3v2.4.0-structure
-		first = self._mp3_stream.read(3)
-		if first == b"ID3":
-			# skip ID3v2 version (2 bytes) and flags (1 byte)
-			self._mp3_stream.seek(3, os.SEEK_CUR)
-			sbytes = self._mp3_stream.read(4)
-			size = decode_id3_size(sbytes)
+		while True:  # tag should be here only once
+			# detect repeating leading ID3 tags in the srs files
+			startpos = begin_main_content
+			self._mp3_stream.seek(startpos, os.SEEK_SET)
+			if self._mp3_stream.read(3) == b"ID3":
+				# skip ID3v2 version (2 bytes) and flags (1 byte)
+				self._mp3_stream.seek(3, os.SEEK_CUR)
+				sbytes = self._mp3_stream.read(4)
+				size = decode_id3_size(sbytes)
 
-			begin_main_content = size + 10  # 3 + 3 + 4
-			id3v2_block = Block(begin_main_content, "ID3", 0)
-			self.blocks.append(id3v2_block)
+				tag_size = 10 + size  # 3 + 3 + 4
+				last_id3v2 = Block(tag_size, "ID3", startpos)
+				self.blocks.append(last_id3v2)
+				begin_main_content += tag_size
+			else:
+				break
 
 		# 2) check for ID3v1 (last 128 bytes of mp3 file)
 		end_meta_data_offset = self._file_length
@@ -185,15 +190,16 @@ class Mp3Reader(object):
 			if len(marker) != 4:
 				return True
 			(sync,) = BE_SHORT.unpack(marker[:2])
-			if (sync & 0xFFE0 != 0xFFE0 and
-			    marker not in (b"RIFF", b"SRSF")):
+			sync_bytes = sync & 0xFFE0 == 0xFFE0
+			if not sync_bytes and marker not in (b"RIFF", b"SRSF"):
 				return True
+			return False
 
 		# in between is SRS or MP3 data
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
 		marker = self._mp3_stream.read(4)
 
-		if id3v2_block and marker_has_issues(marker):
+		if last_id3v2 and marker_has_issues(marker):
 			# problem with (angelmoon)-hes_all_i_want_cd_pg2k-bmi
 			# The .mp3 files contain ID3+nfo before the real ID3 starts
 			# And it's also a RIFF mp3, so it won't play without removing
@@ -205,13 +211,14 @@ class Mp3Reader(object):
 			# in the ID3v2 tag for 02-mickey_k.-distracted_-_dub_mix.mp3
 			last_id3 = last_id3v2_before_sync(self._mp3_stream,
 			                                  self._file_length)
-			if last_id3 != 0:  # dupe ID3 string
+			if last_id3 != last_id3v2.start_pos:  # dupe ID3 string
 				self._mp3_stream.seek(last_id3 + 3 + 3, os.SEEK_SET)
 				sbytes = self._mp3_stream.read(4)
 				size = decode_id3_size(sbytes)
 
 				begin_main_content = last_id3 + 10 + size  # 3 + 3 + 4
-				id3v2_block.size = begin_main_content
+				# add extra amount of data to the last block
+				last_id3v2.size = begin_main_content - last_id3v2.start_pos
 
 		self._mp3_stream.seek(begin_main_content, os.SEEK_SET)
 		marker = self._mp3_stream.read(4)
@@ -285,7 +292,7 @@ class Mp3Reader(object):
 
 def last_id3v2_before_sync(stream, length):
 	"""Return the index of the last ID3v2 marker found before any
-	mp3 sync bytes or RIFF container.
+	mp3 sync bytes or RIFF container (or SRSF block for srs files).
 	The stream is assumed to contain an "ID3" marker.
 	length: the maximum length of the stream to search"""
 	last_good_id3 = 0
@@ -312,6 +319,9 @@ def last_id3v2_before_sync(stream, length):
 		riff = bytespart.find(b"RIFF")
 		if sync != -1 or riff != -1:
 			sync = max(sync, riff)
+		srsf = bytespart.find(b"SRSF")
+		if sync != -1 or srsf != -1:
+			sync = max(sync, srsf)
 
 		imatch = bytespart.rfind(b"ID3")
 		if imatch > 0:

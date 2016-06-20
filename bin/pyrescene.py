@@ -373,6 +373,12 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 								skip = False
 					if skip:
 						continue
+				else:
+					# the proof RAR is missing: make sure the SRR can still be
+					# created by not including this sfv to the main sfv list
+					msg = "Proof RAR cannot be found: {0}"
+					logging.warning(msg.format(rar))
+					continue
 
 		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
 			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
@@ -845,6 +851,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 			pass
 
 		is_music = sample.lower().endswith((".mp3", ".flac", ".mp2"))
+		is_ts = sample.lower().endswith((".m2ts", ".ts"))
 
 		if rbase(sample) in same_srs_name:
 			# prevent overwriting .srs by including full ext for collisions
@@ -856,7 +863,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		# optionally check against main movie files
 		# if an SRS file can be created, it'll be added
 		found = False
-		if options.sample_verify and not is_music:
+		if options.sample_verify and not is_music and not is_ts:
 			print("Creating SRS for: %s" % path)
 			print("Checking against the following main files:")
 			for mrar in main_rars:
@@ -1068,8 +1075,10 @@ def generate_srr(reldir, working_dir, options, mthread):
 						to_remove.append(stored_file)
 						logging.critical("%s: SFV verification failed for %s."
 										% (reldir, srs_data.name))
-				except IOError:  # TODO: supported, no? then remove this
-					logging.critical("%s: FLAC with ID3 tag: %s." %
+				except Exception:
+					# previously: for FLAC with ID3 tags (always ok now?)
+					# now: to prevent failure of srr creation due to bugs
+					logging.critical("%s: Couldn't load srs data of %s." %
 						             (reldir, os.path.basename(stored_file)))
 					to_remove.append(stored_file)
 
@@ -1094,6 +1103,11 @@ def generate_srr(reldir, working_dir, options, mthread):
 		if os.path.basename(cfile) in options.skip_list:
 			print("Skipped over stored file: %s" % os.path.basename(cfile))
 			copied_files.remove(cfile)
+		if options.skip_regex:
+			retestpath = os.path.relpath(cfile, working_dir)
+			if skipre.match(retestpath):
+				copied_files.remove(cfile)
+				print("Skipped over stored file: %s" % os.path.basename(cfile))
 
 	# some of copied_files can not exist
 	# this can be the case when the disk isn't readable
@@ -1331,12 +1345,18 @@ def main(argv=None):
 					help="set custom temporary directory")
 					# used for vobsub creation
 
-	parser.add_option("-x", "--skip", dest="skip_list", metavar="NAME",
-					action="append",
-					help="exclude these files from the stored files")
-	parser.add_option("--skip-list", dest="skip_file", default="",
-					metavar="FILE",
-					help="file with file names to skip for the stored files")
+	parser.add_option("-x", "--skip",
+	                  dest="skip_list", metavar="NAME", action="append",
+	                  help="exclude these files from the stored files")
+	parser.add_option("--skip-list",
+	                  dest="skip_file", default="", metavar="FILE",
+	                  help="file with file names to skip for the stored files")
+	parser.add_option("--skip-regex",
+	                  dest="skip_regex", default="",
+	                  help="regex to skip files files to store. matched to "
+	                  "the path inside the release dir. "
+	                  "use ^ and $ to match whole path. "
+	                  "e.g. ^.*/sitename\.nfo$ (case ignored)")
 
 	# speedup rerun, less traffic, backup textfiles, ...
 	parser.add_option("--no-srs", action="store_true", dest="nosrs",
@@ -1520,6 +1540,20 @@ def main(argv=None):
 			return 1  # failure
 		with open(options.skip_file, 'r') as skiplist:
 			options.skip_list = skiplist.read().splitlines()
+	if options.skip_regex:
+		global skipre
+		try:
+			skipre = re.compile(options.skip_regex, re.IGNORECASE)
+			if skipre.match("test.sfv"):
+				msg = "Not a good idea to ignore SFV files in the regex!"
+				logging.warning(msg)
+		except Exception as e:
+			# use --skip-regex "*" to trigger this
+			print("Unrecognized regular expression: %s" % e)
+			print("Some examples: (case always ignored)")
+			print("\t^.*/sitename\.nfo$")
+			print("\t^sample/.*\._s.jpg$")
+			return 1  # failure
 
 	drive_letters = []
 	aborted = False

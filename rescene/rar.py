@@ -403,7 +403,7 @@ class RarBlock(object):
 		out += "|Header bytes: %s\n" % hex_string
 		if self.rawtype == BlockType.RarMin:
 			out += "|Rar marker block is always 'Rar!1A0700' (magic number)\n"
-		out += "|HEAD_CRC:   0x%X\n" % self.crc
+		out += "|HEAD_CRC:   0x%04X\n" % self.crc
 		out += "|HEAD_TYPE:  0x%X (%s)\n" % (self.rawtype, bname)
 		out += self.explain_flags()
 		out += "|HEAD_SIZE:  %s\n" % self.explain_size(self.header_size)
@@ -1078,7 +1078,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 		       self.packed_size 
 		out += "+UNP_SIZE: %i bytes\n" % self.unpacked_size
 		out += "+HOST_OS: " + self.get_os() + "\n"
-		out += "+FILE_CRC: %X\n" % self.file_crc
+		out += "+FILE_CRC: %08X\n" % self.file_crc
 		out += "+FTIME: %s\n" % self.ftime(self.file_datetime)
 		out += "+UNP_VER: " + self.get_version() + "\n"
 		out += "+METHOD: " + self.get_compression_name() + "\n"
@@ -1345,7 +1345,7 @@ class RarEndArchiveBlock(RarBlock):
 	def explain(self):
 		out = super(RarEndArchiveBlock, self).explain()
 		if self.flags & RarEndArchiveBlock.DATACRC:
-			out += "+RAR CRC (4 bytes): %X\n" % self.rarcrc
+			out += "+RAR CRC (4 bytes): %08X\n" % self.rarcrc
 		if self.flags & RarEndArchiveBlock.VOLNUMBER:
 			out += "+Volume number (2 bytes): %d\n" % self.volume_number
 		return out

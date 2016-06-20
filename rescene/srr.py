@@ -30,6 +30,7 @@ from __future__ import print_function
 import optparse
 import sys
 import os
+import re
 import time
 import traceback
 import fnmatch
@@ -241,6 +242,45 @@ def manage_srr(options, in_folder, infiles, working_dir):
 				status = 1
 				print("{0}: not extracted!".format(file_name), file=sys.stderr)
 		return status
+	elif options.extract_regex:
+		status = 0  # no unexpected failures, good input
+		mthread.set_messages([])
+
+		try:
+			to_extract = re.compile(options.extract_regex, re.IGNORECASE)
+		except Exception as e:
+			print("Unrecognized regular expression: %s" % e)
+			print("Some examples:")
+			print("\t.*\.nfo$")
+			print("\t.*(nfo|sfv)$")
+			print("\t^sample/.*")
+			return 1
+			
+		# append release name to the output path for all extracted files
+		if options.parent:  # -d (additional usage for this option)
+			srr = os.path.basename(infiles[0])
+			out_folder = os.path.join(out_folder, os.path.splitext(srr)[0])
+			
+		def decide_extraction(stored_fn):
+			return to_extract.match(stored_fn)
+
+		files = rescene.extract_files(
+			infiles[0], out_folder, save_paths, matcher=decide_extraction)
+
+		# show which files are extracted + success or not
+		for efile, success in files:
+			file_name = efile[len(out_folder) + 1:]
+			if success:
+				print("{0}: extracted.".format(file_name))
+			else:
+				status = 1
+				print("{0}: not extracted!".format(file_name), file=sys.stderr)
+
+		if not len(files):
+			print("No matching files to extract.")
+
+		return status
+
 	elif options.store_files:  # -s
 		mthread.set_messages([MsgCode.STORING])
 		rescene.add_stored_files(infiles[0], options.store_files,
@@ -249,7 +289,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		# reconstruct (certain) volumes
 		mthread.set_messages([MsgCode.FILE_NOT_FOUND, MsgCode.UNKNOWN,
 		                      MsgCode.MSG, MsgCode.NO_OVERWRITE,
-		                      MsgCode.USER_ABORTED])
+		                      MsgCode.USER_ABORTED, MsgCode.CRC])
 		hints = dict()
 		if options.hints:
 			for hint in options.hints.split(';'):
@@ -357,7 +397,8 @@ def main(argv=None):
 	"\t\tsrr CD1/cd1.sfv CD2/cd2.sfv -s *.nfo -s other.file -d -p\n"
 	"To reconstruct a release, use the SRR file created from the release.\n"
 	"	ex:"
-	"\tsrr file.srr"),
+	"\tsrr file.srr\n"
+	"Do not use this command to create srr files from vobsubs! Use Auto."),
 	version="%prog " + rescene.__version__)  # --help, --version
 
 	display = optparse.OptionGroup(parser, "Display options")
@@ -442,11 +483,14 @@ def main(argv=None):
 
 # 	creation.set_description("These options are used for creating an SRR file.")
 	edit.add_option("-x", "--extract",
-					  	action="store_true", dest="extract", default=False,
-					  	help="extract SRR stored files only")
+	                action="store_true", dest="extract", default=False,
+	                help="extract SRR stored files only")
+	edit.add_option("--extract-regex",
+	                dest="extract_regex",
+					help="extract stored files that match the provided regex")
 	edit.add_option("-s", help="<file list>: Store additional files in the"
-						" SRR (wildcards supported)", action="append",
-						metavar="FILES", dest="store_files")
+	                " SRR (wildcards supported)", action="append",
+	                metavar="FILES", dest="store_files")
 
 	if argv is None:
 		argv = sys.argv[1:]
@@ -480,6 +524,9 @@ def main(argv=None):
 
 	if options.temp_dir and not os.path.isdir(options.temp_dir):
 		report_error(1, "Provided temporary directory not found.\n")
+		
+	if options.extract and options.extract_regex:
+		report_error(1, "Extract all or follow the regex?\n")
 
 	if options.allow_compressed:
 		print("*"*60, file=sys.stderr)
