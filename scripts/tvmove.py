@@ -4,9 +4,9 @@ Show the possible parameters and usage:
     python TVMove.py --help
 
 Created on 25-jul-2009
-Last update: 2009-07-27
+Last update: 2009-08-21
 
-Not tested on Windows, but it should work.
+Tested on Windows with cygwin.
 
 What does it do? It changes this:
     .
@@ -66,6 +66,7 @@ Name it 'tvmove' and you can use it as any other command.
 
 http://motechnet.com/~gfy/tvmove/
 
+0.3: support for subpacks (2009-08-21)
 0.2: refactorings, additional comments (2009-07-27)
 0.1: initial release (2009-07-26)
 
@@ -74,7 +75,7 @@ http://motechnet.com/~gfy/tvmove/
 
 import os, sys, glob, re, optparse
 
-__VERSION__ = "0.2"
+__VERSION__ = "0.3"
 
 #a dictionary with key/value pairs
 folders = {}
@@ -84,7 +85,6 @@ def send_error(message):
     sys.exit(1)
 
 #adds a release directory to the folders variable
-
 def append_folder(key,value):
     global folders
     folders[key] = value
@@ -107,6 +107,7 @@ def get_key(name):
     fov_match = re.match(patternFoV, name)
     # test for the TOPAZ file format
     file_match = re.match(patternFile, name)
+    subpack_match = re.search("subpack", name, re.IGNORECASE)
     match = False
     
     if regular_match:
@@ -121,6 +122,10 @@ def get_key(name):
         match = True
         season = int(file_match.group(1))
         episode = int(file_match.group(2))
+    elif subpack_match and not match:
+        match = True
+        season = 999
+        episode = 999     
 
     if match:
         # construct a key: ssseee
