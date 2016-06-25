@@ -4,7 +4,6 @@ Show the possible parameters and usage:
     python TVMove.py --help
 
 Created on 25-jul-2009
-Last update: 2009-08-21
 
 Tested on Windows with cygwin.
 
@@ -20,7 +19,7 @@ What does it do? It changes this:
     |-- tpz-24703-sample.avi
     `-- tpz-24703.nfo
 
-into this:
+to this:
     .
     |-- 24.S07E01.DVDRip.XviD-TOPAZ
     |   |-- Sample
@@ -36,6 +35,7 @@ into this:
         `-- tpz-24703.nfo
 
 This program is useful for:
+  - moving srt subtitles into their corresponding directory.
   - moving downloaded television series to their correct scene folder.
     (if your usenet client doesn't do this already for you, like Pan)
     You must create the folders separately. e.g. by a batch script:
@@ -44,7 +44,7 @@ This program is useful for:
     Save it as make_dirs.bat.
     Execute it: ./make_dirs.bat and you have your dirs.
     
-    Do it fast with vim, based on the nzb file names:
+    Do it fast with vim, based on nzb/par2 file names:
         ls -1 *.nzb > mkdir.bat
         vim mkdir
             q a i mkdir <ESC> j 0 q    record a macro
@@ -52,20 +52,31 @@ This program is useful for:
             :%s/.nzb//g                remove the extensions
             :wq                        save and quit
     
-  - moving srt subtitles into their corresponding directory.
   - learning Python. This is my very first Python program!
 
 Example usage: ./TVMove.py -s .
 If you get     bash: ./TVMove.py: Permission denied
 do             chmod u+x TVMove.py
 
-Use this in your bin dir to use your own name as command:
+Place this in your bin dir to use your own name and options:
     #!/bin/bash
     exec python /home/you/bin/TVMove.py -s . $@
-Name it 'tvmove' and you can use it as any other command.
+Name the file 'tvmove' and you can use 'tvmove' like it would be any other command.
+Make it executable:
+    chmod u+x tvmove
+
+To create your own bin dir for executable files:
+* Create the dir:
+    mkdir ~/bin
+* To add a directory to your PATH, add
+    #my own executable files
+    PATH=$PATH:$HOME/bin
+  to your .bashrc file
 
 http://motechnet.com/~gfy/tvmove/
 
+0.4: extra's, files like fs1001uc.xvid-siso.nfo work (2009-10-15)
+     wat-himym-s02e01-sample.avi gets recognized now
 0.3: support for subpacks (2009-08-21)
 0.2: refactorings, additional comments (2009-07-27)
 0.1: initial release (2009-07-26)
@@ -75,7 +86,7 @@ http://motechnet.com/~gfy/tvmove/
 
 import os, sys, glob, re, optparse
 
-__VERSION__ = "0.3"
+__VERSION__ = "0.4"
 
 #a dictionary with key/value pairs
 folders = {}
@@ -90,24 +101,32 @@ def append_folder(key,value):
     folders[key] = value
     
 def get_key(name):
-    '''from userscript:
-    var patternRegular = /.*\.([sS][0-9]?[0-9])[\.]?([eE][0-9]{1,3})[\.-]?[eE]?([0-9]{2,3})?.*/;
-    var patternFoV = /.*\.([0-9]{1,2})[x]([0-9]{2,3})([\._-]([0-9]{1,2}[x])?)?([0-9]{2,3})?[\._].*/;
-    var patternRETRO = /.*\.[eE][pP]([0-9][0-9]).*/; //old divx releases
+    '''
+    This function tries to generate a unique identifying key for a given
+    releasename or filename.
     '''
     
     # for folders
-    patternRegular = ".*\.[sS]([0-9]?[0-9])[\.]?[eE]([0-9]{1,3})[\.-]?[eE]?([0-9]{2,3})?.*"
+    patternRegular = ".*[\.-]?[sS]([0-9]?[0-9])[\.]?[eE]([0-9]{1,3})[\.-]?[eE]?([0-9]{2,3})?.*"
     patternFoV = ".*\.?([0-9]{1,2})[x]([0-9]{2,3})([\._-]([0-9]{1,2}[x])?)?([0-9]{2,3})?[\._]?.*"
-    # for files like tpz-24724.nfo
-    patternFile = ".*([0-9]{1})([0-9]{2})\.?.*"
+    patternRETRO = ".*\.[eE][pP]([0-9][0-9]).*"
+    
+    # for files like:
+    #     tpz-24724.nfo 24.S07E24.PREAIR.DVDRip.XviD-TOPAZ
+    #     fs1001uc.xvid-siso.nfo Friends.S10E01.UNCUT.DVDRip.XviD-SiSO
+    #     leverage.113.dvdrip.xvid-saints.nfo
+    patternFile = ".*(?:(?:[0-9][0-9])([0-9]+)|[^0-9]([0-9]{1,2}))([0-9]{2})\.?.*"
     
     # test if it's a release folder
     regular_match = re.match(patternRegular, name)
     fov_match = re.match(patternFoV, name)
+    retro_match = re.match(patternRETRO, name)
+    
     # test for the TOPAZ file format
     file_match = re.match(patternFile, name)
+    
     subpack_match = re.search("subpack", name, re.IGNORECASE)
+    extras_match = re.search("extras", name, re.IGNORECASE)
     match = False
     
     if regular_match:
@@ -120,13 +139,24 @@ def get_key(name):
         episode = int(fov_match.group(2))
     elif file_match:
         match = True
-        season = int(file_match.group(1))
-        episode = int(file_match.group(2))
-    elif subpack_match and not match:
+        if file_match.group(1) == None:
+            season = int(file_match.group(2))
+        else:
+            season = int(file_match.group(1))
+        episode = int(file_match.group(3))
+    elif not match and retro_match:
+        match = True
+        season = 001
+        episode = int(file_match.group(1))
+    elif not match and subpack_match:
         match = True
         season = 999
-        episode = 999     
-
+        episode = 999
+    elif not match and extras_match:
+        match = True
+        season = 999
+        episode = 998
+        
     if match:
         # construct a key: ssseee
         return '%(season)03d%(episode)03d' % {'season': season, "episode": episode}
@@ -164,7 +194,7 @@ def move_file(move_to_folder, file):
     extra_subdir = check_for_subdir(file)
     
     if options.verbose > 0:
-        print "Moving... %(file)s to %(dir)s" % \
+        print "Moving... %(file)s to\n          %(dir)s" % \
             {'file': os.path.basename(file), 
              'dir': move_to_folder + extra_subdir}
     
