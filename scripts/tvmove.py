@@ -106,6 +106,7 @@ http://stackoverflow.com/questions/1471153/string-similarity-metrics-in-python
 Separate algorithm from the files and add unit tests.
 http://www.machinalis.com/blog/separate-io-from-algorithms/
 
+0.5: move proof files to its folder, better detection due to x264 (2016-06-25)
 0.4: extra's, files like fs1001uc.xvid-siso.nfo work (2009-10-15)
      wat-himym-s02e01-sample.avi gets recognized now
 0.3: support for subpacks (2009-08-21)
@@ -117,7 +118,7 @@ http://www.machinalis.com/blog/separate-io-from-algorithms/
 
 import os, sys, glob, re, optparse
 
-__VERSION__ = "0.4"
+__VERSION__ = "0.5"
 
 # a dictionary with key/value pairs
 folders = {}
@@ -147,10 +148,17 @@ def get_key(name):
     #     fs1001uc.xvid-siso.nfo Friends.S10E01.UNCUT.DVDRip.XviD-SiSO
     #     leverage.113.dvdrip.xvid-saints.nfo
     patternFile = ".*(?:(?:[0-9][0-9])([0-9]+)|[^0-9]([0-9]{1,2}))([0-9]{2})\.?.*"
+    
+    # filter out known false positives causing trouble for detection
+    # e.g. sample-veronica.mars.101.dvdrip.x264-mm.mkv
+    name = name.replace("x264", "")
+    name = name.replace("h264", "")
+    name = name.replace("x265", "")
+    name = name.replace("h265", "")
 
     # test if it's a release folder
     regular_match = re.match(patternRegular, name)
-    fov_match = re.match(patternFoV, name)
+    fov_match = re.match(patternFoV, name)  # TODO: x264 could be valid here
     retro_match = re.match(patternRETRO, name)
 
     # test for the TOPAZ file format
@@ -287,7 +295,7 @@ def main(options, args):
 							{'file': file, "key": key})
 
                     # check if there is a folder to move to
-                    if folders.has_key(key):
+                    if key in folders:
                         count_files += 1
                         move_file(folders[key], file)
 
