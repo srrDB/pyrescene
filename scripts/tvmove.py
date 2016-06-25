@@ -115,47 +115,47 @@ import os, sys, glob, re, optparse
 
 __VERSION__ = "0.4"
 
-#a dictionary with key/value pairs
+# a dictionary with key/value pairs
 folders = {}
 
 def send_error(message):
     print "%s Exiting..." % message
     sys.exit(1)
 
-#adds a release directory to the folders variable
-def append_folder(key,value):
+# adds a release directory to the folders variable
+def append_folder(key, value):
     global folders
     folders[key] = value
-    
+
 def get_key(name):
     '''
     This function tries to generate a unique identifying key for a given
     release name or file name.
     '''
-    
+
     # for folders
     patternRegular = ".*[\.-]?[sS]([0-9]?[0-9])[\.]?[eE]([0-9]{1,3})[\.-]?[eE]?([0-9]{2,3})?.*"
     patternFoV = ".*\.?([0-9]{1,2})[x]([0-9]{2,3})([\._-]([0-9]{1,2}[x])?)?([0-9]{2,3})?[\._]?.*"
     patternRETRO = ".*\.[eE][pP]([0-9][0-9]).*"
-    
+
     # for files like:
     #     tpz-24724.nfo 24.S07E24.PREAIR.DVDRip.XviD-TOPAZ
     #     fs1001uc.xvid-siso.nfo Friends.S10E01.UNCUT.DVDRip.XviD-SiSO
     #     leverage.113.dvdrip.xvid-saints.nfo
     patternFile = ".*(?:(?:[0-9][0-9])([0-9]+)|[^0-9]([0-9]{1,2}))([0-9]{2})\.?.*"
-    
+
     # test if it's a release folder
     regular_match = re.match(patternRegular, name)
     fov_match = re.match(patternFoV, name)
     retro_match = re.match(patternRETRO, name)
-    
+
     # test for the TOPAZ file format
     file_match = re.match(patternFile, name)
-    
+
     subpack_match = re.search("subpack", name, re.IGNORECASE)
     extras_match = re.search("extras", name, re.IGNORECASE)
     match = False
-    
+
     if regular_match:
         match = True
         season = int(regular_match.group(1))
@@ -183,11 +183,11 @@ def get_key(name):
         match = True
         season = 999
         episode = 998
-        
+
     if match:
         # construct a key: ssseee
         return '%(season)03d%(episode)03d' % {'season': season, "episode": episode}
-    
+
     return None
 
 def check_new_folder(foldername):
@@ -195,70 +195,70 @@ def check_new_folder(foldername):
     if key is not None:
         if options.verbose > 1:
             print "Release folder found: " + str(foldername.strip(os.sep))
-            print "    Season: " + str(int(key[:3]))    # The first three characters
-            print "    Episode: " + str(int(key[3:]))   # All but the first three characters
+            print "    Season: " + str(int(key[:3]))  # The first three characters
+            print "    Episode: " + str(int(key[3:]))  # All but the first three characters
             print "    Generated key: " + key
-            
-        #add to the list of folders
+
+        # add to the list of folders
         append_folder(key, foldername)
 
 def check_for_subdir(file):
     extra_subdir = ""
-    
+
     # does it needs to be moved to a Sample/Subs dir?
     if options.samples_subs:
         if re.search("sample", file, re.IGNORECASE):
             extra_subdir = "Sample"
         elif re.search("subs|vobsub", file, re.IGNORECASE):
             extra_subdir = "Subs"
-        
+
     if options.proofs:
         if re.search("proof.*.jpg", file, re.IGNORECASE):
             extra_subdir = "Proof"
-    
+
     if options.verbose > 1 and extra_subdir != "":
         print "Will be moved to additional subdir %s." % extra_subdir
-    
+
     return extra_subdir
-    
+
 def move_file(move_to_folder, file):
     extra_subdir = check_for_subdir(file)
-    
+
     if options.verbose > 0:
         print "Moving... %(file)s to\n          %(dir)s" % \
-            {'file': os.path.basename(file), 
+            {'file': os.path.basename(file),
              'dir': move_to_folder + extra_subdir}
-    
+
     if not options.dry_run:
         if options.verbose > 1:
             print "Actually moving the file."
-        
+
         try:
-            move_to_folder = os.path.realpath(move_to_folder + os.sep + 
+            move_to_folder = os.path.realpath(move_to_folder + os.sep +
                                               extra_subdir + os.sep + file)
             file = os.path.realpath(file)
             os.renames(file, move_to_folder)
         except (IOError, os.error), err:
             send_error(err)
-   
+
 def main(options, args):
     count_directories = 0
     count_files = 0
-    
+
     # iterate the directories to process
     for path in args:
         try:
             os.chdir(path)
         except:
             send_error("Can't enter %s." % path)
-            
+
         if options.verbose > 0:
             print "### Processing %s ###" % os.path.realpath(os.path.basename(path))
-            
+
         # clean dictionary
         global folders
         folders = {}
-        
+
         # iterate through all the folders in given directory
         for folder in glob.glob("*" + os.sep):
             # process the folder
@@ -272,77 +272,77 @@ def main(options, args):
         # iterate through all the files in given directory
         for file in os.listdir(os.curdir):
             # only process files, not directories
-            if os.path.isfile(file): 
-                # retrieve episode and season 
+            if os.path.isfile(file):
+                # retrieve episode and season
                 key = get_key(file)
-                
+
                 if key is not None:
                     if options.verbose > 1:
                         print "Key found for file %(file)s: %(key)s" \
                             % {'file': file, "key": key}
-                
-                    #check if there is a folder to move to
+
+                    # check if there is a folder to move to
                     if folders.has_key(key):
                         count_files += 1
                         move_file(folders[key], file)
-                            
+
                     else:
                         if options.verbose > 0:
                             print "No folder found for %s" % file
-                
+
                 # season and episode can't be detected
                 else:
                     if options.verbose > 1:
                         print "Failed recognition for %(file)s" % {'file': file}
-         
+
         count_directories += 1
     return (count_directories, count_files)
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(
-        usage="Usage: %prog [options] dir1 ...", 
-        version="%prog " + __VERSION__) # --help, --version
-    
+        usage="Usage: %prog [options] dir1 ...",
+        version="%prog " + __VERSION__)  # --help, --version
+
     bold = "\033[1m"
     reset = "\033[0;0m"
-    
+
     output = optparse.OptionGroup(parser, "Feedback options")
     parser.add_option_group(output)
 
-    output.add_option("-q", "--quiet", 
+    output.add_option("-q", "--quiet",
                       action="store_const", const=0, dest="verbose",
                       help="don't print status messages to stdout")
-    output.add_option("-v", "--verbose", 
+    output.add_option("-v", "--verbose",
                       action="store_const", const=1, dest="verbose", default=1,
                       help="print feedback (default)")
-    output.add_option("-y", "--noisy", 
+    output.add_option("-y", "--noisy",
                       action="store_const", const=2, dest="verbose",
                       help="print internal workings too")
-    
-    parser.add_option("-n", "--dry-run", 
-                      action="store_true", dest="dry_run", default=False, 
+
+    parser.add_option("-n", "--dry-run",
+                      action="store_true", dest="dry_run", default=False,
                       help="do no harm")
     parser.add_option("-s", "--sample-subs",
-                      action="store_true", dest="samples_subs", default=False,  
-                      help="moves the detected " + bold + "sample" + reset + 
-                      " and " + bold + "subs" + reset + 
+                      action="store_true", dest="samples_subs", default=False,
+                      help="moves the detected " + bold + "sample" + reset +
+                      " and " + bold + "subs" + reset +
                       " files respectively to ./Sample and ./Subs subdirs")
     parser.add_option("-p", "--proofs",
-                      action="store_true", dest="proofs", default=False,  
+                      action="store_true", dest="proofs", default=False,
                       help="moves the proof image files to ./Proof subdirs")
 
     # no arguments given
     if len(sys.argv) < 2:
         print parser.format_help()
-    else:       
+    else:
         (options, args) = parser.parse_args()
-        
+
         if options.verbose > 1:
             print "options: " + str(options)
             print "folders: " + str(args)
-        
-        (nb_dirs, nb_files) = main(options,args)
-        
+
+        (nb_dirs, nb_files) = main(options, args)
+
         if options.verbose > 0:
             print "All done."
             print "Moved %d files when processing %s director%s" % \
