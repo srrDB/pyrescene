@@ -4,9 +4,36 @@ Show the possible parameters and usage:
     python TVMove.py --help
 
 Created on 25-jul-2009
-Last update: 2009-07-26
+Last update: 2009-07-27
 
-Not tested on Windows.
+Not tested on Windows, but it should work.
+
+What does it do? It changes this:
+    .
+    |-- 24.S07E01.DVDRip.XviD-TOPAZ
+    |-- 24.S07E02.DVDRip.XviD-TOPAZ
+    |-- 24.S07E03.DVDRip.XviD-TOPAZ
+    |-- tpz-24701-sample.avi
+    |-- tpz-24701.nfo
+    |-- tpz-24702-sample.avi
+    |-- tpz-24702.nfo
+    |-- tpz-24703-sample.avi
+    `-- tpz-24703.nfo
+
+into this:
+    .
+    |-- 24.S07E01.DVDRip.XviD-TOPAZ
+    |   |-- Sample
+    |   |   `-- tpz-24701-sample.avi
+    |   `-- tpz-24701.nfo
+    |-- 24.S07E02.DVDRip.XviD-TOPAZ
+    |   |-- Sample
+    |   |   `-- tpz-24702-sample.avi
+    |   `-- tpz-24702.nfo
+    `-- 24.S07E03.DVDRip.XviD-TOPAZ
+        |-- Sample
+        |   `-- tpz-24703-sample.avi
+        `-- tpz-24703.nfo
 
 This program is useful for:
   - moving downloaded television series to their correct scene folder.
@@ -22,7 +49,7 @@ This program is useful for:
         vim mkdir
             q a i mkdir <ESC> j 0 q    record a macro
             10@a                       execute it 10 times
-            :%s/.nzb//g                remove the extentions
+            :%s/.nzb//g                remove the extensions
             :wq                        save and quit
     
   - moving srt subtitles into their corresponding directory.
@@ -35,15 +62,19 @@ do             chmod u+x TVMove.py
 Use this in your bin dir to use your own name as command:
     #!/bin/bash
     exec python /home/you/bin/TVMove.py -s . $@
+Name it 'tvmove' and you can use it as any other command.
 
 http://motechnet.com/~gfy/tvmove/
+
+0.2: refactorings, additional comments (2009-07-27)
+0.1: initial release (2009-07-26)
 
 @author: Gfy
 '''
 
 import os, sys, glob, re, optparse
 
-__VERSION__ = "0.1"
+__VERSION__ = "0.2"
 
 #a dictionary with key/value pairs
 folders = {}
@@ -53,6 +84,7 @@ def send_error(message):
     sys.exit(1)
 
 #adds a release directory to the folders variable
+
 def append_folder(key,value):
     global folders
     folders[key] = value
@@ -98,7 +130,7 @@ def get_key(name):
 
 def check_new_folder(foldername):
     key = get_key(foldername)
-    if key:
+    if key is not None:
         if options.verbose > 1:
             print "Release folder found: " + str(foldername.strip(os.sep))
             print "    Season: " + str(int(key[:3]))    # The first three characters
@@ -107,8 +139,43 @@ def check_new_folder(foldername):
             
         #add to the list of folders
         append_folder(key, foldername)
+
+def check_for_subdir(file):
+    extra_subdir = ""
     
-def main(options,args):
+    # does it needs to be moved to a Sample/Subs dir?
+    if options.samples_subs:
+        if re.search("sample", file, re.IGNORECASE):
+            extra_subdir = "Sample"
+        elif re.search("subs|vobsub", file, re.IGNORECASE):
+            extra_subdir = "Subs"
+        
+        if options.verbose > 1 and extra_subdir != "":
+            print "Will be moved to additional subdir %s." % extra_subdir
+    
+    return extra_subdir
+    
+def move_file(move_to_folder, file):
+    extra_subdir = check_for_subdir(file)
+    
+    if options.verbose > 0:
+        print "Moving... %(file)s to %(dir)s" % \
+            {'file': os.path.basename(file), 
+             'dir': move_to_folder + extra_subdir}
+    
+    if not options.dry_run:
+        if options.verbose > 1:
+            print "Actually moving the file."
+        
+        try:
+            move_to_folder = os.path.realpath(move_to_folder + os.sep + 
+                                              extra_subdir + os.sep + file)
+            file = os.path.realpath(file)
+            os.renames(file, move_to_folder)
+        except (IOError, os.error), err:
+            send_error(err)
+   
+def main(options, args):
     count_directories = 0
     count_files = 0
     
@@ -143,39 +210,15 @@ def main(options,args):
                 # retrieve episode and season 
                 key = get_key(file)
                 
-                if key:
+                if key is not None:
                     if options.verbose > 1:
-                        print "Key found for file %(file)s: %(key)s" % {'file': file, "key": key}
+                        print "Key found for file %(file)s: %(key)s" \
+                            % {'file': file, "key": key}
                 
                     #check if there is a folder to move to
                     if folders.has_key(key):
-                        move_to_folder = folders[key]
                         count_files += 1
-                        extra_subdir = ""
-                        
-                        # does it needs to be moved to a Sample/Subs dir?
-                        if options.samples_subs:
-                            if re.search("sample", file, re.IGNORECASE):
-                                extra_subdir = "Sample"
-                            elif re.search("subs|vobsub", file, re.IGNORECASE):
-                                extra_subdir = "Subs"
-                            if options.verbose > 1 and extra_subdir != "":
-                                print "Will be moved to additional subdir %s." % extra_subdir
-                                
-                        if options.verbose > 0:
-                            print "Moving... %(file)s to %(dir)s" % {'file': os.path.basename(file), 
-                                                                     'dir': move_to_folder + extra_subdir} #.rstrip(os.sep)
-                            
-                        if not options.dry_run:
-                            if options.verbose > 1:
-                                print "Actually moving the file."
-                            try:
-                                move_to_folder = os.path.realpath(move_to_folder + os.sep  + extra_subdir + os.sep + file)
-                                file = os.path.realpath(file)
-                               
-                                os.renames(file, move_to_folder)
-                            except (IOError, os.error), err:
-                                send_error(err)
+                        move_file(folders[key], file)
                             
                     else:
                         if options.verbose > 0:
@@ -200,18 +243,24 @@ if __name__ == '__main__':
     output = optparse.OptionGroup(parser, "Feedback options")
     parser.add_option_group(output)
 
-    #parser.add_option("-d", "--directory", "", type="string", dest="directory", help="process the DIRECTORIES", metavar="DIR")
-    output.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose",
+    output.add_option("-q", "--quiet", 
+                      action="store_const", const=0, dest="verbose",
                       help="don't print status messages to stdout")
-    output.add_option("-v", "--verbose", action="store_const", const=1, dest="verbose", default=1,
+    output.add_option("-v", "--verbose", 
+                      action="store_const", const=1, dest="verbose", default=1,
                       help="print feedback (default)")
-    output.add_option("-y", "--noisy", action="store_const", const=2, dest="verbose",
+    output.add_option("-y", "--noisy", 
+                      action="store_const", const=2, dest="verbose",
                       help="print internal workings too")
     
-    parser.add_option("-n", "--dry-run", action="store_true", default=False, dest="dry_run", help="do no harm")
-    parser.add_option("-s", "--sample-subs", action="store_true", default=False, dest="samples_subs", 
-                      help="moves the detected " + bold + "sample" + reset + " and " + bold + "subs" 
-                      + reset + " files respectively to ./Sample and ./Subs subdirs")
+    parser.add_option("-n", "--dry-run", 
+                      action="store_true", dest="dry_run", default=False, 
+                      help="do no harm")
+    parser.add_option("-s", "--sample-subs",
+                      action="store_true", dest="samples_subs", default=False,  
+                      help="moves the detected " + bold + "sample" + reset + 
+                      " and " + bold + "subs" + reset + 
+                      " files respectively to ./Sample and ./Subs subdirs")
 
     # no arguments given
     if len(sys.argv) < 2:
@@ -227,4 +276,5 @@ if __name__ == '__main__':
         
         if options.verbose > 0:
             print "All done."
-            print "Moved %d files when processing %s director%s" % (nb_files, nb_dirs, "y." if (nb_dirs == 1) else "ies.")
+            print "Moved %d files when processing %s director%s" % \
+                    (nb_files, nb_dirs, "y." if (nb_dirs == 1) else "ies.")
