@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: latin-1 -*-
 '''
 Show the possible parameters and usage:
     python TVMove.py --help
@@ -61,8 +62,8 @@ do             chmod u+x TVMove.py
 Place this in your bin dir to use your own name and options:
     #!/bin/bash
     exec python /home/you/bin/TVMove.py -s . $@
-Name the file 'tvmove' and you can use 'tvmove' like it would be any other command.
-Make it executable:
+Name the file 'tvmove' and you can use 'tvmove' like it would be 
+any other command. Make it executable:
     chmod u+x tvmove
 
 To create your own bin dir for executable files:
@@ -74,6 +75,32 @@ To create your own bin dir for executable files:
   to your .bashrc file
 
 http://motechnet.com/~gfy/tvmove/
+
+TODO:
+-----
+make these work:
+    The.Genius.of.Photography.E01.Fixing.the.Shadows.DVDRiP.XViD-DeBTV
+    debt-tgop.e01.English.srt
+    
+    No folder found for 30.rock.508.720p-dimension.sample.srs
+    No folder found for off.the.map.110.720p-dimension.sample.srs
+	
+Moving... The.Unit.S02E02.RARFIX.DVDRip.XviD-TOPAZ.srr to
+          The.Unit.S02E02.RARFIX.DVDRip.XviD-TOPAZ\
+[Error 183] Kan geen bestand maken dat al bestaat Exiting...
+-> Make it skip and continue + error report
+
+Make sure that files that need moving aren't in the root dir:
+tvmove ./subs -n
+relative to current working directory
+
+With multiple possibilities, try to gues the right one, not the first one:
+The.Unit.S02E02.DVDRip.XviD-TOPAZ
+The.Unit.S02E02.RARFIX.DVDRip.XviD-TOPAZ
+
+Support for PartX episodes.
+
+http://stackoverflow.com/questions/1471153/string-similarity-metrics-in-python
 
 0.4: extra's, files like fs1001uc.xvid-siso.nfo work (2009-10-15)
      wat-himym-s02e01-sample.avi gets recognized now
@@ -103,7 +130,7 @@ def append_folder(key,value):
 def get_key(name):
     '''
     This function tries to generate a unique identifying key for a given
-    releasename or filename.
+    release name or file name.
     '''
     
     # for folders
@@ -185,8 +212,12 @@ def check_for_subdir(file):
         elif re.search("subs|vobsub", file, re.IGNORECASE):
             extra_subdir = "Subs"
         
-        if options.verbose > 1 and extra_subdir != "":
-            print "Will be moved to additional subdir %s." % extra_subdir
+    if options.proofs:
+        if re.search("proof.*.jpg", file, re.IGNORECASE):
+            extra_subdir = "Proof"
+    
+    if options.verbose > 1 and extra_subdir != "":
+        print "Will be moved to additional subdir %s." % extra_subdir
     
     return extra_subdir
     
@@ -296,6 +327,9 @@ if __name__ == '__main__':
                       help="moves the detected " + bold + "sample" + reset + 
                       " and " + bold + "subs" + reset + 
                       " files respectively to ./Sample and ./Subs subdirs")
+    parser.add_option("-p", "--proofs",
+                      action="store_true", dest="proofs", default=False,  
+                      help="moves the proof image files to ./Proof subdirs")
 
     # no arguments given
     if len(sys.argv) < 2:
