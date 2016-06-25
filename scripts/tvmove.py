@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
-'''
+
+"""
 Show the possible parameters and usage:
     python TVMove.py --help
 
@@ -102,6 +103,9 @@ Support for PartX episodes.
 
 http://stackoverflow.com/questions/1471153/string-similarity-metrics-in-python
 
+Separate algorithm from the files and add unit tests.
+http://www.machinalis.com/blog/separate-io-from-algorithms/
+
 0.4: extra's, files like fs1001uc.xvid-siso.nfo work (2009-10-15)
      wat-himym-s02e01-sample.avi gets recognized now
 0.3: support for subpacks (2009-08-21)
@@ -109,7 +113,7 @@ http://stackoverflow.com/questions/1471153/string-similarity-metrics-in-python
 0.1: initial release (2009-07-26)
 
 @author: Gfy
-'''
+"""
 
 import os, sys, glob, re, optparse
 
@@ -119,7 +123,7 @@ __VERSION__ = "0.4"
 folders = {}
 
 def send_error(message):
-    print "%s Exiting..." % message
+    print("%s Exiting..." % message)
     sys.exit(1)
 
 # adds a release directory to the folders variable
@@ -173,7 +177,7 @@ def get_key(name):
         episode = int(file_match.group(3))
     elif not match and retro_match:
         match = True
-        season = 001
+        season = 1
         episode = int(file_match.group(1))
     elif not match and subpack_match:
         match = True
@@ -194,10 +198,10 @@ def check_new_folder(foldername):
     key = get_key(foldername)
     if key is not None:
         if options.verbose > 1:
-            print "Release folder found: " + str(foldername.strip(os.sep))
-            print "    Season: " + str(int(key[:3]))  # The first three characters
-            print "    Episode: " + str(int(key[3:]))  # All but the first three characters
-            print "    Generated key: " + key
+            print("Release folder found: " + str(foldername.strip(os.sep)))
+            print("    Season: " + str(int(key[:3])))  # The first three characters
+            print("    Episode: " + str(int(key[3:])))  # All but the first three characters
+            print("    Generated key: " + key)
 
         # add to the list of folders
         append_folder(key, foldername)
@@ -217,7 +221,7 @@ def check_for_subdir(file):
             extra_subdir = "Proof"
 
     if options.verbose > 1 and extra_subdir != "":
-        print "Will be moved to additional subdir %s." % extra_subdir
+        print("Will be moved to additional subdir %s." % extra_subdir)
 
     return extra_subdir
 
@@ -225,20 +229,20 @@ def move_file(move_to_folder, file):
     extra_subdir = check_for_subdir(file)
 
     if options.verbose > 0:
-        print "Moving... %(file)s to\n          %(dir)s" % \
+        print("Moving... %(file)s to\n          %(dir)s" %
             {'file': os.path.basename(file),
-             'dir': move_to_folder + extra_subdir}
+             'dir': move_to_folder + extra_subdir})
 
     if not options.dry_run:
         if options.verbose > 1:
-            print "Actually moving the file."
+            print("Actually moving the file.")
 
         try:
             move_to_folder = os.path.realpath(move_to_folder + os.sep +
                                               extra_subdir + os.sep + file)
             file = os.path.realpath(file)
             os.renames(file, move_to_folder)
-        except (IOError, os.error), err:
+        except (IOError, os.error) as err:
             send_error(err)
 
 def main(options, args):
@@ -253,7 +257,8 @@ def main(options, args):
             send_error("Can't enter %s." % path)
 
         if options.verbose > 0:
-            print "### Processing %s ###" % os.path.realpath(os.path.basename(path))
+            print("### Processing %s ###" % 
+				os.path.realpath(os.path.basename(path)))
 
         # clean dictionary
         global folders
@@ -264,10 +269,10 @@ def main(options, args):
             # process the folder
             check_new_folder(folder)
         if options.verbose > 0:
-            print "### %d episode folders found. ###" % len(folders)
+            print("### %d episode folders found. ###" % len(folders))
         elif options.verbose > 1:
             for (key, value) in folders.items():
-                print key + " " + value.rstrip(os.sep)
+                print(key + " " + value.rstrip(os.sep))
 
         # iterate through all the files in given directory
         for file in os.listdir(os.curdir):
@@ -278,8 +283,8 @@ def main(options, args):
 
                 if key is not None:
                     if options.verbose > 1:
-                        print "Key found for file %(file)s: %(key)s" \
-                            % {'file': file, "key": key}
+                        print("Key found for file %(file)s: %(key)s" % 
+							{'file': file, "key": key})
 
                     # check if there is a folder to move to
                     if folders.has_key(key):
@@ -288,12 +293,12 @@ def main(options, args):
 
                     else:
                         if options.verbose > 0:
-                            print "No folder found for %s" % file
+                            print("No folder found for %s" % file)
 
                 # season and episode can't be detected
                 else:
                     if options.verbose > 1:
-                        print "Failed recognition for %(file)s" % {'file': file}
+                        print("Failed recognition for %(file)s" % {'file': file})
 
         count_directories += 1
     return (count_directories, count_files)
@@ -333,17 +338,17 @@ if __name__ == '__main__':
 
     # no arguments given
     if len(sys.argv) < 2:
-        print parser.format_help()
+        print(parser.format_help())
     else:
         (options, args) = parser.parse_args()
 
         if options.verbose > 1:
-            print "options: " + str(options)
-            print "folders: " + str(args)
+            print("options: " + str(options))
+            print("folders: " + str(args))
 
         (nb_dirs, nb_files) = main(options, args)
 
         if options.verbose > 0:
-            print "All done."
-            print "Moved %d files when processing %s director%s" % \
-                    (nb_files, nb_dirs, "y." if (nb_dirs == 1) else "ies.")
+            print("All done.")
+            print("Moved %d files when processing %s director%s" %
+                    (nb_files, nb_dirs, "y." if (nb_dirs == 1) else "ies."))
