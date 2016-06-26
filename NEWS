@@ -1,3 +1,20 @@
+pyReScene 0.6.1 (2016-06-26)
+===============
+
+ * pyReScene Auto: skip candidate stored files or folders based on regex
+ * pyReScene Auto: missing proof RAR prevented SRR to be created
+ * pyReScene Auto: do not check .m2ts and .ts against the main files
+ * ReSample: Python 3 always made a copy of the music file before fingerprint
+ * ReSample: Python 3 error fixed on very broken music tracks
+ * ReSample: failed to parse .srs file again
+ * ReScene: Extract stored files based on regular expression
+ * ReScene: SRR padding block in -e output correctly displayed
+ * ReScene: RELOADED, QCF custom RAR packer issues resolved
+ * ReScene: display CRC error messages upon reconstruction
+ * ReScene: suppress invalid error message on compressed files
+ * ReScene: warning added to not use srr for vobsub creation (use auto instead)
+ * TVMove: script to move files to the correct episode release folder
+
 pyReScene 0.6 (2016-05-30)
 =============
 
