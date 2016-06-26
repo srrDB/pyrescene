@@ -77,6 +77,11 @@ class BuildSpecificExe(build_py):
 		self.run_command('py2exe')
 		build_py.run(self)
 
+rescene_version = rescene.__version__
+
+# not in SRR version string to have fewer srrdb.com issues
+rescene_version = "0.6.1"
+
 config_dict = {
     "name": "pyReScene",
     "packages": ["rescene", "resample"],
@@ -87,13 +92,13 @@ config_dict = {
 		"bin/preprardir.py",
 		"bin/retag.py"
 	],
-    "version": rescene.__version__,
+    "version": rescene_version,
     "description": "Backup and restore scene release metadata",
     "author": "Gfy",
     "author_email": "pyrescene@gmail.com",
     "url": "https://bitbucket.org/Gfy/pyrescene",
     "download_url": "https://bitbucket.org/Gfy/pyrescene/downloads/pyReScene-"
-	                + rescene.__version__ + ".zip",
+	                + rescene_version + ".zip",
     "license": "MIT",
     "keywords": ["rescene", "srr", "resample", "srs", "repackage", "rar",
 	            "avi", "mkv", "mp4", "wmv", "warez", "scene", "compressed",
