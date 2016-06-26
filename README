@@ -150,6 +150,37 @@ To create a .srr file for vobsubs, do:
 
 http://rescene.wikidot.com/tutorials has some more tutorials.
 
+For the paranoid
+================
+
+This is a list of security considerations someone reluctant to use pyReScene
+to create SRR files should know about.
+
+* pyReScene Auto does not make any external network connections.
+* pyReScene Auto does not need write access to the location of the release
+  file. SRR files can be put into the release directory if wanted though.
+* A temporary folder is used for SRR creation. By default it uses the location
+  ``tempfile.mkdtemp()`` provides. On Windows systems this is somewhere in the
+  AppData folder and "The directory is readable, writable, and searchable
+  only by the creating user." A custom temporary directory can be provided with
+  the ``-t`` parameter. Due to unknown bugs, "SRR-xxxxxx" folders could be 
+  left behind in the temporary folder when the tool crashes. Tell me about this!
+* When .srs creation fails, a .txt file will be included into the .srr with
+  some basic information instead. Due to an unknown bug/crash, this could
+  include paths to the location of the .py or .exe files on your system.
+  Use non-descriptive paths or the default installation location on Unix systems.
+* A site nfo will be included if encountered.
+  Use ``--skip-regex`` to skip over custom files and folders.
+* Log files of known programs are never included. e.g. rushchk.log
+* SFV files can include the creating tool info if they aren't raped yet.
+  This is a good thing for the project! But it could reveal source of origin
+  of these excellent SRRs to those close to the origin.
+  Hamster them for a while.
+* Same for NFO files: e.g. trailing whitespace could not be stripped yet.
+
+Whatever your objections, create SRRs now.
+In time all will become irrelevant anyway ;)
+
 What's new?
 ===========
 
