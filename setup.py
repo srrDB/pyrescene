@@ -80,7 +80,7 @@ class BuildSpecificExe(build_py):
 rescene_version = rescene.__version__
 
 # not in SRR version string to have fewer srrdb.com issues
-rescene_version = "0.6.1"
+# rescene_version = "0.6.1"
 
 config_dict = {
     "name": "pyReScene",
