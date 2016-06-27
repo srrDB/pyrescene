@@ -1128,7 +1128,7 @@ def create_srr(nzb_path, options):
 		# or merge the segments of the "two" files
 		old = nntp_files.get(nfile.name, nfile)
 		if old != nfile:
-			print("Choosing between two same files %s." % old.name)
+			print("Choosing between two same files: '%s'." % old.name)
 			oldsum = sum(old.segments[s].bytes for s in old.segments)
 			newsum = sum(nfile.segments[s].bytes for s in nfile.segments)
 # 			print("Old size: %d, %d" % (oldsum, old.segments[1].bytes))
