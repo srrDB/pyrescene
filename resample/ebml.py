@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2016 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,8 +33,9 @@ import os
 from rescene.utility import is_rar
 from rescene.rarstream import RarStream
 
-S_BYTE = struct.Struct('<B')  # 1 byte
-S_SHORT = struct.Struct('<H')  # 2 bytes
+# All integers use big endian
+BE_BYTE = struct.Struct('>B')  # 1 byte
+BE_SHORT = struct.Struct('>H')  # 2 bytes
 
 class InvalidDataException(ValueError):
 	pass
@@ -57,7 +58,7 @@ def GetUIntLength(length_descriptor):
 
 def GetEbmlElementID(stream):
 	first_byte = stream.read(1)
-	length = GetUIntLength(S_BYTE.unpack(first_byte)[0])
+	length = GetUIntLength(BE_BYTE.unpack(first_byte)[0])
 
 	return first_byte + stream.read(length - 1)  # Element ID bytes
 
@@ -66,14 +67,14 @@ def GetEbmlUInt(buff, offset, count):
 	offset: offset start integer in buffer
 	count: Length Descriptor byte"""
 	# length descriptor bytes not wanted: remove those from the first byte
-	size = S_BYTE.unpack_from(buff, offset)[0] & (0xFF >> count)  # 255, 127, ...
+	size = BE_BYTE.unpack_from(buff, offset)[0] & (0xFF >> count)  # 255, 127, ...
 	for i in range(1, count):
-		size = (size << 8) + S_BYTE.unpack_from(buff, offset + i)[0]
+		size = (size << 8) + BE_BYTE.unpack_from(buff, offset + i)[0]
 
 	return size  # integer size
 
 def GetEbmlUIntStream(stream):
-	(first_byte,) = S_BYTE.unpack(stream.read(1))
+	(first_byte,) = BE_BYTE.unpack(stream.read(1))
 	bytes_consumed = GetUIntLength(first_byte)
 
 	# length descriptor bytes not wanted: remove those from the first byte
@@ -81,7 +82,7 @@ def GetEbmlUIntStream(stream):
 
 	# construct the data size by adding a new byte each time
 	for _ in range(1, bytes_consumed):
-		size = (size << 8) + S_BYTE.unpack(stream.read(1))[0]
+		size = (size << 8) + BE_BYTE.unpack(stream.read(1))[0]
 
 	return size, bytes_consumed
 
@@ -110,7 +111,7 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 	bytes_consumed = 0
 	lace_frame_count = 1
 	if lace_type != EbmlLaceType.NONE:
-		lace_frame_count = S_BYTE.unpack(stream.read(1))[0] + 1
+		lace_frame_count = BE_BYTE.unpack(stream.read(1))[0] + 1
 		bytes_consumed += 1
 
 	frame_sizes = [0] * lace_frame_count
@@ -123,7 +124,7 @@ def GetBlockFrameLengths(lace_type, data_length, stream):
 			if (i < lace_frame_count - 1):
 				nextByte = 0xFF
 				while nextByte == 0xFF:
-					(nextByte,) = S_BYTE.unpack(stream.read(1))
+					(nextByte,) = BE_BYTE.unpack(stream.read(1))
 					bytes_consumed += 1
 					frame_sizes[i] += nextByte
 			else:
@@ -162,14 +163,18 @@ class EbmlElementType(object):
 	AttachmentList, TrackList, Track, TrackNumber, TrackCodec, EncodingList,
 	ContentEncodingList, ContentEncoding, Compression, CompressionAlgorithm,
 	CompressionSettings, Attachment, AttachedFileName, AttachedFileData,
-	ReSample, ReSampleFile, ReSampleTrack, Crc32, Unknown) = list(range(26))
+	SeekHead, Seek, SeekID, SeekPosition, SegmentInfo, Title, Void,
+	ReSample, ReSampleFile, ReSampleTrack, Crc32, Unknown) = list(range(33))
 
-EbmlElementTypeName = dict(zip(list(range(26)), ["Ebml", "Segment",
+# TODO: not really in use. use IDs instead of EbmlElementType?
+EbmlElementTypeName = dict(zip(list(range(33)), ["Ebml", "Segment",
 	"TimecodeScale", "Cluster", "Timecode", "BlockGroup", "Block",
 	"AttachmentList", "TrackList", "Track", "TrackNumber", "TrackCodec",
 	"EncodingList", "ContentEncodingList", "ContentEncoding",
 	"Compression", "CompressionAlgorithm", "CompressionSettings",
 	"Attachment", "AttachedFileName", "AttachedFileData",
+	"SeekHead", "Seek", "SeekID", "SeekPosition", 
+	"SegmentInfo", "Title", "Void"
 	"ReSample", "ReSampleFile", "ReSampleTrack", "Crc32", "Unknown"]))
 
 class EbmlLaceType(object):
@@ -186,6 +191,10 @@ class EbmlElement(object):
 		self.raw_header = b""
 		self.element_start_pos = 0
 		self.length = 0
+		
+	def __repr__(self, *args, **kwargs):
+		return ("<Ebml start={start} size={size}>".format(
+			start=self.element_start_pos, size=self.length))
 
 class BlockElement(EbmlElement):
 	def __init__(self):
@@ -199,6 +208,15 @@ class EbmlID(object):
 	EBML = b"\x1A\x45\xDF\xA3"
 	SEGMENT = b"\x18\x53\x80\x67"
 	TIMECODE_SCALE = b"\x2A\xD7\xB1"
+	
+	# for MKV Usenet fix script
+	SEEK_HEAD = b"\x11\x4D\x9B\x74"
+	SEEK = b"\x4D\xBB"
+	SEEK_ID = b"\x53\xAB"
+	SEEK_POSITION = b"\x53\xAC"
+	SEGMENT_INFO = b"\x15\x49\xA9\x66"
+	TITLE = b"\x7B\xA9"
+	VOID = b"\xEC"
 
 	CLUSTER = b"\x1F\x43\xB6\x75"
 	TIMECODE = b"\xE7"
@@ -227,6 +245,40 @@ class EbmlID(object):
 	RESAMPLE_TRACK = b"\x6B\x75"  # ku
 
 	CRC32 = b"\xBF"
+	
+id_type_mapping = {
+	EbmlID.SEGMENT_INFO: EbmlElementType.SegmentInfo,
+	EbmlID.TITLE: EbmlElementType.Title,
+	EbmlID.SEEK_HEAD: EbmlElementType.SeekHead,
+	EbmlID.SEEK: EbmlElementType.Seek,
+	EbmlID.SEEK_ID: EbmlElementType.SeekID,
+	EbmlID.SEEK_POSITION: EbmlElementType.SeekPosition,
+	EbmlID.VOID: EbmlElementType.Void,
+	EbmlID.BLOCK: EbmlElementType.Block,
+	EbmlID.SIMPLE_BLOCK: EbmlElementType.Block,
+	EbmlID.BLOCK_GROUP: EbmlElementType.BlockGroup,
+	EbmlID.CLUSTER: EbmlElementType.Cluster,
+	EbmlID.TIMECODE: EbmlElementType.Timecode,
+	EbmlID.SEGMENT: EbmlElementType.Segment,
+	EbmlID.TIMECODE_SCALE: EbmlElementType.TimecodeScale,
+	EbmlID.CRC32: EbmlElementType.Crc32,
+	EbmlID.ATTACHMENT_LIST: EbmlElementType.AttachmentList,
+	EbmlID.TRACKLIST: EbmlElementType.TrackList,
+	EbmlID.TRACK: EbmlElementType.Track,
+	EbmlID.TRACKNUMBER: EbmlElementType.TrackNumber,
+	EbmlID.TRACKCODEC: EbmlElementType.TrackCodec,
+	EbmlID.CONTENTENCODINGLIST: EbmlElementType.ContentEncodingList,
+	EbmlID.CONTENTENCODING: EbmlElementType.ContentEncoding,
+	EbmlID.COMPRESSION: EbmlElementType.Compression,
+	EbmlID.COMPRESSIONALGORITHM: EbmlElementType.CompressionAlgorithm,
+	EbmlID.COMPRESSIONSETTINGS: EbmlElementType.CompressionSettings,
+	EbmlID.ATTACHMENT: EbmlElementType.Attachment,
+	EbmlID.ATTACHED_FILE_NAME: EbmlElementType.AttachedFileName,
+	EbmlID.ATTACHED_FILE_DATA: EbmlElementType.AttachedFileData,
+	EbmlID.RESAMPLE: EbmlElementType.ReSample,
+	EbmlID.RESAMPLE_FILE: EbmlElementType.ReSampleFile,
+	EbmlID.RESAMPLE_TRACK: EbmlElementType.ReSampleTrack,
+}
 
 class EbmlReader(object):
 	"""Implements a simple Reader class that reads through MKV or 
@@ -265,7 +317,7 @@ class EbmlReader(object):
 		# "Read() is invalid at this time", "MoveToChild(), ReadContents(), or
 		# SkipContents() must be called before Read() can be called again"
 		assert self.read_done or (self.mode == EbmlReadMode.SRS and
-		       self.element_type == EbmlElementType.Block)
+		       self.element_type == EbmlElementType.Block), "improper state"
 
 		element_start_position = self._ebml_stream.tell()
 
@@ -283,7 +335,7 @@ class EbmlReader(object):
 		if not len(read_byte):
 			return False
 # 			raise ValueError("Missing data")
-		(id_length_descriptor,) = S_BYTE.unpack(read_byte)
+		(id_length_descriptor,) = BE_BYTE.unpack(read_byte)
 		id_length_descriptor = GetUIntLength(id_length_descriptor)
 		self.element_header = read_byte
 		self.element_header += self._ebml_stream.read(id_length_descriptor - 1)
@@ -293,7 +345,7 @@ class EbmlReader(object):
 		if not len(read_byte):
 			return False
 # 			raise ValueError("Missing data")
-		(data_length_descriptor,) = S_BYTE.unpack(read_byte)
+		(data_length_descriptor,) = BE_BYTE.unpack(read_byte)
 		data_length_descriptor = GetUIntLength(data_length_descriptor)
 		self.element_header += read_byte
 		self.element_header += self._ebml_stream.read(data_length_descriptor - 1)
@@ -301,61 +353,11 @@ class EbmlReader(object):
 		assert id_length_descriptor + data_length_descriptor == len(self.element_header)
 
 		# 3) Data -------------------------------------------------------------
-		# these comparisons are ordered by the frequency with which they
-		# will be encountered to avoid unnecessary processing
 		eh = self.element_header[0:id_length_descriptor]
-		if eh == EbmlID.BLOCK or eh == EbmlID.SIMPLE_BLOCK:
-			self.element_type = EbmlElementType.Block
-		elif eh == EbmlID.BLOCK_GROUP:
-			self.element_type = EbmlElementType.BlockGroup
-		elif eh == EbmlID.CLUSTER:
-			self.element_type = EbmlElementType.Cluster
-		elif eh == EbmlID.TIMECODE:
-			self.element_type = EbmlElementType.Timecode
-		elif eh == EbmlID.SEGMENT:
-			self.element_type = EbmlElementType.Segment
-		elif eh == EbmlID.TIMECODE_SCALE:
-			self.element_type = EbmlElementType.TimecodeScale
-		elif eh == EbmlID.CRC32:
-			self.element_type = EbmlElementType.Crc32
-		elif eh == EbmlID.ATTACHMENT_LIST:
-			self.element_type = EbmlElementType.AttachmentList
-		elif eh == EbmlID.TRACKLIST:
-			self.element_type = EbmlElementType.TrackList
-		elif eh == EbmlID.TRACK:
-			self.element_type = EbmlElementType.Track
-		elif eh == EbmlID.TRACKNUMBER:
-			self.element_type = EbmlElementType.TrackNumber
-		elif eh == EbmlID.TRACKCODEC:
-			self.element_type = EbmlElementType.TrackCodec
-		elif eh == EbmlID.CONTENTENCODINGLIST:
-			self.element_type = EbmlElementType.ContentEncodingList
-		elif eh == EbmlID.CONTENTENCODING:
-			self.element_type = EbmlElementType.ContentEncoding
-		elif eh == EbmlID.COMPRESSION:
-			self.element_type = EbmlElementType.Compression
-		elif eh == EbmlID.COMPRESSIONALGORITHM:
-			self.element_type = EbmlElementType.CompressionAlgorithm
-		elif eh == EbmlID.COMPRESSIONSETTINGS:
-			self.element_type = EbmlElementType.CompressionSettings
-		elif eh == EbmlID.ATTACHMENT:
-			self.element_type = EbmlElementType.Attachment
-		elif eh == EbmlID.ATTACHED_FILE_NAME:
-			self.element_type = EbmlElementType.AttachedFileName
-		elif eh == EbmlID.ATTACHED_FILE_DATA:
-			self.element_type = EbmlElementType.AttachedFileData
-		elif eh == EbmlID.RESAMPLE:
-			self.element_type = EbmlElementType.ReSample
-		elif eh == EbmlID.RESAMPLE_FILE:
-			self.element_type = EbmlElementType.ReSampleFile
-		elif eh == EbmlID.RESAMPLE_TRACK:
-			self.element_type = EbmlElementType.ReSampleTrack
-		else:
-			self.element_type = EbmlElementType.Unknown
+		self.element_type = id_type_mapping.get(eh, EbmlElementType.Unknown)
 
-		element_length = GetEbmlUInt(self.element_header,
-		                             id_length_descriptor,
-		                             data_length_descriptor)
+		element_length = GetEbmlUInt(
+			self.element_header, id_length_descriptor, data_length_descriptor)
 
 		# sanity check on element length.  skip check on Segment element so we
 		# can still report expected size.  this is only applied on samples
@@ -383,7 +385,7 @@ class EbmlReader(object):
 			# first thing in the block is the track number
 			trackDescriptor = self._ebml_stream.read(1)
 			blockHeader = trackDescriptor
-			trackDescriptor = GetUIntLength(S_BYTE.unpack(trackDescriptor)[0])
+			trackDescriptor = GetUIntLength(BE_BYTE.unpack(trackDescriptor)[0])
 
 			# incredibly unlikely the track number is > 1 byte,
 			# but just to be safe...
@@ -394,13 +396,13 @@ class EbmlReader(object):
 
 			# read in time code (2 bytes) and flags (1 byte)
 			blockHeader += self._ebml_stream.read(3)
-			timecode = ((S_BYTE.unpack_from(blockHeader,
+			timecode = ((BE_BYTE.unpack_from(blockHeader,
 			                               len(blockHeader) - 3)[0] << 8) +
-			            S_BYTE.unpack_from(blockHeader, len(blockHeader) - 2)[0])
+			            BE_BYTE.unpack_from(blockHeader, len(blockHeader) - 2)[0])
 
 			# need to grab the flags (last byte of the header)
 			# to check for lacing
-			lace_type = (S_BYTE.unpack_from(blockHeader, len(blockHeader) - 1)[0] &
+			lace_type = (BE_BYTE.unpack_from(blockHeader, len(blockHeader) - 1)[0] &
 					EbmlLaceType.EBML)
 
 			data_length = element_length - len(blockHeader)
@@ -438,8 +440,7 @@ class EbmlReader(object):
 		# if readReady is set, we've already read or skipped it.
 		# back up and read again?
 		if self.read_done:
-			self._ebml_stream.seek(-self.current_element.length,
-			                       os.SEEK_CUR)
+			self._ebml_stream.seek(-self.current_element.length, os.SEEK_CUR)
 
 		self.read_done = True
 		buff = None
@@ -454,10 +455,11 @@ class EbmlReader(object):
 			self.read_done = True
 			if (self.mode != EbmlReadMode.SRS or
 				self.element_type != EbmlElementType.Block):
-				self._ebml_stream.seek(self.current_element.length,
-				                       os.SEEK_CUR)
+				self._ebml_stream.seek(self.current_element.length, os.SEEK_CUR)
 
 	def move_to_child(self):
+		if self.read_done:
+			self._ebml_stream.seek(-self.current_element.length, os.SEEK_CUR)
 		self.read_done = True
 
 	def close(self):
