@@ -154,8 +154,11 @@ def main():
             attr = 1 << ATTR_NORMAL
             i += 1
         elif "attr" == arg:
-            attr = 0x8000  # no idea yet about this start value
-            for index, char in enumerate(sys.argv[i + 1][::-1]):
+            attr_param = sys.argv[i + 1]
+            attr = 0
+            if "r" in attr_param or "w" in attr_param or "x" in attr_param:
+                attr = 0x8000  # no idea yet about this start value
+            for index, char in enumerate(attr_param[::-1]):
                 if char != '-':
                     attr |= 1 << index
             i += 2
@@ -470,17 +473,13 @@ def parse_ref(ref):
             parser.out("normalattr")
         elif 1 << ATTR_ARCHIVE != attr:
             # Attributes: -rw-rw-rw- >>> bin(0x81B6) '0b1000000110110110'
-            if attr & 0x7c00 == 0:  # >>> hex(0x83ff ^ 0xffff)
-                out = ""
-                for i in range(10, 0, -1):
-                    if attr & (1 << (i - 1)):
-                        out += "drwxrwxrwx"[10 - i]
-                    else:
-                        out += '-'
-                parser.out("attr \"" + out + "\"")
-            else:
-                parser.error(pos + hdr_pos + FILE_ATTR_POS,
-					"Unexpected file attributes: 0x{:08X}".format(attr))
+            out = ""
+            for i in range(16, 0, -1):
+                if attr & (1 << (i - 1)):
+                    out += "??????drwxrwxrwx"[16 - i]
+                else:
+                    out += '-'
+            parser.out("attr \"" + out + "\"")
         
         hdr_pos += S_FILE_HDR.size
         
