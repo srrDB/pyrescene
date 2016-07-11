@@ -503,7 +503,7 @@ def main(argv=None):
 		try:
 			value = [int(mt) for mt in value.split(",")]
 		except:
-			error_msg = "%s expects only numers and commas" % opt_str
+			error_msg = "%s expects only numbers and commas" % opt_str
 			raise optparse.OptionValueError(error_msg)
 		setattr(parser.values, option.dest, value)
 		
