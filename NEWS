@@ -1,3 +1,9 @@
+pyReScene
+=========
+
+ * ReScene: amount of threads rar uses not limited based on cpu cores (-mt)
+ * ReScene: --mt-set, --mt-min, --mt-max reconstruction options added 
+ 
 pyReScene 0.6.1 (2016-06-26)
 ===============
 
