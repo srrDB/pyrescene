@@ -299,12 +299,17 @@ def manage_srr(options, in_folder, infiles, working_dir):
 				except:
 					parser.exit(1, "Invalid hint (-H) value: %s" % hint)
 
+		rar_mt = rescene.RarMtSettings()
+		rar_mt.mt_set = options.mt_set
+		rar_mt.mt_min = options.mt_min
+		rar_mt.mt_max = options.mt_max
+
 		try:
 			rescene.reconstruct(infiles[0], in_folder, out_folder, save_paths,
 			                    hints, options.no_auto_crc,
 			                    options.auto_locate, options.fake,
 			                    options.rar_executable_dir, options.temp_dir,
-			                    options.volume is None, options.volume)
+			                    options.volume is None, options.volume, rar_mt)
 		except (FileNotFound, RarNotFound) as err:
 			mthread.done = True
 			mthread.join()
@@ -405,10 +410,12 @@ def main(argv=None):
 	creation = optparse.OptionGroup(parser, "Creation options")
 	recon = optparse.OptionGroup(parser, "Reconstruction options")
 	edit = optparse.OptionGroup(parser, "Edit options")
+	comprr = optparse.OptionGroup(parser, "Compressed reconstruction options")
 	parser.add_option_group(display)
 	parser.add_option_group(creation)
 	parser.add_option_group(recon)
 	parser.add_option_group(edit)
+	parser.add_option_group(comprr)
 
 	parser.add_option("-y", "--always-yes", dest="always_yes", default=False,
 					  action="store_true",
@@ -491,6 +498,26 @@ def main(argv=None):
 	edit.add_option("-s", help="<file list>: Store additional files in the"
 	                " SRR (wildcards supported)", action="append",
 	                metavar="FILES", dest="store_files")
+	
+	def integer_list(option, opt_str, value, parser):
+		try:
+			value = [int(mt) for mt in value.split(",")]
+		except:
+			error_msg = "%s expects only numers and commas" % opt_str
+			raise optparse.OptionValueError(error_msg)
+		setattr(parser.values, option.dest, value)
+		
+	comprr.set_description("Set the rar -mt thread parameter to exclude "
+		"certain possibilities when reconstructing compressed RARs.")
+	comprr.add_option("--mt-set", callback=integer_list,
+	                  action="callback", type="string", dest="mt_set",
+	                  help="list of possible thread values. e.g. 4,6,8")
+	comprr.add_option("--mt-min", default=0,
+	                  action="store", type="int", dest="mt_min",
+	                  help="minimum thread count to try. e.g. 24")
+	comprr.add_option("--mt-max", default=0,
+	                  action="store", type="int", dest="mt_max",
+	                  help="maximum thread count to try. e.g. 2")
 
 	if argv is None:
 		argv = sys.argv[1:]

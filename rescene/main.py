@@ -1152,11 +1152,18 @@ def print_details(file_path):
 		
 	srr_hash = content_hash(file_path)
 	print("SRR sha1 content hash: %s" % srr_hash)
-			
+
+class RarMtSettings(object):	
+	"""Interface options to determine the rar -mt parameter"""
+	def __init__(self):
+		self.mt_set = []
+		self.mt_min = 0
+		self.mt_max = 0
+
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
 				rar_executable_dir=None, tmp_dir=None, extract_files=True,
-				srr_part=""):
+				srr_part="", rar_mt=None):
 	"""
 	srr_file: SRR file of the archives that need to be rebuild
 	in_folder: root folder in which we start looking for the files
@@ -1171,6 +1178,7 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	                     on file size and extension of the file to pack
 	extract_files: if set, extract additional files stored in the srr
 	srr_part: string with volume(s) to reconstruct
+	rar_mt: object with settings for the rar -mt parameter
 	"""
 	rar_name = ""
 	ofile = ""
@@ -1180,6 +1188,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	rebuild_recovery = False
 	running_crc = 0  # of bytes used in packaging a single file accross volumes
 	compressed_block_encountered = False  # mixed blocks e.g. .PNG file
+	if rar_mt:
+		RarArguments.mt_settings = rar_mt
 	
 	skip_volume = False # helps to reconstruct a single volume
 	skip_offset = 0
@@ -1813,6 +1823,8 @@ class RarArguments(object):
 	-sv     Create independent solid volumes
 	-sv-    Create dependent solid volumes
 	"""
+	mt_settings = RarMtSettings()
+	
 	def __init__(self, block, rar_archive, store_files):
 		self.compr_level = block.get_compression_parameter()
 		self.dict_size = block.get_dictionary_size_parameter()
@@ -1832,19 +1844,42 @@ class RarArguments(object):
 		self.old_naming_flag = "-vn"
 		
 	def increase_thread_count(self, rarbin):
-		if self.threads == "":
-			self.threads = "-mt1"
-			return True
+		# <threads> parameter can take values from 0 to 16.
+		# 4.20: Now the allowed <threads> value for -mt<threads> switch is
+		# 1 - 32, not 0 - 16 as before.
+		mtcount = rarbin.max_thread_count()	
+		mt_min = 1
+		mt_max = mtcount
+		if RarArguments.mt_settings.mt_min > 0:
+			mt_min = RarArguments.mt_settings.mt_min
+		if RarArguments.mt_settings.mt_max > 0:
+			mt_max = RarArguments.mt_settings.mt_max
+
+		if not self.threads:
+			if self.mt_settings.mt_set:
+				for count in self.mt_settings.mt_set:
+					in_range = mt_min <= count <= mt_max and count <= mtcount
+					if in_range:
+						self.threads = "-mt%d" % count
+						return True
+				return False  # bad settings given: nothing to try
+			elif mt_min <= mtcount:
+				self.threads = "-mt%d" % mt_min
+				return True
+			else:
+				return False  # mt_min parameter is above max_thread_count
 		else:
-			current_count = int(self.threads[3:])
-			# <threads> parameter can take values from 0 to 16.
-			# 4.20: Now the allowed <threads> value for -mt<threads> switch is
-			# 1 - 32, not 0 - 16 as before.
-			max_threads = multiprocessing.cpu_count() * 2
-			mtcount = rarbin.max_thread_count()	
-			if max_threads > mtcount:
-				max_threads = mtcount 
-			if current_count < max_threads:
+			current_count = self.thread_count()
+			if self.mt_settings.mt_set:
+				for count in self.mt_settings.mt_set:
+					in_range = (mt_min <= count <= mt_max and 
+					            count <= mtcount and
+					            count > current_count)
+					if in_range:
+						self.threads = "-mt%d" % count
+						return True
+				return False  # no next possibility in list
+			elif current_count < mtcount and current_count < mt_max:
 				self.threads = "-mt%d" % (current_count + 1)
 				return True
 		return False
