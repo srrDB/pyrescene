@@ -518,6 +518,10 @@ def main(argv=None):
 	comprr.add_option("--mt-max", default=0,
 	                  action="store", type="int", dest="mt_max",
 	                  help="maximum thread count to try. e.g. 2")
+	comprr.add_option("--mt-common",
+	                  const=[1, 2, 4, 6, 8, 12, 16, 24, 32],
+	                  action="store_const", dest="mt_set",
+	                  help="same as --mt-set 1,2,4,6,8,12,16,24,32")
 
 	if argv is None:
 		argv = sys.argv[1:]
