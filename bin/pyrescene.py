@@ -51,6 +51,7 @@ import fnmatch
 import time
 import logging
 import itertools
+import traceback
 
 try:
 	import win32api
@@ -1591,6 +1592,8 @@ def main(argv=None):
 	except AssertionError as err:
 		mthread.wait_for_output()
 		print(str(err))
+		if _DEBUG:
+			traceback.print_exc()
 		print("Please report me this problem!")
 		print("https://bitbucket.org/Gfy/pyrescene/issues")
 		aborted = True
