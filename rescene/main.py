@@ -2219,7 +2219,8 @@ class CompressedRarFile(io.IOBase):
 		size_full = block.unpacked_size
 #		assert size_full == os.path.getsize(self.source_files[-1])
 		size_min = block.packed_size
-		
+		using_piece = True
+
 		# RELOADED custom RAR packer: figure out correct file size
 		if (block.unpacked_size == 0xffffffffffffffff):
 			srr_file = block.fname
@@ -2237,6 +2238,7 @@ class CompressedRarFile(io.IOBase):
 		# Rar 2.0x version don't have a CRC stored, only at the end
 		# do the complete file
 		if block.file_crc == 0xFFFFFFFF:
+			using_piece = False
 			args = RarArguments(block, out, [self.source_files[0]])
 			old = True
 		else:
@@ -2308,8 +2310,8 @@ class CompressedRarFile(io.IOBase):
 			# check if this is a good RAR version
 			start = size_min
 			ps = crc = 0
-			with RarStream(out, compressed=True,
-						packed_file_name=os.path.basename(piece)) as rs:
+			pfn = os.path.basename(args.store_files[0])
+			with RarStream(out, compressed=True, packed_file_name=pfn) as rs:
 				if old:
 					start = rs.length()
 #				print("Compressed: %d" % rs.length())
@@ -2369,7 +2371,8 @@ class CompressedRarFile(io.IOBase):
 			return False
 		
 		# do not split when WinRAR didn't do it either
-		if os.path.getsize(piece) != size_full:
+		
+		if os.path.isfile(piece) and os.path.getsize(piece) != size_full:
 			args.set_split(int(os.path.getsize(piece) * 0.6))
 			
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
@@ -2411,7 +2414,9 @@ class CompressedRarFile(io.IOBase):
 
 			args.reset_extra_files()			
 			args.threads = ""
-		os.remove(piece)
+
+		if using_piece:
+			os.remove(piece)
 	
 	def set_new(self, source_file, block, followup_src=None):
 		"""when solid, it can occur that the first file needs the second
