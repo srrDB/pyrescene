@@ -2450,7 +2450,8 @@ class CompressedRarFile(io.IOBase):
 		# need 4 threads
 		if self.rarstream.length() != block.packed_size:
 			_fire(MsgCode.MSG, message="Solid archive recompression.")
-			while(self.rarstream.length() != block.packed_size and
+			while(self.rarstream.length() != block.packed_size and 
+				self.good_rar.supports_setting_threads() and
 				self.good_rar.args.increase_thread_count(self.good_rar)):
 				compress()
 			
