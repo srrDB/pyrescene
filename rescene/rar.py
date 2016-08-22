@@ -233,6 +233,10 @@ class BlockType: # saved as integer number internally
 	SrrStoredFile = 0x6A    # j -> 0x74 (t) RarPackedFile
 	SrrOsoHash = 0x6B       # k
 	SrrRarPadding = 0x6C	# l
+	# SrrPackVersion = 0x6D
+	# SrrSfx = 0x6E
+	SrrZipFile = 0x6F       # o
+	SrrRar5File = 0x70      # p
 	SrrRarFile = 0x71       # q -> 0x7A (z) RarNewSub
 	
 class SrrFlags():
@@ -247,11 +251,11 @@ BLOCK_NAME = {
 	0x6A: "SRR Stored File", # j
 	0x6B: "SRR ISDb Hash",  # OSO hash previously
 	0x6C: "SRR Padding",
-	0x6D: "SRR", # unused
-	0x6E: "SRR", # unused
-	0x6F: "SRR", # unused
-	0x70: "SRR", # unused
-	0x71: "SRR RAR subblock", # q
+	0x6D: "SRR RAR Version and Parameters", # unused
+	0x6E: "SRR SFX Block", # unused
+	0x6F: "SRR ZIP Block",
+	0x70: "SRR RAR5 Block",
+	0x71: "SRR RAR Block", # q
 	0x72: "RAR Marker",
 	0x73: "RAR Archive Header",
 	0x74: "RAR File",
@@ -855,10 +859,77 @@ class SrrRarPaddingBlock(RarBlock):
 			
 	def explain(self):
 		out = super(SrrRarPaddingBlock, self).explain()
-		out += "+Padding size (4 bytes): " + self.explain_size(
-												self.padding_size) + "\n"
+		out += ("+Padding size (4 bytes): " +
+		        self.explain_size(self.padding_size) + "\n")
+		return out
+
+class SrrZipFileBlock(_SrrFileNameBlock):
+	"""ZIP meta data is stored inside this SRR block.
+
+	|CRC |TY|FLAG| HL |ADD_SIZE|FILE_CRC|  SIZE  | NL |File name|
+	CRC:    0x6F6F (2 bytes)
+	TY:     Type 0x6F (1 byte)
+	FLAG:   Long block (2 bytes)
+	HL:     Header Length (2 bytes)
+	ADD_SIZE: ZIP metadata size (4 bytes)
+	FILE_CRC: CRC32 (4 bytes)
+	NL:     Name Length of ZIP file name (2 bytes)
+	"""
+	def __init__(self, bbytes=None, filepos=None, fname=None, 
+		         file_name=None, zip_crc=None, metadata=None):
+		if not file_name and not zip_crc and not metadata:
+			# parse bytes from existing block data
+			super(SrrZipFileBlock, self).__init__(bbytes, filepos, fname)
+			
+			# 4 bytes for ZIP metadata length (unsigned int) (add_size field)
+			(self.add_size, self.zipcrc) = struct.unpack_from(
+				"<II", self._rawdata, self._p)
+			self._p += 8
+			# 2 bytes for name length, then the name (unsigned short)
+			self._unpack_file_name()
+		else:
+			# writing a block
+			self.crc = 0x6F6F
+			self.rawtype = 0x6F
+			self.flags = RarBlock.LONG_BLOCK
+			
+			# Paths always use forward slashes as the directory separator
+			# File paths in RAR files use backward slashes.
+			if os.sep != "/" and os.sep in file_name:
+				file_name = file_name.replace(os.sep, "/")
+			self.file_name = file_name
+			self.zipcrc = zip_crc
+	
+			# parameter: full length header
+			file_name_data = self._pack_file_name(file_name)
+			self._write_header(HEADER_LENGTH + 8 + len(file_name_data))
+			self._rawdata += struct.pack("<I", len(metadata))
+			self._rawdata += struct.pack("<I", zip_crc)
+			self._rawdata += file_name_data
+			self._rawdata += metadata
+		
+	def explain(self):
+		out = super(SrrZipFileBlock, self).explain()
+		out += "+ZIP metadata size (4 bytes): {0}\n".format(
+				self.explain_size(self.add_size))
+		out += "+ZIP CRC (4 bytes): %X\n" % self.zipcrc
+		out += "+ZIP name length (2 bytes): {0}\n".format(
+				self.explain_size(len(self.file_name)))
+		out += "+ZIP name: {0}\n".format(self.file_name)
+		# TODO: add ZIP explanation
 		return out
 	
+	def zip_data(self):
+		"""Returns the ZIP metadata."""
+		with open(self.fname, "rb") as f:
+			f.seek(self.block_position + self.header_size)
+			data = f.read(self.add_size)
+		return data
+	
+class SrrRar5FileBlock(_SrrFileNameBlock):
+	"""RAR5 meta data blocks are stored inside this SRR block."""
+	pass
+
 class RarVolumeHeaderBlock(RarBlock): # 0x73
 	""" Archive header ( MAIN_HEAD )
 	HEAD_CRC    CRC of fields HEAD_TYPE to RESERVED2                  2 bytes
@@ -1313,8 +1384,7 @@ class RarEndArchiveBlock(RarBlock):
 		# see if there are fields we can read
 		if self.flags & RarEndArchiveBlock.DATACRC:
 			# // store CRC32 of RAR archive (now used only in volumes)
-			self.rarcrc = struct.unpack_from("<I",
-			                         self._rawdata, self._p)
+			self.rarcrc = struct.unpack_from("<I", self._rawdata, self._p)
 			self._p += 4
 		if self.flags & RarEndArchiveBlock.VOLNUMBER:
 			# // store a number of current volume
@@ -1355,6 +1425,8 @@ BTYPES_CLASSES = {
 	BlockType.SrrHeader: SrrHeaderBlock,
 	BlockType.SrrStoredFile: SrrStoredFileBlock,
 	BlockType.SrrRarFile: SrrRarFileBlock,
+	BlockType.SrrRar5File: SrrRar5FileBlock,
+	BlockType.SrrZipFile: SrrZipFileBlock,
 	BlockType.SrrOsoHash: SrrOsoHashBlock,
 	BlockType.SrrRarPadding: SrrRarPaddingBlock,
 	BlockType.RarVolumeHeader: RarVolumeHeaderBlock,
@@ -1368,6 +1440,9 @@ BTYPES_CLASSES = {
 	BlockType.RarOldAuthenticity76: RarBlock,
 	BlockType.RarOldAuthenticity79: RarBlock,
 }
+
+assert (len([t for t in dir(BlockType) if not t.startswith("__")]) ==
+	len(BTYPES_CLASSES)), "RAR block inconsistency"
 		
 ###############################################################################
 	
@@ -1410,7 +1485,7 @@ class RarReader(object):
 		#	"The archive header is corrupt"
 		#	"Unexpected end of archive"
 		#	"The archive is either in unknown format or damaged"
-		if (self._file_length - self._initial_offset) < 20:
+		if self._file_length < 20:
 			self._rarstream.close()
 			raise ValueError("The file is too small. "
 							 "The minimum RAR size is 20 bytes.")
@@ -1432,23 +1507,28 @@ class RarReader(object):
 			elif enable_sfx: # SFX ?
 				# TODO: make it resceneable
 				# search for RAR marker block offset
-				# 79280 for wrar400.exe
-				# 123904 for wrar-x64-400.exe
+				#    79280 for wrar400.exe
+				#   123904 for wrar-x64-400.exe
+				# "RAR assumes the maximum SFX module size to not exceed 1 MB,
+				# but this value can be increased in the future."
 				self._rarstream.seek(self._initial_offset)
 				data = self._rarstream.read(0x100000) # unrar max SFX size
 				offset = data.find(RAR_MARKER_BLOCK)
 				self._initial_offset += offset
-				if offset < 0 or self._initial_offset > self._file_length:
+				if offset < 0:
 					self._rarstream.close()
-					raise ValueError("The file is not a valid .rar archive"
-					                 " or .srr file.")
+					msg = "The file is not a valid .rar archive or .srr file."
+					raise ValueError(msg)
+				# skip SFX data for length calculation
+				self._file_length -= offset
 				self._readmode = self.SFX
 				# What kind of errors if SRR is detected as SFX?
 				#	 srr_detected_as_sfx.exe EnvironmentError: 
 				#	 Invalid RAR block length (46325) at offset 0x124
 			else:
 				self._rarstream.close()
-				raise ValueError("SFX support not on or not a RAR archive.")
+				msg = "SFX support not enabled or not a RAR archive."
+				raise ValueError(msg)
 		self._rarstream.seek(self._initial_offset)
 		self._current_index = 0
 		self._rar_end_block_encountered = False # for detecting padding
@@ -1486,13 +1566,15 @@ class RarReader(object):
 		"""
 		block_start_position = self._rarstream.tell()
 		
-		if block_start_position == self._file_length:
+		if block_start_position == self._initial_offset + self._file_length:
 			return None # The end.
 	
 		# make sure we can at least read the basic block header
 		#   otherwise you would get this error:
 		#   error: unpack requires a string argument of length 7
-		if block_start_position + HEADER_LENGTH > self._file_length:
+		
+		if (block_start_position + HEADER_LENGTH > 
+			self._initial_offset + self._file_length):
 			if self._rar_end_block_encountered and self._readmode == self.RAR:
 				return SrrRarPaddingBlock(padding_bytes=self._rarstream.read())
 			else:
@@ -1527,8 +1609,8 @@ class RarReader(object):
 			self._rar_end_block_encountered = True
 		
 		# one more sanity check on the length before continuing
-		if (hsize < HEADER_LENGTH or 
-			block_start_position + hsize > self._file_length):
+		if (hsize < HEADER_LENGTH or block_start_position + hsize > 
+			self._initial_offset + self._file_length):
 			#XXX: ValueError would be better, no?
 #			print("Header buffer: %s" % hexlify(header_buffer).decode('ascii'))
 			raise EnvironmentError("Invalid RAR block length (" + str(hsize) +\
@@ -1574,19 +1656,20 @@ class RarReader(object):
 				self.recovery_blocks_removed = (flags & 
 				              SrrRarFileBlock.RECOVERY_BLOCKS_REMOVED)
 			elif is_recovery and not self.recovery_blocks_removed:
-				self._rarstream.seek(add_size, 1)
+				self._rarstream.seek(add_size, os.SEEK_CUR)
 			
 		# If there is additional data in the block, decide whether
 		# we want to include it in the RarBlock we return.
 		# We don't return the additional data for _file blocks_
 		# or _recovery records_. 
-		# We do not read files added to the SRR. (ReScene .NET 1.2 does) 
-		if btype == BlockType.SrrStoredFile:
+		# We do not read files added to the SRR. (ReScene .NET 1.2 does)
+		if (btype == BlockType.SrrStoredFile or
+			btype == BlockType.SrrZipFile):
 			# pass extra header info, but not the whole file!
 			#  -> not a problem for .sfv, .nfo and .srr,
 			#	 but we do not put huge samples unnecessary in memory
 			# skip the file contents, relative to current position
-			self._rarstream.seek(add_size, 1)
+			self._rarstream.seek(add_size, os.SEEK_CUR)
 		elif btype != BlockType.RarPackedFile and  \
 				not is_recovery and add_size > 0:
 			block_buffer += self._rarstream.read(add_size)
@@ -1595,10 +1678,8 @@ class RarReader(object):
 		# but only for RAR or SFX mode. 
 		# The data isn't there in the SRR, so need need to skip.
 		elif self._readmode in (self.RAR, self.SFX) and add_size > 0:
-			self._rarstream.seek(add_size, 1) # relative to current position
+			self._rarstream.seek(add_size, os.SEEK_CUR)
 
-		assert (len(BTYPES_CLASSES) == 
-				len([t for t in dir(BlockType) if not t.startswith("__")]))
 		# for releases such as Haven.S02E05.HDTV.XviD-P0W4:
 		# except for the header size field, everything in the rar
 		# archive end block are null bytes -> still create RarBlock
