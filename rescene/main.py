@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2011-2014 pyReScene
+# Copyright (c) 2011-2016 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -52,7 +52,7 @@ import multiprocessing
 import rescene
 from rescene.rar import (BlockType, RarReader,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
-	RarPackedFileBlock, SrrOsoHashBlock)
+	RarPackedFileBlock, SrrOsoHashBlock, SrrZipFileBlock)
 from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, _DEBUG,
                              first_rars, next_archive, empty_folder)
@@ -61,7 +61,9 @@ from rescene.utility import filter_sfv_duplicates
 from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import capitalized_fn
+from rescene.utility import calculate_crc32
 from rescene.osohash import osohash_from
+from rescene.zip import ZipReader, ZIP_EXT, ZipFileBlock
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -454,7 +456,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	             (for checking existence)
 	tmp_srr_name the actual file created! To be used with utility helpers.
 	             This will be the same as srr_name when not provided.
-	infiles:     RAR or SFV file(s) to create SRR from
+	infiles:     RAR, SFV or ZIP file(s) to create SRR from
 	in_folder:   root folder for relative paths to store
 	             necessary when save_paths is True or
 	             paths are relative to in_folder in store_file
@@ -502,17 +504,20 @@ def create_srr(srr_name, infiles, in_folder="",
 		
 		# COLLECT ARCHIVES
 		rarfiles = []
+		zipfiles = []
 		for infile in infiles:
 			if str(infile).lower().endswith(".sfv"):
 				# SFV can sill have non-RAR files: empty list here
 				files_sfv = _handle_sfv(infile)
 				rarfiles.extend(files_sfv)
 				# EmptySfv Exception: no useful lines found in the SFV file
+			elif infile[-4:].lower() in ZIP_EXT:
+				zipfiles.append(infile)
 			else:
 				rarfiles.extend(_handle_rar(infile))
 	
 		oso_dict = odict()
-		# STORE ARCHIVE BLOCKS
+		# STORE RAR ARCHIVE BLOCKS
 		for rarfile in rarfiles:
 			# take into account case sensitivity on Unix systems
 			(rfexact, rfcapitals) = capitalized_fn(rarfile)
@@ -563,6 +568,38 @@ def create_srr(srr_name, infiles, in_folder="",
 				# store the raw data for any blocks found
 				srr.write(block.block_bytes())
 				
+		# STORE ZIP META DATA
+		for zipfile in zipfiles:
+			if not os.path.isfile(zipfile):
+				_fire(code=MsgCode.FILE_NOT_FOUND,
+					  message="Referenced file not found: %s" % rarfile)
+				srr.close()	  
+				os.unlink(srr_name)
+				raise FileNotFound("Referenced file not found: %s" % rarfile)
+			
+			fname = os.path.relpath(zipfile, in_folder) if save_paths  \
+				else os.path.basename(zipfile)
+			_fire(MsgCode.MSG, message="Processing file: %s." % fname)
+		
+			meta_data_bytes = b""
+			for zipblock in ZipReader(zipfile):
+				print(zipblock)
+				if (isinstance(zipblock, ZipFileBlock)
+					and zipblock.has_compression()):
+					_fire(MsgCode.COMPRESSION, message="Don't delete 'em yet!")
+					if not compressed:
+						srr.close()
+						os.unlink(srr_name)
+						raise ValueError("Archive uses unsupported "
+						           "compression method: %s" % zipfile)
+				meta_data_bytes += zipblock.hbytes
+				# TODO: no other blocks with non header data???
+				
+			zip_crc = calculate_crc32(zipfile)
+			srrzblock = SrrZipFileBlock(
+			    file_name=fname, zip_crc=zip_crc, metadata=meta_data_bytes)
+			srr.write(srrzblock.block_bytes())
+
 		# STORE OSO/ISDb HASHES
 		if oso_hash:
 			for (fname, rarname) in oso_dict.items():
@@ -967,7 +1004,7 @@ def info(srr_file):
 	oso_hashes = []
 
 	for block in RarReader(srr_file).read_all():
-		add_size = True
+		count_size = True
 		if block.rawtype == BlockType.SrrHeader:
 			appname = block.appname
 			current_rar = None # end the file size counting
@@ -991,7 +1028,7 @@ def info(srr_file):
 			
 			current_rar = None # end the file size counting
 		elif block.rawtype == BlockType.SrrRarFile:
-			add_size = False
+			count_size = False
 			current_rar = None # end the file size counting
 				
 			key = os.path.basename(block.file_name.lower())
@@ -1087,10 +1124,13 @@ def info(srr_file):
 			
 		# calculate size of RAR file
 		if current_rar:
-			if add_size:
+			if count_size:
 				current_rar.file_size += block.header_size + block.add_size
+				# not the whole size for the padding block (7 + 4 add size)
+				if block.rawtype == BlockType.SrrRarPadding:
+					current_rar.file_size -= block.header_size  # - 11
 			current_rar.offset_end_rar = (block.block_position + 
-										  block.header_size)
+			                              block.header_size)
 			rar_files[current_rar.key] = current_rar	
 	
 	def add_info_to_rar(sfv_entry):
@@ -1169,6 +1209,9 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	              reconstructing. It speeds up the process.
 	auto_locate_renamed: if set, start looking in sub folders and guess based
 	                     on file size and extension of the file to pack
+	empty: will write zero bytes when no file is found
+	rar_executable_dir: folder with rar.exe files from -z parameter
+	tmp_dir: working directory for compressed RAR reconstruction
 	extract_files: if set, extract additional files stored in the srr
 	srr_part: string with volume(s) to reconstruct
 	"""
@@ -1341,6 +1384,10 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				rarfs.write(block.block_bytes()[block.header_size:])
 			else:
 				continue
+		elif block.rawtype == BlockType.SrrZipFile:
+			reconstruct_zip(block.zip_data(), in_folder, out_folder, 
+				extract_paths, hints, skip_rar_crc, auto_locate_renamed,
+				empty, tmp_dir)
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
@@ -1352,6 +1399,15 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		srcfs.close()
 		
 	temp_folder_cleanup()
+	
+def reconstruct_zip(zip_metadata, in_folder, out_folder, 
+		extract_paths=True, hints={},
+		skip_rar_crc=False, auto_locate_renamed=False, empty=False,
+		tmp_dir=None):
+	stream = io.BytesIO(zip_metadata)
+	for zipblock in ZipReader(stream, is_srr=True):
+		print(zipblock)
+
 
 def _write_recovery_record(block, rarfs):
 	"""block: original rar recovery block from SRR
@@ -1832,6 +1888,7 @@ class RarArguments(object):
 		self.old_naming_flag = "-vn"
 		
 	def increase_thread_count(self, rarbin):
+		"""Call supports_setting_threads() before calling this method"""
 		if self.threads == "":
 			self.threads = "-mt1"
 			return True
@@ -2416,6 +2473,7 @@ class CompressedRarFile(io.IOBase):
 		if self.rarstream.length() != block.packed_size:
 			_fire(MsgCode.MSG, message="Solid archive recompression.")
 			while(self.rarstream.length() != block.packed_size and
+				self.good_rar.supports_setting_threads() and
 				self.good_rar.args.increase_thread_count(self.good_rar)):
 				compress()
 			

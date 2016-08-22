@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2008-2010 ReScene.com
-# Copyright (c) 2012 pyReScene
+# Copyright (c) 2012-2016 pyReScene
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,6 +38,7 @@ from threading import Thread
 
 import rescene
 from rescene.main import MsgCode, FileNotFound, RarNotFound, EmptyRepository
+from rescene.main import ZIP_EXT
 from rescene.utility import sep
 from rescene.utility import raw_input
 from rescene.utility import encodeerrors
@@ -432,7 +433,7 @@ def main(argv=None):
 
 	creation.add_option("-c", "--compressed",
 					 action="store_true", dest="allow_compressed",
-					 help="allow SRR creation for compressed RAR files")
+					 help="allow SRR creation for compressed archives")
 	creation.add_option("-p", "--paths",
 						help="Store file names with paths "
 						"(relative to the input base directory) "
@@ -549,7 +550,7 @@ WARNING: SRR files for compressed RARs are like SRS files:
 			if not os.path.exists(infile):
 				print(parser.format_help(), file=sys.stderr)
 				report_error(1, "Input file not found: %s\n" % infile)
-			elif ext != ".srr" and ext != ".sfv" and ext != ".rar":
+			elif ext not in (".srr", ".sfv", ".rar") + ZIP_EXT:
 				print(parser.format_help(), file=sys.stderr)
 				report_error(1, "Input file type not recognized: %s\n" %
 							 infile)
