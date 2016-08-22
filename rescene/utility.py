@@ -460,12 +460,12 @@ def calculate_crc32(file_name):
 	crc = 0
 	count = 0
 	with open(file_name, "rb") as f:
-		x = f.read(65536)
+		x = f.read(0x10000)  # 64 KiB
 		while x:
 			count += 1
 			show_spinner(count)
 			crc = zlib.crc32(x, crc)
-			x = f.read(65536)
+			x = f.read(0x10000)
 		remove_spinner()
 	return crc & 0xFFFFFFFF
 
