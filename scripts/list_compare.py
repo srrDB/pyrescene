@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: latin-1 -*-
+# -*- coding: utf-8 -*-
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ No problems with different line endings of the text files in Windows.
 There is a tool for it too:
   comm
 
-Author: Gfy <tsl@yninovg.pbz> """
+Author: Gfy """
 
 import sys
 import optparse
