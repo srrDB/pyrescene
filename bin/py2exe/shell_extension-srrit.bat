@@ -14,7 +14,7 @@ REM     (it'll find all releases in a folder)
 REM -y: always yes for all prompts
 REM -n: always no for all prompts
 REM     (when it asks to replace an existing .srr file)
-%~dp0pyrescene.exe %1 -c -s -v -o %1\.. -r
+"%~dp0pyrescene.exe" %1 -c -s -v -o %1\.. -r
 
 REM Keeps the results on screen when the process has errors
 IF %ERRORLEVEL% GTR 0 PAUSE
