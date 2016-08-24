@@ -60,7 +60,7 @@ def main(options, args):
 		print("What should I check for?")
 		sys.exit(1)
 
-	if not os.path.exists(options.output_dir):
+	if options.output_dir and not os.path.exists(options.output_dir):
 		print("Trying to create missing output directory")
 		os.makedirs(options.output_dir)
 
