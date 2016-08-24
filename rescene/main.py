@@ -1788,6 +1788,7 @@ class RarExecutable(object):
 	def max_thread_count(self):
 		"""
 		Ignores whether or not this version can set threads!
+		The first rar version to support --mt is 2006-03-29_rar360b1.exe
 		4.20: Now the allowed <threads> value for -mt<threads> switch is
 		1 - 32, not 0 - 16 as before. (also in 4.20 beta 1)
 		"""
