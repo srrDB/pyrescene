@@ -262,7 +262,7 @@ def main(options, args):
 				continue  # executed if the loop ended normally (no break)
 
 		# write out good file
-		outfn = file_name + ".fixed"
+		outfn = file_name + ".fixed." + cur_byte
 		print("Writing fixed file to %s" % outfn)
 		with open(outfn, 'wb') as result:
 			result.write(data[start:cur_byte])
