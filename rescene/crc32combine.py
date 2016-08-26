@@ -54,8 +54,16 @@ def crc32_combine_function():
 	if libpath:
 		if _DEBUG:
 			print(libpath)
-		zlib = ctypes.cdll.LoadLibrary(libpath)
-		return zlib.crc32_combine
+		try:
+			zlib = ctypes.cdll.LoadLibrary(libpath)
+			return zlib.crc32_combine
+		except OSError:
+			# OSError: [WinError 193] %1 is not a valid Win32 application
+			# on C:\Program Files\Intel\WiFi\bin\zlib1.dll
+			msg = ("The DLL found at %s cannot be used. Make sure a good file "
+				"can be found in the PATH! Falling back to slow Python code")
+			print(msg % libpath)
+			return crc32_combine
 	else:
 		print("zlib not found in PATH: slow Python implementation used")
 		return crc32_combine
