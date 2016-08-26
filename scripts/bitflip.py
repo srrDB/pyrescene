@@ -54,6 +54,9 @@ Possible improvements:
   How does the pure Python combine code compare with calling zlib from Python?
 - better output file handling instead of (overwriting) the default .fixed
 
+Bugs:
+- doing the whole range on large files (100MB), will create an empty file
+
 Author: Gfy"""
 
 import optparse
@@ -119,7 +122,7 @@ def main(options, args):
 	# memoization: precalculate crc32 hashes
 	# 	crc32(crc32(0, seq1, len1), seq2, len2) ==
 	# 		crc32_combine(crc32(0, seq1, len1), crc32(0, seq2, len2), len2)
-	skip = options.skip  # 100 by default
+	skip = options.skip  # 1000 by default
 	lookup = {}
 	crc_begin = crc32(data[0:range_start]) & 0xFFFFFFFF
 	crc_begin_len = len(data[0:range_start])
@@ -262,7 +265,7 @@ def main(options, args):
 				continue  # executed if the loop ended normally (no break)
 
 		# write out good file
-		outfn = file_name + ".fixed." + cur_byte
+		outfn = file_name + "." + str(cur_byte) + ".fixed"
 		print("Writing fixed file to %s" % outfn)
 		with open(outfn, 'wb') as result:
 			result.write(data[start:cur_byte])
