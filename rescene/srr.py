@@ -76,7 +76,11 @@ class MessageThread(Thread):
 			if len(o.events):
 				for event in o.events:
 					if event.code in self.messages or self.all:
-						print(event.message, file=sys.stderr)
+						# common info messages to stdout
+						if event.code in MsgCode.informative:
+							print(event.message)
+						else:
+							print(event.message, file=sys.stderr)
 				o.events = []
 			time.sleep(self.sleeptime)  # in seconds
 		return
@@ -575,6 +579,7 @@ WARNING: SRR files for compressed RARs are like SRS files:
 		working_dir = os.path.abspath(os.path.curdir)
 
 		# check existence and type of the input files
+		# help to stderr http://www.jstorimer.com/blogs/workingwithcode/7766119
 		for infile in infiles:
 			ext = infile[-4:].lower()
 			if not os.path.exists(infile):
