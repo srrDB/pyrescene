@@ -208,6 +208,7 @@ VIII. History - Databases and community
 	  2015-03-04: 2,200,000
 	  2015-06-14: 2,400,000
 	  2016-05-27: 3,000,000
+	  2016-10-11: 3,500,000
   
   (data gathered from Tweets and old backups)
   
@@ -496,7 +497,7 @@ IX. General overview of a .srr file
     
     - The SRR file must start with the header block.
     - Stored file blocks are optional, but they are almost always used because
-      a SRR file is very often created from a .sfv file.
+      an SRR file is very often created from a .sfv file.
     - Stored file blocks must be after the SRR marker block and should be
       before the first SRR RAR Block.
     - The SRR RAR Block has no body. All blocks until the next SRR RAR block
@@ -522,7 +523,7 @@ IX. General overview of a .srr file
 X. SRR archive processing
 -------------------------
     
-  A SRR Archive can be processed in the following manner:
+  An SRR Archive can be processed in the following manner:
 
   1. If end of file encountered then terminate archive processing,
      else read 7 bytes into fields HEAD_CRC, HEAD_TYPE, HEAD_FLAGS,
