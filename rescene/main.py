@@ -127,6 +127,10 @@ class MsgCode(object):
 	NO_FILES, DEL_STORED_FILE, RENAME_FILE, CMT, AV, AUTHENTCITY, \
 	NO_RAR, BLOCK, FBLOCK, RBLOCK, COMPRESSION, UNSUPPORTED_FLAG, CRC,  \
 	USER_ABORTED, AUTO_LOCATE, UNKNOWN = list(range(23))
+	
+	# informative messages not printed to stderr
+	informative = [MSG, STORING, DEL_STORED_FILE,
+	               BLOCK, RBLOCK, FBLOCK, COMPRESSION]
 
 class DupeFileName(Exception):
 	"""A file already exists with the given name."""
