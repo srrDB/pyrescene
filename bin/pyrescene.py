@@ -744,7 +744,8 @@ def generate_srr(reldir, working_dir, options, mthread):
 	extra_sfvs = get_unwanted_sfvs(sfvs, main_sfvs)
 
 	# create SRR from RARs or from .mp3 or .flac SFV
-	if len(main_sfvs):
+	# OR it's a fix release without sfv and main rars (just nfo; proof,... dir)
+	if (len(main_sfvs) or (not len(main_sfvs) and not len(main_rars))):
 		try:
 			result = rescene.create_srr(
 			    srr, main_sfvs, reldir, [], True,
@@ -1206,6 +1207,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 
 	custom_dirs_old_music = []
 	OLD_MP3_LIMIT = 10  # arbitrary amount of possible folders we expect
+	rls_candidate = os.path.basename(dirpath)
+
 	if not release:
 		# SFV file in one of the interesting subdirs?
 		interesting_dirs = []
@@ -1241,20 +1244,22 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			release = len(dirnames) == sfv_count and sfv_count >= 2
 
 	# X3.Gold.Edition-Unleashed has DISC
-	if release and not RELEASE_FOLDERS.match(os.path.basename(dirpath)):
+	if release and not RELEASE_FOLDERS.match(rls_candidate):
 		release = True
 	else:
 		return False
 
 	# season torrent packs have often an additional NFO file in the root
 	# don't detect as a release if this is the case
-	# only difference with old music releases is the '-' in the folder name
+	# only difference with old music releases is the '-' in the subfolder name
 	if len(filenames) == 1 and filenames[0].lower().endswith(".nfo"):
 		# could still be a regular release with multiple CDs
 		# each other subdir must be a release dir -> not reldir itself
 		is_no_pack = False
 		for reldir in dirnames:
-			if not is_release(os.path.join(dirpath, reldir)):
+			# ignore empty directories
+			full_path = os.path.join(dirpath, reldir)
+			if not is_release(full_path) and len(os.listdir(full_path)):
 				is_no_pack = True
 				break
 
@@ -1298,10 +1303,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	return release
 
 def is_empty_file(fpath):
-	if os.path.isfile(fpath) and os.path.getsize(fpath) == 0:
-		return True
-	else:
-		return False
+	return os.path.isfile(fpath) and os.path.getsize(fpath) == 0
 
 def main(argv=None):
 	start_time = datetime.now()
