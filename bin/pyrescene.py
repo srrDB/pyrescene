@@ -950,10 +950,13 @@ def generate_srr(reldir, working_dir, options, mthread):
 
 				if advance:
 					tmp_vobsrr_name = create_temp_file_name(vobsrr)
-					rescene.create_srr_single_volume(
-						vobsrr, sample, tmp_srr_name=tmp_vobsrr_name)
-					replace_result(tmp_vobsrr_name, vobsrr)
-					copied_files.append(vobsrr)
+					try:
+						rescene.create_srr_single_volume(
+							vobsrr, sample, tmp_srr_name=tmp_vobsrr_name)
+						replace_result(tmp_vobsrr_name, vobsrr)
+						copied_files.append(vobsrr)
+					except:
+						print("Broken RAR used as vobsample!")
 
 	# when stored SRS file instead of a sample file
 	# or both, but only one SRS will be added
