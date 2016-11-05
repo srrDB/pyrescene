@@ -592,6 +592,7 @@ def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
 	
 	Returns True: success
 	Returns False: existing .srr file not overwritten
+	Throws error on broken RAR files.
 	"""
 	try:
 		if not tmp_srr_name:
