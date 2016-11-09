@@ -1258,13 +1258,19 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	if len(filenames) == 1 and filenames[0].lower().endswith(".nfo"):
 		# could still be a regular release with multiple CDs
 		# each other subdir must be a release dir -> not reldir itself
-		is_no_pack = False
+		is_pack = True
 		for reldir in dirnames:
 			# ignore empty directories
 			full_path = os.path.join(dirpath, reldir)
-			if not is_release(full_path) and len(os.listdir(full_path)):
-				is_no_pack = True
+			no_release = not is_release(full_path)
+			contains_files = len(os.listdir(full_path))
+			if no_release and contains_files:
+				is_pack = False
 				break
+			
+		# nfofix, dirfix have no subfolders
+		if not len(dirnames):
+			is_pack = False
 
 		# MP3 release falsely detected as torrent site pack (nfo in root)
 		# Nine_Inch_Nails-The_Fragile_2CD-1999-Sinned-aPC
@@ -1279,7 +1285,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		#         00-nine_inch_nails-the_fragile_2cd-1999-sinned-apc.nfo
 		#         00-nine_inch_nails-the_fragile_right-1999-sinned-apc.m3u
 		#         00-nine_inch_nails-the_fragile_right-1999-sinned-apc.sfv
-		if (not is_no_pack and len(custom_dirs_old_music) == 0 and
+		if (is_pack and len(custom_dirs_old_music) == 0 and
 			len(dirnames) <= OLD_MP3_LIMIT):
 			for dirname in dirnames:
 				# old MP3 release with custom folders (no '-' in name)
@@ -1294,7 +1300,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 						break
 			release = len(dirnames) == sfv_count and sfv_count >= 2
 		else:
-			release = is_no_pack
+			release = not is_pack
 
 	# a release name doesn't have spaces in its folder name
 	(head, tail) = os.path.split(dirpath)
