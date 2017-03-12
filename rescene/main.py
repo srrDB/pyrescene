@@ -124,9 +124,9 @@ class Observer(object):
 
 class MsgCode(object):
 	MSG, OS_ERROR, NO_OVERWRITE, NO_EXTRACTION, DUPE, STORING, FILE_NOT_FOUND,\
-	NO_FILES, DEL_STORED_FILE, RENAME_FILE, CMT, AV, AUTHENTCITY, \
+	NO_FILES, DEL_STORED_FILE, RENAME_FILE, CMT, AV, ACL, AUTHENTCITY, \
 	NO_RAR, BLOCK, FBLOCK, RBLOCK, COMPRESSION, UNSUPPORTED_FLAG, CRC,  \
-	USER_ABORTED, AUTO_LOCATE, UNKNOWN = list(range(23))
+	USER_ABORTED, AUTO_LOCATE, UNKNOWN = list(range(24))
 	
 	# informative messages not printed to stderr
 	informative = [MSG, STORING, DEL_STORED_FILE,
@@ -1056,12 +1056,14 @@ def info(srr_file):
 				msg = "New style comment block found."
 				if _DEBUG: print(msg)
 				_fire(MsgCode.CMT, message=msg)
-
 			elif block.file_name == "AV":
 				msg = "Authenticity Verification block found."
 				if _DEBUG: print(msg)
 				_fire(MsgCode.AV, message=msg)
-				
+			elif block.file_name == "ACL":
+				msg = "NTFS Access Control List block found."
+				if _DEBUG: print(msg)
+				_fire(MsgCode.ACL, message=msg)
 			else:
 				msg = "Unexpected new-style RAR block. New RAR version?"
 				if _DEBUG: print(msg)
