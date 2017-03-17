@@ -1214,18 +1214,24 @@ def is_release(dirpath, dirnames=None, filenames=None):
 
 	if not release:
 		# SFV file in one of the interesting subdirs?
-		interesting_dirs = []
+		common_subfolders = []
+		limited_chars = "^[a-zA-Z0-9_]+$"  # no dash (-)
+		
 		for dirname in dirnames:
 			# Disc_1 and Disc_2 in mp3 rlz
 			if DISK_FOLDERS.match(dirname):
-				interesting_dirs.append(dirname)
-			elif re.match("^[a-zA-Z0-9_]+$", dirname, re.IGNORECASE):
+				common_subfolders.append(dirname)
+			elif re.match(limited_chars, dirname, re.IGNORECASE):
 				# old MP3 release with custom folders
 				custom_dirs_old_music.append(dirname)
+			elif re.match("CD(.?|_-_)\d{1-2}.+", dirname, re.IGNORECASE):
+				# Various_artists_-_deiner_tracks_vol2_2cd-2000-nbd
+				# CD1-Dj_Membrain and CD2-Dj_Sepalot
+				custom_dirs_old_music.append(dirname)
 
-		for idir in interesting_dirs:
+		for idir in common_subfolders:
 			for lfile in os.listdir(os.path.join(dirpath, idir)):
-				if lfile[-4:].lower() == ".sfv":
+				if lfile.lower().endswith(".sfv"):
 					release = True
 					break
 			if release:
@@ -1244,6 +1250,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 					if lfile.lower().endswith(".sfv"):
 						sfv_count += 1
 						break
+			# release if no other release folders are found either
 			release = len(dirnames) == sfv_count and sfv_count >= 2
 
 	# X3.Gold.Edition-Unleashed has DISC
@@ -1252,7 +1259,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 	else:
 		return False
 
-	# season torrent packs have often an additional NFO file in the root
+	# SEASON TORRENT PACKS have often an additional NFO file in the root
 	# don't detect as a release if this is the case
 	# only difference with old music releases is the '-' in the subfolder name
 	if len(filenames) == 1 and filenames[0].lower().endswith(".nfo"):
@@ -1289,7 +1296,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			len(dirnames) <= OLD_MP3_LIMIT):
 			for dirname in dirnames:
 				# old MP3 release with custom folders (no '-' in name)
-				if re.match("^[a-zA-Z0-9_]+$", dirname, re.IGNORECASE):
+				if re.match(limited_chars, dirname, re.IGNORECASE):
 					custom_dirs_old_music.append(dirname)
 
 			sfv_count = 0
