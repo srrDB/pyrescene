@@ -47,6 +47,8 @@ class TestRar5Reader(unittest.TestCase):
 	def test_read(self):
 		rfile = os.path.join(self.path, self.folder, "txt.rar")
 		rr = Rar5Reader(rfile)
+		for r in rr:
+			print(r)
 		
 	def test_read_none(self):
 		""" We expect None back if we read one time to much. """
