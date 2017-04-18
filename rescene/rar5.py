@@ -24,14 +24,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-import io
-import os
-import sys
-import struct
-
+from __future__ import unicode_literals
+from abc import ABCMeta, abstractmethod
 from binascii import hexlify
 from rescene.rar import ArchiveNotFoundError
 from rescene.utility import _DEBUG, _OFFSETS
+
+import io
+import os
+import abc
+import sys
+import struct
 
 S_BYTE = struct.Struct("<B")
 S_LONG = struct.Struct('<L')  # unsigned long: 4 bytes
@@ -82,7 +85,9 @@ class SizeTypeHeader(object):
 	# TODO: remove?
 		
 class Rar5HeaderBase(object):
-	"""'abstract' base class"""
+	__metaclass__ = ABCMeta
+	"""abstract base class for headers"""
+	@abstractmethod
 	def __init__(self, file_position):
 		"""file_position: stream location of the block"""
 		self.block_position = file_position
@@ -99,6 +104,13 @@ class Rar5HeaderBase(object):
 
 	def flag_format(self, flag):
 		return "|   0x%04X " % flag
+
+	def explain(self):
+		bname = BLOCK_NAME.get(self.type, "UNKNOWN BLOCK!")
+		out = "Block: %s" % bname
+		if _OFFSETS:
+			out += "; offset: %s" % self.explain_size(self.block_position)
+		return out
 	
 	def explain_size(self, size):
 		return "0x%X (%u bytes)" % (size, size)
@@ -123,7 +135,7 @@ class Rar5HeaderBase(object):
 
 	def __repr__(self):
 		return "%s %dB+%dB @ %d" % (
-			BLOCK_NAME[self.type],
+			BLOCK_NAME.get(self.type, "Unknown"),
 			self.full_header_size(),
 			self.size_data,
 			self.block_position)
@@ -145,6 +157,13 @@ class Rar5HeaderMarker(Rar5HeaderBase):
 
 	def full_header_size(self):
 		return 8
+	
+	def explain(self):
+		out = super(Rar5HeaderMarker, self).explain() + "\n"
+		hex_string = hexlify(self._headerdata).decode('ascii')
+		out += "|Header bytes: %s\n" % hex_string
+		out += "|Rar5 marker block is always 'Rar!1A070100' (magic number)"
+		return out
 
 class Rar5HeaderBlock(Rar5HeaderBase):
 	"""Represents basic header used in all RAR archive blocks,
@@ -168,79 +187,74 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		self._headerdata = stream.read(self.header_size)
 		
 	def explain(self):
-		bname = BLOCK_NAME.get(self.type, "UNKNOWN BLOCK! NUKE IT!")
-		out = "Block: %s" % bname
-		if _OFFSETS:
-			out += "; offset: %s\n" % (self.explain_size(self.block_position))
-		else:
-			out += "\n"
+		out = super(Rar5HeaderBlock, self).explain() + "\n"
 		hex_string = hexlify(self._headerdata).decode('ascii')
 		out += "|Header bytes: %s\n" % hex_string
-# 		if self.rawtype == BlockType.RarMin:
-# 			out += "|Rar marker block is always 'Rar!1A0700' (magic number)\n"
-		out += "|HEAD_CRC:   0x%04X\n" % self.crc32
-		out += "|HEAD_SIZE:  %s\n" % self.explain_size(self.header_size)
-		out += "|HEAD_TYPE:  0x%X (%s)\n" % (self.type, bname)
+		out += "|Header CRC32: 0x%04X\n" % self.crc32
+		out += "|Header size:  %s\n" % self.explain_size(self.header_size)
+		out += "|Header type:  0x%X (%s)\n" % (
+			self.type, BLOCK_NAME.get(self.type, "NUKE IT!"))
 		out += self.explain_flags()
 		return out
 	
-# 	def explain_flags(self, parent):
 	def explain_flags(self):
-		out = "|HEAD_FLAGS: 0x%04X\n" % self.flags
-		flagresult = (self.SUPPORTED_FLAG_MASK & self.flags) ^ self.flags
-# 		if flagresult != 0 and self.rawtype != BlockType.RarMin:
-# 			out += "UNSUPPORTED FLAG DETECTED! %04X\n" % flagresult
-# 		if self.flags & RarBlock.LONG_BLOCK:
-# 			out += self.flag_format(RarBlock.LONG_BLOCK) +  \
-# 				"LONG_BLOCK (ADD_SIZE field present)\n"
-# 		if self.flags & RarBlock.SKIP_IF_UNKNOWN:
-# 			out += self.flag_format(RarBlock.SKIP_IF_UNKNOWN) +  \
-# 				"SKIP_IF_UNKNOWN (older RAR versions will ignore this block)\n"
+		out = "|Header flags: 0x%04X\n" % self.flags
+		if self.flags & RAR_EXTRA == RAR_EXTRA:
+			out +="| 0x0001 Extra area present at header end\n"
+		if self.flags & RAR_DATA == RAR_DATA:
+			out +="| 0x0002 Data area present at header end\n"
+		if self.flags & RAR_SKIP == RAR_SKIP:
+			out +="| 0x0004 Skip when updating if unknown type\n"
+		if self.flags & RAR_SPLIT_BEFORE == RAR_SPLIT_BEFORE:
+			out +="| 0x0008 Data area will continue from the previous volume\n"
+		if self.flags & RAR_SPLIT_AFTER == RAR_SPLIT_AFTER:
+			out +="| 0x0010 Data area continues in the next volume\n"
+		if self.flags & RAR_DEPENDENT == RAR_DEPENDENT:
+			out +="| 0x0020  Block depends on preceding file block\n"
+		if self.flags & RAR_PRESERVE_CHILD == RAR_PRESERVE_CHILD:
+			out +="| 0x0040 Preserve a child block if host block is modified\n"
 		return out
 
 class BlockFactory(object):
-	def __init__(self, stream, is_srr_block=False):
+	@staticmethod
+	def create(stream, is_srr_block=False):
 		"""
 		stream: open stream to read the basic block header from
 		is_srr_block: RAR block is stripped
 		"""
+		block_position = stream.tell()
+
 		# byte order: < little-endian
 		# Marker block: Rar!\x1A\x07\x01\x00 (magic number)
 		#               (0x52 0x61 0x72 0x21 0x1a 0x07 0x01 0x00)
-		block_position = stream.tell()
 		if stream.read(8) == b"Rar!\x1A\x07\x01\x00":
-			self.header = Rar5HeaderMarker(stream, block_position)
+			header = Rar5HeaderMarker(stream, block_position)
 		else:
 			stream.seek(block_position, os.SEEK_SET)
-			self.header = Rar5HeaderBlock(stream, block_position)
-			
-		self.is_srr = is_srr_block
-		self._stream = stream
+			header = Rar5HeaderBlock(stream, block_position)
 
-	def create(self):
-		if self.header.is_marker_block():
-			block = MarkerBlock(self.header, self.is_srr)
-		elif self.header.is_main_block():
-			block = RarBlock(self.header, self.is_srr)
-		elif self.header.is_file_block():
-			block = RarBlock(self.header, self.is_srr)
-		elif self.header.is_service_block():
-			block = RarBlock(self.header, self.is_srr)
-		elif self.header.is_encryption_block():
-			block = RarBlock(self.header, self.is_srr)
-		elif self.header.is_end_block():
-			block = RarBlock(self.header, self.is_srr)
+		if header.is_marker_block():
+			block = MarkerBlock(header, is_srr_block)
+		elif header.is_main_block():
+			block = RarBlock(header, is_srr_block)
+# 			block = MainArchiveBlock(header, is_srr_block)
+		elif header.is_file_block():
+			block = RarBlock(header, is_srr_block)
+		elif header.is_service_block():
+			block = RarBlock(header, is_srr_block)
+		elif header.is_encryption_block():
+			block = RarBlock(header, is_srr_block)
+		elif header.is_end_block():
+			block = RarBlock(header, is_srr_block)
 		else:
 			print("Unknown block detected!")
-			block = RarBlock(self.header, self.is_srr)
+			block = RarBlock(header, is_srr_block)
 			
-		self._stream.seek(block.next_block_offset(), os.SEEK_SET)
-
 		return block
 			
 class RarBlock(object):
-	def __init__(self, rarheader, is_srr_block=False):
-		self.basic_header = rarheader
+	def __init__(self, basic_header, is_srr_block=False):
+		self.basic_header = basic_header
 		self.is_srr = is_srr_block
 		
 	def next_block_offset(self):
@@ -248,6 +262,9 @@ class RarBlock(object):
 		if not self.is_srr:
 			location += self.basic_header.size_data
 		return location
+	
+	def explain(self):
+		return self.basic_header.explain()
 		
 	def is_markerblock(self):
 		return self.basic_header.is_marker_block()
@@ -260,6 +277,11 @@ class RarBlock(object):
 
 class MarkerBlock(RarBlock):
 	pass
+
+class MainArchiveBlock(RarBlock):
+	def __init__(self, basic_header, is_srr_block=False):
+		super(MainArchiveBlock, self).__init__(basic_header, is_srr_block)
+# 		self.extended_header = basic_header._rawheader
 
 def read_vint(stream):
 	"""Reads a variable int from a stream. See RAR5 file format.
@@ -332,8 +354,7 @@ class Rar5Reader(object):
 			assert False, "Invalid state"
 	
 		try:
-			fac = BlockFactory(self._rarstream, self.is_srr)
-			curblock = fac.create()
+			curblock = BlockFactory.create(self._rarstream, self.is_srr)
 		except Exception as e:
 			print(e)
 			curblock = None
