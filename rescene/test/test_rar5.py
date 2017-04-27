@@ -50,6 +50,12 @@ class TestRar5Reader(unittest.TestCase):
 		for r in rr:
 			print(r.explain())
 		
+	def test_stackoverflow(self):
+		data = b"\x33\x92\xb5\xe5\x0a\x01\x05\x06\x00\x05\x01\x01\x00"
+		stream = io.BytesIO(data)
+		block = BlockFactory.create(stream, False)
+		print(block.explain())
+
 	def test_read_none(self):
 		""" We expect None back if we read one time to much. """
 		stream = io.BytesIO()
