@@ -59,6 +59,8 @@ BLOCK_NAME = {
 	BLOCK_END: "End of archive header",
 }
 
+LOCATOR_RECORD = 1
+
 # flags common to all blocks
 RAR_EXTRA = 0x0001  # Extra area is present after the header
 RAR_DATA = 0x0002  # Data area is present after the header
@@ -67,6 +69,13 @@ RAR_SPLIT_BEFORE = 0x0008  # Data area is continuing from the previous volume
 RAR_SPLIT_AFTER = 0x0010  # Data area is continuing in the next volume
 RAR_DEPENDENT = 0x0020  # Block depends on preceding file block
 RAR_PRESERVE_CHILD = 0x0040   # Preserve a child block if host block is modified
+
+# archive header specific flags
+ARCHIVE_VOLUME = 0x0001  # Volume. Archive is a part of multivolume set
+ARCHIVE_NUMBER = 0x0002  # Volume number field is present
+ARCHIVE_SOLID = 0x0004  # Solid archive
+ARCHIVE_RECOVERY_RECORD = 0x0008  # Recovery record is present
+ARCHIVE_LOCKED = 0x0010  # Locked archive
 
 # file and service headers use the same types of extra area records
 FILE_ENCRYPTION = 0x01  # File encryption information
@@ -97,7 +106,7 @@ class Rar5HeaderBase(object):
 	
 	def full_header_size(self):
 		"""CRC32, header size field, header size"""
-		return 4 + self._hdrvintsize + self.header_size
+		return 4 + self._hdrvint_width + self.header_size
 
 	def full_block_size(self):
 		return self.full_header_size() + self.size_data
@@ -153,14 +162,14 @@ class Rar5HeaderMarker(Rar5HeaderBase):
 		self.flags = 0
 		self.size_extra = 0
 		self.size_data = 0
-		self._headerdata = "\x52\x61\x72\x21\x1a\x07\x01\x00"
+		self.header_data = "\x52\x61\x72\x21\x1a\x07\x01\x00"
 
 	def full_header_size(self):
 		return 8
 	
 	def explain(self):
 		out = super(Rar5HeaderMarker, self).explain() + "\n"
-		hex_string = hexlify(self._headerdata).decode('ascii')
+		hex_string = hexlify(self.header_data).decode('ascii')
 		out += "|Header bytes: %s\n" % hex_string
 		out += "|Rar5 marker block is always 'Rar!1A070100' (magic number)"
 		return out
@@ -177,18 +186,20 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		super(Rar5HeaderBlock, self).__init__(file_position)
 		self.crc32 = S_LONG.unpack_from(stream.read(4))
 		self.header_size = read_vint(stream)
-		self._hdrvintsize = stream.tell() - 4 - file_position
+		self._hdrvint_width = stream.tell() - 4 - file_position
 		self.type = read_vint(stream)
 		self.flags = read_vint(stream)
 		self.size_extra = read_vint(stream) if self.flags & RAR_EXTRA else 0
 		self.size_data = read_vint(stream) if self.flags & RAR_DATA else 0
+		self.offset_specific_fields = stream.tell() - file_position
 		
 		stream.seek(self.block_position)
-		self._headerdata = stream.read(self.header_size)
+		self.header_data = stream.read(self.header_size)
+		self.stream = stream
 		
 	def explain(self):
 		out = super(Rar5HeaderBlock, self).explain() + "\n"
-		hex_string = hexlify(self._headerdata).decode('ascii')
+		hex_string = hexlify(self.header_data).decode('ascii')
 		out += "|Header bytes: %s\n" % hex_string
 		out += "|Header CRC32: 0x%04X\n" % self.crc32
 		out += "|Header size:  %s\n" % self.explain_size(self.header_size)
@@ -236,8 +247,8 @@ class BlockFactory(object):
 		if header.is_marker_block():
 			block = MarkerBlock(header, is_srr_block)
 		elif header.is_main_block():
-			block = RarBlock(header, is_srr_block)
-# 			block = MainArchiveBlock(header, is_srr_block)
+# 			block = RarBlock(header, is_srr_block)
+			block = MainArchiveBlock(header, is_srr_block)
 		elif header.is_file_block():
 			block = RarBlock(header, is_srr_block)
 		elif header.is_service_block():
@@ -263,11 +274,32 @@ class RarBlock(object):
 			location += self.basic_header.size_data
 		return location
 	
+	def full_header_size(self):
+		return self.basic_header.full_header_size()
+
+	def full_block_size(self):
+		return self.basic_header.full_block_size()
+
 	def explain(self):
 		return self.basic_header.explain()
+
+	def explain_size(self, size):
+		return self.basic_header.explain_size(size)
 		
-	def is_markerblock(self):
+	def is_marker_block(self):
 		return self.basic_header.is_marker_block()
+	
+	def is_main_block(self):
+		return self.basic_header.is_main_block()
+
+	def is_file_block(self):
+		return self.basic_header.is_file_block()
+
+	def is_service_block(self):
+		return self.basic_header.is_service_block()
+
+	def is_encryption_block(self):
+		return self.basic_header.is_encryption_block()
 
 	def is_endblock(self):
 		return self.basic_header.is_end_block()
@@ -281,7 +313,52 @@ class MarkerBlock(RarBlock):
 class MainArchiveBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
 		super(MainArchiveBlock, self).__init__(basic_header, is_srr_block)
-# 		self.extended_header = basic_header._rawheader
+		stream = self.basic_header.stream
+		stream.seek(
+		    self.basic_header.block_position +
+		    self.basic_header.offset_specific_fields)
+		self.archive_flags = read_vint(stream)
+		self.volume_number = 0  # first volume or none set
+		self.quick_open_offset = 0
+		self.recovery_record_offset = 0
+
+		if self.archive_flags & ARCHIVE_NUMBER:
+			self.volume_number = read_vint(stream)
+		
+		if self.basic_header.flags & RAR_EXTRA:
+			# extra area can contain locator record: service block positions
+			self.record_size = read_vint(stream)
+			self.record_type = read_vint(stream)
+			if self.record_type == 1:  # always true in initial RAR5 spec
+				self.quick_open_offset = read_vint(stream)
+				self.recovery_record_offset = read_vint(stream)
+		
+	def explain(self):
+		out = self.basic_header.explain()
+		out += "+Archive flags: 0x%04X\n" % self.archive_flags
+		if self.archive_flags & ARCHIVE_VOLUME:
+			out += "+  0x01 Part of multivolume set\n"
+		if self.archive_flags & ARCHIVE_NUMBER:
+			out += "+  0x02 Volume number field present\n"
+		if self.archive_flags & ARCHIVE_SOLID:
+			out += "+  0x04 Solid archive\n"
+		if self.archive_flags & ARCHIVE_RECOVERY_RECORD:
+			out += "+  0x08 Recovery record is present\n"
+		if self.archive_flags & ARCHIVE_LOCKED:
+			out += "+  0x10 Locked archive\n"
+		if self.archive_flags & ARCHIVE_NUMBER:
+			out += "+Volume number: %d\n" % self.volume_number
+		if self.basic_header.flags & RAR_EXTRA:
+			if self.record_type == LOCATOR_RECORD:
+				# if one of the fields is not set, zero is shown
+				out += "+Extra area with locator record\n"
+				out += "+Quick open offset: %s\n" % self.explain_size(
+					self.quick_open_offset)
+				out += "+Recovery record offset: %s\n" % self.explain_size(
+					self.recovery_record_offset)
+			else:
+				out += "!UNKNOWN extra archive record!\n"
+		return out
 
 def read_vint(stream):
 	"""Reads a variable int from a stream. See RAR5 file format.
