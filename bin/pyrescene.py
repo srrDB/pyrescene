@@ -84,6 +84,31 @@ rescene.change_rescene_name_version("pyReScene Auto %s" % rescene.__version__)
 
 unrar_executable = None
 
+def rar_file_blacklist():
+	return [
+# these RARs contain cracked .exe files and are not wanted on srrdb.com
+"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM",
+"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED",
+"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.3.PATCH.FIX.CRACKED-DEViANCE",
+"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.4.TIMER.FIX.CRACKED-DEViANCE",
+"CHROME.CRACK.FIX-DEViANCE",
+"F1.Racing.Championship.FIX.READ.NFO-HOTDOX",
+"Hunting_Unlimited_3_V1.1_NOCD_CRACK_NFOFIX-RVL",
+"LMA.Manager.2007.FiX-RELOADED",
+"MSC.PATRAN.V2001.R2A.FIX.FOR.RISE-TFL",
+"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
+"Company.of.Heroes.Tales.of.Valor.FIX.GERMAN-0x0007",
+"Dishonored.GERMAN.FIX-0x0007",
+"OPERATION.FLASHPOINT.RESISTANCE.ADDON.FIX-DEViANCE",
+# contains vobsubs
+"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",  
+# missing file main release
+"Super.Streetfighter.IV.SSFIV.Arcade.Edition.DLC.FIX.READNFO.XBOX360-MoNGoLS",
+"Arrested.Development.S02E07.FiX.DVDRip.XviD-SAPHiRE",
+"Friends.Trivia.Game.GERMAN.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
+"Warhammer.40000.Dawn.Of.War.Winter.Assault.GERMAN.CD2.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
+		]
+
 def get_unrar():
 	"""Locate unrar executable only once"""
 	global unrar_executable
@@ -971,21 +996,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 
 	# stores the main RARs of DVDR fixes
 	# these RARs contain cracked .exe files and are not wanted on srrdb.com
-	false_positives = [
-		"BEYOND.THE.FUTURE.FIX.THE.TIME.ARROWS.EBOOT.PATCH.100.JPN.PS3-N0DRM",
-		"The.Raven.Legacy.of.a.Master.Thief.FIX-RELOADED",
-		"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.3.PATCH.FIX.CRACKED-DEViANCE",
-		"CHAMPIONSHIP.MANAGER.2003.2004.UPDATE.V4.1.4.TIMER.FIX.CRACKED-DEViANCE",
-		"CHROME.CRACK.FIX-DEViANCE",
-		"F1.Racing.Championship.FIX.READ.NFO-HOTDOX",
-		"Hunting_Unlimited_3_V1.1_NOCD_CRACK_NFOFIX-RVL",
-		"LMA.Manager.2007.FiX-RELOADED",
-		"MSC.PATRAN.V2001.R2A.FIX.FOR.RISE-TFL",
-		"RUNAWAY.A.ROAD.ADVENTURE.FIX-DEViANCE",
-		"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",  # contains vobsubs
-		# missing file main release
-		"Super.Streetfighter.IV.SSFIV.Arcade.Edition.DLC.FIX.READNFO.XBOX360-MoNGoLS",
-		]
+	false_positives = rar_file_blacklist()
 	release_name = os.path.split(reldir)[1]
 	if (is_storable_fix(release_name) and
 		len(main_sfvs) == 1 and len(main_rars) == 1 and
