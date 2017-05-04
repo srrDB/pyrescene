@@ -387,6 +387,8 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 			sfvfiles = rescene.utility.parse_sfv_file(sfv)[0]
 			if len(sfvfiles) == 1:
 				rar = os.path.join(os.path.dirname(sfv), sfvfiles[0].file_name)
+				if not rar.endswith(".rar"):
+					continue  # e.g. .sfv for proof file
 				if os.path.isfile(rar):
 					skip = False
 					for block in RarReader(rar):
