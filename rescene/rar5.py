@@ -86,6 +86,8 @@ FILE_REDIRECTION = 0x05 # File system redirection
 FILE_UNIX_OWNER = 0x06	# Unix owner and group information
 FILE_SERVICE_DATA = 0x07 # Service header data array
 
+END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
+
 class SizeTypeHeader(object):
 	"""Common size and type field throughout all headers"""
 	def __init__(self, stream):
@@ -247,7 +249,6 @@ class BlockFactory(object):
 		if header.is_marker_block():
 			block = MarkerBlock(header, is_srr_block)
 		elif header.is_main_block():
-# 			block = RarBlock(header, is_srr_block)
 			block = MainArchiveBlock(header, is_srr_block)
 		elif header.is_file_block():
 			block = RarBlock(header, is_srr_block)
@@ -256,12 +257,16 @@ class BlockFactory(object):
 		elif header.is_encryption_block():
 			block = RarBlock(header, is_srr_block)
 		elif header.is_end_block():
-			block = RarBlock(header, is_srr_block)
+			block = EndArchiveBlock(header, is_srr_block)
 		else:
 			print("Unknown block detected!")
 			block = RarBlock(header, is_srr_block)
 			
 		return block
+
+class SfxModule(object):
+	"""Not implemented"""
+	pass
 			
 class RarBlock(object):
 	def __init__(self, basic_header, is_srr_block=False):
@@ -280,6 +285,11 @@ class RarBlock(object):
 	def full_block_size(self):
 		return self.basic_header.full_block_size()
 
+	def move_to_offset_specific_headers(self, stream):
+		stream.seek(
+		    self.basic_header.block_position +
+		    self.basic_header.offset_specific_fields)
+	
 	def explain(self):
 		return self.basic_header.explain()
 
@@ -314,9 +324,7 @@ class MainArchiveBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
 		super(MainArchiveBlock, self).__init__(basic_header, is_srr_block)
 		stream = self.basic_header.stream
-		stream.seek(
-		    self.basic_header.block_position +
-		    self.basic_header.offset_specific_fields)
+		self.move_to_offset_specific_headers(stream)
 		self.archive_flags = read_vint(stream)
 		self.volume_number = 0  # first volume or none set
 		self.quick_open_offset = 0
@@ -360,6 +368,29 @@ class MainArchiveBlock(RarBlock):
 				out += "!UNKNOWN extra archive record!\n"
 		return out
 
+class FileEncryptionBlock(RarBlock):
+	pass
+
+class FileServiceBlock(RarBlock):
+	pass
+
+class EndArchiveBlock(RarBlock):
+	def __init__(self, basic_header, is_srr_block=False):
+		super(EndArchiveBlock, self).__init__(basic_header, is_srr_block)
+		stream = self.basic_header.stream
+		self.move_to_offset_specific_headers(stream)
+		self.end_of_archive_flags = read_vint(stream)
+
+	def is_last_volume(self):
+		return bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
+
+	def explain(self):
+		out = self.basic_header.explain()
+		out += "+End of archive flags: 0x%04X\n" % self.end_of_archive_flags 
+		if self.is_last_volume():
+			out += "+  0x01 Volume is not the last part of the set\n"
+		return out
+	
 def read_vint(stream):
 	"""Reads a variable int from a stream. See RAR5 file format.
 	
