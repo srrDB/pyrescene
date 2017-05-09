@@ -48,6 +48,8 @@ class TestRar5Reader(unittest.TestCase):
 		rfile = os.path.join(self.path, self.folder, "txt.rar")
 		rr = Rar5Reader(rfile)
 		for r in rr:
+			block_info = r.explain()
+			self.assertTrue(block_info, "Must not be None or empty")
 			print(r.explain())
 		
 	def test_stackoverflow(self):
