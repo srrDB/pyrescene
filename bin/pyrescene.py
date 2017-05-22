@@ -100,6 +100,7 @@ def rar_file_blacklist():
 "Company.of.Heroes.Tales.of.Valor.FIX.GERMAN-0x0007",
 "Dishonored.GERMAN.FIX-0x0007",
 "OPERATION.FLASHPOINT.RESISTANCE.ADDON.FIX-DEViANCE",
+"Deus.Ex.Mankind.Divided.A.Criminal.Past.DLC.FIX-SKIDROW",
 # contains vobsubs
 "Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",  
 # missing file main release
