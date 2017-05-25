@@ -1041,10 +1041,13 @@ def mkv_profile_sample(self, mkv_data):  # FileData object
 			er.move_to_child()
 		elif etype == EbmlElementType.Block:
 			block_count += 1
-# 			if not er.current_element.track_number in tracks:
-# 				td = TrackData()
-# 				td.track_number = er.current_element.track_number
-# 				tracks[er.current_element.track_number] = td
+
+			# initialization needed for releases such as
+			# The.Leftovers.S03E06.WEB.h264-TBS due to block order
+			if not er.current_element.track_number in tracks:
+				td = TrackData()
+				td.track_number = er.current_element.track_number
+				tracks[er.current_element.track_number] = td
 
 			try:
 				track = tracks[er.current_element.track_number]
