@@ -102,7 +102,8 @@ def rar_file_blacklist():
 "OPERATION.FLASHPOINT.RESISTANCE.ADDON.FIX-DEViANCE",
 "Deus.Ex.Mankind.Divided.A.Criminal.Past.DLC.FIX-SKIDROW",
 # contains vobsubs
-"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",  
+"Bubble.Boy.DVDRip.DiVX.FIX-FIXRUS",
+"Herbie.Fully.Loaded.SUB.FIX-DiAMOND",
 # missing file main release
 "Super.Streetfighter.IV.SSFIV.Arcade.Edition.DLC.FIX.READNFO.XBOX360-MoNGoLS",
 "Arrested.Development.S02E07.FiX.DVDRip.XviD-SAPHiRE",
