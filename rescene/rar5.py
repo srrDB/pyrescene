@@ -77,14 +77,24 @@ ARCHIVE_SOLID = 0x0004  # Solid archive
 ARCHIVE_RECOVERY_RECORD = 0x0008  # Recovery record is present
 ARCHIVE_LOCKED = 0x0010  # Locked archive
 
+# file (and service header) flags
+FILE_DIRECTORY = 0x0001  # Directory file system object (file header only)
+FILE_UNIX_TIME = 0x0002  # Time field in Unix format is present
+FILE_CRC32 = 0x0004  # CRC32 field is present
+FILE_NOSIZE = 0x0008  # Unpacked size is unknown
+
+# host OS
+OS_WINDOWS = 0x0000
+OS_UNIX = 0x0001
+
 # file and service headers use the same types of extra area records
-FILE_ENCRYPTION = 0x01  # File encryption information
-FILE_HASH = 0x02  # File data hash
-FILE_TIME = 0x03  # High precision file time
-FILE_VERSION = 0x04	 # File version number
-FILE_REDIRECTION = 0x05 # File system redirection
-FILE_UNIX_OWNER = 0x06	# Unix owner and group information
-FILE_SERVICE_DATA = 0x07 # Service header data array
+FILEX_ENCRYPTION = 0x01  # File encryption information
+FILEX_HASH = 0x02  # File data hash
+FILEX_TIME = 0x03  # High precision file time
+FILEX_VERSION = 0x04	 # File version number
+FILEX_REDIRECTION = 0x05 # File system redirection
+FILEX_UNIX_OWNER = 0x06	# Unix owner and group information
+FILEX_SERVICE_DATA = 0x07 # Service header data array
 
 END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
 
@@ -251,11 +261,11 @@ class BlockFactory(object):
 		elif header.is_main_block():
 			block = MainArchiveBlock(header, is_srr_block)
 		elif header.is_file_block():
-			block = RarBlock(header, is_srr_block)
+			block = FileServiceBlock(header, is_srr_block)
 		elif header.is_service_block():
-			block = RarBlock(header, is_srr_block)
+			block = FileServiceBlock(header, is_srr_block)
 		elif header.is_encryption_block():
-			block = RarBlock(header, is_srr_block)
+			block = FileEncryptionBlock(header, is_srr_block)
 		elif header.is_end_block():
 			block = EndArchiveBlock(header, is_srr_block)
 		else:
@@ -295,6 +305,9 @@ class RarBlock(object):
 
 	def explain_size(self, size):
 		return self.basic_header.explain_size(size)
+	
+	def ftime(self, unix_time_stamp):
+		return str(unix_time_stamp)  # TODO: proper string for displaying
 		
 	def is_marker_block(self):
 		return self.basic_header.is_marker_block()
@@ -369,10 +382,83 @@ class MainArchiveBlock(RarBlock):
 		return out
 
 class FileEncryptionBlock(RarBlock):
-	pass
+	def __init__(self, basic_header, is_srr_block=False):
+		super(FileEncryptionBlock, self).__init__(basic_header, is_srr_block)
+		stream = self.basic_header.stream
+		self.move_to_offset_specific_headers(stream)
 
 class FileServiceBlock(RarBlock):
-	pass
+	def __init__(self, basic_header, is_srr_block=False):
+		super(FileServiceBlock, self).__init__(basic_header, is_srr_block)
+		stream = self.basic_header.stream
+		self.move_to_offset_specific_headers(stream)
+		self.file_flags = read_vint(stream)
+		self.unpacked_size = read_vint(stream)
+		self.attributes = read_vint(stream)
+		self.mtime = S_LONG.unpack_from(
+			stream.read(4)) if self.file_flags & FILE_UNIX_TIME else 0
+		self.datacrc32 = 0
+		if self.file_flags & FILE_CRC32:
+			self.datacrc32 = S_LONG.unpack_from(stream.read(4))
+		self.host_os = read_vint(stream)
+		compression_info = read_vint(stream)
+		self.algorithm = compression_info & 0x003f  # lower 6 bits
+		self.solid = bool(compression_info & 0x0040)  # bit 7
+		self.method = compression_info & 0x0380  # bit 8-10
+		self.dict_size = compression_info & 0x3c00  # bit 11-14
+		name_length = read_vint(stream)
+		self.name = stream.read(name_length)
+
+		# extra area
+		if self.file_flags & RAR_EXTRA:
+			size = read_vint(stream)
+			type = read_vint(stream)
+			
+			
+			# if not at the end of the block
+		
+		# data area
+		if self.file_flags & RAR_DATA:
+			pass
+
+	def explain(self):
+		out = self.basic_header.explain()
+		out += "+File flags: 0x%04X\n" % self.file_flags 
+		if self.file_flags & FILE_DIRECTORY:
+			out += "+  0x0001 Directory file system object\n"
+		if self.file_flags & FILE_DIRECTORY:
+			out += "+  0x0002 Time field in Unix format is present\n"
+		if self.file_flags & FILE_DIRECTORY:
+			out += "+  0x0004 CRC32 field is present\n"
+		if self.file_flags & FILE_DIRECTORY:
+			out += "+  0x0008 Unpacked size is unknown\n"
+		out += "+Unpacked size: %s\n" % self.explain_size(self.unpacked_size)
+		out += "+Attributes: %d (operating system specific)\n" % self.attributes
+		out += "+Modification time: %s\n" % self.ftime(self.mtime)
+		out += "+Data CRC32: %08X\n" % self.datacrc32
+		out += "+Compression algorithm (0-63): %d\n" % self.algorithm
+		out += "+Solid: %s\n" % ("yes" if self.solid else "no")
+		out += "+Compression method (0-5): %d\n" % self.method
+		out += "+Minimum dictionary size: %d\n" % (128 * (2 ** self.dict_size))
+		out += "+Host OS: "
+		if self.host_os & OS_WINDOWS == 0:
+			out += "Windows"
+		elif self.host_os & OS_UNIX == 1:
+			out += "Unix"
+		# what with hidden range utf8?
+		out += "\n+Name: %s\n" % self.name.decode('utf-8', 'replace')
+		if self.name == b"CMT": 
+			out += "+CMT -> Archive comment"
+		elif self.name == b"QO": 
+			out += "+QO -> Archive quick open data"
+		elif self.name == b"ACL": 
+			out += "+ACL -> NTFS file permissions"
+		elif self.name == b"STM": 
+			out += "+STM -> NTFS alternate data stream"
+		elif self.name == b"RR": 
+			out += "+RR -> Recovery record"
+
+		return out
 
 class EndArchiveBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
