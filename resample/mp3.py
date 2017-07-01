@@ -211,7 +211,10 @@ class Mp3Reader(object):
 			# in the ID3v2 tag for 02-mickey_k.-distracted_-_dub_mix.mp3
 			last_id3 = last_id3v2_before_sync(self._mp3_stream,
 			                                  self._file_length)
-			if last_id3 != last_id3v2.start_pos:  # dupe ID3 string
+			dupe_id3_string = last_id3 != last_id3v2.start_pos
+			after_v2_tag = last_id3 >= last_id3v2.start_pos + last_id3v2.size
+			if dupe_id3_string and after_v2_tag:
+				# another 'ID3' string found after id3v2 tag
 				self._mp3_stream.seek(last_id3 + 3 + 3, os.SEEK_SET)
 				sbytes = self._mp3_stream.read(4)
 				size = decode_id3_size(sbytes)
