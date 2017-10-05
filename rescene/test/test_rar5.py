@@ -43,28 +43,56 @@ class TestRar5Reader(unittest.TestCase):
 
 	path = os.path.join(os.pardir, os.pardir, "test_files")
 	folder = "rar5"
+	
+	def test_read_rar4(self):
+		rfile = os.path.join(self.path, "store_little", "store_little.rar")
+		rr = Rar5Reader(rfile)
+		self.assertRaises(ValueError, rr.next)
+
+	def test_read_nothing(self):
+		"""We expect None back if we read one time to much."""
+		rfile = os.path.join(self.path, "whatever", "file.rar")
+		self.assertRaises(ArchiveNotFoundError, Rar5Reader, rfile)
+
+	def test_read_sfx(self):
+		stream = io.BytesIO()
+		stream.write(b"Random binary data...")
+		stream.name = "name to imitate real file"
+		rr = Rar5Reader(stream)
+		self.assertRaises(StopIteration, rr.next)
+		stream.seek(0, os.SEEK_SET)
+		rr = Rar5Reader(stream)
+		self.assertRaises(StopIteration, rr.next)
 
 	def test_read(self):
-		rfile = os.path.join(self.path, self.folder, "txt.rar")
+		rfile = os.path.join(self.path, self.folder, "test.rar")
+		rr = Rar5Reader(rfile)
+		for r in rr:
+			block_info = r.explain()
+			self.assertTrue(block_info, "Must not be None or empty")
+			print(r.explain())
+			
+	def test_read_more(self):
+		rfile = os.path.join(self.path, self.folder, "rar5_test.rar")
 		rr = Rar5Reader(rfile)
 		for r in rr:
 			block_info = r.explain()
 			self.assertTrue(block_info, "Must not be None or empty")
 			print(r.explain())
 		
+	def test_read_more_weird(self):
+		rfile = os.path.join(self.path, self.folder, "txt.rar")
+		rr = Rar5Reader(rfile)
+		for r in rr:
+			block_info = r.explain()
+			self.assertTrue(block_info, "Must not be None or empty")
+			print(r.explain())
+
 	def test_stackoverflow(self):
 		data = b"\x33\x92\xb5\xe5\x0a\x01\x05\x06\x00\x05\x01\x01\x00"
 		stream = io.BytesIO(data)
 		block = BlockFactory.create(stream, False)
 		print(block.explain())
-
-	def test_read_none(self):
-		""" We expect None back if we read one time to much. """
-		stream = io.BytesIO()
-		stream.name = "name to imitate real file"
-# 		stream.write(RAR_MARKER_BLOCK)
-# 		stream.write(TestRarBlocks.FIRST_VOLUME)
-		stream.seek(0)
 
 class TestRar5Vint(unittest.TestCase):
 	"""Tests the rar 5 vint"""
