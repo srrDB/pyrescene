@@ -62,6 +62,7 @@ from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import capitalized_fn
 from rescene.osohash import osohash_from
+from rescene.utility import FileType
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -570,6 +571,10 @@ def create_srr(srr_name, infiles, in_folder="",
 		# STORE OSO/ISDb HASHES
 		if oso_hash:
 			for (fname, rarname) in oso_dict.items():
+				# skip over the many files in PS3 and PS4 releases
+				ext = os.path.splitext(fname)[1].lower()
+				if ext not in FileType.VideoExtensions:
+					continue
 				try:
 					oso_hash, file_size = osohash_from(rarname, fname, True)
 					block = SrrOsoHashBlock(file_size=file_size, 

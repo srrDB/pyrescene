@@ -33,9 +33,9 @@ import time
 import traceback
 
 import resample
-from resample import file_type_info
-from resample.main import FileType, InvalidMatchOffset, InvalidPathValue
-from resample import fpcalc
+from resample import file_type_info, fpcalc
+from resample.main import InvalidMatchOffset, InvalidPathValue
+from rescene.utility import FileType
 from rescene.utility import sep, is_rar
 from rescene.utility import raw_input, unicode
 from rescene.utility import create_temp_file_name, replace_result

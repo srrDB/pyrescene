@@ -34,11 +34,12 @@ import struct
 import sys
 from os import SEEK_CUR
 
-from resample.main import file_type_info, stsc, FileType, sample_class_factory
+from resample.main import file_type_info, stsc, sample_class_factory
 from resample.main import profile_wmv, FileData
 from resample import asf
 import resample.srs
 import rescene
+from rescene.utility import FileType
 
 class TempDirTest(unittest.TestCase):
 	def setUp(self):

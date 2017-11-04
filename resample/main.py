@@ -46,6 +46,7 @@ from rescene.utility import sep, show_spinner, remove_spinner, fsunicode
 from rescene.utility import calculate_crc32 as calc_crc32
 from rescene.utility import is_rar
 from rescene.utility import _DEBUG
+from rescene.utility import FileType
 
 from resample.ebml import EbmlReader, EbmlReadMode, EbmlElementType
 from resample.ebml import GetEbmlUInt, MakeEbmlUInt, EbmlID
@@ -103,38 +104,6 @@ class InvalidPathValue(ValueError):
 	pass
 
 # srs.cs ----------------------------------------------------------------------
-class FileType(object):
-	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, M2TS, Unknown = \
-		("MKV", "AVI", "MP4", "WMV", "FLAC", "MP3",
-		 "STREAM", "M2TS", "Unknown")
-
-	# the extensions that are supported
-	# .m4v is used for some non scene samples, xxx samples and music releases
-	# It is the same file format as MP4
-	# VA-Anjunabeats_Vol_7__Mixed_By_Above_And_Beyond-(ANJCD014D)-2CD-2009-TT/
-	#     301-va-anjunabeats_vol_7__bonus_dvd-tt.m4v
-	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
-	#     05_g3_makingofst-xardas.wmv
-	#     06_g3_makingofst-xardas.m4v
-	# Her-Sweet-Hand.11.01.15.Alex.Shy.Definitely.1.Time.Only.XXX.720p.M4V-OHRLY
-	#     Sample/ohrly-hsh115asd1to.sample.m4v
-	# System_Of_A_Down-Aerials-svcd-wcs
-	#     system_of_a_down-aerials-svcd-wcs.m2p
-	# System_Of_A_Down-Aerials-svcd-wcs
-	#     system_of_a_down-aerials-svcd-wcs.m2p
-	StreamExtensions = ('.vob', '.m2ts', '.ts',
-	                    '.mpeg', '.mpg', '.m2v', '.m2p')
-	VideoExtensions = ('.mp4', '.m4v',  # M4V: used for some XXX releases
-	                   '.avi', '.mkv', '.wmv') + StreamExtensions
-	AudioExtensions = ('.mp3', '.flac')
-
-	def __init__(self, file_type, archived_file):
-		self.file_type = file_type
-		self.archived_file = archived_file
-
-	def __str__(self, *args, **kwargs):
-		return self.file_type
-
 def file_type_info(ifile):
 	"""Decide the type of file based on the magic marker.
 	If the file is a sample (based on extension),

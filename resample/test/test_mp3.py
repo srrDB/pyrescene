@@ -71,7 +71,7 @@ class TestDoubleId3v2(unittest.TestCase):
 		# good ID3 tag (20 bytes)
 		writeId3v2Tag(self.mp3stream, 20)
 
-	def test_parse(self):
+	def test_parse_bad_good(self):
 		# mp3 stuff (10 bytes)
 		writeMp3Data(self.mp3stream, 10)
 
@@ -80,12 +80,16 @@ class TestDoubleId3v2(unittest.TestCase):
 		generator = mr.read()
 		id3 = next(generator)
 		self.assertEqual(0, id3.start_pos)
-		self.assertEqual(10 + 20, id3.size)
+		crap_size_value = mp3.decode_id3_size(b"NNNN")  # + 10B ID3 header
+		self.assertEqual(crap_size_value + 10, id3.size)
+
+		good_id3 = next(generator)
+		self.assertEqual(10, good_id3.start_pos)
+		self.assertEqual(20, good_id3.size)
 
 		mp3data = next(generator)
 		self.assertEqual(30, mp3data.start_pos)
 		self.assertEqual(10, mp3data.size)
-
 		self.assertRaises(StopIteration, next, generator)
 
 	def test_last_id3v2_before_sync(self):

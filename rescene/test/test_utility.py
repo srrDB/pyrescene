@@ -218,7 +218,7 @@ class TestUtility(unittest.TestCase):
 		self.assertTrue(is_rar("test.999"))
 		self.assertTrue(is_rar("test.v99"))
 		self.assertTrue(is_rar("test.part1.rar"))
-		self.assertFalse(is_rar("test.w66"))
+		# self.assertFalse(is_rar("test.w66"))  # made by rar.exe when needed
 		self.assertFalse(is_rar("testrar"))
 
 	def test_next_rar(self):
@@ -259,7 +259,7 @@ class TestUtility(unittest.TestCase):
 		self.assertEqual(["test.part01.rar"], first_rars(t))
 		t = ["test.part003.rar", "test.part020.rar", "test.part001.rar"]
 		self.assertEqual(["test.part001.rar"], first_rars(t))
-		t = ["test3.rar", "test20.rar", "test.part0001.rar"]
+		t = ["test3.rar", "test20.rar", "test.part0001.rar", "9.rar"]
 		self.assertEqual(t, first_rars(x for x in t))
 		# 000 or 001 should be the first RAR
 		t = ["name.000", "name.001", "name.002"]
@@ -336,7 +336,7 @@ class TestUtility(unittest.TestCase):
 			self.assertEqual(sep(1000000, en), "1,000,000")
 			if int(platform.win32_ver()[0]) >= 8:
 				# \xa0 on Windows 8 (non-breaking space)
-				self.assertEqual(sep(1000000, nl), b"1\xa0000\xa0000")
+				self.assertEqual(sep(1000000, nl), "1\xa0000\xa0000")
 			else:
 				# Windows 7 and lower
 				self.assertEqual(sep(1000000, nl), "1.000.000")
