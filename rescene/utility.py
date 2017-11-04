@@ -37,6 +37,7 @@ import warnings
 import locale
 import os
 import shutil
+import time
 import zlib
 from io import BytesIO, TextIOBase, TextIOWrapper
 from tempfile import mktemp
@@ -96,6 +97,7 @@ else:
 	def fsunicode(path):
 		return path
 
+# Python BUG: http://bugs.python.org/issue1927
 try:  # Python < 3
 	raw_input = raw_input  # @ReservedAssignment
 except NameError:  # Python 3
@@ -105,6 +107,39 @@ try:  # Python < 3
 	basestring = basestring  # @ReservedAssignment
 except NameError:  # Python 3
 	basestring = str  # @ReservedAssignment
+
+class FileType(object):
+	"""File types in use to create SRS files for"""
+	MKV, AVI, MP4, WMV, FLAC, MP3, STREAM, M2TS, Unknown = (
+		"MKV", "AVI", "MP4", "WMV", "FLAC", "MP3",
+		"STREAM", "M2TS", "Unknown")
+
+	# the extensions that are supported
+	# .m4v is used for some non scene samples, xxx samples and music releases
+	# It is the same file format as MP4
+	# VA-Anjunabeats_Vol_7__Mixed_By_Above_And_Beyond-(ANJCD014D)-2CD-2009-TT/
+	#     301-va-anjunabeats_vol_7__bonus_dvd-tt.m4v
+	# Gothic_3_Soundtrack-Promo-CD-2006-XARDAS/
+	#     05_g3_makingofst-xardas.wmv
+	#     06_g3_makingofst-xardas.m4v
+	# Her-Sweet-Hand.11.01.15.Alex.Shy.Definitely.1.Time.Only.XXX.720p.M4V-OHRLY
+	#     Sample/ohrly-hsh115asd1to.sample.m4v
+	# System_Of_A_Down-Aerials-svcd-wcs
+	#     system_of_a_down-aerials-svcd-wcs.m2p
+	# System_Of_A_Down-Aerials-svcd-wcs
+	#     system_of_a_down-aerials-svcd-wcs.m2p
+	StreamExtensions = ('.vob', '.m2ts', '.ts',
+	                    '.mpeg', '.mpg', '.m2v', '.m2p')
+	VideoExtensions = ('.mp4', '.m4v',  # M4V: used for some XXX releases
+	                   '.avi', '.mkv', '.wmv') + StreamExtensions
+	AudioExtensions = ('.mp3', '.flac')  # TODO: mp2?
+
+	def __init__(self, file_type, archived_file):
+		self.file_type = file_type
+		self.archived_file = archived_file
+
+	def __str__(self, *args, **kwargs):
+		return self.file_type
 
 class SfvEntry(object):
 	"""Represents a record from a .sfv file."""
@@ -272,26 +307,24 @@ def is_rar(file_name):
 	
 	Legal extensions:
 		- .rar
-		- .r00 - r99, s00 - v99
+		- .r00 - r99, s00 - v99   rar cmd creates beyond this limit
 		- .000 - .999             001 for Accepted.DVDRip.XViD-ALLiANCE
 	Not valid:
 		- .cbr
 		- .exe                    TODO: SFX support
 	"""
-	return bool(re.match(".*\.(rar|[r-v]\d{2}|\d{3})$", file_name, re.I))
+	return bool(re.match(".*\.(rar|[r-z]\d{2}|\d{3})$", file_name, re.I))
 
 def first_rars(file_iter):
 	"""Tries to pick the first RAR file based on file name."""
+
+	# group 3: when there is a digit before .rar e.g. test3.rar
+	fre = ".*((\.part0*1\.rar|(?<!\d)\.rar)|((^|[^\d])(?<!part)(\d+\.rar)))$"
+
 	def is_first(rar):
-		if re.match(".*(\.part0*1\.rar|(?<!\d)\.rar)$", rar, re.IGNORECASE):
+		if re.match(fre, rar, re.IGNORECASE):
 			return True
-		# when there is a digit before the .rar
-		if (re.match(".*\.rar$", rar, re.IGNORECASE) and
-		    not re.match(".*part\d+\.rar$", rar, re.IGNORECASE)):
-			return True
-		if rar.endswith((".000", ".001")):
-			return True
-		return False
+		return rar.endswith((".000", ".001"))
 
 	def is_dotrar(rar):
 		return rar.lower().endswith(".rar")
@@ -416,6 +449,8 @@ def create_temp_file_name(output_file):
 	# Windows long path support
 	if os.name == "nt":
 		tmpfile = "\\\\?\\" + os.path.abspath(tmpfile)
+		
+	assert not os.path.exists(tmpfile), "Temp file must not exist yet"
 
 	return tmpfile
 
@@ -431,17 +466,30 @@ def replace_result(src, dest):
 	# it must come from the above method (create_temp_file_name)
 	assert src.startswith(dest), "src and dest not at same location"
 
-	# it is possible a temp file was never created
+	# it is possible a temporary source file was never created
 	# (.srr question for replacement is false)
 	if os.path.isfile(src):
-		# delete previous file when it exists
+		# delete previous file if it exists: user allowed to overwrite it
 		if os.path.isfile(dest):
 			try:
 				os.unlink(dest)
-			except OSError:
+			except OSError as delete_error:
 				print("Two processes are now trying to delete the same file!")
+				print(delete_error)
 				if _DEBUG:
 					print("  Destination: {0}".format(dest))
+# TODO: work in progress missing srs files					
+# 					assert False
+# 					
+# 		# wait 5 seconds for the file to disappear
+# 		for _ in range(0, 5):
+# 			if os.path.isfile(dest):
+# 				time.sleep(1)
+# 			else:
+# 				break
+# 		else:
+# 			print("Destination file still not deleted!")
+
 		# concurrency issue: it can fail here with a
 		# WindowsError/OSError when the other process made the file
 		try:

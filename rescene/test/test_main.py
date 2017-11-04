@@ -459,7 +459,7 @@ class TestCreate(TmpDirSetup):
 			block.rawtype = rar.BlockType.RarPackedFile
 			block.flags = 0
 			datasize = 128 * 1024
-			datapath = "dir\\datafile"
+			datapath = "dir\\datafile.mkv"  # works only for video files
 			pathbytes = datapath.encode("ascii")
 			header = struct.pack(str("<IIBIIBBHI"),
 				datasize, datasize,  # Packed, unpacked
@@ -481,7 +481,7 @@ class TestCreate(TmpDirSetup):
 
 		# Verify that the correct OSO hash is stored,
 		# and that just the base name of the file is recorded
-		expected = ("datafile", "0000000000020000", datasize)
+		expected = ("datafile.mkv", "0000000000020000", datasize)
 		self.assertEqual([expected], info(srr)["oso_hashes"])
 
 def _copy(cfile, destination_dir):
