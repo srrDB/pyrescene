@@ -33,6 +33,7 @@ from __future__ import unicode_literals
 
 import unittest
 from rescene.rar5 import *
+from rescene import rar5
 
 # for running nose tests
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -63,14 +64,18 @@ class TestRar5Reader(unittest.TestCase):
 		stream.seek(0, os.SEEK_SET)
 		rr = Rar5Reader(stream)
 		self.assertRaises(StopIteration, rr.next)
+		# TODO: SFX support not implemented
 
-	def test_read(self):
-		rfile = os.path.join(self.path, self.folder, "test.rar")
+	def test_read_all_blocks(self):
+		rfile = os.path.join(self.path, self.folder, "rar5_compressed.rar")
 		rr = Rar5Reader(rfile)
 		for r in rr:
 			block_info = r.explain()
 			self.assertTrue(block_info, "Must not be None or empty")
-			print(r.explain())
+		rfile = os.path.join(self.path, self.folder, "rar5_test.rar")
+		for r in Rar5Reader(rfile):
+			block_info = r.explain()
+			self.assertTrue(block_info, "Must not be None or empty")
 			
 	def test_read_more(self):
 		rfile = os.path.join(self.path, self.folder, "rar5_test.rar")
@@ -92,7 +97,102 @@ class TestRar5Reader(unittest.TestCase):
 		data = b"\x33\x92\xb5\xe5\x0a\x01\x05\x06\x00\x05\x01\x01\x00"
 		stream = io.BytesIO(data)
 		block = BlockFactory.create(stream, False)
-		print(block.explain())
+
+class TestParseRarBlocks(unittest.TestCase):
+	""" For use with Rar5Reader.
+		Rar5Reader parses the incoming file or stream. """
+
+	def test_marker_rar5_start(self):
+		header = b"Rar!\x1A\x07\x01\x00"
+		stream = io.BytesIO(header)
+		block = BlockFactory.create(stream, is_start_file=True)
+		self.assertTrue(isinstance(block, MarkerBlock), "incorrect block type")
+		self.assertTrue(isinstance(block.basic_header, Rar5HeaderMarker),
+			"marker block: bad type for header")
+		self.assertTrue(not block.is_srr, "bad default file format")
+		h = block.basic_header
+		self.assertEqual(h.block_position, 0)
+		self.assertEqual(h.header_size, 8)
+		self.assertEqual(h.size_data, 0)
+		self.assertEqual(h.size_extra, 0)
+		self.assertEqual(h.type, BLOCK_MARKER)
+
+	def test_marker_rar4_start(self):
+		header = b"Rar!\x1A\x07\x00"
+		stream = io.BytesIO(header)
+		self.assertRaises(
+			ValueError, 
+			BlockFactory.create,
+			stream,
+			is_start_file=True)
+		
+	def test_main_archive_header(self):
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_MAIN
+		htype_enc = encode_vint(htype)
+		hflags = RAR_EXTRA ^ RAR_SPLIT_AFTER
+		self.assertFalse(hflags & RAR_DATA, "never possible on main")
+		hflags_enc = encode_vint(hflags)
+		harchive_flags = ARCHIVE_VOLUME ^ ARCHIVE_NUMBER
+		harchive_flags_enc = encode_vint(harchive_flags)
+		hvolume_number = 1
+		hvolume_number_enc = encode_vint(hvolume_number)
+
+		locator_record = io.BytesIO()
+		ltype = encode_vint(LOCATOR_RECORD)
+		lflags = encode_vint(LOCATOR_QUICK ^ LOCATOR_RR)
+		quick_open_offset = 12345
+		lqoo = encode_vint(quick_open_offset)
+		recovery_record_offset = 23456
+		lrro = encode_vint(recovery_record_offset)
+		lsize = len(ltype) + len(lflags) + len(lqoo) + len(lrro)
+		locator_record.write(encode_vint(lsize))
+		locator_record.write(ltype)
+		locator_record.write(lflags)
+		locator_record.write(lqoo)
+		locator_record.write(lrro)
+		locator_record.seek(0)
+		extra_area = locator_record.read()
+		hextra_size = encode_vint(len(extra_area))
+
+		hsize = (4 + 3 + len(htype_enc) + len(hflags_enc) +
+			len(hextra_size) + len(harchive_flags_enc) + 1)
+		hsize_enc = encode_vint(hsize)
+		self.assertEqual(len(hsize_enc), 1, "not same size")
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(hextra_size)
+		stream.write(harchive_flags_enc)
+		stream.write(hvolume_number_enc)
+		stream.write(extra_area)
+		stream.seek(0, os.SEEK_SET)
+
+		block = BlockFactory.create(stream, is_start_file=False)
+		is_main_block = isinstance(block, MainArchiveBlock)
+		self.assertTrue(is_main_block, "incorrect block type")
+		is_header = isinstance(block.basic_header, Rar5HeaderBlock)
+		self.assertTrue(is_header, "bad type for header")
+		self.assertFalse(block.is_srr, "bad default file format")
+
+		h = block.basic_header
+		self.assertEqual(h.block_position, 0)
+		self.assertEqual(h.crc32, crc)
+		self.assertEqual(h.header_size, hsize)
+		self.assertEqual(h.type, BLOCK_MAIN)
+		self.assertEqual(h.flags, hflags)
+		self.assertEqual(h.size_extra, len(extra_area))
+
+		self.assertEqual(block.archive_flags, harchive_flags)
+		self.assertEqual(block.volume_number, hvolume_number)
+		self.assertEqual(block.quick_open_offset, quick_open_offset)
+		self.assertEqual(block.recovery_record_offset, recovery_record_offset)
+		self.assertEqual(block.undocumented_value, 0)
+		
+		self.assertEqual(h.size_data, 0)
 
 class TestRar5Vint(unittest.TestCase):
 	"""Tests the rar 5 vint"""
@@ -103,14 +203,14 @@ class TestRar5Vint(unittest.TestCase):
 		stream.write(b"\x01")
 		stream.seek(0)
 		number = read_vint(stream)
-		self.assertEquals(number, 16384 + 129, "128 bit is in the next byte")
+		self.assertEqual(number, 16384 + 129, "128 bit is in the next byte")
 
 	def test_read_vint_single_byte_all_bits(self):
 		stream = io.BytesIO()
 		stream.write(b"\x7F")  # first bit not set
 		stream.seek(0)
 		number = read_vint(stream)
-		self.assertEquals(number, 255 - 128, "max value single vint byte")
+		self.assertEqual(number, 255 - 128, "max value single vint byte")
 
 	def test_read_vint_zeros(self):
 		stream = io.BytesIO()
@@ -119,7 +219,7 @@ class TestRar5Vint(unittest.TestCase):
 		stream.write(b"\x00")  # allocated bits without influence
 		stream.seek(0)
 		number = read_vint(stream)
-		self.assertEquals(number, 257, "256 bit is in the next byte")
+		self.assertEqual(number, 257, "256 bit is in the next byte")
 		
 	def test_write_vint(self):
 		stream = io.BytesIO()
@@ -131,4 +231,4 @@ class TestRar5Vint(unittest.TestCase):
 		number = read_vint(stream)
 		serialized = encode_vint(number)
 		tnumber = read_vint(io.BytesIO(serialized))
-		self.assertEquals(tnumber, number, "encoding to vint and back failed")
+		self.assertEqual(tnumber, number, "encoding to vint and back failed")
