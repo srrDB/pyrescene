@@ -193,7 +193,7 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		file_position: location of the block in the stream
 		"""
 		super(Rar5HeaderBlock, self).__init__(file_position)
-		self.crc32 = S_LONG.unpack_from(stream.read(4))
+		(self.crc32,) = S_LONG.unpack_from(stream.read(4))
 		self.header_size = read_vint(stream)
 		self._hdrvint_width = stream.tell() - 4 - file_position
 		self.type = read_vint(stream)
@@ -245,6 +245,7 @@ class BlockFactory(object):
 	def create(stream, is_start_file, is_srr_block=False):
 		"""
 		stream: open stream to read the basic block header from
+		is_start_file: use only to try and read the marker (SFX)
 		is_srr_block: RAR block is stripped
 		"""
 		block_position = stream.tell()
@@ -346,6 +347,7 @@ class MainArchiveBlock(RarBlock):
 		self.move_to_offset_specific_headers(stream)
 		self.archive_flags = read_vint(stream)
 		self.volume_number = 0  # first volume == none set
+		# extra area fields
 		self.quick_open_offset = 0
 		self.recovery_record_offset = 0
 		self.undocumented_value = 0
@@ -655,7 +657,7 @@ def read_vint(stream):
 	shift = 0
 	continuation_flag = True
 	while continuation_flag:
-		byte = S_BYTE.unpack(stream.read(1))[0]
+		(byte,) = S_BYTE.unpack(stream.read(1))
 		size += (byte & 0x7F) << (shift * 7)  # little endian
 		shift += 1
 		continuation_flag = byte & 0x80  # first bit 1: continue
