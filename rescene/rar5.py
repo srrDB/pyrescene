@@ -636,7 +636,7 @@ class EndArchiveBlock(RarBlock):
 		self.end_of_archive_flags = read_vint(stream)
 
 	def is_last_volume(self):
-		return bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
+		return not bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
 
 	def explain(self):
 		out = self.basic_header.explain()

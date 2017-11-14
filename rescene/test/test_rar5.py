@@ -126,6 +126,43 @@ class TestParseRarBlocks(unittest.TestCase):
 			stream,
 			is_start_file=True)
 		
+	def test_end_of_archive_header(self):
+		crc = 0x12345678
+		hcrc32_enc = struct.pack('<L', crc)
+		htype = BLOCK_END
+		htype_enc = encode_vint(htype)
+		hflags = RAR_SKIP
+		hflags_enc = encode_vint(hflags)
+		heoa_flags = END_NOT_LAST_VOLUME
+		heoa_flags_enc = encode_vint(heoa_flags)
+
+		hsize = len(htype_enc) + len(hflags_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		self.assertEqual(len(hsize_enc), 1, "not same size")
+		stream = io.BytesIO()
+		stream.write(b"whatever")
+		stream.write(hcrc32_enc)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(heoa_flags_enc)
+		stream.seek(len(b"whatever"), os.SEEK_SET)
+		block = BlockFactory.create(stream, is_start_file=False)
+		is_end_block = isinstance(block, EndArchiveBlock)
+		self.assertTrue(is_end_block, "archive end block expected")
+		is_header = isinstance(block.basic_header, Rar5HeaderBlock)
+		self.assertTrue(is_header, "bad type for header")
+		self.assertFalse(block.is_srr, "bad default file format")
+
+		h = block.basic_header
+		self.assertEqual(h.block_position, len(b"whatever"))
+		self.assertEqual(h.crc32, crc)
+		self.assertEqual(h.header_size, hsize)
+		self.assertEqual(h.type, BLOCK_END)
+		self.assertEqual(h.flags, hflags)
+		self.assertEqual(block.end_of_archive_flags, heoa_flags)
+		self.assertEqual(block.is_last_volume(), False)
+
 	def test_main_archive_header(self):
 		crc = 0x12345678
 		hcrc32 = struct.pack('<L', crc)
@@ -193,6 +230,9 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(block.undocumented_value, 0)
 		
 		self.assertEqual(h.size_data, 0)
+
+	def test_encryption_block(self):
+		pass
 
 class TestRar5Vint(unittest.TestCase):
 	"""Tests the rar 5 vint"""
