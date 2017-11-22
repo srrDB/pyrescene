@@ -166,12 +166,12 @@ class SfvEntry(object):
 
 		if same_base and ext_self != ext_other:
 			if ext_self == ".rar":
-				if bool(re.match("\.[r-v]\d{2}$", ext_other)):
+				if bool(re.match("\.[r-z]\d{2}$", ext_other)):
 					return True
 				else:
 					return self.file_name < other.file_name  # .rar < .r00
 			elif ext_other == ".rar":
-				if bool(re.match("\.[r-v]\d{2}$", ext_self)):
+				if bool(re.match("\.[r-z]\d{2}$", ext_self)):
 					return False
 				else:
 					return self.file_name < other.file_name  # .r00 > .rar
