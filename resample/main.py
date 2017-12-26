@@ -713,7 +713,7 @@ def mkv_load_srs(self, infile):
 	tracks = {}
 # 	srs_data = None
 	er = EbmlReader(EbmlReadMode.SRS, infile)
-	header_striping = False
+	header_stripping = False
 	current_track_nb = 0
 	done = False
 	while not done and er.read():
@@ -741,10 +741,10 @@ def mkv_load_srs(self, infile):
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
-			header_striping = algorithm == 3  # 3: header striping
+			header_stripping = algorithm == 3  # 3: header stripping
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
-			if header_striping and current_track_nb in tracks:
+			if header_stripping and current_track_nb in tracks:
 				tracks[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.ReSampleFile:
 			srs_data = FileData(er.read_contents())
@@ -1075,7 +1075,7 @@ def mkv_profile_sample(self, mkv_data):  # FileData object
 			# 0: zlib
 			# 1: bzlib
 			# 2: lzo1x
-			# 3: header striping
+			# 3: header stripping
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
 			tracks[current_track_nb].compression_algorithm = algorithm
 			current_flag = algorithm == 3
@@ -2197,7 +2197,7 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 	cluster_count = 0
 	done = False
 	current_track_nb = 0
-	header_striping = False
+	header_stripping = False
 	tracksMain = {}  # contains TrackData objects; main mkv info
 
 	while er.read() and not done:
@@ -2235,10 +2235,10 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
-			header_striping = algorithm == 3
+			header_stripping = algorithm == 3
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
-			if header_striping:
+			if header_stripping:
 				tracksMain[current_track_nb].compression_settings = elm_content
 		else:
 			er.skip_contents()
@@ -2992,7 +2992,7 @@ def mkv_extract_sample_streams(self, tracks, movie):
 	cluster_count = 0
 	done = False
 	current_track_nb = 0
-	header_striping = False
+	header_stripping = False
 
 	while er.read() and not done:
 		if er.element_type in (EbmlElementType.Segment,
@@ -3041,10 +3041,10 @@ def mkv_extract_sample_streams(self, tracks, movie):
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
-			header_striping = algorithm == 3
+			header_stripping = algorithm == 3
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
-			if header_striping:
+			if header_stripping:
 				tracksMain[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
