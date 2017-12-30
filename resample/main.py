@@ -957,7 +957,7 @@ def mkv_profile_sample(self, mkv_data):  # FileData object
 	current_attachment_name = ""
 	elm_content = None
 	current_track_nb = 0
-	current_flag = 0
+	current_flag = False
 
 	mkv_data.crc32 = 0x0  # start value crc
 
@@ -3087,6 +3087,7 @@ def _mkv_block_extract(tracks, tracksMain, er, done):
 		sformain = track.compression_settings
 	if trackMain.compression_settings:
 		sforsample = trackMain.compression_settings
+	header_stripping_both_files = sformain and sforsample
 
 	if (er.current_element.element_start_pos +
 		len(er.current_element.raw_header) +
@@ -3102,9 +3103,26 @@ def _mkv_block_extract(tracks, tracksMain, er, done):
 			len(er.current_element.raw_block_header) +
 			offset >= track.match_offset and
 			track.track_file.tell() < track.data_length):
-				track.track_file.write(sforsample)
-				track.track_file.write(buff[offset + len(sformain):offset +
-				                       er.current_element.frame_lengths[i]])
+				if header_stripping_both_files:
+					if sforsample == sformain:
+						# no removed header to be added
+						track.track_file.write(buff[offset:offset + 
+							er.current_element.frame_lengths[i]])
+					elif len(sforsample) < len(sformain):
+						# more stripped in sample
+						cut = len(sformain) - len(sforsample) 
+						track.track_file.write(buff[offset + cut:offset + 
+							er.current_element.frame_lengths[i]])
+					elif len(sforsample) > len(sformain):
+						# more stripped in main (weird, but possible in theory)
+						add = len(sforsample) - len(sformain)
+						track.track_file.write(sforsample[-add:])
+						track.track_file.write(buff[offset:offset + 
+							er.current_element.frame_lengths[i]])
+				else:
+					track.track_file.write(sforsample)
+					track.track_file.write(buff[offset + len(sformain):offset +
+					   er.current_element.frame_lengths[i]])
 			offset += er.current_element.frame_lengths[i]
 
 		tracks_done = True
