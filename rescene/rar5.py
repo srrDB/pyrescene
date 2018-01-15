@@ -73,6 +73,9 @@ RAR_SPLIT_AFTER = 0x0010  # Data area is continuing in the next volume
 RAR_DEPENDENT = 0x0020  # Block depends on preceding file block
 RAR_PRESERVE_CHILD = 0x0040   # Preserve a child block if host block is modified
 
+# encryption header specific flags
+ENCRYPTION_PASSWORD_CHECK = 0x0001
+
 # archive header specific flags
 ARCHIVE_VOLUME = 0x0001  # Volume. Archive is a part of multivolume set
 ARCHIVE_NUMBER = 0x0002  # Volume number field is present
@@ -410,10 +413,22 @@ class MainArchiveBlock(RarBlock):
 		return out
 
 class FileEncryptionBlock(RarBlock):
+	"""This header is present only in archives with encrypted headers.
+	Every next header after this one is started from 16 byte AES-256
+	initialization vector followed by encrypted header data. Size of
+	encrypted header data block is aligned to 16 byte boundary."""
 	def __init__(self, basic_header, is_srr_block=False):
 		super(FileEncryptionBlock, self).__init__(basic_header, is_srr_block)
 		stream = self.basic_header.stream
 		self.move_to_offset_specific_headers(stream)
+		self.encryption_version = read_vint(stream)
+		self.encryption_flags = read_vint(stream)
+		has_pwd_check = bool(self.encryption_flags & ENCRYPTION_PASSWORD_CHECK)
+		self.kdf_count = stream.read(1)
+		self.salt = stream.read(16)
+		self.check_value = b""
+		if has_pwd_check:
+			self.check_value = stream.read(12)
 
 class FileServiceBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
