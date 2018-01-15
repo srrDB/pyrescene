@@ -231,7 +231,62 @@ class TestParseRarBlocks(unittest.TestCase):
 		
 		self.assertEqual(h.size_data, 0)
 
-	def test_encryption_block(self):
+	def test_encryption_header(self):
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_ENCRYPTION
+		htype_enc = encode_vint(htype)
+		hflags = 0
+		hflags_enc = encode_vint(hflags)
+		enc_version = 0  # AES-265
+		henc_version = encode_vint(enc_version)
+		enc_flags = ENCRYPTION_PASSWORD_CHECK
+		henc_flags= encode_vint(enc_flags)
+		kdf_count = 13
+		hkdf_count = struct.pack('<B', kdf_count)  # 1 byte
+		salt = b"0123456701234567"  # 16 bytes
+		check_value = b"012345678912"  # 12 bytes
+		
+		hsize = (4 + len(htype_enc) + len(hflags_enc) +
+			len(henc_version) + len(henc_flags) + 1 + 16 + 12)
+		hsize_enc = encode_vint(hsize)
+		self.assertEqual(len(hsize_enc), 1, "not same size")
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(henc_version)
+		stream.write(henc_flags)
+		stream.write(hkdf_count)
+		stream.write(salt)
+		stream.write(check_value)
+		stream.seek(0, os.SEEK_SET)
+
+		block = BlockFactory.create(stream, is_start_file=False)
+		is_enc_block = isinstance(block, FileEncryptionBlock)
+		self.assertTrue(is_enc_block, "incorrect block type")
+		is_header = isinstance(block.basic_header, Rar5HeaderBlock)
+		self.assertTrue(is_header, "bad type for header")
+
+		h = block.basic_header
+		self.assertEqual(h.block_position, 0)
+		self.assertEqual(h.crc32, crc)
+		self.assertEqual(h.header_size, hsize)
+		self.assertEqual(h.type, BLOCK_ENCRYPTION)
+		self.assertEqual(h.flags, hflags)
+		self.assertEqual(h.size_extra, 0)
+		self.assertEqual(h.size_data, 0)
+		self.assertEqual(block.encryption_version, enc_version)
+		self.assertEqual(block.encryption_flags, enc_flags)
+		self.assertEqual(block.kdf_count, hkdf_count)
+		self.assertEqual(block.salt, salt)
+		self.assertEqual(block.check_value, check_value)
+
+	def test_file_header(self):
+		pass
+
+	def test_file_encryption_record(self):
 		pass
 
 class TestRar5Vint(unittest.TestCase):
