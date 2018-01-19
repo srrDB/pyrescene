@@ -109,6 +109,7 @@ def rar_file_blacklist():
 "Arrested.Development.S02E07.FiX.DVDRip.XviD-SAPHiRE",
 "Friends.Trivia.Game.GERMAN.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
 "Warhammer.40000.Dawn.Of.War.Winter.Assault.GERMAN.CD2.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
+"Broken.Oath.1977.DVDRiP.XviD.DiRFiX-GREiD",
 		]
 
 def get_unrar():
@@ -912,6 +913,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		if not found:
 			print("Creating SRS for: %s" % path)
 			original_stderr = sys.stderr
+			# TODO: use memory file and write out when needed only
 			txt_error_file = os.path.join(dest_dir,
 				os.path.basename(sample)) + ".txt"
 
