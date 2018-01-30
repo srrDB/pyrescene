@@ -438,23 +438,25 @@ class FileServiceBlock(RarBlock):
 		self.file_flags = read_vint(stream)
 		self.unpacked_size = read_vint(stream)
 		self.attributes = read_vint(stream)
-		self.mtime = S_LONG.unpack_from(
-			stream.read(4)) if self.file_flags & FILE_UNIX_TIME else 0
+		self.mtime = 0
+		if self.file_flags & FILE_UNIX_TIME:
+			(self.mtime,) = S_LONG.unpack_from(stream.read(4))
 		self.datacrc32 = 0
 		if self.file_flags & FILE_CRC32:
-			self.datacrc32 = S_LONG.unpack_from(stream.read(4))
-		self.host_os = read_vint(stream)
+			(self.datacrc32,) = S_LONG.unpack_from(stream.read(4))
 		compression_info = read_vint(stream)
 		self.algorithm = compression_info & 0x003f  # lower 6 bits
 		self.solid = bool(compression_info & 0x0040)  # bit 7
 		self.method = compression_info & 0x0380  # bit 8-10
 		self.dict_size = compression_info & 0x3c00  # bit 11-14
+		self.host_os = read_vint(stream)
 		name_length = read_vint(stream)
 		self.name = stream.read(name_length)
 
 		# extra area
 		self.records = []
 		extra_records = self.file_flags & RAR_EXTRA
+		self.extra_area_size = self.basic_header.data_offset() - stream.tell()
 		def another_record():
 			return stream.tell() < self.basic_header.data_offset()
 
