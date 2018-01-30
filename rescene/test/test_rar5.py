@@ -284,7 +284,97 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(block.check_value, check_value)
 
 	def test_file_header(self):
-		pass
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_FILE
+		htype_enc = encode_vint(htype)
+		hflags = RAR_EXTRA ^ RAR_DATA ^ RAR_SPLIT_AFTER
+		hflags_enc = encode_vint(hflags)
+		extra_size = 11
+		data_size = 22
+		hextra_size = encode_vint(extra_size)
+		hdata_size = encode_vint(data_size)
+
+		hfile_flags = FILE_UNIX_TIME ^ FILE_CRC32 
+		hfile_flags_enc = encode_vint(hfile_flags)
+		hunpacked_size = data_size
+		hunpacked_size_enc = encode_vint(hunpacked_size)
+		attributes = 0
+		hattributes_enc = encode_vint(attributes)
+		mtime = 0
+		hmtime = struct.pack('<L', mtime)
+		data_crc32 = 0x12345678
+		hdata_crc32 = struct.pack('<L', data_crc32)
+		compression_info = 0
+		hcompression_info_enc = encode_vint(compression_info)
+		host_os = 1  # Unix
+		hhost_os_enc = encode_vint(host_os)
+		name = b"test_file_name.ext"
+		name_length = len(name)
+		hname_length_enc = encode_vint(name_length)
+		
+		extra = b"x" * extra_size
+		data = b"y" * data_size
+		
+		# size starts from header type
+		hsize = (len(htype_enc) + len(hflags_enc) +
+			len(hextra_size) + len(hdata_size) +
+			len(hfile_flags_enc) + len(hunpacked_size_enc) +
+			len(hattributes_enc) + 8 + len(hcompression_info_enc) +
+			len(hhost_os_enc) +
+			len(hname_length_enc) + len(name) + 
+			extra_size)
+		hsize_enc = encode_vint(hsize)
+
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(hextra_size)
+		stream.write(hdata_size)
+		stream.write(hfile_flags_enc)
+		stream.write(hunpacked_size_enc)
+		stream.write(hattributes_enc)
+		stream.write(hmtime)
+		stream.write(hdata_crc32)
+		stream.write(hcompression_info_enc)
+		stream.write(hhost_os_enc)
+		stream.write(hname_length_enc)
+		stream.write(name)
+		stream.write(extra)
+		stream.write(data)
+		stream.seek(0, os.SEEK_SET)
+
+		block = BlockFactory.create(stream, is_start_file=False)
+		is_file_block = isinstance(block, FileServiceBlock)
+		self.assertTrue(is_file_block, "incorrect block type")
+		is_header = isinstance(block.basic_header, Rar5HeaderBlock)
+		self.assertTrue(is_header, "bad type for header")
+		self.assertFalse(block.is_srr, "bad default file format")
+
+		h = block.basic_header
+		self.assertEqual(h.block_position, 0)
+		self.assertEqual(h.crc32, crc)
+		self.assertEqual(h.header_size, hsize)
+		self.assertEqual(h.type, BLOCK_FILE)
+		self.assertEqual(h.flags, hflags)
+		self.assertEqual(h.size_extra, extra_size)
+		self.assertEqual(h.size_data, data_size)
+
+		self.assertEqual(block.file_flags, hfile_flags)
+		self.assertEqual(block.unpacked_size, hunpacked_size)
+		self.assertEqual(block.attributes, attributes)
+		self.assertEqual(block.mtime, mtime)
+		self.assertEqual(block.datacrc32, data_crc32)
+		self.assertEqual(block.algorithm, 0)
+		self.assertEqual(block.solid, 0)
+		self.assertEqual(block.method, 0)
+		self.assertEqual(block.dict_size, 0)
+		self.assertEqual(block.host_os, host_os)
+		self.assertEqual(block.name, name)
+		self.assertEqual(block.extra_area_size, extra_size)
+		self.assertEqual(h.size_data, data_size)
 
 	def test_file_encryption_record(self):
 		pass
