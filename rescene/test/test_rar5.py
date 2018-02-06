@@ -377,6 +377,57 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(h.size_data, data_size)
 
 	def test_file_encryption_record(self):
+		rtype = 0x01
+		type_enc = encode_vint(rtype)
+		version = 0  # AES-265
+		version_enc = encode_vint(version)
+		flags = RECORD_PASSWORD_CHECK 
+		flags_enc = encode_vint(flags)
+		kdf_count = S_BYTE.pack(1)
+		salt = b"0123456701234567"  # 16 bytes
+		iv = b"0123456701234567"  # 16 bytes
+		check_value = b"012345678901"  # 12 bytes
+		
+		size = (len(type_enc) + len(version_enc) + 
+			len(flags_enc) + 1 + 16 + 16 + 12)
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(version_enc)
+		stream.write(flags_enc)
+		stream.write(kdf_count)
+		stream.write(salt)
+		stream.write(iv)
+		stream.write(check_value)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.version, version)
+		self.assertEqual(record.flags, flags)
+		self.assertEqual(record.kdf_count, kdf_count)
+		self.assertEqual(record.salt, salt)
+		self.assertEqual(record.iv, iv)
+		self.assertEqual(record.check_value, check_value)
+
+	def test_file_hash_record(self):
+		pass
+
+	def test_file_time_record(self):
+		pass
+
+	def test_file_version_record(self):
+		pass
+
+	def test_file_redirection_record(self):
+		pass
+
+	def test_file_unix_owner_record(self):
+		pass
+
+	def test_file_unix_service_data_record(self):
 		pass
 
 class TestRar5Vint(unittest.TestCase):
