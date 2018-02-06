@@ -102,6 +102,9 @@ FILEX_REDIRECTION = 0x05 # File system redirection
 FILEX_UNIX_OWNER = 0x06	# Unix owner and group information
 FILEX_SERVICE_DATA = 0x07 # Service header data array
 
+RECORD_PASSWORD_CHECK = 0x0001  # pwd check data is present
+RECORD_USE_MAC = 0x0002  # use MAC instead of plain checksums
+
 END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
 
 class Rar5HeaderBase(object):
@@ -520,25 +523,25 @@ def file_service_record_factory(stream):
 
 	if record.type == FILEX_ENCRYPTION:
 		# File encryption information
-		record = FileEncryptionRecord(record)
+		record = FileEncryptionRecord(record, stream)
 	elif record.type == FILEX_HASH:
 		# File data hash
-		record = FileHashRecord(record)
+		record = FileHashRecord(record, stream)
 	elif record.type == FILEX_TIME:
 		# High precision file time
-		record = FileTimeRecord(record)
+		record = FileTimeRecord(record, stream)
 	elif record.type == FILEX_VERSION:
 		# File version number
-		record = FileVersionRecord(record)
+		record = FileVersionRecord(record, stream)
 	elif record.type == FILEX_REDIRECTION:
 		# File system redirection
-		record = FileRedirectionRecord(record)
+		record = FileRedirectionRecord(record, stream)
 	elif record.type == FILEX_UNIX_OWNER:
 		# Unix owner and group information
-		record = FileUnixOwnerRecord(record)
+		record = FileUnixOwnerRecord(record, stream)
 	elif record.type == FILEX_SERVICE_DATA:
 		# Service header data array
-		record = FileServiceDataRecord(record)
+		record = FileServiceDataRecord(record, stream)
 	else:
 		print("Unknown extra record in main archive header found")
 		
@@ -559,13 +562,20 @@ class Record(object):
 	def explain(self):
 		size = self.size + (self.size_offset - self.stream_offset)
 		return "+<Record offset=%s, size=%s>".format(self.stream_offset, size)
+	
+	def set_record_properties(self, record):
+		self.stream_offset = record.stream_offset
+		self.size = record.size
+		self.size_offset = record.size_offset
+		self.type = record.type
 
 class FileEncryptionRecord(Record):  # 0x01
 	def __init__(self, record, stream):
-		self = record
-		flags = read_vint(stream)
-		self.password_check_data = bool(flags & 0x0001)
-		self.use_mac = bool(flags & 0x0002)
+		self.set_record_properties(record)
+		self.version = read_vint(stream)
+		self.flags = read_vint(stream)
+		self.password_check_data = bool(self.flags & RECORD_PASSWORD_CHECK)
+		self.use_mac = bool(self.flags & RECORD_USE_MAC)
 		self.kdf_count = stream.read(1)
 		self.salt = stream.read(16)
 		self.iv = stream.read(16)
@@ -576,7 +586,7 @@ class FileEncryptionRecord(Record):  # 0x01
 
 class FileHashRecord(Record):  # 0x02
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		self.hash = read_vint(stream)
 		if self.hash == 0:
 			amount = 32  # BLAKE2sp
@@ -588,7 +598,7 @@ class FileHashRecord(Record):  # 0x02
 
 class FileTimeRecord(Record):  # 0x03
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		flags = read_vint(stream)
 		self.is_unix = bool(flags & 0x1)
 		self.mtime = 0  # 0x2
@@ -602,14 +612,14 @@ class FileTimeRecord(Record):  # 0x03
 
 class FileVersionRecord(Record):  # 0x04
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		self.flags = read_vint(stream)  # always 0
 		self.version_number = read_vint(stream)
 		self.move_pointer_after_record(stream)
 
 class FileRedirectionRecord(Record):  # 0x05
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		"""	
 		0x0001   Unix symlink
 		0x0002   Windows symlink
@@ -625,7 +635,7 @@ class FileRedirectionRecord(Record):  # 0x05
 
 class FileUnixOwnerRecord(Record):  # 0x06
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		self.flags = read_vint(stream)
 		if self.flags & 0x1:
 			name_length = read_vint(stream)
@@ -641,7 +651,7 @@ class FileUnixOwnerRecord(Record):  # 0x06
 
 class FileServiceDataRecord(Record):  # 0x07
 	def __init__(self, record, stream):
-		self = record
+		self.set_record_properties(record)
 		# Concrete contents of service data depends on service header type.
 		self.move_pointer_after_record(stream)
 	
