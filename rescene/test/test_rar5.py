@@ -461,7 +461,27 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.ctime, ctime)
 
 	def test_file_version_record(self):
-		pass
+		rtype = 0x04
+		type_enc = encode_vint(rtype)
+		rflags = 0
+		flags_enc = encode_vint(rflags)
+		file_version_number = 42
+		version_enc = encode_vint(file_version_number) 
+		
+		size = len(type_enc) + len(flags_enc) + len(version_enc)
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(flags_enc)
+		stream.write(version_enc)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.flags, rflags)
+		self.assertEqual(record.version_number, file_version_number)
 
 	def test_file_redirection_record(self):
 		pass
