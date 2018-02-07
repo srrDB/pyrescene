@@ -484,7 +484,34 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.version_number, file_version_number)
 
 	def test_file_redirection_record(self):
-		pass
+		rtype = 0x05
+		type_enc = encode_vint(rtype)
+		redirection_type = 1
+		redirection_type_enc = encode_vint(redirection_type)
+		rflags = LINK_DIRECTORY
+		flags_enc = encode_vint(rflags)
+		name = b"test_file_name.ext"
+		name_length = len(name)
+		name_length_enc = encode_vint(name_length)
+		
+		size = (len(type_enc) + len(redirection_type_enc) + 
+			len(flags_enc) + len(name_length_enc) + name_length)
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(redirection_type_enc)
+		stream.write(flags_enc)
+		stream.write(name_length_enc)
+		stream.write(name)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.redirection_type, redirection_type)
+		self.assertEqual(record.flags, rflags)
+		self.assertEqual(record.name, name)
 
 	def test_file_unix_owner_record(self):
 		pass
