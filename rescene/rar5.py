@@ -105,6 +105,11 @@ FILEX_SERVICE_DATA = 0x07 # Service header data array
 RECORD_PASSWORD_CHECK = 0x0001  # pwd check data is present
 RECORD_USE_MAC = 0x0002  # use MAC instead of plain checksums
 
+TIME_UNIX = 0x0001
+TIME_MODIFICATION = 0x0002
+TIME_CREATION = 0x0004
+TIME_ACCESS = 0x0008
+
 END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
 
 class Rar5HeaderBase(object):
@@ -599,14 +604,27 @@ class FileHashRecord(Record):  # 0x02
 class FileTimeRecord(Record):  # 0x03
 	def __init__(self, record, stream):
 		self.set_record_properties(record)
-		flags = read_vint(stream)
-		self.is_unix = bool(flags & 0x1)
+		self.flags = read_vint(stream)
+		self.is_unix = bool(self.flags & TIME_UNIX)
 		self.mtime = 0  # 0x2
 		self.ctime = 0  # 0x4
 		self.atime = 0  # 0x8
-		# fields size: uint32 or uint64	
-		
-		
+
+		def read_time():
+			# fields size: uint32 or uint64	
+			if self.flags & TIME_UNIX:
+				unix_time = stream.read(4)
+				return unix_time
+			else:
+				windows_time = stream.read(8)
+				return windows_time
+
+		if self.flags & TIME_MODIFICATION:
+			self.mtime = read_time()
+		if self.flags & TIME_CREATION:
+			self.ctime = read_time()
+		if self.flags & TIME_ACCESS:
+			self.atime = read_time()
 		
 		self.move_pointer_after_record(stream)
 

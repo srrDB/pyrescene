@@ -436,7 +436,29 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.hash_data, hash_data)
 
 	def test_file_time_record(self):
-		pass
+		rtype = 0x03
+		type_enc = encode_vint(rtype)
+		rflags = TIME_UNIX ^ TIME_MODIFICATION ^ TIME_CREATION
+		flags_enc = encode_vint(rflags)
+		mtime = b"0" * 4
+		ctime = b"1" * 4
+		
+		size = len(type_enc) + len(flags_enc) + len(mtime) + len(ctime)
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(flags_enc)
+		stream.write(mtime)
+		stream.write(ctime)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.flags, rflags)
+		self.assertEqual(record.mtime, mtime)
+		self.assertEqual(record.ctime, ctime)
 
 	def test_file_version_record(self):
 		pass
