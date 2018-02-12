@@ -514,7 +514,44 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.name, name)
 
 	def test_file_unix_owner_record(self):
-		pass
+		rtype = 0x06
+		type_enc = encode_vint(rtype)
+		rflags = UNIX_USER ^ UNIX_USER_ID ^ UNIX_GROUP ^ UNIX_GROUP_ID
+		flags_enc = encode_vint(rflags)
+		user_name = b"gfy"
+		group_name = b"root"
+		user_name_len_enc = encode_vint(len(user_name))
+		group_name_len_enc = encode_vint(len(group_name))
+		user_id = 1337
+		user_id_enc = encode_vint(user_id)
+		group_id = 1337
+		group_id_enc = encode_vint(group_id)
+
+		size = (len(type_enc) + len(flags_enc) + 
+			len(user_name_len_enc) + len(user_name) +
+			len(group_name_len_enc) + len(group_name) +
+			len(user_id_enc) + len(group_id_enc))
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(flags_enc)
+		stream.write(user_name_len_enc)
+		stream.write(user_name)
+		stream.write(group_name_len_enc)
+		stream.write(group_name)
+		stream.write(user_id_enc)
+		stream.write(group_id_enc)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.flags, rflags)
+		self.assertEqual(record.owner, user_name)
+		self.assertEqual(record.group, group_name)
+		self.assertEqual(record.user_id, user_id)
+		self.assertEqual(record.group_id, group_id)
 
 	def test_file_unix_service_data_record(self):
 		pass

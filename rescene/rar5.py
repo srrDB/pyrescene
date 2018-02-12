@@ -117,6 +117,11 @@ LINK_HARD_LINK = 0x0004
 LINK_FILE_COPY = 0x0005
 LINK_DIRECTORY = 0x0001
 
+UNIX_USER = 0x0001
+UNIX_GROUP = 0x0002
+UNIX_USER_ID = 0x0004
+UNIX_GROUP_ID = 0x0008
+
 END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
 
 class Rar5HeaderBase(object):
@@ -662,15 +667,15 @@ class FileUnixOwnerRecord(Record):  # 0x06
 	def __init__(self, record, stream):
 		self.set_record_properties(record)
 		self.flags = read_vint(stream)
-		if self.flags & 0x1:
+		if self.flags & UNIX_USER:
 			name_length = read_vint(stream)
 			self.owner = stream.read(name_length)  # UTF-8
-		if self.flags & 0x2:
+		if self.flags & UNIX_GROUP:
 			name_length = read_vint(stream)
 			self.group = stream.read(name_length)  # UTF-8
-		if self.flags & 0x4:
+		if self.flags & UNIX_USER_ID:
 			self.user_id = read_vint(stream)
-		if self.flags & 0x8:
+		if self.flags & UNIX_GROUP_ID:
 			self.group_id = read_vint(stream)
 		self.move_pointer_after_record(stream)
 
