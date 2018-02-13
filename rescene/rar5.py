@@ -569,22 +569,24 @@ class Record(object):
 	def __init__(self, stream):
 		self.stream_offset = stream.tell()
 		self.size = read_vint(stream)  # starts from Type field
-		self.size_offset = stream.tell()
+		self.type_offset = stream.tell()
 		self.type = read_vint(stream)
+		self.data_offset = stream.tell()
 		
 	def move_pointer_after_record(self, stream):
-		end_record = self.size_offset + self.size
+		end_record = self.type_offset + self.size
 		stream.seek(end_record, os.SEEK_SET)
 		
 	def explain(self):
-		size = self.size + (self.size_offset - self.stream_offset)
+		size = self.size + (self.type_offset - self.stream_offset)
 		return "+<Record offset=%s, size=%s>".format(self.stream_offset, size)
 	
 	def set_record_properties(self, record):
 		self.stream_offset = record.stream_offset
 		self.size = record.size
-		self.size_offset = record.size_offset
+		self.type_offset = record.type_offset
 		self.type = record.type
+		self.data_offset = record.data_offset
 
 class FileEncryptionRecord(Record):  # 0x01
 	def __init__(self, record, stream):
@@ -608,8 +610,7 @@ class FileHashRecord(Record):  # 0x02
 		if self.hash == 0:
 			amount = 32  # BLAKE2sp
 		else:  # for future use within RAR5
-			already_read = self.stream.tell() - self.size_offset
-			amount = self.size - already_read
+			amount = self.size - (self.data_offset - self.type_offset)
 		self.hash_data = stream.read(amount)
 		self.move_pointer_after_record(stream)
 
@@ -682,6 +683,8 @@ class FileUnixOwnerRecord(Record):  # 0x06
 class FileServiceDataRecord(Record):  # 0x07
 	def __init__(self, record, stream):
 		self.set_record_properties(record)
+		size_vint_type = self.data_offset - self.type_offset
+		self.data = stream.read(self.size - size_vint_type)
 		# Concrete contents of service data depends on service header type.
 		self.move_pointer_after_record(stream)
 	

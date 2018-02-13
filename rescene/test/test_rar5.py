@@ -435,6 +435,30 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.hash, rhash)
 		self.assertEqual(record.hash_data, hash_data)
 
+	def test_file_hash_record_future(self):
+		"""test else case used for future hashes"""
+		rtype = 0x02
+		type_enc = encode_vint(rtype)
+		rhash = 1
+		hash_enc = encode_vint(rhash)
+		hash_data = b"E" * 42
+		
+		size = (len(type_enc) + len(hash_enc) + 
+			len(hash_data))
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(hash_enc)
+		stream.write(hash_data)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.hash, rhash)
+		self.assertEqual(record.hash_data, hash_data)
+
 	def test_file_time_record(self):
 		rtype = 0x03
 		type_enc = encode_vint(rtype)
@@ -554,7 +578,22 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(record.group_id, group_id)
 
 	def test_file_unix_service_data_record(self):
-		pass
+		rtype = 0x07
+		type_enc = encode_vint(rtype)
+		data = b"whatever data being here"
+
+		size = len(type_enc) + len(data) 
+
+		stream = io.BytesIO()
+		stream.write(encode_vint(size))
+		stream.write(type_enc)
+		stream.write(data)
+		stream.seek(0)
+
+		record = file_service_record_factory(stream)
+		self.assertEqual(record.type, rtype)
+		self.assertEqual(record.size, size)
+		self.assertEqual(record.data, data)
 
 class TestRar5Vint(unittest.TestCase):
 	"""Tests the rar 5 vint"""
