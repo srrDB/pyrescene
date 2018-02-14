@@ -376,6 +376,7 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(block.extra_area_size, extra_size)
 		self.assertEqual(h.size_data, data_size)
 
+class TestParseRarFileRecords(unittest.TestCase):
 	def test_file_encryption_record(self):
 		rtype = 0x01
 		type_enc = encode_vint(rtype)
