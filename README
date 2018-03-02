@@ -70,7 +70,7 @@ Dependencies
 
 - Python (http://www.activestate.com/activepython)
 - Chromaprint* (https://acoustid.org/chromaprint)
-- UnRAR* (http://www.rarlab.com/download.htm)
+- UnRAR* (http://www.rarlab.com/download.htm) or unrar-nonfree(!) on Debian
 - Shareware WinRAR setup files* (http://rescene.wikidot.com/rar-versions)
 
     `* Works without, but required for certain functionality.`
