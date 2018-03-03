@@ -316,12 +316,16 @@ def get_proof_files(reldir):
 		if "proof" in proof.lower():
 			# RAR file must contain image file
 			# Space.Dogs.3D.2010.GERMAN.1080p.BLURAY.x264-HDViSiON (bmp proof)
-			for block in RarReader(proof):
-				if block.rawtype == BlockType.RarPackedFile:
-					if (block.file_name[-4:].lower() in
-						(".jpg", "jpeg", ".png", ".bmp", ".gif")):
-						result.append(proof)
-						break
+			try:
+				for block in RarReader(proof):
+					if block.rawtype == BlockType.RarPackedFile:
+						if (block.file_name[-4:].lower() in
+							(".jpg", "jpeg", ".png", ".bmp", ".gif")):
+							result.append(proof)
+							break
+			except ValueError as e:
+				# No RAR5 support yet
+				logging.warning("{0}: {1}".format(str(e), proof))
 	return result
 
 def fixed_resolution_cover(root_image):
@@ -452,13 +456,18 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 					continue  # e.g. .sfv for proof file
 				if os.path.isfile(rar):
 					skip = False
-					for block in RarReader(rar):
-						if block.rawtype == BlockType.RarPackedFile:
-							if (block.file_name[-4:].lower() in
-								(".jpg", "jpeg", ".png", ".bmp", ".gif")):
-								skip = True
-							else:
-								skip = False
+					try:
+						for block in RarReader(rar):
+							if block.rawtype == BlockType.RarPackedFile:
+								if (block.file_name[-4:].lower() in
+									(".jpg", "jpeg", ".png", ".bmp", ".gif")):
+									skip = True
+								else:
+									skip = False
+					except ValueError as e:
+						# No RAR5 support yet
+						logging.warning("{0}: {1}".format(str(e), rar))
+						skip = True
 					if skip:
 						continue
 				else:
