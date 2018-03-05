@@ -50,7 +50,7 @@ import subprocess
 import multiprocessing
 
 import rescene
-from rescene.rar import (BlockType, RarReader,
+from rescene.rar import (BlockType, RarReader, Rar5NotSupportedError,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
 	RarPackedFileBlock, SrrOsoHashBlock, SrrZipFileBlock)
 from rescene.rarstream import RarStream, FakeFile
@@ -533,40 +533,43 @@ def create_srr(srr_name, infiles, in_folder="",
 				else os.path.basename(rfcapitals)
 			_fire(MsgCode.MSG, message="Processing file: %s" % fname)
 			
-			rarblock = SrrRarFileBlock(file_name=fname)
-	#		if save_paths:
-	#			rarblock.flags |= SrrRarFileBlock.PATHS_SAVED
-			srr.write(rarblock.block_bytes())
+			if is_rar4(rfexact):
+				rarblock = SrrRarFileBlock(file_name=fname)
+				#		if save_paths:
+				#			rarblock.flags |= SrrRarFileBlock.PATHS_SAVED
+				srr.write(rarblock.block_bytes())
 			
-			rr = RarReader(rfexact)
-			for block in rr.read_all():
-				if block.rawtype == BlockType.RarPackedFile:
-					_fire(MsgCode.FBLOCK, message="RAR Packed File Block",
-						  compression_method=block.compression_method,
-						  packed_size=block.packed_size,
-						  unpacked_size=block.unpacked_size,
-						  file_name=block.file_name)
-					if block.compression_method != COMPR_STORING:
-						_fire(MsgCode.COMPRESSION, 
-						      message="Don't delete 'em yet!")
-						if not compressed:
-							srr.close()
-							os.unlink(tmp_srr_name)
-							raise ValueError("Archive uses unsupported "
-							           "compression method: %s" % rarfile)
+				rr = RarReader(rfexact)
+				for block in rr.read_all():
+					if block.rawtype == BlockType.RarPackedFile:
+						_fire(MsgCode.FBLOCK, message="RAR Packed File Block",
+							  compression_method=block.compression_method,
+							  packed_size=block.packed_size,
+							  unpacked_size=block.unpacked_size,
+							  file_name=block.file_name)
+						if block.compression_method != COMPR_STORING:
+							_fire(MsgCode.COMPRESSION, 
+								  message="Don't delete 'em yet!")
+							if not compressed:
+								srr.close()
+								os.unlink(tmp_srr_name)
+								raise ValueError("Archive uses unsupported "
+										   "compression method: %s" % rarfile)
+						else:
+							# store first RAR where we encounter the stored file
+							oso_dict.setdefault(block.os_file_name(), rarfile)
+					elif _is_recovery(block):
+						_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
+							  packed_size=block.packed_size,
+							  recovery_sectors=block.recovery_sectors,
+							  data_sectors=block.data_sectors)
 					else:
-						# store first RAR where we encounter the stored file
-						oso_dict.setdefault(block.os_file_name(), rarfile)
-				elif _is_recovery(block):
-					_fire(MsgCode.RBLOCK, message="RAR Recovery Block",
-						  packed_size=block.packed_size,
-						  recovery_sectors=block.recovery_sectors,
-						  data_sectors=block.data_sectors)
-				else:
-					_fire(MsgCode.BLOCK, message="RAR Block",
-						  type=block.rawtype, size=block.header_size)
-				# store the raw data for any blocks found
-				srr.write(block.block_bytes())
+						_fire(MsgCode.BLOCK, message="RAR Block",
+							  type=block.rawtype, size=block.header_size)
+					# store the raw data for any blocks found
+					srr.write(block.block_bytes())
+			else:  # rar5
+				raise NotImplementedError()
 				
 		# STORE ZIP META DATA
 		for zipfile in zipfiles:
@@ -615,6 +618,14 @@ def create_srr(srr_name, infiles, in_folder="",
 		# when an IOError is raised, we close the file for further cleanup
 		srr.close()
 		
+def is_rar4(volume):
+	rv = True
+	try:
+		next(RarReader(volume))
+	except Rar5NotSupportedError:
+		rv = False
+	return rv
+
 def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
 	"""
 	srr_name:    path and name of the SRR file to create
@@ -950,8 +961,23 @@ def _handle_rar(rfile, filelist=None, read_retries=7):
 		except:
 			return robject
 		
+	try:
+		is_old_style_naming = rar4_detect_naming_style(rfile, read_retries)
+	except Rar5NotSupportedError:
+		# RAR5 (always new style), SRR or bad file
+		is_old_style_naming = False
+			
+	if first_rars([filename(rfile)]) != [filename(rfile)]:
+		raise ValueError("You must start with the first volume from a RAR set.")
+			
+	next_file = filename(rfile)
+	while exists(next_file):
+		# TODO: fails on mixed capitals on Linux?
+		yield next_file
+		next_file = filename(next_archive(next_file, is_old_style_naming))
+
+def rar4_detect_naming_style(rfile, read_retries):
 	is_old_style_naming = False
-	
 	# RarReader(rfile) closes the file -> was problem with NNTPFiles
 	for block in _rarreader_usenet(rfile, read_retries):
 		if (block.rawtype == BlockType.RarVolumeHeader and 
@@ -970,16 +996,8 @@ def _handle_rar(rfile, filelist=None, read_retries=7):
 			#	raise ValueError("You must start with the first volume "
 			#	                 "from a RAR set.")
 			is_old_style_naming = not bool(block.flags & block.NEW_NUMBERING) 
-			
-	if first_rars([filename(rfile)]) != [filename(rfile)]:
-		raise ValueError("You must start with the first volume from a RAR set.")
-			
-	next_file = filename(rfile)
-	while exists(next_file):
-		# TODO: fails on mixed capitals on Linux?
-		yield next_file
-		next_file = filename(next_archive(next_file, is_old_style_naming))
-		
+	return is_old_style_naming
+
 def info(srr_file):
 	"""Returns a dictionary with the following keys:
 	- appname:        the application name stored in the srr file

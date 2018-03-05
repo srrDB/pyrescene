@@ -309,6 +309,9 @@ RAR_VERSION = {
 class ArchiveNotFoundError(IOError):
 	pass
 
+class Rar5NotSupportedError(ValueError):
+	pass
+
 class RarBlock(object):
 	""" Represents basic header used in all SRR and RAR blocks.
 	
@@ -1497,7 +1500,8 @@ class RarReader(object):
 			bheader = self._rarstream.read(8)
 			if bheader == RAR5_MARKER_BLOCK:
 				self._rarstream.close()
-				raise ValueError("RAR5 files are not yet supported!")
+				msg = "This reader does not support RAR5 files!"
+				raise Rar5NotSupportedError(msg)
 			block_type = ord(bheader[2:3]) # third byte
 			if block_type == BlockType.RarMin: # 0x72
 				self._readmode = self.RAR
