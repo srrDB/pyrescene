@@ -24,6 +24,7 @@ Download zlib compiled DLL from http://zlib.net/ for more speed and
 put it in your PATH. See http://www.computerhope.com/issues/ch000549.htm
 Use the pyReScene folder structure or 
 copy rescene/crc32combine.py to the same folder as this file.
+https://sourceforge.net/projects/libpng/files/zlib/1.2.8/
 
 RUN
 ---
@@ -286,7 +287,8 @@ if __name__ == '__main__':
 		usage="Usage: %prog file_name CRC32 [range start] [range end]\n"
 		"This tool will flip each bit and stops when a CRC match is found.\n"
 		"CRC32: expected hash of the full file\n"
-		"range: location in the file to search for a flip\n",
+		"range: location in the file to search for a flip\n"
+		"Download zlib.dll: https://sourceforge.net/projects/libpng/files/zlib/1.2.8/",
 		version="%prog 0.3 (2016-03-01)")  # --help, --version
 
 	parser.add_option("-s", "--skip", help="amount of bytes for window that "
