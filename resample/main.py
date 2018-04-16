@@ -2198,7 +2198,7 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 	done = False
 	current_track_nb = 0
 	header_stripping = False
-	tracksMain = {}  # contains TrackData objects; main mkv info
+	tracks_main = {}  # contains TrackData objects; main mkv info
 
 	while er.read() and not done:
 		if er.element_type in (
@@ -2217,20 +2217,20 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 			show_spinner(cluster_count)
 			er.move_to_child()
 		elif er.element_type == EbmlElementType.Block:
-			# tracks and tracksMain get modified
-			done = _mkv_block_find(tracks, er, done, tracksMain)
+			# tracks and tracks_main get modified
+			done = _mkv_block_find(tracks, er, done, tracks_main)
 		elif er.element_type == EbmlElementType.TrackNumber:
 			elm_content = er.read_contents()
 			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
-			if not current_track_nb in tracksMain:
+			if not current_track_nb in tracks_main:
 				td = TrackData()
 				td.track_number = current_track_nb
-				tracksMain[current_track_nb] = td
+				tracks_main[current_track_nb] = td
 			done = False
 		elif er.element_type == EbmlElementType.TrackCodec:
 			# not necessary, but might be useful for debugging output
 			elm_content = er.read_contents()
-			tracksMain[current_track_nb].codec = elm_content.decode(
+			tracks_main[current_track_nb].codec = elm_content.decode(
 			                                        "ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
@@ -2239,7 +2239,7 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
 			if header_stripping:
-				tracksMain[current_track_nb].compression_settings = elm_content
+				tracks_main[current_track_nb].compression_settings = elm_content
 		else:
 			er.skip_contents()
 
@@ -2248,17 +2248,17 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 	er.close()
 	return tracks
 
-def _mkv_block_find(tracks, er, done, tracksMain):
+def _mkv_block_find(tracks, er, done, tracks_main):
 	# grab track or create new track
 	track_number = er.current_element.track_number
 	if track_number not in tracks:
 		tracks[track_number] = TrackData()
 		tracks[track_number].track_number = track_number
-	if track_number not in tracksMain:
-		tracksMain[track_number] = TrackData()
-		tracksMain[track_number].track_number = track_number
+	if track_number not in tracks_main:
+		tracks_main[track_number] = TrackData()
+		tracks_main[track_number].track_number = track_number
 	track = tracks[track_number]
-	track2 = tracksMain[track_number]
+	track2 = tracks_main[track_number]
 	sforsample = b""  # settings for the sample tracks
 	sformain = b""  # settings for main tracks
 
@@ -2987,7 +2987,7 @@ def mkv_extract_sample_streams(self, tracks, movie):
 			start_offset = min(track.match_offset, start_offset)
 
 	attachments = {}
-	tracksMain = {}  # contains TrackData objects; main mkv info
+	tracks_main = {}  # contains TrackData objects; main mkv info
 	current_attachment = None
 	cluster_count = 0
 	done = False
@@ -3010,7 +3010,7 @@ def mkv_extract_sample_streams(self, tracks, movie):
 		                         EbmlElementType.TrackCodec):
 			er.skip_contents()
 		elif er.element_type == EbmlElementType.Block:
-			done = _mkv_block_extract(tracks, tracksMain, er, done)
+			done = _mkv_block_extract(tracks, tracks_main, er, done)
 		elif er.element_type == EbmlElementType.Cluster:
 			# simple progress indicator since this can take a while
 			# (cluster is good because they're about 1MB each)
@@ -3028,15 +3028,15 @@ def mkv_extract_sample_streams(self, tracks, movie):
 		elif er.element_type == EbmlElementType.TrackNumber:
 			elm_content = er.read_contents()
 			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
-			if not current_track_nb in tracksMain:
+			if not current_track_nb in tracks_main:
 				td = TrackData()
 				td.track_number = current_track_nb
-				tracksMain[current_track_nb] = td
+				tracks_main[current_track_nb] = td
 			done = False
 		elif er.element_type == EbmlElementType.TrackCodec:
 			# not necessary, but might be useful for debugging output
 			elm_content = er.read_contents()
-			tracksMain[current_track_nb].codec = elm_content.decode(
+			tracks_main[current_track_nb].codec = elm_content.decode(
 			                                        "ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
@@ -3045,7 +3045,7 @@ def mkv_extract_sample_streams(self, tracks, movie):
 		elif er.element_type == EbmlElementType.CompressionSettings:
 			elm_content = er.read_contents()
 			if header_stripping:
-				tracksMain[current_track_nb].compression_settings = elm_content
+				tracks_main[current_track_nb].compression_settings = elm_content
 		elif er.element_type == EbmlElementType.AttachedFileName:
 			current_attachment = er.read_contents()
 			if current_attachment not in attachments:
@@ -3069,7 +3069,7 @@ def mkv_extract_sample_streams(self, tracks, movie):
 	er.close()
 	return tracks, attachments
 
-def _mkv_block_extract(tracks, tracksMain, er, done):
+def _mkv_block_extract(tracks, tracks_main, er, done):
 	# grab the current track for main mkv and .srs meta data
 	try:
 		track = tracks[er.current_element.track_number]
@@ -3078,15 +3078,15 @@ def _mkv_block_extract(tracks, tracksMain, er, done):
 		# System.Collections.Generic.KeyNotFoundException on .NET version
 		er.skip_contents()
 		return done
-	trackMain = tracksMain[er.current_element.track_number]
+	track_main = tracks_main[er.current_element.track_number]
 
 	# grab compression settings
 	sforsample = b""  # settings for the sample tracks
 	sformain = b""  # settings for main tracks
 	if track.compression_settings:
 		sformain = track.compression_settings
-	if trackMain.compression_settings:
-		sforsample = trackMain.compression_settings
+	if track_main.compression_settings:
+		sforsample = track_main.compression_settings
 	header_stripping_both_files = sformain and sforsample
 
 	if (er.current_element.element_start_pos +
