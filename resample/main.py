@@ -30,6 +30,7 @@ import struct
 import io
 import os
 import sys
+import logging
 import unittest
 import tempfile
 import collections
@@ -64,6 +65,10 @@ from resample.mp3 import Mp3Reader
 from resample.mp3 import decode_id3_size
 from resample.stream import StreamReader
 from resample.m2ts import M2tsReader, M2tsReadMode
+
+logger = logging.getLogger(__name__)
+if not _DEBUG:
+	logger.addHandler(logging.NullHandler())
 
 try:
 	odict = collections.OrderedDict  # @UndefinedVariable
@@ -426,6 +431,9 @@ class TrackData(object):
 		              moffset=self.match_offset,
 		              lsb=len(self.signature_bytes),
 		              lcb=len(self.check_bytes)))
+		
+	def __repr__(self, *args, **kwargs):
+		return self.__str__()
 
 	def serialize(self):
 		big_file = self.flags & self.BIG_FILE
@@ -531,8 +539,28 @@ def read_fingerprint_data(track, data):
 	track.fingerprint = data[8:8 + fp_length]
 	return track
 
+def isascii(bytes_to_test):
+	try:
+		bytes_to_test.decode('ascii')
+		return True
+	except UnicodeError:
+		return False
+
+def enough_signature_data(track):
+	"""x265 srs files can be bad when the encoding options surpass the
+	included signature length to find the correct offset"""
+	if track.data_length > 1000000:
+		return not isascii(track.signature_bytes[-64:])
+	else:
+		return True  # subtitle tracks
+
 class ReSample(object):
 	archived_file_name = ""
+	
+	def msg_not_enough_signature_data(self, track):
+		msg = "Not enough unique data for track {0}".format(track.track_number)
+		print("WARNING: " + msg)
+		logger.warn(msg)
 
 def sample_class_factory(file_type):
 	"""Choose the right class based on the sample's file type."""
@@ -711,7 +739,6 @@ def avi_load_srs(self, infile):
 
 def mkv_load_srs(self, infile):
 	tracks = {}
-# 	srs_data = None
 	er = EbmlReader(EbmlReadMode.SRS, infile)
 	header_stripping = False
 	current_track_nb = 0
@@ -736,8 +763,8 @@ def mkv_load_srs(self, infile):
 			# do not have a ReSampleTrack element for the track
 			# e.g. Fury.2014.720p.BluRay.x264-SPARKS
 			if current_track_nb in tracks:
-				tracks[current_track_nb].codec = elm_content.decode(
-				                                    "ascii", errors="ignore")
+				tracks[current_track_nb].codec =  \
+					elm_content.decode("ascii", errors="ignore")
 		elif er.element_type == EbmlElementType.CompressionAlgorithm:
 			elm_content = er.read_contents()
 			algorithm = GetEbmlUInt(elm_content, 0, len(elm_content))
@@ -760,6 +787,11 @@ def mkv_load_srs(self, infile):
 		else:
 			er.skip_contents()
 	er.close()
+	
+	for track in tracks.values():
+		if not enough_signature_data(track):
+			self.msg_not_enough_signature_data(track)
+		
 	return srs_data, tracks
 
 def mp4_load_srs(self, infile):
