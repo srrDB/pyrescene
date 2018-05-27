@@ -554,6 +554,7 @@ def main(argv=None, no_exit=False):
 				v.tracks = tracks
 				v.attachments = attachments
 				v.out_file = None
+				v.sfile = None
 
 				check_tracks(track_set[0], track_set[1:], v)
 
