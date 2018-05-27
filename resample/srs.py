@@ -42,6 +42,9 @@ from rescene.utility import create_temp_file_name, replace_result
 
 _DEBUG = bool(os.environ.get("RESCENE_DEBUG"))  # leave empty for False
 
+class Variables(object):
+	pass
+
 def can_overwrite(file_path, yes_option=False):
 	if not yes_option and os.path.isfile(file_path):
 		print("Warning: File %s already exists." % file_path)
@@ -150,6 +153,39 @@ def verify_main(sample, tracks, options, pexit):
 			tracks.pop(track.track_number)
 	print("Check Complete. All tracks located.")
 	return tracks
+
+def find_best_educated_guesses(tracks, cut_data):
+	"""cut_data: dict(track_number, [other, possible, offsets])
+	Suggests the best matches in track.olist. These are the offsets close to
+	the matches of the other tracks
+	"""
+	offsets_good_tracks = [t.match_offset for t in tracks.values()
+	                       if t.track_number not in cut_data]
+	min_offset = min(offsets_good_tracks)
+	max_offset = max(offsets_good_tracks)
+
+	# find last match below, in range or just after above range
+	for track_id in cut_data:
+		tracks[track_id].olist = []
+		
+		last_before = -1 
+		first_after = -1
+		in_range = []
+		for other_match in cut_data[track_id]:
+			if other_match < min_offset:
+				if other_match > last_before:
+					last_before = other_match
+			elif other_match > max_offset:
+				if other_match < first_after or first_after == -1:
+					first_after = other_match
+			elif min_offset < other_match < max_offset:
+				in_range.append(other_match)
+		
+		if last_before != -1:
+			tracks[track_id].olist.append(last_before)
+		if first_after != -1:
+			tracks[track_id].olist.append(first_after)
+		tracks[track_id].olist += in_range
 
 def main(argv=None, no_exit=False):
 	"""
@@ -375,6 +411,7 @@ def main(argv=None, no_exit=False):
 				movie_type = FileType.STREAM
 			movi = resample.sample_class_factory(movie_type)
 			movi.archived_file_name = main_file_info.archived_file
+			movi.cut_data = sample.cut_data
 
 			out_folder = "."  # current directory
 			if options.output_dir:
@@ -436,6 +473,8 @@ def main(argv=None, no_exit=False):
 					if _DEBUG:
 						print("Found: {0}".format(track.track_file.tell()))
 						print("Expected: {0}".format(track.data_length))
+					if track.track_file:
+						track.track_file.close()
 					msg = ("\nUnable to extract correct amount of data for "
 					       "track %s. Aborting.\n" % track.track_number)
 					pexit(4, msg, False)
@@ -445,29 +484,92 @@ def main(argv=None, no_exit=False):
 			if not can_overwrite(result_file, options.always_yes):
 				pexit(1, "\nOperation aborted.\n", False)
 
+			def show_attempt_info(sfile):
+				t1 = time.clock()
+				total = t1 - t0
+				print("Rebuild Complete...           "
+					  "Elapsed Time: {0:.2f}s".format(total))
+
+				print("\nFile Details:   Size           CRC")
+				print("                -------------  --------")
+				print("Expected    :   {0:>13}  {1:08X}".format(
+					sep(srs_data.size), srs_data.crc32))
+				print("Actual      :   {0:>13}  {1:08X}\n".format(
+					sep(sfile.size), sfile.crc32))
+			
 			# 6) Recreate the sample
-			out_file = create_temp_file_name(result_file)
-			sfile = sample.rebuild_sample(srs_data, tracks, attachments,
-										  srs, out_file)
+			if not len(sample.cut_data):
+				out_file = create_temp_file_name(result_file)
+				sfile = sample.rebuild_sample(srs_data, tracks, attachments,
+											  srs, out_file)
+				show_attempt_info(sfile)
+			else:
+				# we know it will likely fail the first time anyway
+				# 6.1) Not enough data for a correct match in srs
+				find_best_educated_guesses(tracks, sample.cut_data)
 
-			t1 = time.clock()
-			total = t1 - t0
-			print("Rebuild Complete...           "
-			      "Elapsed Time: {0:.2f}s".format(total))
+				# try all combinations when there are multiple bad tracks
+				track_set = [tracks[track_id] for track_id in sample.cut_data]
+					
+				def is_good_rebuild(v):
+					# try to reconstruct again with different offsets
+					if v.out_file:
+						os.unlink(v.out_file)
+					v.out_file = create_temp_file_name(result_file)
+					v.sfile = sample.rebuild_sample(
+						srs_data, v.tracks, v.attachments, srs, v.out_file)
+					return v.sfile.crc32 == srs_data.crc32
 
+				def check_tracks(current_track, others, v):
+					for offset in current_track.olist:
+						if current_track.match_offset != offset:
+							print("Testing match offset %d..." % offset)
+							current_track.match_offset = offset
+							current_track.check_bytes = b""
+							current_track.match_length = 0
+							try:
+								current_track.track_file.close()
+							finally:
+								current_track.track_file = None
+						
+						if len(others):
+							success = check_tracks(others[0], others[1:], v)
+						else:
+							# extract streams on current offets
+							v.tracks, v.attachments = (movi
+								.extract_sample_streams(v.tracks, movie))
+							t1 = time.clock()
+							total = t1 - t0
+							print("Track Extraction Complete...  "
+								  "Elapsed Time: {0:.2f}s".format(total))
+							success = is_good_rebuild(v)
+							show_attempt_info(v.sfile)
+						if success:
+							return True
+					return False
+
+				v = Variables()
+				v.sample = sample
+				v.movi = movi
+				v.tracks = tracks
+				v.attachments = attachments
+				v.out_file = None
+
+				check_tracks(track_set[0], track_set[1:], v)
+
+				sample = v.sample
+				movi = v.movi
+				tracks = v.tracks
+				attachments = v.attachments
+				out_file = v.out_file
+				sfile = v.sfile
+			
 			# 7) Close and delete the temporary files
 			for track in tracks.values():
 				if track.track_file:
 					track.track_file.close()
 			for attachment in attachments.values():
 				attachment.attachment_file.close()
-
-			print("\nFile Details:   Size           CRC")
-			print("                -------------  --------")
-			print("Expected    :   {0:>13}  {1:08X}".format(
-				sep(srs_data.size), srs_data.crc32))
-			print("Actual      :   {0:>13}  {1:08X}\n".format(
-				sep(sfile.size), sfile.crc32))
 
 			if sfile.crc32 == srs_data.crc32:
 				replace_result(out_file, result_file)

@@ -557,6 +557,9 @@ def enough_signature_data(track):
 class ReSample(object):
 	archived_file_name = ""
 	
+	def __init__(self):
+		self.cut_data = {}  # track number -> list of other possible offsets
+	
 	def msg_not_enough_signature_data(self, track):
 		msg = "Not enough unique data for track {0}".format(track.track_number)
 		print("WARNING: " + msg)
@@ -791,6 +794,8 @@ def mkv_load_srs(self, infile):
 	for track in tracks.values():
 		if not enough_signature_data(track):
 			self.msg_not_enough_signature_data(track)
+			self.cut_data.setdefault(track.track_number, [])
+			track.check_bytes_bug = b""
 		
 	return srs_data, tracks
 
@@ -2250,7 +2255,7 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 			er.move_to_child()
 		elif er.element_type == EbmlElementType.Block:
 			# tracks and tracks_main get modified
-			done = _mkv_block_find(tracks, er, done, tracks_main)
+			done = _mkv_block_find(self, tracks, er, done, tracks_main)
 		elif er.element_type == EbmlElementType.TrackNumber:
 			elm_content = er.read_contents()
 			current_track_nb = GetEbmlUInt(elm_content, 0, len(elm_content))
@@ -2280,7 +2285,7 @@ def mkv_find_sample_streams(self, tracks, main_mkv_file):
 	er.close()
 	return tracks
 
-def _mkv_block_find(tracks, er, done, tracks_main):
+def _mkv_block_find(self, tracks, er, done, tracks_main):
 	# grab track or create new track
 	track_number = er.current_element.track_number
 	if track_number not in tracks:
@@ -2293,6 +2298,7 @@ def _mkv_block_find(tracks, er, done, tracks_main):
 	track2 = tracks_main[track_number]
 	sforsample = b""  # settings for the sample tracks
 	sformain = b""  # settings for main tracks
+	srs_cut_bug = track.track_number in self.cut_data
 
 	# keep track of the compression settings differences
 	if ((track.compression_settings or track2.compression_settings) and
@@ -2336,7 +2342,7 @@ def _mkv_block_find(tracks, er, done, tracks_main):
 			# to see if it's the start of a new match
 			# (rare problem, but it can happen with subtitles especially)
 
-			if not track.check_bytes:
+			if not track.check_bytes:  # always entered upon start too
 				lcb = min(len(track.signature_bytes), flength)
 				check_bytes = sforsample
 				check_bytes += buff[offset + len(sformain):
@@ -2355,7 +2361,11 @@ def _mkv_block_find(tracks, er, done, tracks_main):
 	elif track.match_length < track.data_length:
 		track.match_length += min(track.data_length - track.match_length,
 		                          er.current_element.length)
-		er.skip_contents()
+		
+		if srs_cut_bug:
+			_extra_offsets_x265_bug(self, er, track, sforsample, sformain)
+		else:
+			er.skip_contents()
 
 		tracks_done = True
 		for track in tracks.values():
@@ -2364,10 +2374,50 @@ def _mkv_block_find(tracks, er, done, tracks_main):
 				break
 
 		done = tracks_done
+	elif srs_cut_bug:
+		# track other possible match offsets
+		_extra_offsets_x265_bug(self, er, track, sforsample, sformain)
 	else:
 		er.skip_contents()
 
 	return done
+
+def _extra_offsets_x265_bug(self, er, track, sforsample, sformain):
+	offset = 0
+	buff = er.read_contents()
+
+	for i in range(len(er.current_element.frame_lengths)):
+		flength = (er.current_element.frame_lengths[i] +
+				   len(sforsample) - len(sformain))
+		# see if a false positive match was detected
+		if (0 < len(track.check_bytes_bug) < len(track.signature_bytes)):
+			lcb = min(len(track.signature_bytes),
+					  flength + len(track.check_bytes_bug))
+			check_bytes = track.check_bytes_bug  # from sample
+			check_bytes += sforsample  # stored settings from main video
+			check_bytes += buff[offset + len(sformain):
+								offset + len(sformain) + lcb -
+								len(track.check_bytes_bug) - len(sforsample)]
+
+			if track.signature_bytes.startswith(check_bytes):
+				track.check_bytes_bug = check_bytes
+			else:  # partial match, start over
+				track.check_bytes_bug = b""
+
+		if not track.check_bytes_bug:
+			lcb = min(len(track.signature_bytes), flength)
+			check_bytes = sforsample
+			check_bytes += buff[offset + len(sformain):
+								offset + len(sformain) + lcb - len(sforsample)]
+			if track.signature_bytes.startswith(check_bytes):
+				track.check_bytes_bug = check_bytes
+				match_offset = (er.current_element.element_start_pos
+					+ len(er.current_element.raw_header)
+					+ len(er.current_element.raw_block_header)
+					+ offset)
+				self.cut_data[track.track_number].append(match_offset)
+				track.check_bytes_bug = b""
+		offset += er.current_element.frame_lengths[i]
 
 def mp4_find_sample_stream(track, mtrack, main_mp4_file):
 	"""Check if the track from the sample exist in the main file. This is
@@ -3027,15 +3077,16 @@ def mkv_extract_sample_streams(self, tracks, movie):
 	header_stripping = False
 
 	while er.read() and not done:
-		if er.element_type in (EbmlElementType.Segment,
-		                       EbmlElementType.BlockGroup,
-							   EbmlElementType.TrackList,
-							   EbmlElementType.Track,
-							   EbmlElementType.ContentEncodingList,
-							   EbmlElementType.ContentEncoding,
-							   EbmlElementType.Compression,
-		                       EbmlElementType.AttachmentList,
-		                       EbmlElementType.Attachment):
+		if er.element_type in (
+				EbmlElementType.Segment,
+				EbmlElementType.BlockGroup,
+				EbmlElementType.TrackList,
+				EbmlElementType.Track,
+				EbmlElementType.ContentEncodingList,
+				EbmlElementType.ContentEncoding,
+				EbmlElementType.Compression,
+				EbmlElementType.AttachmentList,
+				EbmlElementType.Attachment):
 			er.move_to_child()
 		elif er.element_type in (EbmlElementType.TimecodeScale,
 		                         EbmlElementType.Timecode,
@@ -3160,7 +3211,7 @@ def _mkv_block_extract(tracks, tracks_main, er, done):
 		tracks_done = True
 		for track_data in tracks.values():
 			if (track_data.track_file == None or
-			track_data.track_file.tell() < track_data.data_length):
+			    track_data.track_file.tell() < track_data.data_length):
 				tracks_done = False
 				break
 		done = tracks_done
@@ -3395,10 +3446,7 @@ def avi_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	rr.close()
 	return ofile
 
-def mkv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
-	crc = 0  # Crc32.StartValue
-	er = EbmlReader(EbmlReadMode.SRS, path=srs)
-
+def reset_file_positions(tracks):
 	for track in tracks.values():
 		if track.track_file:
 			track.track_file.seek(0)
@@ -3407,6 +3455,12 @@ def mkv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 		# It gives an error in ReSample .NET 1.2:
 		#   Unexpected Error:
 		#   System.NullReferenceException
+
+def mkv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
+	crc = 0  # Crc32.StartValue
+	er = EbmlReader(EbmlReadMode.SRS, path=srs)
+
+	reset_file_positions(tracks)
 
 	with open(out_file, "wb") as sample:
 		current_attachment = None
