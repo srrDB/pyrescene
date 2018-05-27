@@ -185,7 +185,7 @@ def find_best_educated_guesses(tracks, cut_data):
 			tracks[track_id].olist.append(last_before)
 		if first_after != -1:
 			tracks[track_id].olist.append(first_after)
-		tracks[track_id].olist += in_range
+		tracks[track_id].olist += reversed(in_range)
 
 def main(argv=None, no_exit=False):
 	"""
