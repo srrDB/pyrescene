@@ -440,7 +440,7 @@ def main(argv=None, no_exit=False):
 			# 2) Find the sample streams in the main movie file
 			# always do this search for music files
 			if (is_music or not skip_location or
-			    options.no_stored_match_offset):
+			    options.no_stored_match_offset or len(sample.cut_data)):
 				tracks = movi.find_sample_streams(tracks, movie)
 
 				t1 = time.clock()
@@ -554,7 +554,6 @@ def main(argv=None, no_exit=False):
 				v.tracks = tracks
 				v.attachments = attachments
 				v.out_file = None
-				v.sfile = None
 
 				check_tracks(track_set[0], track_set[1:], v)
 
