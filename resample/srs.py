@@ -389,8 +389,9 @@ def main(argv=None, no_exit=False):
 					offset = " @ {0}".format(sep(track.match_offset))
 				if track.codec:
 					codec = " [{0}]".format(track.codec)
-				print("Track {0}: {1} bytes{2}{3}".format(
-					track.track_number, sep(track.data_length), offset, codec))
+				print("Track {0}: {1} bytes{2}{3} {4}".format(
+					track.track_number, sep(track.data_length), offset, codec,
+					len(track.signature_bytes)))
 				if is_music:
 					try:
 						print("Duration: {0} seconds".format(track.duration))
@@ -498,10 +499,10 @@ def main(argv=None, no_exit=False):
 					sep(sfile.size), sfile.crc32))
 			
 			# 6) Recreate the sample
-			if not len(sample.cut_data):
+			if not any(offs for tr in sample.cut_data.values() for offs in tr):
 				out_file = create_temp_file_name(result_file)
 				sfile = sample.rebuild_sample(srs_data, tracks, attachments,
-											  srs, out_file)
+				                              srs, out_file)
 				show_attempt_info(sfile)
 			else:
 				# we know it will likely fail the first time anyway
