@@ -382,6 +382,12 @@ def main(argv=None, no_exit=False):
 			print(msg.format(srs_data.name))
 			print("Sample Size: {0}".format(sep(srs_data.size)))
 			print("Sample CRC : {0:08X}".format(srs_data.crc32))
+			tmax = max(abs(t.track_number) for t in tracks.values())
+			width = 0
+			while tmax > 0:
+				width += 1
+				tmax //= 10
+			track_fmt = "Track {0:{width}d}: {1:>11} bytes{2}{3}  {4}"
 			for track in tracks.values():
 				offset = ""
 				codec = ""
@@ -389,9 +395,9 @@ def main(argv=None, no_exit=False):
 					offset = " @ {0}".format(sep(track.match_offset))
 				if track.codec:
 					codec = " [{0}]".format(track.codec)
-				print("Track {0}: {1} bytes{2}{3} {4}".format(
+				print(track_fmt.format(
 					track.track_number, sep(track.data_length), offset, codec,
-					len(track.signature_bytes)))
+					len(track.signature_bytes), width=width))
 				if is_music:
 					try:
 						print("Duration: {0} seconds".format(track.duration))
