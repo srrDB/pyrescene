@@ -24,7 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-__version_info__ = ('0', '6')
+__version_info__ = ('0', '7')
 __version__ = '.'.join(__version_info__)
 
 from rescene.main import *
