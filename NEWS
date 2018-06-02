@@ -1,9 +1,10 @@
-pyReScene
-=========
+pyReScene 0.7 (2018-06-02)
+=============
 
  * pyReScene Auto: create SRRs for NFO-, DIR- and other fix releases
  * pyReScene Auto: do not store cut off movie poster JPEGs
  * ReSample: better support for MKVs that use header compression
+ * ReSample: reconstruct x265 samples and make better SRS files for it
  * ReScene: amount of threads rar uses not limited based on cpu cores (-mt)
  * ReScene: --mt-set, --mt-min, --mt-max reconstruction options added 
  * ReScene: skip ISDb hash creation for non video files
