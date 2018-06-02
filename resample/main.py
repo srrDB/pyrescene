@@ -95,6 +95,7 @@ BE_LONG = Struct('>L')
 BE_LONGLONG = Struct('>Q')
 
 SIG_SIZE = 256
+STREAM_VS_SUBTITLE = 1000000
 
 MARKER_STREAM_SRS = b"STRM\x08\x00\x00\x00"  # VOB, MPEG, M2TS, ... SRS
 MARKER_M2TS_SRS = b"M2TS\x08\x00\x00\x00"  # M2TS SRS (not in use)
@@ -549,7 +550,7 @@ def isascii(bytes_to_test):
 def enough_signature_data(track):
 	"""x265 srs files can be bad when the encoding options surpass the
 	included signature length to find the correct offset"""
-	if track.data_length > 1000000:
+	if track.data_length > STREAM_VS_SUBTITLE:
 		return not isascii(track.signature_bytes[-64:])
 	else:
 		return True  # subtitle tracks
@@ -742,6 +743,7 @@ def avi_load_srs(self, infile):
 
 def mkv_load_srs(self, infile):
 	tracks = {}
+	srs_data = None
 	er = EbmlReader(EbmlReadMode.SRS, infile)
 	header_stripping = False
 	current_track_nb = 0
@@ -1076,19 +1078,26 @@ def mkv_profile_sample(self, mkv_data):  # FileData object
 			elm_content = er.read_contents()
 			mkv_data.crc32 = crc32(elm_content, mkv_data.crc32)
 
+			def minimum_signature_size(already_in_sig):
+				max_loops = 40
+				for loop in range(1, max_loops + 1):  # max < 10 KiB
+					offs = SIG_SIZE * loop - already_in_sig
+					if not isascii(elm_content[offs - 64:offs]):
+						break
+				lsig = SIG_SIZE * loop
+				if loop == max_loops:
+					lsig = SIG_SIZE  # keep subs data to a minimum (not video)
+				return lsig - already_in_sig  # a multiple of SIG_SIZE
+			
 			# in profile mode, we want to build track signatures
 			b = track.signature_bytes
 			if not b or len(b) < SIG_SIZE:
 				# here, we can completely ignore laces, because we know what
 				# we're looking for always starts at the beginning
-				if b:
-					lsig = min(SIG_SIZE, len(b) + len(elm_content))
-					sig = b
-					sig += elm_content[0:lsig - len(sig)]
-					track.signature_bytes = sig
-				else:  # this branch can be eliminated + the test
-					lsig = min(SIG_SIZE, len(elm_content))
-					track.signature_bytes = elm_content[0:lsig]
+				minss = minimum_signature_size(len(b))
+				track.signature_bytes = b + elm_content[0:minss]
+				logger.debug("Signature size track %d: %d" % (
+					track.track_number, len(track.signature_bytes)))
 		elif etype == EbmlElementType.TrackNumber:
 			elm_content = er.read_contents()
 			other_length += len(elm_content)
