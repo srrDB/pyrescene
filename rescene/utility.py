@@ -62,6 +62,13 @@ _SPINNER = not bool(os.environ.get("RESCENE_NO_SPINNER"))
 # this way the output become more easy to compare
 _OFFSETS = not bool(os.environ.get("RESCENE_NO_OFFSETS"))
 
+# The_Guy_Game_USA_DVD9_XBOX-WoD: PART1/wod-guy.part001.sfv
+# Resident_Evil_2_NTSC-US_DC-OVERRiDE: Disc1.Leon/ovr-re2-cd1.r00
+diskfolder = "(CD|DISK|DVD|DISC|PART)[\._]?\d\d?([_.-]?[a-zA-Z0-9\._]+)?"
+DISK_FOLDERS = re.compile("^" + diskfolder + "$", re.IGNORECASE)
+RELEASE_FOLDERS = re.compile("^(" + diskfolder + "|(Vob)?Samples?|"
+	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
+
 # provides the temporary directory location to places where it would be a mess
 # to pass it as parameter (fingerprint calculation)
 temporary_directory = None

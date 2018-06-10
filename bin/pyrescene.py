@@ -78,6 +78,7 @@ from rescene.utility import raw_input, unicode, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import create_temp_file_name, replace_result
 from rescene.utility import capitalized_fn
+from rescene.utility import DISK_FOLDERS, RELEASE_FOLDERS 
 
 o = rescene.Observer()
 rescene.subscribe(o)
@@ -1266,10 +1267,6 @@ def get_release_directories(path):
 			except:
 				yield last_release
 
-# The_Guy_Game_USA_DVD9_XBOX-WoD: PART1/wod-guy.part001.sfv
-DISK_FOLDERS = re.compile("^(CD|DISK|DVD|DISC|PART)_?\d\d?$", re.IGNORECASE)
-RELEASE_FOLDERS = re.compile("^((CD|DISK|DVD|DISC|PART)_?\d\d?|(Vob)?Samples?|"
-	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
 NOT_SCENE = ["motechnetfiles.nfo", "movie.nfo", "imdb.nfo", "scc.nfo"]
 
 def is_release(dirpath, dirnames=None, filenames=None):
@@ -1304,6 +1301,8 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		for dirname in dirnames:
 			# Disc_1 and Disc_2 in mp3 rlz
 			if DISK_FOLDERS.match(dirname):
+				# Resident_Evil_2_NTSC-US_DC-OVERRiDE (r00 is first rar)
+				#   Disc1.Leon and Disc2.Claire
 				common_subfolders.append(dirname)
 			elif NO_HYPHEN.match(dirname):
 				# old MP3 release with custom folders
@@ -1353,9 +1352,9 @@ def is_release(dirpath, dirnames=None, filenames=None):
 		for reldir in dirnames:
 			# ignore empty directories
 			full_path = os.path.join(dirpath, reldir)
-			no_release = not is_release(full_path)
+			a_release = is_release(full_path)
 			contains_files = len(os.listdir(full_path))
-			if no_release and contains_files:
+			if not a_release and contains_files:
 				is_pack = False
 				break
 			
