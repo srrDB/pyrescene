@@ -1294,18 +1294,18 @@ def is_release(dirpath, dirnames=None, filenames=None):
 
 	custom_dirs_old_music = []
 	OLD_MP3_LIMIT = 10  # arbitrary amount of possible folders we expect
+	NO_HYPHEN = re.compile("^[a-zA-Z0-9_]+$", re.IGNORECASE)  # no -
 	rls_candidate = os.path.basename(dirpath)
 
 	if not release:
 		# SFV file in one of the interesting subdirs?
 		common_subfolders = []
-		limited_chars = "^[a-zA-Z0-9_]+$"  # no dash (-)
 		
 		for dirname in dirnames:
 			# Disc_1 and Disc_2 in mp3 rlz
 			if DISK_FOLDERS.match(dirname):
 				common_subfolders.append(dirname)
-			elif re.match(limited_chars, dirname, re.IGNORECASE):
+			elif NO_HYPHEN.match(dirname):
 				# old MP3 release with custom folders
 				custom_dirs_old_music.append(dirname)
 			elif re.match("CD(.?|_-_)\d{1-2}.+", dirname, re.IGNORECASE):
@@ -1380,7 +1380,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			len(dirnames) <= OLD_MP3_LIMIT):
 			for dirname in dirnames:
 				# old MP3 release with custom folders (no '-' in name)
-				if re.match(limited_chars, dirname, re.IGNORECASE):
+				if NO_HYPHEN.match(dirname):
 					custom_dirs_old_music.append(dirname)
 
 			sfv_count = 0
