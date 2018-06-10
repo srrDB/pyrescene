@@ -387,7 +387,7 @@ def main(argv=None, no_exit=False):
 			while tmax > 0:
 				width += 1
 				tmax //= 10
-			track_fmt = "Track {0:{width}d}: {1:>11} bytes{2}{3}  {4}"
+			track_fmt = "Track {0:{width}d}: {1:>14} bytes{2}{3}  {4}"
 			for track in tracks.values():
 				offset = ""
 				codec = ""
