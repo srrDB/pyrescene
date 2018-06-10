@@ -105,7 +105,6 @@ config_dict = {
 	            "mp3", "flac", "retag"],
     "classifiers": [
 		"Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
