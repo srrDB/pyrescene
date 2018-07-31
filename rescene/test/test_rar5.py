@@ -93,11 +93,6 @@ class TestRar5Reader(unittest.TestCase):
 			self.assertTrue(block_info, "Must not be None or empty")
 			print(r.explain())
 
-	def test_stackoverflow(self):
-		data = b"\x33\x92\xb5\xe5\x0a\x01\x05\x06\x00\x05\x01\x01\x00"
-		stream = io.BytesIO(data)
-		block = BlockFactory.create(stream, False)
-
 class TestParseRarBlocks(unittest.TestCase):
 	""" For use with Rar5Reader.
 		Rar5Reader parses the incoming file or stream. """
@@ -166,6 +161,7 @@ class TestParseRarBlocks(unittest.TestCase):
 	def test_main_archive_header(self):
 		crc = 0x12345678
 		hcrc32 = struct.pack('<L', crc)
+		self.assertEqual(len(hcrc32), 4)
 		htype = BLOCK_MAIN
 		htype_enc = encode_vint(htype)
 		hflags = RAR_EXTRA ^ RAR_SPLIT_AFTER
@@ -191,10 +187,11 @@ class TestParseRarBlocks(unittest.TestCase):
 		locator_record.write(lrro)
 		locator_record.seek(0)
 		extra_area = locator_record.read()
-		hextra_size = encode_vint(len(extra_area))
+		hextra_size_enc = encode_vint(len(extra_area))
 
-		hsize = (4 + 3 + len(htype_enc) + len(hflags_enc) +
-			len(hextra_size) + len(harchive_flags_enc) + 1)
+		hsize = (len(htype_enc) + len(hflags_enc) +
+			len(hextra_size_enc) + len(harchive_flags_enc) + 
+			len(hvolume_number_enc) + len(extra_area))
 		hsize_enc = encode_vint(hsize)
 		self.assertEqual(len(hsize_enc), 1, "not same size")
 		stream = io.BytesIO()
@@ -202,7 +199,7 @@ class TestParseRarBlocks(unittest.TestCase):
 		stream.write(hsize_enc)
 		stream.write(htype_enc)
 		stream.write(hflags_enc)
-		stream.write(hextra_size)
+		stream.write(hextra_size_enc)
 		stream.write(harchive_flags_enc)
 		stream.write(hvolume_number_enc)
 		stream.write(extra_area)
@@ -247,7 +244,7 @@ class TestParseRarBlocks(unittest.TestCase):
 		salt = b"0123456701234567"  # 16 bytes
 		check_value = b"012345678912"  # 12 bytes
 		
-		hsize = (4 + len(htype_enc) + len(hflags_enc) +
+		hsize = (len(htype_enc) + len(hflags_enc) +
 			len(henc_version) + len(henc_flags) + 1 + 16 + 12)
 		hsize_enc = encode_vint(hsize)
 		self.assertEqual(len(hsize_enc), 1, "not same size")
