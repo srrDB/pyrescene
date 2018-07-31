@@ -35,6 +35,7 @@ import os
 import abc
 import sys
 import struct
+from contextlib import contextmanager
 
 S_BYTE = struct.Struct("<B")
 S_LONG = struct.Struct('<L')  # unsigned long: 4 bytes
@@ -141,6 +142,9 @@ class Rar5HeaderBase(object):
 
 	def full_block_size(self):
 		return self.full_header_size() + self.size_data
+	
+	def metadata(self):
+		return self.header_data
 
 	def flag_format(self, flag):
 		return "|   0x%04X " % flag
@@ -218,21 +222,20 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		super(Rar5HeaderBlock, self).__init__(file_position)
 		(self.crc32,) = S_LONG.unpack_from(stream.read(4))
 		self.header_size = read_vint(stream)
-		self._hdrvint_width = stream.tell() - 4 - file_position
+		self._hdrvint_width = stream.tell() - 4 - self.block_position
 		self.type = read_vint(stream)
 		self.flags = read_vint(stream)
 		self.size_extra = read_vint(stream) if self.flags & RAR_EXTRA else 0
 		self.size_data = read_vint(stream) if self.flags & RAR_DATA else 0
 		self.offset_specific_fields = stream.tell() - file_position
-		
-		stream.seek(self.block_position)
-		self.header_data = stream.read(
-			4 + self._hdrvint_width + self.header_size + self.size_extra)
+
+		stream.seek(self.block_position, os.SEEK_SET)
+		self.header_data = stream.read(self.full_header_size())
 
 		# make memory copy of meta data and stop referring to file 
-		self.stream = io.BytesIO()
-		self.stream.write(self.header_data)
-		self.stream.seek(0, os.SEEK_SET)
+		self.mstream = io.BytesIO()
+		self.mstream.write(self.header_data)
+		self.mstream.seek(0, os.SEEK_SET)
 
 	def explain(self):
 		out = super(Rar5HeaderBlock, self).explain() + "\n"
@@ -268,6 +271,7 @@ class BlockFactory(object):
 	def create(stream, is_start_file, is_srr_block=False):
 		"""
 		stream: open stream to read the basic block header from
+		The stream position is at the start of the next block.
 		is_start_file: use only to try and read the marker (SFX)
 		is_srr_block: RAR block is stripped
 		"""
@@ -276,8 +280,8 @@ class BlockFactory(object):
 		# byte order: < little-endian
 		# Marker block: Rar!\x1A\x07\x01\x00 (magic number)
 		#               (0x52 0x61 0x72 0x21 0x1a 0x07 0x01 0x00)
-		data = stream.read(8)
 		if is_start_file:
+			data = stream.read(8)
 			if data == b"Rar!\x1A\x07\x01\x00":
 				header = Rar5HeaderMarker(stream, block_position)
 			elif data[0:7] == b"Rar!\x1A\x07\x00":
@@ -285,16 +289,15 @@ class BlockFactory(object):
 			else:
 				raise ValueError("SFX files not supported")
 		else:
-			stream.seek(block_position, os.SEEK_SET)
 			header = Rar5HeaderBlock(stream, block_position)
+			if not is_srr_block:
+				stream.seek(header.size_data, os.SEEK_CUR)
 
 		if header.is_marker_block():
 			block = MarkerBlock(header, is_srr_block)
 		elif header.is_main_block():
 			block = MainArchiveBlock(header, is_srr_block)
-		elif header.is_file_block():
-			block = FileServiceBlock(header, is_srr_block)
-		elif header.is_service_block():
+		elif header.is_file_block() or header.is_service_block():
 			block = FileServiceBlock(header, is_srr_block)
 		elif header.is_encryption_block():
 			block = FileEncryptionBlock(header, is_srr_block)
@@ -303,6 +306,8 @@ class BlockFactory(object):
 		else:
 			print("Unknown block detected!")
 			block = RarBlock(header, is_srr_block)
+
+		assert stream.tell() == block_position + header.full_block_size()
 			
 		return block
 
@@ -329,6 +334,9 @@ class RarBlock(object):
 
 	def move_to_offset_specific_headers(self, stream):
 		stream.seek(self.basic_header.offset_specific_fields, os.SEEK_SET)
+	
+	def metadata(self):
+		return self.basic_header.srr_metadata()
 	
 	def explain(self):
 		return self.basic_header.explain()
@@ -366,7 +374,7 @@ class MarkerBlock(RarBlock):
 class MainArchiveBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
 		super(MainArchiveBlock, self).__init__(basic_header, is_srr_block)
-		stream = self.basic_header.stream
+		stream = self.basic_header.mstream
 		self.move_to_offset_specific_headers(stream)
 		self.archive_flags = read_vint(stream)
 		self.volume_number = 0  # first volume == none set
@@ -378,14 +386,14 @@ class MainArchiveBlock(RarBlock):
 		if self.archive_flags & ARCHIVE_NUMBER:
 			self.volume_number = read_vint(stream)
 		
-		extra_records = self.basic_header.flags & RAR_EXTRA
+		extra_records = bool(self.basic_header.flags & RAR_EXTRA)
 		def another_record():
-			return stream.tell() < self.basic_header.data_offset()
+			return stream.tell() < self.basic_header.full_header_size()
 
 		while extra_records and another_record():
 			# extra area can contain locator record: service block positions
-			self.record_size = read_vint(stream)
-			record_start = stream.tell()
+			record_size = read_vint(stream)
+			record_data_start = stream.tell()
 			self.record_type = read_vint(stream)
 
 			# only Locator record in initial RAR5 spec
@@ -401,7 +409,7 @@ class MainArchiveBlock(RarBlock):
 			else:
 				print("Unknown extra record in main archive header found")
 				
-			stream.seek(record_start + self.record_size, os.SEEK_SET)
+			stream.seek(record_data_start + record_size, os.SEEK_SET)
 		self.move_to_offset_specific_headers(stream)
 		
 	def explain(self):
@@ -439,7 +447,7 @@ class FileEncryptionBlock(RarBlock):
 	encrypted header data block is aligned to 16 byte boundary."""
 	def __init__(self, basic_header, is_srr_block=False):
 		super(FileEncryptionBlock, self).__init__(basic_header, is_srr_block)
-		stream = self.basic_header.stream
+		stream = self.basic_header.mstream
 		self.move_to_offset_specific_headers(stream)
 		self.encryption_version = read_vint(stream)
 		self.encryption_flags = read_vint(stream)
@@ -453,7 +461,7 @@ class FileEncryptionBlock(RarBlock):
 class FileServiceBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
 		super(FileServiceBlock, self).__init__(basic_header, is_srr_block)
-		stream = self.basic_header.stream
+		stream = self.basic_header.mstream
 		self.move_to_offset_specific_headers(stream)
 		self.file_flags = read_vint(stream)
 		self.unpacked_size = read_vint(stream)
@@ -691,7 +699,7 @@ class FileServiceDataRecord(Record):  # 0x07
 class EndArchiveBlock(RarBlock):
 	def __init__(self, basic_header, is_srr_block=False):
 		super(EndArchiveBlock, self).__init__(basic_header, is_srr_block)
-		stream = self.basic_header.stream
+		stream = self.basic_header.mstream
 		self.move_to_offset_specific_headers(stream)
 		self.end_of_archive_flags = read_vint(stream)
 
@@ -736,6 +744,14 @@ def encode_vint(amount):
 
 ###############################################################################
 
+@contextmanager
+def parse_rar5(*args, **kwargs):
+	reader = Rar5Reader(*args, **kwargs)
+	try:
+		yield reader
+	finally:
+		del reader
+
 class Rar5Reader(object):
 	"""A simple reader class that reads through a RAR5 file or
 	the RAR5 meta data stored in the RAR5 SRR block."""
@@ -755,7 +771,7 @@ class Rar5Reader(object):
 		self._initial_offset = self._rarstream.tell()
 
 		if file_length:
-			self._file_length = file_length  # size in SRR RAR5 block
+			self._file_length = file_length  # size in SRR for RAR5 block
 		else:
 			# get the length of the stream
 			self._rarstream.seek(0, os.SEEK_END)
@@ -783,8 +799,6 @@ class Rar5Reader(object):
 			print(e)
 			curblock = None
 			raise
-		
-		self._rarstream.seek(curblock.next_block_offset(), os.SEEK_SET)
 
 		return curblock
 	
