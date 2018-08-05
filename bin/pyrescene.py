@@ -893,7 +893,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	copied_files = []
 	is_music = False
 	for nfo in get_files(reldir, "*.nfo"):
-		if os.path.basename(nfo).lower() in ("imdb.nfo"):
+		if os.path.basename(nfo).lower() in ("imdb.nfo", "tvmaze.nfo"):
 			continue
 		if os.path.basename(nfo).lower() in ("no.nfo"):
 			try:
@@ -1267,7 +1267,8 @@ def get_release_directories(path):
 			except:
 				yield last_release
 
-NOT_SCENE = ["motechnetfiles.nfo", "movie.nfo", "imdb.nfo", "scc.nfo"]
+NOT_SCENE = ["motechnetfiles.nfo", "movie.nfo", "scc.nfo",
+             "imdb.nfo", "tvmaze.nfo"]
 
 def is_release(dirpath, dirnames=None, filenames=None):
 	if dirnames is None or filenames is None:
