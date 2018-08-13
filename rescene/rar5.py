@@ -123,7 +123,7 @@ UNIX_GROUP = 0x0002
 UNIX_USER_ID = 0x0004
 UNIX_GROUP_ID = 0x0008
 
-END_NOT_LAST_VOLUME = 0x01  # volume and it is not last volume in the set
+END_NOT_LAST_VOLUME = 0x0001  # volume and it is not last volume in the set
 
 class Rar5HeaderBase(object):
 	__metaclass__ = ABCMeta
@@ -704,13 +704,13 @@ class EndArchiveBlock(RarBlock):
 		self.end_of_archive_flags = read_vint(stream)
 
 	def is_last_volume(self):
-		return not bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
+		return bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
 
 	def explain(self):
 		out = self.basic_header.explain()
 		out += "+End of archive flags: 0x%04X\n" % self.end_of_archive_flags 
 		if self.is_last_volume():
-			out += "+  0x01 Volume is not the last part of the set\n"
+			out += "+  0x0001 Volume is not the last part of the set\n"
 		return out
 	
 def read_vint(stream):
