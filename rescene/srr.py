@@ -429,6 +429,9 @@ def main(argv=None):
 					  help="assume N(o) for all prompts")
 	parser.add_option("-v", help="enable verbose (technical) creation",
 						action="store_true", dest="verbose", default=False)
+	parser.add_option("-q", "--verify",
+					  action="store_true", dest="verify", default=False,
+					  help="CRC verify extracted RAR contents")
 	# TODO: get all the messages in order
 
 	display.add_option("-l", "--list",
@@ -437,9 +440,6 @@ def main(argv=None):
 	display.add_option("-e", "--details",
 					  action="store_true", dest="list_details", default=False,
 					  help="list detailed SRR file info")
-	display.add_option("-q", "--verify",
-					  action="store_true", dest="verify", default=False,
-					  help="verify extracted RAR contents")
 
 	creation.add_option("-c", "--compressed",
 					 action="store_true", dest="allow_compressed",
