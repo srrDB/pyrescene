@@ -216,6 +216,7 @@ def get_proof_files(reldir):
 	"""
 	Includes proofs, proof RAR files, image files in Sample directories.
 	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
+	Images in /Compare The.Game.1997.720p.REMASTERED.INTERNAL.BluRay.x264-DAA
 	"""
 	image_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") +
 	               get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
@@ -227,7 +228,8 @@ def get_proof_files(reldir):
 		# others need to contain the word proof in their path
 		lproof = proof.lower()
 		if ("proof" in lproof or "sample" in lproof or
-			os.sep + "cover" in lproof):
+			os.sep + "cover" in lproof or
+			os.sep + "compare" in lproof):
 			result.append(proof)
 		else:
 			# proof file in root directory without the word proof somewhere
