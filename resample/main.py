@@ -3464,6 +3464,7 @@ def reset_file_positions(tracks):
 		# It gives an error in ReSample .NET 1.2:
 		#   Unexpected Error:
 		#   System.NullReferenceException
+		# 18XGirls.12.08.29.Christel.And.Laura.XXX.INTERNAL.1080p.WMV-KTR
 
 def mkv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	crc = 0  # Crc32.StartValue
@@ -3667,8 +3668,7 @@ def wmv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 	padding_index = 0
 
 	# set cursor for temp files back at the beginning
-	for track in tracks.values():
-		track.track_file.seek(0)
+	reset_file_positions(tracks)
 
 	with open(out_file, "wb") as sample:
 		while ar.read():
