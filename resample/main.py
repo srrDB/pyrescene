@@ -3743,7 +3743,7 @@ def wmv_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 			else:
 				buff = ar.read_contents()
 				sample.write(buff)
-				crc = crc32(buff, crc) & 0xFFFFFFF
+				crc = crc32(buff, crc) & 0xFFFFFFFF
 	ar.close()
 	remove_spinner()
 
