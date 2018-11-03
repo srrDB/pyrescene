@@ -50,9 +50,9 @@ def main(options):
 		for pfile in filenames:
 			if pfile.lower().endswith(
 					(".avi", ".mkv", ".wmv", ".mp4", ".vob", ".m2ts")):
-				create_srs(dirpath, pfile, outdir, subdirs)
+				create_srs(dirpath, pfile, outdir, subdirs, options.always_no)
 
-def create_srs(sample_dir, sample_file, output_dir, path):
+def create_srs(sample_dir, sample_file, output_dir, path, keep):
 	print(sample_dir)
 	dest_dir = os.path.join(output_dir, path)
 	sample = os.path.join(sample_dir, sample_file)
@@ -65,7 +65,8 @@ def create_srs(sample_dir, sample_file, output_dir, path):
 	sys.stderr = open(txt_error_file, "wt")
 	keep_txt = False
 	try:
-		srsmain([sample, "-y", "-o", dest_dir], True)
+		overwrite_param = "-n" if keep else "-y"
+		srsmain([sample, overwrite_param, "-o", dest_dir], True)
 	except ValueError:
 		keep_txt = True
 
@@ -83,9 +84,12 @@ if __name__ == '__main__':
 		version="%prog 1.2 (2018-11-03)")  # --help, --version
 
 	parser.add_option("-i", dest="input_dir", metavar="DIRECTORY",
-					help="folder with release folders")
+	                  help="folder with release folders")
 	parser.add_option("-o", dest="output_dir", metavar="DIRECTORY",
-					help="places the .srs files in this directory")
+	                  help="places the .srs files in this directory")
+	parser.add_option("-n", dest="always_no", default=False,
+	                  action="store_true",
+	                  help="do not overwrite existing SRS files")
 
 	# no arguments given
 	if len(sys.argv) == 1:
