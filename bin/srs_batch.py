@@ -35,7 +35,7 @@ except ImportError:
 
 from resample.srs import main as srsmain
 
-def main(options, args):
+def main(options):
 	if not options.input_dir or not options.output_dir:
 		print("Input and output parameters are required.")
 		exit(1)
@@ -48,7 +48,8 @@ def main(options, args):
 	for dirpath, _dirnames, filenames in os.walk(indir):
 		subdirs = os.path.relpath(dirpath, indir)
 		for pfile in filenames:
-			if pfile.lower().endswith((".avi", ".mkv", ".wmv", ".mp4")):
+			if pfile.lower().endswith(
+					(".avi", ".mkv", ".wmv", ".mp4", ".vob", ".m2ts")):
 				create_srs(dirpath, pfile, outdir, subdirs)
 
 def create_srs(sample_dir, sample_file, output_dir, path):
@@ -79,7 +80,7 @@ if __name__ == '__main__':
 		usage="Usage: %prog -i input_directory -o output_directory\n"
 		"This tool creates .srs or .txt files for video files"
 		" found in the input directory.\nOverwrites existing files.",
-		version="%prog 1.1 (2015-07-21)")  # --help, --version
+		version="%prog 1.2 (2018-11-03)")  # --help, --version
 
 	parser.add_option("-i", dest="input_dir", metavar="DIRECTORY",
 					help="folder with release folders")
@@ -90,5 +91,5 @@ if __name__ == '__main__':
 	if len(sys.argv) == 1:
 		print(parser.format_help())
 	else:
-		(options, args) = parser.parse_args()
-		main(options, args)
+		(options, _args) = parser.parse_args()
+		main(options)
