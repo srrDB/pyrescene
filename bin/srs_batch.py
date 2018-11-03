@@ -65,7 +65,7 @@ def create_srs(sample_dir, sample_file, output_dir, path, keep):
 	sys.stderr = open(txt_error_file, "wt")
 	keep_txt = False
 	try:
-		overwrite_param = "-n" if keep else "-y"
+		overwrite_param = "" if keep else "-y"
 		srsmain([sample, overwrite_param, "-o", dest_dir], True)
 	except ValueError:
 		keep_txt = True
