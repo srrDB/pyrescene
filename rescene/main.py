@@ -1610,6 +1610,7 @@ def _search(files, folder=""):
 	folder = escape_glob(folder)
 
 	for file_name in files:
+		file_name = escape_glob(file_name)
 		# use path relative to folder if the path isn't relative or absolute 
 		if (os.path.isabs(file_name) or file_name.startswith(os.pardir)):
 			search_name = file_name
