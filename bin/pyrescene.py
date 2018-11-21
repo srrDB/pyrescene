@@ -916,7 +916,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 		baselog = os.path.basename(log)
 		# blacklist known file names of transfer logs and hidden files
 		if (baselog.lower() in ("rushchk.log", ".upchk.log", "ufxpcrc.log") or
-			baselog.startswith(b".")):
+			baselog.startswith(".")):
 			continue
 		copied_files.append(copy_to_working_dir(working_dir, reldir, log))
 
