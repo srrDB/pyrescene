@@ -1214,7 +1214,12 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	if rar_executable_dir:
 		initialize_rar_repository(rar_executable_dir)
 		if not repository.count():
-			_fire(MsgCode.MSG, message="No RAR executables found.")
+			_fire(MsgCode.MSG, message="No RAR executables found.\n" 
+				"The -z folder must contain extracted rar executables that are"
+				"\nthe result of the preprardir.py script. These rars have\n"
+				"a specific file name containing the date and version.\n"
+				"e.g. 2012-06-09_rar420.exe or 2016-01-10_rar531b1.exe\n"
+				"http://rescene.wikidot.com/tutorials#compressed")
 			return False
 	
 	blocks = RarReader(srr_file).read_all()
