@@ -74,7 +74,7 @@ def main():
     # volume => Explicitly specify first, second, etc full volume name. Default is ".partN.rar" for "new" Rar 3 naming scheme, where the number of digits is automatically determined by the total number of volumes; and ".rar", ".r00", ".r01", etc, ".r99", ".s00", etc, ".s99" or ".001", ".002", etc, for the "old" naming scheme.
     # Option to only do the first volume, the first few volumes, or any given set of volumes?
     
-    help = False
+    show_help = False
     file = ""
     intname = None
     vol_max = 15 * 10 ** 6
@@ -90,7 +90,7 @@ def main():
     sfvhead = ""
     end_flags = RAR_ENDARC_DATACRC ^ RAR_ENDARC_REVSPACE ^ RAR_ENDARC_VOLNR
     attr = 1 << ATTR_ARCHIVE
-    dict = None
+    rdict = None
     version = 3
     host_os = RAR_OS_WIN32
     lenient = False
@@ -101,7 +101,7 @@ def main():
     while i < len(sys.argv):
         arg = sys.argv[i]
         if arg in {"help", "-h", "--help", "-?", "?"}:
-            help = True
+            show_help = True
             i += 1
         elif "file" == arg:
             file = sys.argv[i + 1]
@@ -163,15 +163,15 @@ def main():
                     attr |= 1 << index
             i += 2
         elif "dict" == arg:
-            dict = int(sys.argv[i + 1])
-            if not DICT_MIN <= dict <= DICT_MAX:
+            rdict = int(sys.argv[i + 1])
+            if not DICT_MIN <= rdict <= DICT_MAX:
                 raise SystemExit("Dictionary size {} out of {}-{} range".
-                    format(dict, DICT_MIN, DICT_MAX))
+                    format(rdict, DICT_MIN, DICT_MAX))
             dict_sizes = (64, 128, 256, 512, 1024, 2048, 4096)
-            if dict not in dict_sizes:
+            if rdict not in dict_sizes:
                 raise SystemExit("Dictionary size {} not a round binary".
-                    format(dict))
-            dict = dict_sizes.index(dict) << DICT_POS
+                    format(rdict))
+            rdict = dict_sizes.index(rdict) << DICT_POS
             i += 2
         elif "rar2" == arg:
             version = 2
@@ -195,7 +195,7 @@ def main():
             raise SystemExit('''Bad command line argument: {}
 Try "{} help"'''.format(arg, sys.argv[0]))
     
-    if help:
+    if show_help:
         print("""\
 Options:
 help\tDisplay this help
@@ -250,7 +250,7 @@ base <grp-name>
         
         (
             rls_name, version, is_rr, is_lock, naming_version, is_unicode,
-            dict, host_os, timestamp, timestamp_frac, attr, intname,
+            rdict, host_os, timestamp, timestamp_frac, attr, intname,
             end_flags,
         errors) = parse_ref(ref)
         
@@ -271,8 +271,8 @@ base <grp-name>
         if is_dryrun:
             return
     
-    if dict is None:
-        dict = DICT_DEFAULT[version]
+    if rdict is None:
+        rdict = DICT_DEFAULT[version]
     
     if file is None:
         file = ""
@@ -349,7 +349,7 @@ Try "{} help".""".format(sys.argv[0]))
                 vol.write_id()
                 vol.write_main(is_first_vol, is_lock)
                 vol.write_file(not is_first_vol, not is_last_vol, name_field,
-                    is_unicode, dict, attr, dostime, xtime_field, file_size,
+                    is_unicode, rdict, attr, dostime, xtime_field, file_size,
                     data_size)
                 
                 if is_rr:
@@ -431,12 +431,12 @@ def parse_ref(ref):
         is_unicode = bool(flags & RAR_FILE_UNICODE)
         split_before = bool(flags & RAR_FILE_SPLIT_BEFORE)
         split_after = bool(flags & RAR_FILE_SPLIT_AFTER)
-        dict = flags & RAR_FILE_DICTMASK
+        rdict = flags & RAR_FILE_DICTMASK
         
-        dict_size = DICT_MIN << (dict >> DICT_POS)
+        dict_size = DICT_MIN << (rdict >> DICT_POS)
         if dict_size > DICT_MAX:
             parser.error(pos + HDR_FLAGS_POS, "Unexpected dictionary "
-                "size in flags: 0x{:02X}".format(dict))
+                "size in flags: 0x{:02X}".format(rdict))
         
         hdr_pos = S_BLK_HDR.size
         
@@ -496,7 +496,7 @@ def parse_ref(ref):
         else:
             intname = name_field[:name_field.index(bytes((0,)))].decode(
                 "latin-1")
-            if encode_filename(intname, True) != name_field:
+            if filename_encode(intname, True) != name_field:
                 parser.error(pos + hdr_pos + len(intname) + 1,
                     "Unexpected filename encoding")
         parser.out("internal", intname)
@@ -562,8 +562,8 @@ def parse_ref(ref):
         print(file=sys.stderr)
         
         if is_rr:
-            (pos, hdr, type, flags) = parser.read_block()
-            if RAR_BLOCK_OLD_RECOVERY == type:
+            (pos, hdr, btype, flags) = parser.read_block()
+            if RAR_BLOCK_OLD_RECOVERY == btype:
                 version = 2
                 parser.expect_flags(pos, "Rar 2 RR", flags, 0,
                     RAR_LONG_BLOCK ^ RAR_SKIP_IF_UNKNOWN)
@@ -590,7 +590,7 @@ def parse_ref(ref):
                 
                 parser.expect_rr(pos, data_size, rr_count,
                     prot_sect_count, hdr, hdr_pos)
-            elif RAR_BLOCK_SUB == type:
+            elif RAR_BLOCK_SUB == btype:
                 version = 3
                 parser.expect_flags(pos, "Sub", flags, 0,
                     RAR_LONG_BLOCK ^ RAR_SKIP_IF_UNKNOWN)
@@ -645,7 +645,7 @@ def parse_ref(ref):
                 parser.die(pos, "Expected RR block")
         
         vol_crc = parser.vol_crc
-        (pos, hdr, type, flags) = parser.read_block()
+        (pos, hdr, btype, flags) = parser.read_block()
         this_version = 3 if hdr else 2
         if version is not None and this_version != version:
             parser.error(pos, "Unexpected end block presence for Rar {}".
@@ -654,7 +654,7 @@ def parse_ref(ref):
             version = this_version
         
         if hdr:
-            parser.expect_type(pos, type, RAR_BLOCK_ENDARC, "End")
+            parser.expect_type(pos, btype, RAR_BLOCK_ENDARC, "End")
             parser.expect_flags(pos, "End", flags,
                 RAR_ENDARC_NEXT_VOLUME ^ RAR_ENDARC_DATACRC ^
                 RAR_ENDARC_REVSPACE ^ RAR_ENDARC_VOLNR,
@@ -720,7 +720,7 @@ def parse_ref(ref):
         elif version < 3 and is_first:
             parser.error(None,
                 "First volume flag set but not Rar 3 format")
-        if DICT_DEFAULT[version] != dict:
+        if DICT_DEFAULT[version] != rdict:
             parser.out("dict", dict_size)
         
         print("Reference volume size:", fmt_size(pos), file=sys.stderr)
@@ -732,7 +732,7 @@ def parse_ref(ref):
     # show volume size. Verify against specified volume size?
     
     return (
-        rls_name, version, is_rr, is_lock, naming_version, is_unicode, dict,
+        rls_name, version, is_rr, is_lock, naming_version, is_unicode, rdict,
         host_os, timestamp, timestamp_frac, attr, intname, end_flags,
     parser.fail)
 
@@ -746,7 +746,7 @@ class Parser:
         self.file = self.file.__enter__()
         return self
     
-    def __exit__(self, *exc):
+    def __exit__(self, *_exc):
         self.file.__exit__()
     
     def msg(self, pos, msg):
@@ -776,7 +776,7 @@ class Parser:
         
         if (data_size !=
         prot_sect_count * RR_CRC_SIZE + rr_count * RR_SECT_SIZE):
-            self.die(pos + S_BLOCK_HDR.size, "RR block data size does not "
+            self.die(pos + S_BLK_HDR.size, "RR block data size does not "
                 "correspond with sector and RR counts")
         
         (rr_crcs, rr_sects) = rr_calc(self.file, rr_count, pos)
@@ -798,7 +798,7 @@ class Parser:
             calc_sect = bytes(sect.buffer())
             read_sect = self.read(len(calc_sect))
             if read_sect != calc_sect:
-                parser.error(pos, "Recovery sector {}/{} mismatch".
+                self.error(pos, "Recovery sector {}/{} mismatch".
                     format(i, rr_count))
             
             crc = crc32(read_sect, crc)
@@ -806,8 +806,8 @@ class Parser:
         return crc
     
     def expect_block(self, exp_type, name, ign_flags, exp_flags):
-        (pos, hdr, type, flags) = self.read_block()
-        self.expect_type(pos, type, exp_type, name)
+        (pos, hdr, btype, flags) = self.read_block()
+        self.expect_type(pos, btype, exp_type, name)
         self.expect_flags(pos, name, flags, ign_flags, exp_flags)
         return (pos, hdr, flags)
     
@@ -818,7 +818,7 @@ class Parser:
         if not hdr:
             return (pos, None, None, None)
         
-        (crc, type, flags, size) = S_BLK_HDR.unpack(hdr)
+        (crc, btype, flags, size) = S_BLK_HDR.unpack(hdr)
         
         if size < S_BLK_HDR.size:
             self.die(pos + HDR_SIZE_POS,
@@ -829,9 +829,9 @@ class Parser:
         if calc_crc != crc:
             self.die(pos + HDR_CRC_POS,
                 "Expected block CRC 0x{:04X}".format(calc_crc))
-        return (pos, hdr, type, flags)
+        return (pos, hdr, btype, flags)
     
-    def expect_type(self, pos, type, expect, name):
+    def expect_type(self, pos, _btype, expect, name):
         if expect != type:
             self.die(pos + HDR_TYPE_POS,
                 "Expected block type 0x{:02X} ({})".format(expect, name))
@@ -865,7 +865,7 @@ def fmt_size(size):
     return s
 
 class DryRlsWriter:
-    def __init__(self, name, version, host_os, is_rr, naming, newline):
+    def __init__(self, _name, version, _host_os, _is_rr, _naming, newline):
         self.version = version
         self.sfv_size = 0
         self.sfv_newline = newline
@@ -875,13 +875,13 @@ class DryRlsWriter:
     def __exit__(self, *exc):
         pass
     
-    def new_vol(self, name):
+    def new_vol(self, _name):
         return DryVolWriter(self)
     
-    def sfv_add(self, vol, name):
+    def sfv_add(self, _vol, name):
         self.sfv_size += len(name) + 1 + 8 + len(self.sfv_newline)
     
-    def sfv_write(self, name, head):
+    def sfv_write(self, _name, head):
         self.sfv_size += (len(head) +
             head.count("\n") * (len(self.sfv_newline) - 1))
 
@@ -902,7 +902,7 @@ class RlsWriter(DryRlsWriter):
         self.data = self.data.__enter__()
         return self
     
-    def __exit__(self, *exc):
+    def __exit__(self, *_exc):
         self.data.__exit__()
     
     def new_vol(self, name):
@@ -930,11 +930,11 @@ class DryVolWriter:
     def write_id(self):
         self.size += len(RAR_ID)
     
-    def write_main(self, is_first, is_lock):
+    def write_main(self, _is_first, _is_lock):
         self.size += MAIN_HDR_SIZE
         
-    def write_file(self, split_before, split_after, name, is_unicode, dict,
-    attr, dostime, xtime, file_size, data_size):
+    def write_file(self, _split_before, _split_after, name, _is_unicode, 
+	_rdict, _attr, _dostime, xtime, file_size, data_size):
         size_64 = size_64_encode(data_size, file_size)
         self.size += file_hdr_size(name, xtime, size_64)
         self.size += data_size
@@ -944,7 +944,7 @@ class DryVolWriter:
             quanta(self.size, RR_SECT_SIZE) * RR_CRC_SIZE +
             count * RR_SECT_SIZE)
     
-    def write_end(self, flags, volnum, is_last):
+    def write_end(self, flags, _volnum, _is_last):
         self.size += end_size(self.rls.version, flags)
 
 class VolWriter(DryVolWriter):
@@ -968,13 +968,13 @@ class VolWriter(DryVolWriter):
             self.rls.naming, is_lock)
         DryVolWriter.write_main(self, is_first, is_lock)
     
-    def write_file(self, split_before, split_after, name, is_unicode, dict,
+    def write_file(self, split_before, split_after, name, is_unicode, rdict,
     attr, dostime, xtime, file_size, data_size):
         self.rls.file_crc = write_file(self.file, self.rls.data,
-            split_before, split_after, name, is_unicode, dict, self.rls.os,
+            split_before, split_after, name, is_unicode, rdict, self.rls.os,
             attr, self.rls.file_crc, dostime, xtime, file_size, data_size)
         DryVolWriter.write_file(self, split_before, split_after, name,
-            is_unicode, dict, attr, dostime, xtime, file_size, data_size)
+            is_unicode, rdict, attr, dostime, xtime, file_size, data_size)
     
     def write_rr(self, count):
         write_rr(self.rls.version, self.rls.os, self.file, count)

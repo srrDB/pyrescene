@@ -62,6 +62,9 @@ if USE_NUMPY:
 if not USE_NUMPY:
     import array
 
+RAR_MAIN_EXTRA = 2 + 4
+MAIN_HDR_SIZE = S_BLK_HDR.size + RAR_MAIN_EXTRA
+
 def write_main(volume, version, is_rr, is_first_vol, naming, is_lock):
     write_block(volume,
         type=RAR_BLOCK_MAIN,
@@ -74,11 +77,8 @@ def write_main(volume, version, is_rr, is_first_vol, naming, is_lock):
             (0 for i in range(RAR_MAIN_EXTRA)),
         ))
 
-RAR_MAIN_EXTRA = 2 + 4
-MAIN_HDR_SIZE = S_BLK_HDR.size + RAR_MAIN_EXTRA
-
 def write_file(volume, file, split_before, split_after, name, is_unicode,
-dict, host_os, attr, accum_crc, dostime, xtime=None, size=None,
+dictsize, host_os, attr, accum_crc, dostime, xtime=None, size=None,
 pack_size=None):
     size_64 = size_64_encode(pack_size, size)
     header_size = file_hdr_size(name, xtime, size_64)
@@ -96,7 +96,7 @@ pack_size=None):
 
     parts = list()
     flags = (RAR_LONG_BLOCK ^ split_before * RAR_FILE_SPLIT_BEFORE ^
-        split_after * RAR_FILE_SPLIT_AFTER ^ dict ^
+        split_after * RAR_FILE_SPLIT_AFTER ^ dictsize ^
         is_unicode * RAR_FILE_UNICODE)
     parts.append(S_FILE_HDR.pack(
         pack_size & bitmask(32), size & bitmask(32),
@@ -219,7 +219,7 @@ def time_encode(tm, frac=0):
     xtime = bytearray(S_SHORT.pack(
         flags << MTIME_INDEX * TIME_FLAG_BITS))
 
-    for i in range(size):
+    for _ in range(size):
         xtime.append(frac & 0xFF)
         frac >>= 8
 
@@ -293,9 +293,9 @@ def rr_calc(volume, rr_count, size):
     volume.seek(0)
 
     rr_crcs = bytearray()
-    rr_sects = tuple(BitVector(RR_SECT_SIZE) for i in range(rr_count))
+    rr_sects = tuple(BitVector(RR_SECT_SIZE) for _ in range(rr_count))
 
-    slice = 0
+    aslice = 0
     while size > 0:
         if size < RR_SECT_SIZE:
             chunk = volume.read(size).ljust(RR_SECT_SIZE, bytes((0,)))
@@ -305,8 +305,8 @@ def rr_calc(volume, rr_count, size):
             size -= RR_SECT_SIZE
 
         rr_crcs.extend(S_SHORT.pack(~crc32(chunk) & bitmask(16)))
-        rr_sects[slice].xor(chunk)
-        slice = (slice + 1) % rr_count
+        rr_sects[aslice].xor(chunk)
+        aslice = (aslice + 1) % rr_count
 
     return (rr_crcs, rr_sects)
 
@@ -409,7 +409,7 @@ def write_end(volume, version, flags, volnum, is_last_vol):
         if flags & RAR_ENDARC_VOLNR:
             parts.append(S_SHORT.pack(volnum))
         if flags & RAR_ENDARC_REVSPACE:
-            parts.append(0 for i in range(END_EXTRA))
+            parts.append(0 for _ in range(END_EXTRA))
 
         write_block(volume, RAR_BLOCK_ENDARC, flags, parts)
 
@@ -433,11 +433,11 @@ def end_size(version, flags):
 END_EXTRA = 7
 
 # The "rar_decompress" function creates a Rar file but not in a reusable way
-def write_block(file, type, flags, data):
+def write_block(file, btype, flags, data):
     block = bytearray()
     for part in data: block.extend(part)
 
-    header = S_BLK_HDR_DATA.pack(type, flags, S_BLK_HDR.size + len(block))
+    header = S_BLK_HDR_DATA.pack(btype, flags, S_BLK_HDR.size + len(block))
 
     crc = crc32(header)
     crc = crc32(block, crc)
