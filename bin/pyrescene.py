@@ -199,6 +199,153 @@ def get_music_files(reldir):
 	return (get_files(reldir, "*.mp3") + get_files(reldir, "*.mp2") +
 			get_files(reldir, "*.flac"))
 
+PROOF_IMAGE_EXTS = [".jpg", "jpeg", ".png", ".bmp", ".gif"]
+
+def get_proof_files(reldir):
+	"""
+	Includes proofs, proof RAR files, image files in Sample directories.
+	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
+	Images in /Compare The.Game.1997.720p.REMASTERED.INTERNAL.BluRay.x264-DAA
+	"""
+	image_files = []
+	for ext in PROOF_IMAGE_EXTS:
+		image_files += get_files(reldir, "*" + ext)
+	rar_files = get_files(reldir, "*.rar")
+
+	result = filter_proof_image_files(image_files, rar_files, reldir)
+	result += filter_proof_rar_files(rar_files)
+
+	return result
+
+def filter_proof_image_files(image_files, rar_files, reldir):
+	include_in_srr = []
+	for proof in image_files:
+		# images in Sample, Proof and Cover(s) subdirs are ok
+		# others need to contain the word proof in their path
+		lproof = proof.lower()
+		if ("proof" in lproof or "sample" in lproof or
+			os.sep + "cover" in lproof or
+			os.sep + "compare" in lproof):
+			include_in_srr.append(proof)
+			continue
+
+		if always_skip(proof, lproof):
+			continue
+		if store_rls_root(proof, rar_files, reldir):
+			include_in_srr.append(proof)
+	return include_in_srr
+
+def always_skip(proof, lproof):
+	# proof file in root directory without the word 'proof' in the name 
+	# no spaces: skip personal covers added to mp3 releases
+	# (proof files with spaces exist, but pzs-ng replaces those with . or _)
+	# Windows Media Player 11:
+	# creates Folder.jpg, AlbumArtSmall.jpg, desktop.ini
+	# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg
+	# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Small.jpg
+	always_skip = (" " in os.path.basename(proof) or
+		os.path.splitext(lproof)[0].endswith("folder") or
+		"albumartsmall" in os.path.basename(lproof) or
+		os.path.basename(lproof).startswith("albumart_{"))
+	return always_skip
+
+def store_rls_root(proof, rar_files, reldir):
+	skip_tpl = "'{0}' ({1} B) not added to SRR for release {2}"
+
+	# Start with 00 for mp3 releases. Mostly 00- but 00_ exists too:
+	# VA-Psychedelic_Wild_Diffusion_Part_1-(ESPRODCD01)-CD-2007-hM
+	# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small JPG image file)
+	# or 000- and 01- or 01_
+	if os.path.basename(proof).startswith(("00", "01", "001")):
+		return True
+
+	# idea is to not have covers that are added later
+	# non music releases have a separate folder
+	if os.path.getsize(proof) > 100000:
+		# must be named like nfo/sfv/rars
+		similar_named = similar_to_good_name(proof, rar_files, reldir)
+		
+		if similar_named and not fixed_resolution_cover(proof):
+			return True
+		else:
+			msg = skip_tpl.format(
+				os.path.basename(proof),
+				rescene.utility.sep(os.path.getsize(proof)),
+				os.path.basename(reldir))
+			logging.info(msg)
+			print(msg)
+	else:
+		# Depeche_Mode-Singles_Box_1-6CD-2004-AMOK
+		# TODO: smaller proofs can exist too
+		# -> but .startswith("00") already includes those
+		# maybe extra option to add all image files
+		# and do no separate detection?
+		# -> but even directly from topsite there can be
+		#    additional unwanted files?
+		# small JPGs are most likely site grabs by scripts
+
+		# log and print the small files info too
+		msg = skip_tpl.format(
+			os.path.basename(proof),
+			rescene.utility.sep(os.path.getsize(proof)),
+			os.path.basename(reldir))
+		logging.info(msg)
+		print(msg)
+	return False
+
+def similar_to_good_name(lproof, rar_files, reldir):
+	basenames = collect_known_good_filenames(reldir, rar_files)
+	s = 10  # first X characters
+	p = os.path.basename(lproof)
+
+	# for music releases, NFOs not always start with 00
+	# while all the other files do (sfv, m3u, jpg, cue,...)
+	# e.g. Hmc_-_187_(UDR011)-VLS-1996-TR
+	for bn in basenames:
+		if (bn[:s].lower() == p[:s] or
+			strip_zeros(bn)[:s].lower() == strip_zeros(p)[:s]):
+			return True
+		else:
+			# checks possible group name before the extension
+			# e.g. Global_Underground_017_-_Danny_Tenaglia
+			# _(London)-2000-tronik
+			#   /gu_017_tracklisting-tronik.jpg
+			#   /00-global_underground_017_-_danny_tenaglia
+			#     _(london)-2000-tronik.sfv
+			#   /01_gu_017_-_london_(cd_1)-tronik.cue
+			grprls = bn.lower().split('-')[-1]
+			grpimg = os.path.splitext(lproof)[0].split('-')[-1]
+			if grprls == grpimg:
+				return True
+	return False
+
+def collect_known_good_filenames(reldir, rar_files):
+	# grab all interesting extensions
+	checklist = (get_files(reldir, "*.sfv") + get_files(reldir, "*.nfo") +
+				 get_files(reldir, "*.m3u") + rar_files)
+	return (os.path.basename(good_name)[:-4] for good_name in checklist)
+
+def filter_proof_rar_files(rar_files):
+	include_in_srr = []
+	for proof in rar_files:
+		# RAR file must contain image file
+		# Space.Dogs.3D.2010.GERMAN.1080p.BLURAY.x264-HDViSiON (bmp proof)
+		if "proof" in proof.lower() and has_stored_proof_ext(proof):
+			include_in_srr.append(proof)
+	return include_in_srr
+
+def has_stored_proof_ext(proof_rarfile):
+	try:
+		for block in RarReader(proof_rarfile):
+			if (block.rawtype == BlockType.RarPackedFile and
+				block.file_name[-4:].lower() in PROOF_IMAGE_EXTS):
+					return True
+	except ValueError as e:
+		# No RAR5 support yet
+		logging.warning("{0}: {1}".format(str(e), proof_rarfile))
+
+	return False
+
 def strip_zeros(file_name):
 	"""Sometimes the covers don't have the same leading characters as
 	the .nfo and .sfv file. In this case the .nfo file is most likely
@@ -211,126 +358,7 @@ def strip_zeros(file_name):
 		return file_name[5:]
 	else:
 		return file_name
-
-def get_proof_files(reldir):
-	"""
-	Includes proofs, proof RAR files, image files in Sample directories.
-	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
-	Images in /Compare The.Game.1997.720p.REMASTERED.INTERNAL.BluRay.x264-DAA
-	"""
-	image_files = (get_files(reldir, "*.jpg") + get_files(reldir, "*.png") +
-	               get_files(reldir, "*.gif") + get_files(reldir, "*.bmp") +
-	               get_files(reldir, "*.jpeg"))
-	rar_files = get_files(reldir, "*.rar")
-	result = []
-	for proof in image_files:
-		# images in Sample, Proof and Cover(s) subdirs are ok
-		# others need to contain the word proof in their path
-		lproof = proof.lower()
-		if ("proof" in lproof or "sample" in lproof or
-			os.sep + "cover" in lproof or
-			os.sep + "compare" in lproof):
-			result.append(proof)
-		else:
-			# proof file in root directory without the word proof somewhere
-			# no spaces: skip personal covers added to mp3 releases
-			# NOT: desktop.ini, AlbumArtSmall.jpg,
-			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Large.jpg
-			# AlbumArt_{7E518F75-1BC4-4CD1-92B4-B349D9E9248B}_Small.jpg
-			if (" " not in os.path.basename(proof) and
-				not os.path.splitext(lproof)[0].endswith("folder") and
-				"albumartsmall" not in os.path.basename(lproof) and
-				not os.path.basename(lproof).startswith("albumart_{")):
-				# must be named like nfo/sfv/rars or start with 00
-				p = os.path.basename(lproof)
-
-				# 00 for mp3 releases. Mostly 00- but 00_ exists too:
-				# VA-Psychedelic_Wild_Diffusion_Part_1-(ESPRODCD01)-CD-2007-hM
-				# or 000- and 01- or 01_
-				if p.startswith(("00", "01")):
-					result.append(proof)
-					continue
-				# idea is to not have covers that are added later
-				# non music releases have a separate folder
-				s = 10  # first X characters
-				if os.path.getsize(proof) > 100000:
-					similar_named = False
-					basenames = []
-					# grab all interesting extensions first
-					for nfo in get_files(reldir, "*.nfo"):
-						basenames.append(os.path.basename(nfo)[:-4])
-					for sfv in get_files(reldir, "*.sfv"):
-						basenames.append(os.path.basename(sfv)[:-4])
-					for rar in rar_files:
-						basenames.append(os.path.basename(rar)[:-4])
-
-					# for music releases, NFOs not always start with 00
-					# while all the other files do (sfv, m3u, jpg, cue,...)
-					# e.g. Hmc_-_187_(UDR011)-VLS-1996-TR
-					for bn in basenames:
-						if bn[:s].lower() == p[:s]:
-							similar_named = True
-							break
-						elif strip_zeros(bn)[:s].lower() == strip_zeros(p)[:s]:
-							similar_named = True
-							break
-						else:
-							# checks possible group name before the extension
-							# e.g. Global_Underground_017_-_Danny_Tenaglia
-							# _(London)-2000-tronik
-							#   /gu_017_tracklisting-tronik.jpg
-							#   /00-global_underground_017_-_danny_tenaglia
-							#     _(london)-2000-tronik.sfv
-							#   /01_gu_017_-_london_(cd_1)-tronik.cue
-							grprls = bn.lower().split('-')[-1]
-							grpimg = os.path.splitext(proof)[0].split('-')[-1]
-							if grprls == grpimg:
-								similar_named = True
-								break
-					if similar_named and not fixed_resolution_cover(proof):
-							result.append(proof)
-					else:
-						tpl = "'{0}' ({1} B) not added to SRR for release {2}"
-						msg = tpl.format(
-							os.path.basename(proof),
-							rescene.utility.sep(os.path.getsize(proof)),
-							os.path.basename(reldir))
-						logging.info(msg)
-						print(msg)
-				else:
-					# TODO: smaller proofs can exist too
-					# -> but .startswith("00") already includes those
-					# maybe extra option to add all image files
-					# and do no separate detection?
-					# -> but even directly from topsite there can be
-					#    additional unwanted files?
-					# small JPGs are most likely site grabs by scripts
-
-					# log and print the small files info too
-					tpl = "'{0}' ({1} B) not added to SRR for release {2}"
-					msg = tpl.format(
-						os.path.basename(proof),
-						rescene.utility.sep(os.path.getsize(proof)),
-						os.path.basename(reldir))
-					logging.info(msg)
-					print(msg)
-			# ATB_-_Seven_Years-Ltd.Ed.-2005-MOD (small JPG image file)
-	for proof in rar_files:
-		if "proof" in proof.lower():
-			# RAR file must contain image file
-			# Space.Dogs.3D.2010.GERMAN.1080p.BLURAY.x264-HDViSiON (bmp proof)
-			try:
-				for block in RarReader(proof):
-					if block.rawtype == BlockType.RarPackedFile:
-						if (block.file_name[-4:].lower() in
-							(".jpg", "jpeg", ".png", ".bmp", ".gif")):
-							result.append(proof)
-							break
-			except ValueError as e:
-				# No RAR5 support yet
-				logging.warning("{0}: {1}".format(str(e), proof))
-	return result
-
+	
 def fixed_resolution_cover(root_image):
 	"""Cut off movie poster image most likely added by a site script"""
 	try:
@@ -340,7 +368,7 @@ def fixed_resolution_cover(root_image):
 		return False;
 
 # image resolution check from https://stackoverflow.com/a/39778771/654160
-def test_jpeg(h, f):
+def test_jpeg(h, _f):
 	# SOI APP2 + ICC_PROFILE
 	if h[0:4] == b"\xff\xd8\xff\xe2" and h[6:17] == b"ICC_PROFILE":
 		return "jpeg"
