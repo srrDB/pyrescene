@@ -206,6 +206,7 @@ def get_proof_files(reldir, more_images=False):
 	Includes proofs, proof RAR files, image files in Sample directories.
 	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
 	Images in /Compare The.Game.1997.720p.REMASTERED.INTERNAL.BluRay.x264-DAA
+	Images in /Screenshots CSI.Miami.S03E02.HDTV.XviD.PROPER-LOL
 	"""
 	image_files = []
 	for ext in PROOF_IMAGE_EXTS:
@@ -226,6 +227,7 @@ def filter_proof_image_files(image_files, rar_files, reldir, more_images):
 		lproof = proof.lower()
 		if ("proof" in lproof or "sample" in lproof or
 			os.sep + "cover" in lproof or
+			os.sep + "screenshots" in lproof or
 			os.sep + "compare" in lproof):
 			include_in_srr.append(proof)
 			continue
