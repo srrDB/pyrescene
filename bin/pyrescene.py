@@ -201,7 +201,7 @@ def get_music_files(reldir):
 
 PROOF_IMAGE_EXTS = [".jpg", "jpeg", ".png", ".bmp", ".gif"]
 
-def get_proof_files(reldir):
+def get_proof_files(reldir, more_images=False):
 	"""
 	Includes proofs, proof RAR files, image files in Sample directories.
 	Images from Cover(s)/ folder. Mostly seen on XXX and DVDR releases.
@@ -212,12 +212,13 @@ def get_proof_files(reldir):
 		image_files += get_files(reldir, "*" + ext)
 	rar_files = get_files(reldir, "*.rar")
 
-	result = filter_proof_image_files(image_files, rar_files, reldir)
+	result = filter_proof_image_files(
+		image_files, rar_files, reldir, more_images)
 	result += filter_proof_rar_files(rar_files)
 
 	return result
 
-def filter_proof_image_files(image_files, rar_files, reldir):
+def filter_proof_image_files(image_files, rar_files, reldir, more_images):
 	include_in_srr = []
 	for proof in image_files:
 		# images in Sample, Proof and Cover(s) subdirs are ok
@@ -231,7 +232,7 @@ def filter_proof_image_files(image_files, rar_files, reldir):
 
 		if always_skip(proof, lproof):
 			continue
-		if store_rls_root(proof, rar_files, reldir):
+		if more_images or store_rls_root(proof, rar_files, reldir):
 			include_in_srr.append(proof)
 	return include_in_srr
 
@@ -936,7 +937,7 @@ def generate_srr(reldir, working_dir, options, mthread):
 	for m3u in get_files(reldir, "*.m3u"):
 		copied_files.append(copy_to_working_dir(working_dir, reldir, m3u))
 
-	for proof in get_proof_files(reldir):
+	for proof in get_proof_files(reldir, options.more_images):
 		# also does certain Proof RARs and Covers
 		copied_files.append(copy_to_working_dir(working_dir, reldir, proof))
 
@@ -1477,6 +1478,12 @@ def main(argv=None):
 					help="set custom temporary directory")
 					# used for vobsub creation
 
+	parser.add_option("-i", "--include-images",
+	                  dest="more_images", action="store_true",
+	                  help="Include smaller and differently named image files."
+	                  " Use this option when you know there are no "
+	                  "covers or other images "
+	                  "added to the (music) releases afterwards.")
 	parser.add_option("-x", "--skip",
 	                  dest="skip_list", metavar="NAME", action="append",
 	                  help="exclude these files from the stored files")
