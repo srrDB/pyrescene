@@ -277,13 +277,13 @@ def store_rls_root(proof, rar_files, reldir):
 			print(msg)
 	else:
 		# Depeche_Mode-Singles_Box_1-6CD-2004-AMOK
-		# TODO: smaller proofs can exist too
+		# smaller proofs can exist too: use the -i parameter
 		# -> but .startswith("00") already includes those
-		# maybe extra option to add all image files
-		# and do no separate detection?
+		# Extra -i option added to add all image files
+		# and have no separate detection.
 		# -> but even directly from topsite there can be
-		#    additional unwanted files?
-		# small JPGs are most likely site grabs by scripts
+		#    additional unwanted files e.g. imdb image files
+		# small JPGs are more likely site grabs by scripts
 
 		# log and print the small files info too
 		msg = skip_tpl.format(
