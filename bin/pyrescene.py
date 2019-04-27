@@ -113,8 +113,10 @@ def rar_file_blacklist():
 "Friends.Trivia.Game.GERMAN.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
 "Warhammer.40000.Dawn.Of.War.Winter.Assault.GERMAN.CD2.LAME.SITE.SCRIPTS.FIX-SiLENTGATE",
 "Broken.Oath.1977.DVDRiP.XviD.DiRFiX-GREiD",
+"Abraham.Lincoln.Vs.Zombies.3D.2012.1080p.BluRay.RAR.FiX.x264-LiViDiTY",
+# TODO: never include .rar with .iso, .mkv file
 "Game.Of.Thrones.S3.D4.RAR.FIX.MULTiSUBS.COMPLETE.BLURAY-CLASSiC",
-# TODO: never include .rar with .iso file
+"OPUS.Rocket.of.Whispers.RAR.FIX-TiNYiSO",
 		]
 
 def get_unrar():
