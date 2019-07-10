@@ -766,7 +766,7 @@ SRR SFX Block
 SRR RAR5 Metadata Block
 =======================
 
-  All the RAR5 blocks will be included inside this block.
+  All RAR5 blocks of one single file will be included inside this block.
   
     [SRR RAR5 Metadata Block
         - HEAD_CRC: 0x7070                                  2 bytes
@@ -774,9 +774,11 @@ SRR RAR5 Metadata Block
         - HEAD_FLAGS                                        2 bytes
             0x0001: recovery data removed
             0x8000: must always be set to indicate the metadata size
+        - HEAD_SIZE                                         2 bytes
+        - ADD_SIZE: the size of the RAR metadata            4 bytes
         - NAME_SIZE: length of NAME string                  2 bytes
         - NAME: path and name of the RAR volume             NAME_SIZE bytes
-        [RAR stripped data blocks]
+        [RAR5 stripped data blocks]
     ]    
 
 SRR ZIP Metadata Block

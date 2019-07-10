@@ -52,7 +52,8 @@ import multiprocessing
 import rescene
 from rescene.rar import (BlockType, RarReader, Rar5NotSupportedError,
 	SrrStoredFileBlock, SrrRarFileBlock, SrrHeaderBlock, COMPR_STORING, 
-	RarPackedFileBlock, SrrOsoHashBlock, SrrZipFileBlock)
+	RarPackedFileBlock, SrrOsoHashBlock,
+	SrrZipFileBlock, SrrRar5FileBlock)
 from rescene.rarstream import RarStream, FakeFile
 from rescene.utility import (SfvEntry, is_rar, _DEBUG,
                              first_rars, next_archive, empty_folder)
@@ -64,6 +65,7 @@ from rescene.utility import capitalized_fn
 from rescene.utility import calculate_crc32
 from rescene.osohash import osohash_from
 from rescene.zip import ZipReader, ZIP_EXT, ZipFileBlock
+from rescene.rar5 import parse_rar5
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -569,7 +571,11 @@ def create_srr(srr_name, infiles, in_folder="",
 					# store the raw data for any blocks found
 					srr.write(block.block_bytes())
 			else:  # rar5
-				raise NotImplementedError()
+				rar5meta = _parse_rar5_data(rfexact)
+				rar5block = SrrRar5FileBlock(
+					file_name=fname,
+					metadata=rar5meta)
+				srr.write(rar5block.block_bytes())
 				
 		# STORE ZIP META DATA
 		for zipfile in zipfiles:
@@ -625,6 +631,15 @@ def is_rar4(volume):
 	except Rar5NotSupportedError:
 		rv = False
 	return rv
+
+def _parse_rar5_data(rfile):
+	meta_data_bytes = b""
+	
+	with parse_rar5(rfile, is_srr=False) as rar_reader:
+		for rblock in rar_reader:
+			meta_data_bytes += rblock.metadata()
+
+	return meta_data_bytes
 
 def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
 	"""
@@ -1046,6 +1061,18 @@ def info(srr_file):
 			
 			current_rar = None # end the file size counting
 		elif block.rawtype == BlockType.SrrRarFile:
+			count_size = False
+			current_rar = None # end the file size counting
+				
+			key = os.path.basename(block.file_name.lower())
+			current_rar = FileInfo()
+			current_rar.file_name = block.file_name
+			current_rar.file_size = 0
+			current_rar.key = key
+			current_rar.offset_start_rar = (block.block_position + 
+			                                block.header_size)
+			rar_files[key] = current_rar
+		elif block.rawtype == BlockType.SrrRar5File:
 			count_size = False
 			current_rar = None # end the file size counting
 				
