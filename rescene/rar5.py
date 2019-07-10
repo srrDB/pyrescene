@@ -261,7 +261,7 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		if self.flags & RAR_SPLIT_AFTER == RAR_SPLIT_AFTER:
 			out +="| 0x0010 Data area continues in the next volume\n"
 		if self.flags & RAR_DEPENDENT == RAR_DEPENDENT:
-			out +="| 0x0020  Block depends on preceding file block\n"
+			out +="| 0x0020 Block depends on preceding file block\n"
 		if self.flags & RAR_PRESERVE_CHILD == RAR_PRESERVE_CHILD:
 			out +="| 0x0040 Preserve a child block if host block is modified\n"
 		return out
@@ -336,7 +336,7 @@ class RarBlock(object):
 		stream.seek(self.basic_header.offset_specific_fields, os.SEEK_SET)
 	
 	def metadata(self):
-		return self.basic_header.srr_metadata()
+		return self.basic_header.metadata()
 	
 	def explain(self):
 		return self.basic_header.explain()
