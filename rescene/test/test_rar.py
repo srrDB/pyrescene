@@ -306,6 +306,7 @@ class TestRarBlocks(unittest.TestCase):
 		self.assertEqual(srrrfb.rawtype, int("0x71", 16))
 		self.assertEqual(srrrfb.flags, struct.unpack(str("<H"), b"\x01\x00")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty.rar")
+		self.assertEqual(srrrfb.add_size, 0)
 
 	def test_srr_rar_file_write(self):  # 0x71
 		srrrfb = SrrRarFileBlock(file_name="store_empty.rar")
@@ -316,6 +317,37 @@ class TestRarBlocks(unittest.TestCase):
 		self.assertEqual(srrrfb.block_bytes(), b"\x71\x71\x71\x01\x00"
 						 b"\x18\x00\x0F\x00\x73\x74\x6F\x72\x65\x5F\x65"
 						 b"\x6D\x70\x74\x79\x2E\x72\x61\x72")
+
+	def test_srr_rar5_file_read(self):
+		# from store_empty_rar5.srr
+		srrrar5fileheader = bytes(bytearray.fromhex("70 70 70 01 80 21 00"
+		"4E 00 00 00 14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72"
+		"35 2E 72 61 72"))
+		rar5metadata = bytes(bytearray.fromhex(
+		"52 61 72 21 1A 07 01 00 33 92 B5 E5 0A 01 05 06"
+		"00 05 01 01 80 80 00 C4 EE E9 B6 2A 02 03 0B 80 00 04 80 00 20"
+		"00 00 00 00 80 00 00 0E 65 6D 70 74 79 5F 66 69 6C 65 2E 74 78"
+		"74 0A 03 02 00 54 9B 4D 0A DC CB 01 1D 77 56 51 03 05 04 00"))
+		srrrfb = SrrRar5FileBlock(srrrar5fileheader + rar5metadata, 0)
+		self.assertEqual(srrrfb.crc, 0x7070)
+		self.assertEqual(srrrfb.rawtype, int("0x70", 16))
+		self.assertEqual(srrrfb.flags, struct.unpack(str("<H"), b"\x01\x80")[0])
+		self.assertEqual(srrrfb.file_name, "store_empty_rar5.rar")
+		self.assertEqual(srrrfb.add_size, len(rar5metadata))
+
+	def test_srr_rar5_file_write(self):
+		fn = "store_empty_rar5.rar"
+		metadata = b"\x00" * 42
+		srrrfb = SrrRar5FileBlock(file_name=fn, metadata=metadata)
+		self.assertEqual(srrrfb.crc, 0x7070)
+		self.assertEqual(srrrfb.rawtype, int("0x70", 16))
+		self.assertEqual(srrrfb.flags, 
+			SrrFlags.LONG_BLOCK ^ SrrFlags.RECOVERY_DATA_REMOVED)
+		self.assertEqual(srrrfb.file_name, fn)
+		srrrar5fileheader = bytes(bytearray.fromhex("70 70 70 01 80 21 00" +
+		("%X 00 00 00" % len(metadata)) +
+		"14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72 35 2E 72 61 72"))
+		self.assertEqual(srrrfb.block_bytes(), srrrar5fileheader + metadata)
 
 	def test_rar_volume_header(self):  # 0x73
 		stream = io.BytesIO()
