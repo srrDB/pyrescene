@@ -307,7 +307,8 @@ class BlockFactory(object):
 			print("Unknown block detected!")
 			block = RarBlock(header, is_srr_block)
 
-		assert stream.tell() == block_position + header.full_block_size()
+		if not is_srr_block:
+			assert stream.tell() == block_position + header.full_block_size()
 			
 		return block
 
@@ -334,6 +335,9 @@ class RarBlock(object):
 
 	def move_to_offset_specific_headers(self, stream):
 		stream.seek(self.basic_header.offset_specific_fields, os.SEEK_SET)
+
+	def header(self):
+		return self.basic_header
 	
 	def metadata(self):
 		return self.basic_header.metadata()
