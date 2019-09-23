@@ -395,6 +395,10 @@ class RarBlock(object):
 		# make a function that does the whole block see add_stored_files
 		return self._rawdata
 	
+	def payload(self):
+		"""Data in the SRR block without the leading header"""
+		return io.BytesIO(self._rawdata[self.header_size:])
+	
 	def __repr__(self):
 		return "%s %x %d" % (BLOCK_NAME[self.rawtype], self.block_position, 
 		                     self.header_size)
@@ -943,6 +947,8 @@ class SrrRar5FileBlock(_SrrFileNameBlock):
 	HL:     Header Length (2 bytes)
 	ADD_SIZE: RAR5 metadata size (4 bytes)
 	NL:     Name Length of RAR5 file name + path (2 bytes)
+	
+	payload()	byte array of RAR5 meta data only
 	"""
 	def __init__(self, bbytes=None, filepos=None, fname=None, 
 		         file_name=None, metadata=None):

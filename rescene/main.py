@@ -1076,14 +1076,7 @@ def info(srr_file):
 			count_size = False
 			current_rar = None # end the file size counting
 				
-			key = os.path.basename(block.file_name.lower())
-			current_rar = FileInfo()
-			current_rar.file_name = block.file_name
-			current_rar.file_size = 0
-			current_rar.key = key
-			current_rar.offset_start_rar = (block.block_position + 
-			                                block.header_size)
-			rar_files[key] = current_rar
+			_parse_rar5_fileinfo(rar_files, archived_files, block)
 		elif block.rawtype == BlockType.RarPackedFile:
 			f = archived_files.get(block.unicode_filename)
 			if f is None:
@@ -1197,6 +1190,20 @@ def info(srr_file):
 	        "sfv_comments": sfv_comments,
 	        "compression": compression,
 	        "oso_hashes": oso_hashes}
+
+def _parse_rar5_fileinfo(rar_files, archived_files, block):
+	key = os.path.basename(block.file_name.lower())
+	current_rar = FileInfo()
+	current_rar.file_name = block.file_name
+	current_rar.file_size = 0
+	current_rar.key = key
+	current_rar.offset_start_rar = (block.block_position + block.header_size)
+	rar_files[key] = current_rar
+	
+	with parse_rar5(block.payload(), is_srr=True) as rar_reader:
+		for rblock in rar_reader:
+			h = rblock.header()
+			current_rar.file_size += h.full_block_size()
 
 def content_hash(srr_file, algorithm='sha1'):
 	"""Returns a Sha1 hash for comparing SRR files.
