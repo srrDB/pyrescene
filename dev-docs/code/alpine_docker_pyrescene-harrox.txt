@@ -1,0 +1,40 @@
+FROM alpine:3.9
+
+# chromaprint is in testing
+RUN echo -e "@testing http://nl.alpinelinux.org/alpine/edge/testing" | tee -a /etc/apk/repositories
+RUN apk update
+RUN apk add --no-cache python3 unrar unzip wget ca-certificates py3-setuptools chromaprint@testing
+
+# Leech pyrescene
+RUN mkdir /app
+WORKDIR /app
+RUN wget https://bitbucket.org/Gfy/pyrescene/downloads/pyReScene-0.7.zip
+RUN unzip pyReScene-0.7.zip
+RUN cd pyReScene-0.7 && python3 setup.py install
+
+# Cleanup
+RUN rm -R pyReScene-0.7.zip pyReScene-0.7
+
+# Create user
+ENV USER=app
+ENV UID=1000
+ENV GID=1000
+
+RUN addgroup --gid "$GID" "$USER" \
+    && adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --ingroup "$USER" \
+    --no-create-home \
+    --uid "$UID" \
+    "$USER"
+
+
+RUN mkdir -p /scan /srr-files
+WORKDIR /scan/
+# Run as user
+USER app
+
+# Do this
+CMD pyrescene.py --recursive --output=/srr-files/ /scan/
