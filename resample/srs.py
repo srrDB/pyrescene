@@ -160,7 +160,8 @@ def find_best_educated_guesses(tracks, cut_data):
 	the matches of the other tracks
 	"""
 	offsets_good_tracks = [t.match_offset for t in tracks.values()
-	                       if t.track_number not in cut_data]
+	                       if t.track_number not in cut_data
+	                       or not len(cut_data[t.track_number])]
 	min_offset = min(offsets_good_tracks)
 	max_offset = max(offsets_good_tracks)
 
@@ -186,6 +187,10 @@ def find_best_educated_guesses(tracks, cut_data):
 		if first_after != -1:
 			tracks[track_id].olist.append(first_after)
 		tracks[track_id].olist += list(reversed(in_range))
+
+		# the first and only match for this track is what we need
+		if not len(tracks[track_id].olist):
+			tracks[track_id].olist.append(tracks[track_id].match_offset)
 
 def main(argv=None, no_exit=False):
 	"""
@@ -645,7 +650,7 @@ def main(argv=None, no_exit=False):
 		if fault.endswith("Aborting"):
 			pexit(2, "Corruption detected: %s\n" % fault)
 		else:
-			pexit(2, "Corruption detected: %s. Aborting.\n" % fault)
+			exit(2, "Corruption detected: %s. Aborting.\n" % fault)
 	except fpcalc.ExecutableNotFound as err:
 		pexit(3, str(err))
 	except AttributeError as err:

@@ -796,6 +796,7 @@ def mkv_load_srs(self, infile):
 	for track in tracks.values():
 		if not enough_signature_data(track):
 			self.msg_not_enough_signature_data(track)
+			# cut_data list can stay empty when it is a good match after all
 			self.cut_data.setdefault(track.track_number, [])
 			track.check_bytes_bug = b""
 		
