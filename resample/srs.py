@@ -510,12 +510,12 @@ def main(argv=None, no_exit=False):
 					sep(sfile.size), sfile.crc32))
 			
 			# 6) Recreate the sample
-			if not any(offs for tr in sample.cut_data.values() for offs in tr):
-				out_file = create_temp_file_name(result_file)
-				sfile = sample.rebuild_sample(srs_data, tracks, attachments,
-				                              srs, out_file)
+			out_file = create_temp_file_name(result_file)
+			sfile = sample.rebuild_sample(srs_data, tracks, attachments,
+										  srs, out_file)
+			if sfile and sfile.crc32 == srs_data.crc32:
 				show_attempt_info(sfile)
-			else:
+			elif any(offs for tr in sample.cut_data.values() for offs in tr):
 				# we know it will likely fail the first time anyway
 				# 6.1) Not enough data for a correct match in srs
 				find_best_educated_guesses(tracks, sample.cut_data)
