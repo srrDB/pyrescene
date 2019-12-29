@@ -1100,7 +1100,11 @@ def info(srr_file):
 		# calculate size of RAR file
 		if current_rar:
 			if add_size:
-				current_rar.file_size += block.header_size + block.add_size
+				# don't include the header size when padding is used
+				# CREEPSHOW uses padding in their volumes
+				if block.rawtype != BlockType.SrrRarPadding:
+					current_rar.file_size += block.header_size
+				current_rar.file_size += block.add_size
 			current_rar.offset_end_rar = (block.block_position + 
 										  block.header_size)
 			rar_files[current_rar.key] = current_rar	
@@ -2584,6 +2588,8 @@ def calculate_size_volume(blocks):
 		elif block.rawtype in (BlockType.SrrHeader, BlockType.SrrStoredFile,
 		                       BlockType.SrrRarFile, BlockType.SrrOsoHash):
 			continue
+		elif block.rawtype == BlockType.SrrRarPadding:
+			size += block.add_size
 		else:
 			size += block.header_size
 			size += block.add_size
