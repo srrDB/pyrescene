@@ -1216,7 +1216,11 @@ def _parse_rar5_fileinfo(rar_files, archived_files, block):
 					archived_files[rblock.name] = f
 				# crc of the file is the crc stored in
 				# the last archive that has the file
-				f.crc32 = "%08X" % rblock.datacrc32
+				crc = getattr(rblock, "datacrc32", None)
+				if crc is not None:
+					f.crc32 = "%08X" % rblock.datacrc32
+				else:
+					f.crc32 = ""
 				
 				for record in rblock.records:
 					if record.is_hash_record() and record.hash == 0:

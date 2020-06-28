@@ -474,7 +474,6 @@ class FileServiceBlock(RarBlock):
 		self.mtime = 0
 		if self.file_flags & FILE_UNIX_TIME:
 			(self.mtime,) = S_LONG.unpack_from(stream.read(4))
-		self.datacrc32 = 0
 		if self.file_flags & FILE_CRC32:
 			(self.datacrc32,) = S_LONG.unpack_from(stream.read(4))
 		compression_info = read_vint(stream)
@@ -519,7 +518,9 @@ class FileServiceBlock(RarBlock):
 		out += "+Unpacked size: %s\n" % self.explain_size(self.unpacked_size)
 		out += "+Attributes: %d (operating system specific)\n" % self.attributes
 		out += "+Modification time: %s\n" % self.ftime(self.mtime)
-		out += "+Data CRC32: %08X\n" % self.datacrc32
+		crc = getattr(self, "datacrc32", None)
+		if crc is not None:
+			out += "+Data CRC32: %08X\n" % self.datacrc32
 		out += "+Compression algorithm (0-63): %d\n" % self.algorithm
 		out += "+Solid: %s\n" % ("yes" if self.solid else "no")
 		out += "+Compression method (0-5): %d\n" % self.method
