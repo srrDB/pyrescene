@@ -131,8 +131,12 @@ def display_info(srr_file):
 	if len(info["archived_files"]):
 		print("Archived files:")
 		for sfile in info["archived_files"].values():
-			print("\t%s %s %d" % (encodeerrors(sfile.file_name, sys.stdout),
-			                      sfile.crc32, sfile.file_size))
+			fname = encodeerrors(sfile.file_name, sys.stdout)
+			baseline = "\t%s %s %d" % (fname, sfile.crc32, sfile.file_size)
+			blake = getattr(sfile, "blake2sp", None)
+			if blake is not None:
+				baseline += " (BLAKE2: %s)" % blake.upper()
+			print(baseline)
 		print()
 
 	if len(info["oso_hashes"]):

@@ -36,6 +36,7 @@ import abc
 import sys
 import struct
 from contextlib import contextmanager
+from binascii import hexlify
 
 S_BYTE = struct.Struct("<B")
 S_LONG = struct.Struct('<L')  # unsigned long: 4 bytes
@@ -487,19 +488,22 @@ class FileServiceBlock(RarBlock):
 
 		# extra area
 		self.records = []
-		extra_records = self.file_flags & RAR_EXTRA
+		extra_records = self.header().flags & RAR_EXTRA
+
 		self.extra_area_size = self.basic_header.data_offset() - stream.tell()
 		def another_record():
-			return stream.tell() < self.basic_header.data_offset()
-
+			return stream.tell() < self.basic_header.full_header_size()
+		
 		while extra_records and another_record():
 			record = file_service_record_factory(stream)
 			self.records.append(record)
-			print(record)
 
 		# data area
 		if self.file_flags & RAR_DATA:
 			pass
+
+	def is_compressed(self):
+		return self.method != 0
 
 	def explain(self):
 		out = self.basic_header.explain()
@@ -550,25 +554,25 @@ def file_service_record_factory(stream):
 	a single record object will be created and returned"""
 	record = Record(stream)
 
-	if record.type == FILEX_ENCRYPTION:
+	if record.is_encryption_record():
 		# File encryption information
 		record = FileEncryptionRecord(record, stream)
-	elif record.type == FILEX_HASH:
+	elif record.is_hash_record():
 		# File data hash
 		record = FileHashRecord(record, stream)
-	elif record.type == FILEX_TIME:
+	elif record.is_time_record():
 		# High precision file time
 		record = FileTimeRecord(record, stream)
-	elif record.type == FILEX_VERSION:
+	elif record.is_version_record():
 		# File version number
 		record = FileVersionRecord(record, stream)
-	elif record.type == FILEX_REDIRECTION:
+	elif record.is_redirection_record():
 		# File system redirection
 		record = FileRedirectionRecord(record, stream)
-	elif record.type == FILEX_UNIX_OWNER:
+	elif record.is_unix_owner_record():
 		# Unix owner and group information
 		record = FileUnixOwnerRecord(record, stream)
-	elif record.type == FILEX_SERVICE_DATA:
+	elif record.is_service_data_record():
 		# Service header data array
 		record = FileServiceDataRecord(record, stream)
 	else:
@@ -585,13 +589,34 @@ class Record(object):
 		self.type = read_vint(stream)
 		self.data_offset = stream.tell()
 		
+	def is_encryption_record(self):
+		return self.type == FILEX_ENCRYPTION
+
+	def is_hash_record(self):
+		return self.type == FILEX_HASH
+	
+	def is_time_record(self):
+		return self.type == FILEX_TIME
+
+	def is_version_record(self):
+		return self.type == FILEX_VERSION
+
+	def is_redirection_record(self):
+		return self.type == FILEX_REDIRECTION
+
+	def is_unix_owner_record(self):
+		return self.type == FILEX_UNIX_OWNER
+	
+	def is_service_data_record(self):
+		return self.type == FILEX_SERVICE_DATA
+		
 	def move_pointer_after_record(self, stream):
 		end_record = self.type_offset + self.size
 		stream.seek(end_record, os.SEEK_SET)
 		
 	def explain(self):
 		size = self.size + (self.type_offset - self.stream_offset)
-		return "+<Record offset=%s, size=%s>".format(self.stream_offset, size)
+		return "+<Record offset=%s, size=%s>" % (self.stream_offset, size)
 	
 	def set_record_properties(self, record):
 		self.stream_offset = record.stream_offset
@@ -599,6 +624,9 @@ class Record(object):
 		self.type_offset = record.type_offset
 		self.type = record.type
 		self.data_offset = record.data_offset
+		
+	def __str__(self):
+		return self.explain()
 
 class FileEncryptionRecord(Record):  # 0x01
 	def __init__(self, record, stream):
@@ -625,6 +653,9 @@ class FileHashRecord(Record):  # 0x02
 			amount = self.size - (self.data_offset - self.type_offset)
 		self.hash_data = stream.read(amount)
 		self.move_pointer_after_record(stream)
+		
+	def hashstring(self):
+		return hexlify(self.hash_data).decode('ascii')
 
 class FileTimeRecord(Record):  # 0x03
 	def __init__(self, record, stream):

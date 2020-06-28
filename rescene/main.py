@@ -1204,6 +1204,24 @@ def _parse_rar5_fileinfo(rar_files, archived_files, block):
 		for rblock in rar_reader:
 			h = rblock.header()
 			current_rar.file_size += h.full_block_size()
+			
+			if h.is_file_block():
+				f = archived_files.get(rblock.name)
+				if f is None:
+					f = FileInfo()
+					f.file_name = rblock.name.decode("utf-8", "replace")
+					f.orig_filename = rblock.name
+					f.file_size = rblock.unpacked_size
+					f.compression = rblock.is_compressed()
+					archived_files[rblock.name] = f
+				# crc of the file is the crc stored in
+				# the last archive that has the file
+				f.crc32 = "%08X" % rblock.datacrc32
+				
+				for record in rblock.records:
+					if record.is_hash_record() and record.hash == 0:
+						f.blake2sp = record.hashstring()
+						break
 
 def content_hash(srr_file, algorithm='sha1'):
 	"""Returns a Sha1 hash for comparing SRR files.
