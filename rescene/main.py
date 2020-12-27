@@ -2598,6 +2598,8 @@ def calculate_size_volume(blocks):
 		elif block.rawtype in (BlockType.SrrHeader, BlockType.SrrStoredFile,
 		                       BlockType.SrrRarFile, BlockType.SrrOsoHash):
 			continue
+		elif block.rawtype == BlockType.SrrRarPadding:	
+			size += block.add_size
 		else:
 			size += block.header_size
 			size += block.add_size
