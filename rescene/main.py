@@ -1819,6 +1819,16 @@ class RarExecutable(object):
 			return 16
 		else:
 			return 32
+
+	def min_thread_count(self):
+		"""
+		Before 4.20 the threads are 0 - 16, after that it's 1 - 32
+		"""
+		if (int(self.major) < 4 or
+			int(self.major) == 4 and int(self.minor) < 20):
+			return 0
+		else:
+			return 1
 		
 	def __lt__(self, other):
 		"""
@@ -1870,8 +1880,8 @@ class RarArguments(object):
 		# <threads> parameter can take values from 0 to 16.
 		# 4.20: Now the allowed <threads> value for -mt<threads> switch is
 		# 1 - 32, not 0 - 16 as before.
-		mtcount = rarbin.max_thread_count()	
-		mt_min = 1
+		mtcount = rarbin.max_thread_count()
+		mt_min = rarbin.min_thread_count()
 		mt_max = mtcount
 		if RarArguments.mt_settings.mt_min > 0:
 			mt_min = RarArguments.mt_settings.mt_min
@@ -2588,8 +2598,6 @@ def calculate_size_volume(blocks):
 		elif block.rawtype in (BlockType.SrrHeader, BlockType.SrrStoredFile,
 		                       BlockType.SrrRarFile, BlockType.SrrOsoHash):
 			continue
-		elif block.rawtype == BlockType.SrrRarPadding:
-			size += block.add_size
 		else:
 			size += block.header_size
 			size += block.add_size
