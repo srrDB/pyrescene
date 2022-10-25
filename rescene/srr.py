@@ -162,6 +162,9 @@ def verify_extracted_files(srr, in_folder, auto_locate):
 	if len(archived_files) == 0:
 		status = 10  # it's a music release
 	for afile in archived_files:
+		# Replace rar default directory separator with slash when used by OS
+		if os.sep == '/':
+			afile.file_name = afile.file_name.replace('\\', '/')
 		# skip the directories and empty files
 		if afile.crc32 != "00000000" and afile.crc32 != "0":
 			name = os.path.join(in_folder, afile.file_name)
