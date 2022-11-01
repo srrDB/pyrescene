@@ -25,7 +25,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-from distutils.spawn import find_executable
+import sys
+if sys.version_info.major == 2:
+    from distutils.spawn import find_executable as which
+else:
+    from shutil import which
 
 try:
 	# renamed to winreg in Python 3
@@ -90,7 +94,7 @@ def try_registry():
 		return None
 
 def locate_in_path():
-	return find_executable("unrar")
+	return which("unrar")
 
 if __name__ == '__main__':
 	print(locate_unrar())
