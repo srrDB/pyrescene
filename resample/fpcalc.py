@@ -29,7 +29,10 @@ import inspect
 import os
 import sys
 import tempfile
-from distutils.spawn import find_executable
+if sys.version_info.major == 2:
+    from distutils.spawn import find_executable as which
+else:
+    from shutil import which
 from rescene.utility import fsunicode
 from resample.mp3 import Mp3Reader
 
@@ -207,7 +210,7 @@ def find_fpcalc_executable():
 
 	path = os.pathsep.join([script_dir, bin_dir, module_path(),
 	                        os.getenv('PATH', "")])
-	result = find_executable("fpcalc", path=path)
+	result = which("fpcalc", path=path)
 
 	result = check_fpcalc_validity(result)
 
