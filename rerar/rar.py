@@ -67,7 +67,7 @@ MAIN_HDR_SIZE = S_BLK_HDR.size + RAR_MAIN_EXTRA
 
 def write_main(volume, version, is_rr, is_first_vol, naming, is_lock):
     write_block(volume,
-        type=RAR_BLOCK_MAIN,
+        btype=RAR_BLOCK_MAIN,
         flags=RAR_MAIN_VOLUME ^
             is_rr * RAR_MAIN_RECOVERY ^
             (version >= 3 and is_first_vol) * RAR_MAIN_FIRSTVOLUME ^
@@ -263,7 +263,7 @@ def write_rr(version, host_os, volume, rr_count):
 
     if version < 3:
         write_block(volume,
-            type=RAR_BLOCK_OLD_RECOVERY,
+            btype=RAR_BLOCK_OLD_RECOVERY,
             flags=RAR_LONG_BLOCK ^ RAR_SKIP_IF_UNKNOWN,
             data=(
                 S_LONG.pack(size),
@@ -274,7 +274,7 @@ def write_rr(version, host_os, volume, rr_count):
             ))
     else:
         write_block(volume,
-            type=RAR_BLOCK_SUB,
+            btype=RAR_BLOCK_SUB,
             flags=RAR_LONG_BLOCK ^ RAR_SKIP_IF_UNKNOWN,
             data=(
                 S_FILE_HDR.pack(size, size, host_os, crc, 0, 29, ord("0"),
