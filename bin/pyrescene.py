@@ -24,7 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-"""
+r"""
 This tool creates an SRR file from a release directory.
 
 design decisions:
@@ -459,7 +459,7 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 		#     tdk-subs-done.sfv
 		if ("subs" in sfv_name.lower() and
 			# music or release with multiple CDs (xvid)
-			(re.match("^000?-|.*(cd\d|flac).*", sfv_name, re.IGNORECASE) or
+			(re.match(r"^000?-|.*(cd\d|flac).*", sfv_name, re.IGNORECASE) or
 				"subs" in lcrelease_name or
 				"subpack" in lcrelease_name or
 				"vobsub" in lcrelease_name or
@@ -515,7 +515,7 @@ def remove_unwanted_sfvs(sfv_list, release_dir):
 					logging.warning(msg.format(rar))
 					continue
 
-		if re.match(".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
+		if re.match(r".*Subs.?CD\d$", os.path.dirname(sfv), re.IGNORECASE):
 			# Toy.Story.1995.DVDRip.DivX.AC3.iNTERNAL-FFM/
 			# 	Subs/CD1/toyst.subs.cd1-iffm.sfv
 			# The.Postman.1997.DVDRip.XviD.AC3.iNTERNAL-FFM
@@ -650,11 +650,11 @@ def is_storable_fix(release_name):
 	# Ron.White.You.Cant.Fix.Stupid.XviD-LMG
 	# not: Rar|sub|audio|sample|
 	return (re.match(
-			".*(SFV|PPF|sync|proof?|dir|nfo|Interleaving|Trackorder).?"
-			"(Fix|Patch).*", release_name, re.IGNORECASE) or
-			re.match(".*\.(FiX|FIX)(\.|-).*", release_name) or
-			re.match(".*\.DVDR.Fix-.*", release_name) or
-			re.match(".*\.DVDR.REPACK.Fix-.*", release_name))
+			r".*(SFV|PPF|sync|proof?|dir|nfo|Interleaving|Trackorder).?"
+			r"(Fix|Patch).*", release_name, re.IGNORECASE) or
+			re.match(r".*\.(FiX|FIX)(\.|-).*", release_name) or
+			re.match(r".*\.DVDR.Fix-.*", release_name) or
+			re.match(r".*\.DVDR.REPACK.Fix-.*", release_name))
 
 def create_srr_for_subs(unrar, sfv, working_dir, release_dir):
 	"""
@@ -1345,7 +1345,7 @@ def is_release(dirpath, dirnames=None, filenames=None):
 			elif NO_HYPHEN.match(dirname):
 				# old MP3 release with custom folders
 				custom_dirs_old_music.append(dirname)
-			elif re.match("CD(.?|_-_)\d{1-2}.+", dirname, re.IGNORECASE):
+			elif re.match(r"CD(.?|_-_)\d{1-2}.+", dirname, re.IGNORECASE):
 				# Various_artists_-_deiner_tracks_vol2_2cd-2000-nbd
 				# CD1-Dj_Membrain and CD2-Dj_Sepalot
 				custom_dirs_old_music.append(dirname)
@@ -1501,7 +1501,7 @@ def main(argv=None):
 	                  help="regex to skip files files to store. matched to "
 	                  "the path inside the release dir. "
 	                  "use ^ and $ to match whole path. "
-	                  "e.g. ^.*/sitename\.nfo$ (case ignored)")
+	                  r"e.g. ^.*/sitename\.nfo$ (case ignored)")
 
 	# speedup rerun, less traffic, backup textfiles, ...
 	parser.add_option("--no-srs", action="store_true", dest="nosrs",
@@ -1689,15 +1689,15 @@ def main(argv=None):
 		global skipre
 		try:
 			skipre = re.compile(options.skip_regex, re.IGNORECASE)
-			if skipre.match("test.sfv"):
+			if skipre.match(r"test.sfv"):
 				msg = "Not a good idea to ignore SFV files in the regex!"
 				logging.warning(msg)
 		except Exception as e:
 			# use --skip-regex "*" to trigger this
 			print("Unrecognized regular expression: %s" % e)
 			print("Some examples: (case always ignored)")
-			print("\t^.*/sitename\.nfo$")
-			print("\t^sample/.*\._s.jpg$")
+			print(r"\t^.*/sitename\.nfo$")
+			print(r"\t^sample/.*\._s.jpg$")
 			return 1  # failure
 
 	drive_letters = []

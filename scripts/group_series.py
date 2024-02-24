@@ -41,9 +41,9 @@ def main(options, args):
 
             # try to group the releases together
             for release in rellist:
-                m = re.match("(.*)S\d+E\d+.*", release, re.IGNORECASE)
+                m = re.match(r"(.*)S\d+E\d+.*", release, re.IGNORECASE)
                 if not m:
-                    m = re.match("(.*)\d+x\d+.*", release, re.IGNORECASE)
+                    m = re.match(r"(.*)\d+x\d+.*", release, re.IGNORECASE)
                 if m:
                     # don't add it to the list if foreign
                     if options.foreign:

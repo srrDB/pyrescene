@@ -81,7 +81,7 @@ def get_pngs_from_page(soup):
 	return reversed(result)
 	
 def grab_id(url):
-	match = re.match(".*\.com\/comparison\/(\d+)\/.*", url)
+	match = re.match(r".*\.com\/comparison\/(\d+)\/.*", url)
 	if match:
 		return match.group(1)
 	return False

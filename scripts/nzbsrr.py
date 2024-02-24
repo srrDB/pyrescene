@@ -161,7 +161,7 @@ def main(options, args):
 
 			# a file with the name 'subs' or 'extras' in it? put it at the end
 			for file in files:
-				if re.match(".*(subs|extras|proof|sample).*", file, re.I):
+				if re.match(r".*(subs|extras|proof|sample).*", file, re.I):
 					files.remove(file)
 					files.append(file)
 					haveSubs.append(release)
@@ -247,14 +247,14 @@ def printList(list):
 def parseSubject(subject):  # [#altbin@EFNet]-[FULL]-[RELNAM
 	exts = "\.(srr|srs|avi|mkv)"
 	# exts = "\.(avi)"
-	patternEfnet = (".*\[(.*EFNet|#a.b.teevee)\]-(?:\[(FULL|PART|Movie-Info.org)\]-)?"
-					"\[?\s?(?P<release>[^\s\[\]]+(?=(\]|\s.*\]|-\s)))"
-					"(\s.*)?\]?-?"
-					".*(&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
-	patternXvid = ("#alt.binaries.movies.xvid: (?P<release>[^\s]+)"
-				   " - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
-	patternAbmm = ("#a.b.mm@efnet - req \d+ - (?P<release>[^\s]+)"
-				   " - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
+	patternEfnet = (r".*\[(.*EFNet|#a.b.teevee)\]-(?:\[(FULL|PART|Movie-Info.org)\]-)?"
+					r"\[?\s?(?P<release>[^\s\[\]]+(?=(\]|\s.*\]|-\s)))"
+					r"(\s.*)?\]?-?"
+					r".*(&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
+	patternXvid = (r"#alt.binaries.movies.xvid: (?P<release>[^\s]+)"
+				   r" - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
+	patternAbmm = (r"#a.b.mm@efnet - req \d+ - (?P<release>[^\s]+)"
+				   r" - (&quot;|\")(?P<file>.*" + exts + ")(&quot;|\").*")
 
 	m = re.match(patternEfnet, subject, re.IGNORECASE)
 	if m:
@@ -301,7 +301,7 @@ def parse_name(subject):
 	else:
 		# "Because the poster used a non-standard subject line, the system was
 		# unable to determine the filename with certainty."
-		match = re.search(".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
+		match = re.search(r".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
 		if match:
 			return match.group("filename")
 		else:

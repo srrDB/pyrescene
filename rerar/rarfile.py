@@ -104,7 +104,7 @@ except ImportError:
 # compat with 2.x
 if sys.hexversion < 0x3000000:
     # prefer 3.x behaviour
-    range = xrange
+    range = xrange #@ReservedAssignment
     # py2.6 has broken bytes()
     def bytes(s, enc):
         return str(s)
