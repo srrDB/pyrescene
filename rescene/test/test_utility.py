@@ -250,7 +250,7 @@ class TestUtility(unittest.TestCase):
 
 	def test_is_good(self):
 		self.assertTrue(is_good_srr("good- #@&$§£~(){}[]!çéè"))
-		for char in """\:*?"<>|""":
+		for char in r"""\:*?"<>|""":
 			self.assertFalse(is_good_srr("not" + char + "good"))
 
 	def test_first_rars(self):

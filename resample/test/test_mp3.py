@@ -101,7 +101,7 @@ class TestDoubleId3v2(unittest.TestCase):
 		self.assertEqual(10, offset)
 
 	def test_last_id3v2_before_sync_one(self):
-		"""\xFF\xFF will match."""
+		r"""\xFF\xFF will match."""
 		self.mp3stream.write(b"\xFF\xFF\xE0\x33\x44")
 		offset = mp3.last_id3v2_before_sync(self.mp3stream, 35)
 		self.assertEqual(10, offset)
