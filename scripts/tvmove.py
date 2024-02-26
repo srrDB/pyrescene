@@ -147,7 +147,7 @@ def get_key(name):
     #     tpz-24724.nfo 24.S07E24.PREAIR.DVDRip.XviD-TOPAZ
     #     fs1001uc.xvid-siso.nfo Friends.S10E01.UNCUT.DVDRip.XviD-SiSO
     #     leverage.113.dvdrip.xvid-saints.nfo
-    patternFile = ".*(?:(?:[0-9][0-9])([0-9]+)|[^0-9]([0-9]{1,2}))([0-9]{2})\.?.*"
+    patternFile = r".*(?:(?:[0-9][0-9])([0-9]+)|[^0-9]([0-9]{1,2}))([0-9]{2})\.?.*"
     
     # filter out known false positives causing trouble for detection
     # e.g. sample-veronica.mars.101.dvdrip.x264-mm.mkv
