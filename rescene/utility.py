@@ -32,12 +32,11 @@
 import re
 import sys
 import difflib
-import mmap
 import warnings
 import locale
 import os
 import shutil
-import time
+import sys
 import zlib
 from io import BytesIO, TextIOBase, TextIOWrapper
 from tempfile import mktemp
@@ -47,6 +46,8 @@ try:
 	win32api_available = True
 except ImportError:
 	win32api_available = False
+
+python_version = sys.version_info
 
 # on Windows:
 #   SET NAME=True       configure
@@ -64,7 +65,7 @@ _OFFSETS = not bool(os.environ.get("RESCENE_NO_OFFSETS"))
 
 # The_Guy_Game_USA_DVD9_XBOX-WoD: PART1/wod-guy.part001.sfv
 # Resident_Evil_2_NTSC-US_DC-OVERRiDE: Disc1.Leon/ovr-re2-cd1.r00
-diskfolder = "(CD|DISK|DVD|DISC|PART)[\._]?\d\d?([_.-]?[a-zA-Z0-9\._]+)?"
+diskfolder = r"(CD|DISK|DVD|DISC|PART)[\._]?\d\d?([_.-]?[a-zA-Z0-9\._]+)?"
 DISK_FOLDERS = re.compile("^" + diskfolder + "$", re.IGNORECASE)
 RELEASE_FOLDERS = re.compile("^(" + diskfolder + "|(Vob)?Samples?|"
 	"Covers?|Proofs?|Subs?(pack)?|(vob)?subs?)$", re.IGNORECASE)
@@ -157,7 +158,7 @@ class SfvEntry(object):
 	def get_crc_32(self):
 		return self.__crc32
 	def set_crc_32(self, value):
-		if not bool(re.match("^[\dA-F]{1,8}$", value, re.IGNORECASE)):
+		if not bool(re.match(r"^[\dA-F]{1,8}$", value, re.IGNORECASE)):
 			raise ValueError(value + " is not a CRC32 hash.")
 		# Baywatch.S11E11.DVDRiP.XViD-NODLABS.srr CRC is missing a zero
 		self.__crc32 = value.rjust(8, "0")
@@ -173,12 +174,12 @@ class SfvEntry(object):
 
 		if same_base and ext_self != ext_other:
 			if ext_self == ".rar":
-				if bool(re.match("\.[r-z]\d{2}$", ext_other)):
+				if bool(re.match(r"\.[r-z]\d{2}$", ext_other)):
 					return True
 				else:
 					return self.file_name < other.file_name  # .rar < .r00
 			elif ext_other == ".rar":
-				if bool(re.match("\.[r-z]\d{2}$", ext_self)):
+				if bool(re.match(r"\.[r-z]\d{2}$", ext_self)):
 					return False
 				else:
 					return self.file_name < other.file_name  # .r00 > .rar
@@ -299,9 +300,9 @@ def next_archive(rfile, is_old=False):
 			extension[i] = chr(ord(extension[i]) + 1)
 		return "".join(extension)  # array back to string
 
-	if re.match(".*\.part\d*.rar$", rfile, re.IGNORECASE) and not is_old:
+	if re.match(r".*\.part\d*.rar$", rfile, re.IGNORECASE) and not is_old:
 		return inc(rfile[:-4]) + rfile[-4:]
-	elif re.match(".*\.rar$", rfile, re.IGNORECASE):
+	elif re.match(r".*\.rar$", rfile, re.IGNORECASE):
 		return rfile[:-4] + ".r00"
 	elif not is_rar(rfile):
 		raise AttributeError("The extension must be one form a RAR archive.")
@@ -320,13 +321,13 @@ def is_rar(file_name):
 		- .cbr
 		- .exe                    TODO: SFX support
 	"""
-	return bool(re.match(".*\.(rar|[r-z]\d{2}|\d{3})$", file_name, re.I))
+	return bool(re.match(r".*\.(rar|[r-z]\d{2}|\d{3})$", file_name, re.I))
 
 def first_rars(file_iter):
 	"""Tries to pick the first RAR file based on file name."""
 
 	# group 3: when there is a digit before .rar e.g. test3.rar
-	fre = ".*((\.part0*1\.rar|(?<!\d)\.rar)|((^|[^\d])(?<!part)(\d+\.rar)))$"
+	fre = r".*((\.part0*1\.rar|(?<!\d)\.rar)|((^|[^\d])(?<!part)(\d+\.rar)))$"
 
 	def is_first(rar):
 		if re.match(fre, rar, re.IGNORECASE):
@@ -365,12 +366,12 @@ def first_rars(file_iter):
 	return firsts
 
 def is_good_srr(filepath):
-	"""Tests whether the file path only contains / and none
+	r"""Tests whether the file path only contains / and none
 	of the other illegal characters: \/:*?"<>| in Windows.
 	
 	Stored files in SRRs contain forward slashes.
 	RAR uses backward slashes."""
-	ILLEGAL_WINDOWS_CHARACTERS = """\:*?"<>|"""
+	ILLEGAL_WINDOWS_CHARACTERS = r"""\:*?"<>|"""
 	for char in ILLEGAL_WINDOWS_CHARACTERS:
 		if char in filepath:
 			return False
@@ -395,6 +396,9 @@ def sep(number, loc=''):
 	"""Adds a thousands separator to the number.
 	The function is locale aware."""
 	locale.setlocale(locale.LC_ALL, loc)
+	# format_string behaves as expected from 3.7+
+	if python_version[0] == 3 and python_version[1] > 7:
+		return locale.format_string('%d', number, True)
 	return locale.format('%d', number, True)
 
 def show_spinner(amount):

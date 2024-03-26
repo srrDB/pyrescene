@@ -164,8 +164,8 @@ def get_key(name):
     # test for the TOPAZ file format
     file_match = re.match(patternFile, name)
 
-    subpack_match = re.search("subpack", name, re.IGNORECASE)
-    extras_match = re.search("extras", name, re.IGNORECASE)
+    subpack_match = re.search(r"subpack", name, re.IGNORECASE)
+    extras_match = re.search(r"extras", name, re.IGNORECASE)
     match = False
 
     if regular_match:
@@ -219,13 +219,13 @@ def check_for_subdir(file):
 
     # does it needs to be moved to a Sample/Subs dir?
     if options.samples_subs:
-        if re.search("sample", file, re.IGNORECASE):
+        if re.search(r"sample", file, re.IGNORECASE):
             extra_subdir = "Sample"
-        elif re.search("subs|vobsub", file, re.IGNORECASE):
+        elif re.search(r"subs|vobsub", file, re.IGNORECASE):
             extra_subdir = "Subs"
 
     if options.proofs:
-        if re.search("proof.*.jpg", file, re.IGNORECASE):
+        if re.search(r"proof.*.jpg", file, re.IGNORECASE):
             extra_subdir = "Proof"
 
     if options.verbose > 1 and extra_subdir != "":

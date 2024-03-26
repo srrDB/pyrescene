@@ -1782,9 +1782,9 @@ class RarExecutable(object):
 		self.args = None
 		
 		# parse file name
-		match = re.match("(?P<date>\d{4}-\d{2}-\d{2})_rar"
-		                 "(?P<major>\d)(?P<minor>\d\d)"
-		                 "(?P<beta>b\d)?(\.exe)?", rar_sfx_file)
+		match = re.match(r"(?P<date>\d{4}-\d{2}-\d{2})_rar"
+		                 r"(?P<major>\d)(?P<minor>\d\d)"
+		                 r"(?P<beta>b\d)?(\.exe)?", rar_sfx_file)
 		if match:
 			self.date, self.major, self.minor, self.beta = match.group(
 				"date", "major", "minor", "beta")
@@ -2119,7 +2119,7 @@ def get_set(srr_rar_block):
 	This function tries to pick the basename of such a set.
 	"""
 	n = srr_rar_block.file_name[:-4]
-	match = re.match("(.*)\.part\d*$", n, re.I)
+	match = re.match(r"(.*)\.part\d*$", n, re.I)
 	if match:
 		return match.group(1)
 	else:

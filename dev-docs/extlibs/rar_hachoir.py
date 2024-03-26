@@ -68,6 +68,11 @@ DICTIONARY_SIZE = {
     7: "File is a directory",
 }
 
+# compatibility with 2.x
+import sys
+if sys.hexversion < 0x3000000:
+    range = xrange  # @ReservedAssignment
+
 def formatRARVersion(field):
     """
     Decodes the RAR version stored on 1 byte

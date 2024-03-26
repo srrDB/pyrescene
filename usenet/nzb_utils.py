@@ -80,7 +80,7 @@ def parse_name(subject):
 	else:
 		# "Because the poster used a non-standard subject line, the system was
 		# unable to determine the filename with certainty."
-		match = re.search(".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
+		match = re.search(r".*(\]-| )(?P<filename>.*) [\d/\(\)]+", subject)
 		if match:
 			return match.group("filename")
 		else:

@@ -156,7 +156,7 @@ def get_files(path, cwdsolo, options):
         for d in dirs:
             path = base + d + os.sep
             # fix paths with [ or ] in name
-            path = re.sub("([[\\]])", "[\\1]", path) + "*.*"
+            path = re.sub(r"([[\\]])", "[\\1]", path) + "*.*"
             if options.debug:
                 print("glob.glob " + path)
             fileList += glob.glob(path)
@@ -164,7 +164,7 @@ def get_files(path, cwdsolo, options):
 
     # move sfv files to top of list
     for sfv_file in fileList:
-        if re.search("\.sfv$", sfv_file, re.IGNORECASE):
+        if re.search(r"\.sfv$", sfv_file, re.IGNORECASE):
             sfvList.append(sfv_file)
             fileList.remove(sfv_file)
 
@@ -186,17 +186,17 @@ def get_files(path, cwdsolo, options):
         if folder:
             folder += os.sep
 
-        if not re.search("\.(avi|mkv|m4v|mp4|wmv|ts|divx|ogm|mpg|mpeg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo|jpg)$", filename, re.IGNORECASE):
-            if (not (re.search("\.rar$", filename, re.IGNORECASE) and
-                     not re.search("\.part\d{2,3}\.rar$", filename, re.IGNORECASE))):
+        if not re.search(r"\.(avi|mkv|m4v|mp4|wmv|ts|divx|ogm|mpg|mpeg|part0?0?1\.rar|00[0-1]|vob|m2ts|sfv|srs|srr|nfo|jpg)$", filename, re.IGNORECASE):
+            if (not (re.search(r"\.rar$", filename, re.IGNORECASE) and
+                     not re.search(r"\.part\d{2,3}\.rar$", filename, re.IGNORECASE))):
                 continue
-            if re.search("\.part[2-9]\.rar$", filename, re.IGNORECASE):
+            if re.search(r"\.part[2-9]\.rar$", filename, re.IGNORECASE):
                 basename = filename.split(".rar", 1)[0]
                 if not os.path.exists(folder + basename + ".r00"):
                     continue
 
         # SFV Detection
-        if re.search("\.sfv$", filename, re.IGNORECASE):
+        if re.search(r"\.sfv$", filename, re.IGNORECASE):
             sfv = filename
             missingList = []
             for line in fileinput.input([folder + filename]):
@@ -207,7 +207,7 @@ def get_files(path, cwdsolo, options):
 
                     if not os.path.exists(folder + str(f)):
                         skip = True
-                        if re.search("\.(rar|[rstu0-9][0-9][0-9])$", f, re.IGNORECASE):
+                        if re.search(r"\.(rar|[rstu0-9][0-9][0-9])$", f, re.IGNORECASE):
                             if not options.rename_wrong_case or not os.path.exists(folder + str(f).lower()):
                                 missingList.append(f)
                             else:
@@ -219,22 +219,22 @@ def get_files(path, cwdsolo, options):
                         if skip:
                             continue
 
-                    if (re.search("\.part0?0?1\.rar$", f, re.IGNORECASE) or
-                        (re.search("\.(rar|00[0-1])$", f, re.IGNORECASE) and
-                         not re.search("\.part\d{1,3}\.rar$", f, re.IGNORECASE))):
+                    if (re.search(r"\.part0?0?1\.rar$", f, re.IGNORECASE) or
+                        (re.search(r"\.(rar|00[0-1])$", f, re.IGNORECASE) and
+                         not re.search(r"\.part\d{1,3}\.rar$", f, re.IGNORECASE))):
                         if main_file:
                             blackList.append(f)
                         else:
                             main_file = f
                         main_files.append(f)
-                    elif re.search("\.part[2-9]\.rar$", f, re.IGNORECASE):
+                    elif re.search(r"\.part[2-9]\.rar$", f, re.IGNORECASE):
                         if os.path.exists(folder + f.split(".rar", 1)[0] + ".r00"):
                             if main_file:
                                 blackList.append(f)
                             else:
                                 main_file = f
                             main_files.append(f)
-                    if re.search("\.(rar|[rstu0-9][0-9][0-9])$", f, re.IGNORECASE):
+                    if re.search(r"\.(rar|[rstu0-9][0-9][0-9])$", f, re.IGNORECASE):
                         fset.append(f)
             #
             # multi-rar sets subs fix
@@ -247,15 +247,15 @@ def get_files(path, cwdsolo, options):
                 cont = False
                 print("Files missing from " + filename + ":\n " + str(missingList))  # str(missingList) +
                 for miss in missingList:
-                    if re.search("\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mpg|mpeg)$", miss, re.IGNORECASE):
+                    if re.search(r"\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mpg|mpeg)$", miss, re.IGNORECASE):
                         print("SFV contains missing video file.  Skipping instead of quitting.")
                         cont = True
                         break
-                    elif re.search("\.(nfo|par2)$", miss, re.IGNORECASE):
+                    elif re.search(r"\.(nfo|par2)$", miss, re.IGNORECASE):
                         print("SFV contains MISC files.  Non-Scene SFV.")
                         cont = True
                         break
-                    elif re.search("(sub.*|-s)\.rar", miss, re.IGNORECASE) and len(missingList) <= 2:
+                    elif re.search(r"(sub.*|-s)\.rar", miss, re.IGNORECASE) and len(missingList) <= 2:
                         print("Subs files from SFV missing.")
                         cont = True
                         break
@@ -271,7 +271,7 @@ def get_files(path, cwdsolo, options):
             main_file = filename
 
         # Look inside RAR and get types (i.e. AVI,MKV,SUBS)
-        if re.search("\.(rar|00[0-1])$", main_file, re.IGNORECASE):
+        if re.search(r"\.(rar|00[0-1])$", main_file, re.IGNORECASE):
             if blackList.count(main_file):
                 continue
             if os.path.exists(folder + main_file.split(".001", 1)[0] + ".000"):
@@ -300,23 +300,23 @@ def get_files(path, cwdsolo, options):
                     return []
                 else:  # since last 2 aren't same size, we must have last rar to check for missing!
                     numRARs = 0
-                    if re.search("\.part(\d{1,3})\.rar$", fset[len(fset) - 1], re.IGNORECASE):
-                        numRARs = int(re.search("\.part(\d{1,3})\.rar$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
-                    elif re.search("\.u(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
-                        numRARs = int(re.search("\.u(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
+                    if re.search(r"\.part(\d{1,3})\.rar$", fset[len(fset) - 1], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.part(\d{1,3})\.rar$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
+                    elif re.search(r"\.u(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.u(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
                         numRARs += 302
-                    elif re.search("\.t(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
-                        numRARs = int(re.search("\.t(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
+                    elif re.search(r"\.t(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.t(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
                         numRARs += 202
-                    elif re.search("\.s(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
-                        numRARs = int(re.search("\.s(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
+                    elif re.search(r"\.s(\d{2})$", fset[len(fset) - 1], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.s(\d{2})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
                         numRARs += 102
-                    elif re.search("\.r(\d{2})$", fset[len(fset) - 2], re.IGNORECASE):
-                        numRARs = int(re.search("\.r(\d{2})$", fset[len(fset) - 2], re.IGNORECASE).groups()[0])
+                    elif re.search(r"\.r(\d{2})$", fset[len(fset) - 2], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.r(\d{2})$", fset[len(fset) - 2], re.IGNORECASE).groups()[0])
                         numRARs += 2
-                    elif re.search("\.(\d{3})$", fset[len(fset) - 1], re.IGNORECASE):
-                        numRARs = int(re.search("\.(\d{3})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
-                        if re.search("\.(rar|000)$", main_file, re.IGNORECASE):
+                    elif re.search(r"\.(\d{3})$", fset[len(fset) - 1], re.IGNORECASE):
+                        numRARs = int(re.search(r"\.(\d{3})$", fset[len(fset) - 1], re.IGNORECASE).groups()[0])
+                        if re.search(r"\.(rar|000)$", main_file, re.IGNORECASE):
                             numRARs += 1
                     # else: return []
 
@@ -345,7 +345,7 @@ def get_files(path, cwdsolo, options):
                 std = std.replace("\\r", "")
                 std = std.replace("\r", "")
                 output = std.split("\n")
-            elif len(output) == 0 and re.search("\.(avi|divx|mkv|m4v|mp4|ts|ogm|mpg|mpeg|)\.00[0-1]$", main_file, re.IGNORECASE):
+            elif len(output) == 0 and re.search(r"\.(avi|divx|mkv|m4v|mp4|ts|ogm|mpg|mpeg|)\.00[0-1]$", main_file, re.IGNORECASE):
                 # if os.path.exists(folder + main_file.split(".001",1)[0] + ".000"):
                 #    main_file = main_file.split(".001",1)[0] + ".000"
                 print("%s is a joined file." % main_file)
@@ -357,9 +357,9 @@ def get_files(path, cwdsolo, options):
                 print("%s could be corrupt?" % main_file)
                 continue
 
-            if re.search("extra", main_file, re.IGNORECASE):
+            if re.search(r"extra", main_file, re.IGNORECASE):
                 subtyp = "Extras"
-                if not re.search("extra", cwdsolo, re.IGNORECASE):
+                if not re.search(r"extra", cwdsolo, re.IGNORECASE):
                     dest = "Extras" + os.sep
 
             #
@@ -368,11 +368,11 @@ def get_files(path, cwdsolo, options):
             for s in output:  # could be multiple files in the rar
                 if not s:
                     continue  # for blanks at the end from splitting \r\n or \n
-                if re.search("\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mka|dts|ac3|mpg|mpeg|mp3|ogg)$", s, re.IGNORECASE):
+                if re.search(r"\.(avi|divx|mkv|m4v|mp4|wmv|ts|ogm|mka|dts|ac3|mpg|mpeg|mp3|ogg)$", s, re.IGNORECASE):
                     typ = "Video"
                     if not folder:
                         sets_in_main += 1  # i.e. not in CD[1-9], so may need to move
-                elif re.search("\.(iso|img|nrg|bin|gcm|cdi|dvd|gi)$", s, re.IGNORECASE):
+                elif re.search(r"\.(iso|img|nrg|bin|gcm|cdi|dvd|gi)$", s, re.IGNORECASE):
                     typ = "ISO"
                     subtyp = "Compressed"
                 else:
@@ -383,8 +383,8 @@ def get_files(path, cwdsolo, options):
                 for s in output:  # could be multiple files in the rar
                     if not s:
                         continue  # for blanks at the end from splitting \r\n or \n
-                    if re.search("\.(srt|sub|idx|rar)$", s, re.IGNORECASE):
-                        if re.search("vob.?sub", main_file, re.IGNORECASE):
+                    if re.search(r"\.(srt|sub|idx|rar)$", s, re.IGNORECASE):
+                        if re.search(r"vob.?sub", main_file, re.IGNORECASE):
                             typ = "VobSubs"
                             if not folder:
                                 dest = "VobSubs" + os.sep
@@ -392,7 +392,7 @@ def get_files(path, cwdsolo, options):
                             typ = "Subs"
                             if not folder:
                                 dest = "Subs" + os.sep
-                        if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
+                        if subtyp == "Extras" and not re.search(r"extra", cwdsolo, re.IGNORECASE):
                             if not folder:
                                 dest = "Extras" + os.sep + dest
                         break
@@ -401,17 +401,17 @@ def get_files(path, cwdsolo, options):
 
         # Check for Video files NOT in RAR files
         # i.e. samples or previously extracted video
-        elif re.search("\.(avi|mkv|m4v|mp4|wmv|ts|vob|m2ts|mpg|mpeg)$", main_file, re.IGNORECASE):
+        elif re.search(r"\.(avi|mkv|m4v|mp4|wmv|ts|vob|m2ts|mpg|mpeg)$", main_file, re.IGNORECASE):
 
-            if re.search("extra", folder + main_file, re.IGNORECASE):
+            if re.search(r"extra", folder + main_file, re.IGNORECASE):
                 subtyp = "Extras"
             # check if sample
-            if re.search("sample", folder, re.IGNORECASE) or is_sample(folder + main_file, subtyp):
-                if re.search("\.vob$", main_file, re.IGNORECASE):
+            if re.search(r"sample", folder, re.IGNORECASE) or is_sample(folder + main_file, subtyp):
+                if re.search(r"\.vob$", main_file, re.IGNORECASE):
                     typ = "VobSample"
                     if not folder:
                         dest = "Sample" + os.sep
-                elif re.search("\.m2ts$", main_file, re.IGNORECASE):
+                elif re.search(r"\.m2ts$", main_file, re.IGNORECASE):
                     typ = "m2tsSample"
                     if not folder:
                         dest = "Sample" + os.sep
@@ -419,7 +419,7 @@ def get_files(path, cwdsolo, options):
                     typ = "Sample"
                     if not folder:
                         dest = "Sample" + os.sep
-                if subtyp == "Extras" and not re.search("extra", cwdsolo, re.IGNORECASE):
+                if subtyp == "Extras" and not re.search(r"extra", cwdsolo, re.IGNORECASE):
                     if not folder:
                         dest = "Extras" + os.sep + dest
             else:
@@ -433,20 +433,20 @@ def get_files(path, cwdsolo, options):
                     sets_in_main += 1  # i.e. not in CD[1-9], so may need to move
                 # continue
 
-        elif re.search("\.nfo$", main_file, re.IGNORECASE):
+        elif re.search(r"\.nfo$", main_file, re.IGNORECASE):
             typ = "Other"
             subtyp = "NFO"
             if not folder:
                 dest = options.nfos_dir + os.sep
 
-        elif re.search(".*proof.*\.jpg$", main_file, re.IGNORECASE):
+        elif re.search(r".*proof.*\.jpg$", main_file, re.IGNORECASE):
             typ = "Proof"
             subtyp = ""
             if not folder:
                 dest = "Proof" + os.sep
 
-        elif re.search("\.srs$", main_file, re.IGNORECASE):
-            if re.search("extra", main_file, re.IGNORECASE):
+        elif re.search(r"\.srs$", main_file, re.IGNORECASE):
+            if re.search(r"extra", main_file, re.IGNORECASE):
                 subtyp = "Extras_SRS"
                 if not folder:
                     dest = "Extras" + os.sep + "Sample" + os.sep
@@ -456,7 +456,7 @@ def get_files(path, cwdsolo, options):
                     dest = "Sample" + os.sep
             typ = "Sample"
 
-        elif re.search("\.srr$", main_file, re.IGNORECASE):
+        elif re.search(r"\.srr$", main_file, re.IGNORECASE):
             typ = "Other"
             subtyp = "SRR"
 
@@ -467,7 +467,7 @@ def get_files(path, cwdsolo, options):
         fileMainList.append([folder, main_file, sfv, fset, typ, subtyp, dest, sr_dir])
 
     # Detect CD folders - skip if folder has TV tags
-    if sets_in_main >= 2 and not re.search("([\._\s]s?\d{1,3}[\._\s]?[ex]\d{1,3}|s\d{1,3})", cwdsolo, re.IGNORECASE):  # 2 or more CDs possible
+    if sets_in_main >= 2 and not re.search(r"([\._\s]s?\d{1,3}[\._\s]?[ex]\d{1,3}|s\d{1,3})", cwdsolo, re.IGNORECASE):  # 2 or more CDs possible
         fileMainList = get_cds(fileMainList)
 
     return fileMainList
@@ -475,14 +475,14 @@ def get_files(path, cwdsolo, options):
 
 def is_sample(video, subtyp):
     max_size = 50000000
-    if re.search("\.(mkv|m4v|mp4|ts)$", video, re.IGNORECASE):
+    if re.search(r"\.(mkv|m4v|mp4|ts)$", video, re.IGNORECASE):
         max_size = 250000000
 
-    if re.search("^.*?([\.\-_\w]?sa?mp).*?\.(?:avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE):
+    if re.search(r"^.*?([\.\-_\w]?sa?mp).*?\.(?:avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE):
         if os.path.getsize(video) < max_size: return True
     # TODO: add check to make sure not extras before doing this
     else:  # no s?mp in filename - reduce filesize limits manually
-        if subtyp != "Extras" and re.search("\.(avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE) and os.path.getsize(video) < max_size / 2:
+        if subtyp != "Extras" and re.search(r"\.(avi|mkv|m4v|mp4|wmv|vob|m2ts|ts|mpg|mpeg)$", video, re.IGNORECASE) and os.path.getsize(video) < max_size / 2:
             return True
 
     return False
@@ -510,14 +510,14 @@ def get_cds(fileMainList):
         file = fileList[i][1]
         posTemp = 0
 
-        if re.search("(s\d{1,3}[\._]?e\d{1,3})", file, re.IGNORECASE):
+        if re.search(r"(s\d{1,3}[\._]?e\d{1,3})", file, re.IGNORECASE):
             continue  # TV Test (file) - MAKE THIS FOR DIR
         for j in range(len(fileList)):
             if i == j: continue  # i <= j ?  since they've already been compared once?
             if fileList[j][4] != "Video":
                 continue
             file2 = fileList[j][1]
-            if re.search("(s\d{1,3}[\._]?e\d{1,3})", file2, re.IGNORECASE):
+            if re.search(r"(s\d{1,3}[\._]?e\d{1,3})", file2, re.IGNORECASE):
                 continue  # TV Test (file2)
             if len(file) == len(file2):
                 diff = 0
@@ -549,9 +549,9 @@ def get_cds(fileMainList):
     for i in fileListNew:
         file = fileMainList[i][1]
         char = file[position]
-        if re.match("^([1-9])$", char):
+        if re.match(r"^([1-9])$", char):
             cd = char
-        elif re.match("^([A-Ia-i])$", char):
+        elif re.match(r"^([A-Ia-i])$", char):
             if char == "a": cd = "1"
             elif char == "b": cd = "2"
             elif char == "c": cd = "3"
@@ -567,7 +567,7 @@ def get_cds(fileMainList):
 
         if char == "e" and len(fileListNew) <= 4:  # no CD4 so most likely Extras
             print(file + " is Extras")
-            if re.search("\.(rar|00[0-1])$", file, re.IGNORECASE):
+            if re.search(r"\.(rar|00[0-1])$", file, re.IGNORECASE):
                 fileMainList[i][5] = "Extras"
             else:
                 fileMainList[i][5] = "Extracted_Extras"
@@ -585,7 +585,7 @@ def get_cds(fileMainList):
 
         # get/make directory
         fileMainList[i][6] = "CD" + cd + os.sep
-        if re.search("\.(rar|00[0-1])$", file, re.IGNORECASE):
+        if re.search(r"\.(rar|00[0-1])$", file, re.IGNORECASE):
             fileMainList[i][5] = "CD"
         else:
             fileMainList[i][5] = "Extracted_CD"
@@ -600,26 +600,26 @@ def wildc(folder, file):
 
     basename = False
     wildcard = False
-    if re.search("\.(part01\.rar)$", file, re.IGNORECASE):
-        ext = re.search("\.(part01\.rar)$", file, re.IGNORECASE).groups()[0]
+    if re.search(r"\.(part01\.rar)$", file, re.IGNORECASE):
+        ext = re.search(r"\.(part01\.rar)$", file, re.IGNORECASE).groups()[0]
         wildcard = ".[Pp][Aa][Rr][Tt][0-9][0-9].[Rr][Aa][Rr]"
-    elif re.search("\.(part001\.rar)$", file, re.IGNORECASE):
-        ext = re.search("\.(part001\.rar)$", file, re.IGNORECASE).groups()[0]
+    elif re.search(r"\.(part001\.rar)$", file, re.IGNORECASE):
+        ext = re.search(r"\.(part001\.rar)$", file, re.IGNORECASE).groups()[0]
         wildcard = ".[Pp][Aa][Rr][Tt][0-9][0-9][0-9].[Rr][Aa][Rr]"
-    elif re.search("\.(rar)$", file, re.IGNORECASE):
-        if re.search("\.(part1\.rar)$", file, re.IGNORECASE):
+    elif re.search(r"\.(rar)$", file, re.IGNORECASE):
+        if re.search(r"\.(part1\.rar)$", file, re.IGNORECASE):
             filename = folder + file.split(".rar", 1)[0] + ".r00".replace("[", "[[]")
             if os.path.exists(filename):
-                ext = re.search("\.(part1\.rar)$", file, re.IGNORECASE).groups()[0]
+                ext = re.search(r"\.(part1\.rar)$", file, re.IGNORECASE).groups()[0]
                 wildcard = ".[Pp][Aa][Rr][Tt]1.[Rr]??"
             else:
-                ext = re.search("\.(part1\.rar)$", file, re.IGNORECASE).groups()[0]
+                ext = re.search(r"\.(part1\.rar)$", file, re.IGNORECASE).groups()[0]
                 wildcard = ".[Pp][Aa][Rr][Tt][0-9].[Rr][Aa][Rr]"
         else:
-            ext = re.search("\.(rar)$", file, re.IGNORECASE).groups()[0]
+            ext = re.search(r"\.(rar)$", file, re.IGNORECASE).groups()[0]
             wildcard = ".[Rr]??"
-    elif re.search(".(00[0-1])$", file, re.IGNORECASE):
-        ext = re.search("\.(00[0-1])$", file, re.IGNORECASE).groups()[0]
+    elif re.search(r".(00[0-1])$", file, re.IGNORECASE):
+        ext = re.search(r"\.(00[0-1])$", file, re.IGNORECASE).groups()[0]
         wildcard = ".[0-9][0-9][0-9]"
     else: return False
 
@@ -1131,13 +1131,13 @@ def main(options, path):
             print("PAR2 files exist.  Exiting...")
             sys.exit()
 
-    if re.search("(subpack|sub.?fix|subs\.)", cwdsolo, re.IGNORECASE):
+    if re.search(r"(subpack|sub.?fix|subs\.)", cwdsolo, re.IGNORECASE):
         print("SUBS directory detected.  Not processing.")
         return
-    elif re.search("(sync.?fix)", cwdsolo, re.IGNORECASE):
+    elif re.search(r"(sync.?fix)", cwdsolo, re.IGNORECASE):
         print("SYNCFiX directory detected.  Not processing.")
         return
-    elif re.search("(sample.?fix)", cwdsolo, re.IGNORECASE):
+    elif re.search(r"(sample.?fix)", cwdsolo, re.IGNORECASE):
         print("SAMPLEFiX directory detected.  Not processing.")
         return
 
@@ -1282,17 +1282,17 @@ if __name__ == '__main__':
                 if current in root:
                     continue
                 for mfile in files:
-                    if re.search("\.(rar|00[0-1]|avi|mkv|m4v|mp4|wmv|ts|ogm|divx|mpg|mpeg)$", mfile):
+                    if re.search(r"\.(rar|00[0-1]|avi|mkv|m4v|mp4|wmv|ts|ogm|divx|mpg|mpeg)$", mfile):
                         found = True
                         break
                 if not found:
                     for directory in dirs:
-                        if re.match("^cd[1-9]$", directory, re.IGNORECASE):
+                        if re.match(r"^cd[1-9]$", directory, re.IGNORECASE):
                             found = True
                             break
                 if found:
                     current = root
                     main(options, root)
-                    os.chdir(origcwd)
+                    os.chdir(globals()["origcwd"])
 
             print("\n\n\nDone with %s directory.\n\n" % path)

@@ -236,9 +236,9 @@ def grab_base_name(filename):
 	for suffix in suf:
 		filename = filename.replace(suffix, "")
 	filename = filename.strip("_-")
-	m = re.match("(.*?)(.part\d\d\d?.rar|.par2|.(r|s)\d\d|.sfv|.srr|.srs|"
-				".vob|.mkv|.avi|.mp4|.wmv|.vol\d.*|\.rar|.nfo|.nzb|.jpg|.png|"
-				".\d\d\d)$", filename, re.I)
+	m = re.match(r"(.*?)(.part\d\d\d?.rar|.par2|.(r|s)\d\d|.sfv|.srr|.srs|"
+				r".vob|.mkv|.avi|.mp4|.wmv|.vol\d.*|\.rar|.nfo|.nzb|.jpg|.png|"
+				r".\d\d\d)$", filename, re.I)
 	return m.group(1)
 
 def longest_name(subject, file_name):

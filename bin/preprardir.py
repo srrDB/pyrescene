@@ -211,18 +211,18 @@ class VersionTag(object):
 def versiontag(file_name):
 	"""Returns version tag object."""
 	# Windows
-	match = re.match("[a-zA-Z]+(?P<x64>-x64-)?"
-					 "(?P<large>\d)(?P<small>\d\d?)"
-					 "(?P<beta>b\d)?.+", file_name)
+	match = re.match(r"[a-zA-Z]+(?P<x64>-x64-)?"
+					 r"(?P<large>\d)(?P<small>\d\d?)"
+					 r"(?P<beta>b\d)?.+", file_name)
 	if match:
 		x64, large, small, beta = match.group("x64", "large", "small", "beta")
 		if len(small) == 1:
 			small += "0"
 		return VersionTag(large, small, beta, x64)
 	# Linux, OS X, BSD
-	match = re.match("rar(osx|linux|bsd)-(?P<x64>x64-)?"
-					 "(?P<large>\d)\.(?P<small>\d(\.\d)?)\.?"
-					 "(?P<beta>b\d)?\.tar.gz", file_name)
+	match = re.match(r"rar(osx|linux|bsd)-(?P<x64>x64-)?"
+					 r"(?P<large>\d)\.(?P<small>\d(\.\d)?)\.?"
+					 r"(?P<beta>b\d)?\.tar.gz", file_name)
 	if match:
 		x64, large, small, beta = match.group("x64", "large", "small", "beta")
 		if len(small) == 1:

@@ -1157,14 +1157,14 @@ def create_srr(nzb_path, options):
 			raise IncompleteNzb("Incomplete RAR file found: %s" % nfile.name)
 
 		# we won't do known repacks either
-		if (re.match("ich\d+.part\d+.rar", nfile.name, re.I) or
-			re.match("zed\d+.part\d+.rar", nfile.name, re.I) or
+		if (re.match(r"ich\d+.part\d+.rar", nfile.name, re.I) or
+			re.match(r"zed\d+.part\d+.rar", nfile.name, re.I) or
 			"kere.ws" in nfile.name):
 			raise Repack("Repack detected: %s" % nfile.name)
 
 		# fail if kere.ws rename is detected
 		if (nfile.name[-4:].lower() == ".rar" and len(nfile.name) == 20 + 4
-		and re.match("^[a-zA-Z0-9]{20}$", nfile.name[:-4])):
+		and re.match(r"^[a-zA-Z0-9]{20}$", nfile.name[:-4])):
 			# these posts don't always have SFVs
 			raise Repack("kere.ws repack detected: %s" % nfile.name)
 
@@ -1197,7 +1197,7 @@ def create_srr(nzb_path, options):
 	assert sfvs == sorted(sfvs)
 	for sfile in sfvs:
 		# SFVs we want to have at the end of the SRR
-		if re.match(".*(extras|proof|sample|subpack).*", sfile.name, re.I):
+		if re.match(r".*(extras|proof|sample|subpack).*", sfile.name, re.I):
 			sfvs.remove(sfile)
 			sfvs.append(sfile)
 

@@ -40,7 +40,7 @@ def main(options, args):
 		# not parsing the whole file, just what we need
 		with open(os.path.join(process_dir, nzbfile), "r") as file:
 			for line in file.readlines():
-				match = re.match(".* date=\"(\d+)\".*", line)
+				match = re.match(r".* date=\"(\d+)\".*", line)
 				if match:
 					date = datetime.datetime.fromtimestamp(int(match.group(1)))
 					break
