@@ -1987,7 +1987,7 @@ class RarArguments(object):
 	def set_rar2_flags(self, rar2_detected):
 		self.old_naming_flag = "" if rar2_detected else "-vn"
 
-	def set_rar5_flags(self, rar5_detected):
+	def set_rar4_flags(self, rar5_detected):
 		self.force_rar4_flag = "-ma4" if rar5_detected else ""
 	
 def compressed_rar_file_factory(block, blocks, src,
@@ -2288,7 +2288,7 @@ class CompressedRarFile(io.IOBase):
 			# we assume that newer versions always compress better
 			rarexe = repository.get_most_recent_version()
 			args.set_rar2_flags(re.search(r'_rar2', rarexe.path()) is not None)
-			args.set_rar5_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
+			args.set_rar4_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
 			
 			window_size = block.get_dict_size()
 			amount = 0
@@ -2417,7 +2417,7 @@ class CompressedRarFile(io.IOBase):
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			_fire(MsgCode.MSG, message="Trying %s." % rar)
 			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
-			args.set_rar5_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
+			args.set_rar4_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
 				while args.increase_thread_count(rar):
