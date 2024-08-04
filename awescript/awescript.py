@@ -723,7 +723,7 @@ def move(files, typ, subtyp, overwrite, debug):
                             else:
                                 os.remove(dest + "copy.of." + f)
                         if debug:
-                            print("rename  %s%s to %scopy.of.%s" (dest, f, dest, f))
+                            print("rename  %s%s to %scopy.of.%s" % (dest, f, dest, f))
                         else:
                             os.rename(dest + f, dest + "copy.of." + f)
                 if debug:
