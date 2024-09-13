@@ -2336,6 +2336,7 @@ class CompressedRarFile(io.IOBase):
 #		args.threads = thread_count
 			
 		def try_rar_executable(rar, args, old=False):
+			args.set_rar4_flags(re.search(r'_rar[56]', rar.path()) is not None)
 			compress = custom_popen([rar.path()] + args.arglist())
 			stdout, _ = compress.communicate()
 			
