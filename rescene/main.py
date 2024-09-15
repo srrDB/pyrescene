@@ -2287,8 +2287,6 @@ class CompressedRarFile(io.IOBase):
 				"Grabbing large enough data piece size for testing.")
 			# we assume that newer versions always compress better
 			rarexe = repository.get_most_recent_version()
-			args.set_rar2_flags(re.search(r'_rar2', rarexe.path()) is not None)
-			args.set_rar4_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
 			
 			window_size = block.get_dict_size()
 			amount = 0
@@ -2336,6 +2334,8 @@ class CompressedRarFile(io.IOBase):
 #		args.threads = thread_count
 			
 		def try_rar_executable(rar, args, old=False):
+			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
+			args.set_rar4_flags(re.search(r'_rar[56]', rar.path()) is not None)
 			compress = custom_popen([rar.path()] + args.arglist())
 			stdout, _ = compress.communicate()
 			
@@ -2417,7 +2417,7 @@ class CompressedRarFile(io.IOBase):
 		for rar in repository.get_rar_executables(self.get_most_recent_date()):
 			_fire(MsgCode.MSG, message="Trying %s." % rar)
 			args.set_rar2_flags(re.search(r'_rar2', rar.path()) is not None)
-			args.set_rar4_flags(re.search(r'_rar[5-9]', rarexe.path()) is not None)
+			args.set_rar4_flags(re.search(r'_rar[56]', rarexe.path()) is not None)
 			found = False
 			if rar.supports_setting_threads():
 				while args.increase_thread_count(rar):
