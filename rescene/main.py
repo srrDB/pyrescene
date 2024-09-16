@@ -2287,6 +2287,8 @@ class CompressedRarFile(io.IOBase):
 				"Grabbing large enough data piece size for testing.")
 			# we assume that newer versions always compress better
 			rarexe = repository.get_most_recent_version()
+			args.set_rar2_flags(re.search(r'_rar2', rarexe.path()) is not None)
+			args.set_rar4_flags(re.search(r'_rar[56]', rarexe.path()) is not None)
 			
 			window_size = block.get_dict_size()
 			amount = 0
