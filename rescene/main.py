@@ -41,7 +41,6 @@ import zlib
 import re
 
 import hashlib
-import nntplib
 import collections
 
 import time
@@ -647,7 +646,7 @@ def _rarreader_usenet(rarfile, read_retries=7):
 	rr = RarReader(rarfile)
 	try:
 		return rr.read_all()
-	except (EnvironmentError, IndexError, nntplib.NNTPTemporaryError) as error:
+	except (EnvironmentError, IndexError,) as error:
 		# IndexError: Offset after end of file.
 		# EnvironmentError: Invalid RAR block length (9728) at offset 0xe4e1b3
 		# EnvironmentError: Invalid RAR block length (0) at offset 0xe4e1b1
@@ -667,8 +666,7 @@ def _rarreader_usenet(rarfile, read_retries=7):
 			try:
 				rr = RarReader(rarfile)
 				return rr.read_all()
-			except (EnvironmentError, IndexError,
-			        nntplib.NNTPTemporaryError) as error:
+			except (EnvironmentError, IndexError,) as error:
 				print(error)
 				if stop <= read_retries:
 					stop += 1
