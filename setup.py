@@ -164,10 +164,6 @@ A detailed explanation can be found on http://rescene.wikidot.com/
 		    'icon_resources': [(1, 'images/icon.ico')]
 		},
 		{
-		    'script': "usenet/srr_usenet.py",
-		    'icon_resources': [(1, 'images/icon.ico')]
-		},
-		{
 		    'script': "bin/retag.py",
 		    'icon_resources': [(1, 'images/icon.ico')]
 		}
@@ -207,7 +203,6 @@ def main():
 			"bin/py2exe/shell_extension-srrit.bat",
 			"bin/py2exe/auto.bat",
 			"bin/py2exe/README.txt",
-			"usenet/srr_usenet_template.cfg",
 			"README",
 			"NEWS",
 			"AUTHORS",
@@ -219,17 +214,9 @@ def main():
 	# Only for Python 2.6:
 	# ? UserDict      imported from rescene.ordereddict
 	# ? psyco         imported from yenc
-	# Optional dependencies for srr_usenet.py:
-	# ? _yenc         imported from yenc
-	# ? cElementTree  imported from pynzb.etree_nzb
-	# ? lxml          imported from pynzb.lxml_nzb
 	# Optional:
 	# ? _lzma         imported from lzma
 	# ? readline      imported from cmd, code, pdb
-
-	# make sure all the necessary files can be found
-	base = os.path.realpath(os.path.curdir)
-	sys.path.append(os.path.join(base, "usenet"))
 
 	setup(**config_dict)
 
