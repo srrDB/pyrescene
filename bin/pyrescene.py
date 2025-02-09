@@ -52,7 +52,13 @@ import time
 import logging
 import itertools
 import struct
-import imghdr
+
+try:
+	import imghdr
+except ModuleNotFoundError:
+	print("imghdr is not available in Python 3.12+")
+	print("Run: pip install standard-imghdr==3.13 to fix this")
+	exit(1)
 
 try:
 	import win32api
