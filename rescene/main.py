@@ -41,13 +41,11 @@ import zlib
 import re
 
 import hashlib
-import nntplib
 import collections
 
 import time
 import shutil
 import subprocess
-import multiprocessing
 
 import rescene
 from rescene.rar import (BlockType, RarReader,
@@ -644,6 +642,13 @@ def create_srr_single_volume(srr_name, infile, tmp_srr_name=None):
 def _rarreader_usenet(rarfile, read_retries=7):
 	"""Tries redownloading data read_retries times if it fails.
 	Regular RarReader, but handles Usenet exceptions and retries."""
+	try:
+		import nntplib
+	except:
+		print("nntplib is not available in Python 3.12+")
+		print("Run: pip install standard-nntplib==3.13 to fix this")
+		exit(1)
+
 	rr = RarReader(rarfile)
 	try:
 		return rr.read_all()
