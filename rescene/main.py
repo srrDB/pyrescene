@@ -64,7 +64,7 @@ from rescene.utility import calculate_crc32
 from rescene.osohash import osohash_from
 from rescene.utility import FileType
 from rescene.zip import ZipReader, ZIP_EXT, ZipFileBlock
-from rescene.rar5 import parse_rar5
+from rescene.rar5 import parse_rar5, RAR_DATA, RAR_SPLIT_BEFORE, RAR_SPLIT_AFTER, BLOCK_FILE, BLOCK_SERVICE
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -640,11 +640,57 @@ def is_rar4(volume):
 	return rv
 
 def _parse_rar5_data(rfile):
+	"""Parse RAR5 file and extract metadata for SRR storage.
+	
+	For file blocks: only store header (data comes from source files)
+	For service blocks: store header AND data (QO, RR, CMT can't be reconstructed)
+	For other blocks: store header only
+	Also stores any trailing padding after the end block.
+	"""
 	meta_data_bytes = b""
 	
-	with parse_rar5(rfile, is_srr=False) as rar_reader:
+	# Read the entire file into memory so we can seek freely
+	if hasattr(rfile, 'read'):
+		# It's a file-like object
+		original_pos = rfile.tell()
+		rfile.seek(0)
+		file_data = rfile.read()
+		rfile.seek(original_pos)
+	else:
+		# It's a file path
+		with open(rfile, 'rb') as f:
+			file_data = f.read()
+	
+	file_size = len(file_data)
+	# Create a BytesIO to parse
+	file_stream = io.BytesIO(file_data)
+	end_of_blocks = 0
+	
+	with parse_rar5(file_stream, is_srr=False) as rar_reader:
 		for rblock in rar_reader:
-			meta_data_bytes += rblock.metadata()
+			header = rblock.header()
+			# Always include the header
+			meta_data_bytes += header.header_data
+			
+			# Track the end position of all blocks
+			block_end = header.data_offset() + header.size_data
+			if block_end > end_of_blocks:
+				end_of_blocks = block_end
+			
+			# For service blocks with data, include the data area too
+			# (QO=Quick Open, RR=Recovery Record, CMT=Comment, etc.)
+			# These cannot be reconstructed from source files
+			if rblock.is_service_block() and header.size_data > 0:
+				# Read the data area from the file data
+				data_offset = header.data_offset()
+				service_data = file_data[data_offset:data_offset + header.size_data]
+				meta_data_bytes += service_data
+	
+	# Include any trailing padding after the last block
+	# RAR volumes often have padding to align to sector boundaries
+	if end_of_blocks < file_size:
+		padding = file_data[end_of_blocks:]
+		meta_data_bytes += padding
 
 	return meta_data_bytes
 
@@ -1270,6 +1316,50 @@ class RarMtSettings(object):
 		self.mt_min = 0
 		self.mt_max = 0
 
+
+def _compute_rar5_file_offsets(blocks):
+	"""Pre-compute data start offsets for each volume's file blocks.
+	
+	Returns a dict: {volume_name: {file_name: data_start_offset}}
+	This is needed for multi-volume RAR5 archives where each call to
+	reconstruct_rar5() needs to know where in the source file to start reading.
+	"""
+	result = {}
+	# Track cumulative offset for each file name
+	file_cumulative = {}  # {file_name: cumulative_bytes_before_this_volume}
+	
+	for block in blocks:
+		if block.rawtype != BlockType.SrrRar5File:
+			continue
+			
+		volume_name = block.file_name
+		payload_data = block.payload().read()
+		payload_stream = io.BytesIO(payload_data)
+		
+		result[volume_name] = {}
+		
+		with parse_rar5(payload_stream, is_srr=True) as rar_reader:
+			for rblock in rar_reader:
+				header = rblock.header()
+				has_data = header.flags & RAR_DATA
+				
+				if has_data and rblock.is_file_block():
+					file_name = rblock.name.decode('utf-8', 'replace')
+					data_size = header.size_data
+					
+					# Get the cumulative offset (data already written in previous volumes)
+					if file_name not in file_cumulative:
+						file_cumulative[file_name] = 0
+					
+					# Store the offset for this volume
+					result[volume_name][file_name] = file_cumulative[file_name]
+					
+					# Update the cumulative offset for subsequent volumes
+					file_cumulative[file_name] += data_size
+	
+	return result
+
+
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
 				rar_executable_dir=None, tmp_dir=None, extract_files=True,
@@ -1324,6 +1414,12 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			return False
 	
 	blocks = RarReader(srr_file).read_all()
+	
+	# Pre-compute file data offsets for RAR5 multi-volume support
+	# This builds a map of {volume_name: {file_name: data_start_offset}}
+	# so that reconstruct_rar5 can seek to the correct position in source files
+	rar5_file_offsets = _compute_rar5_file_offsets(blocks)
+	
 	for block in blocks:
 		_fire(MsgCode.BLOCK, message="RAR Block",
 			  type=block.rawtype, size=block.header_size)
@@ -1473,6 +1569,11 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			reconstruct_zip(block.zip_data(), in_folder, out_folder, 
 				extract_paths, hints, skip_rar_crc, auto_locate_renamed,
 				empty, tmp_dir)
+		elif block.rawtype == BlockType.SrrRar5File:
+			# Pass file_offsets dict for multi-volume support
+			reconstruct_rar5(block, in_folder, out_folder, 
+				extract_paths, hints, skip_rar_crc, auto_locate_renamed,
+				empty, tmp_dir, rar5_file_offsets)
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
@@ -1492,6 +1593,201 @@ def reconstruct_zip(zip_metadata, in_folder, out_folder,
 	stream = io.BytesIO(zip_metadata)
 	for zipblock in ZipReader(stream, is_srr=True):
 		print(zipblock)
+
+
+def reconstruct_rar5(srr_block, in_folder, out_folder, 
+		extract_paths=True, hints={},
+		skip_rar_crc=False, auto_locate_renamed=False, empty=False,
+		tmp_dir=None, file_offsets=None):
+	"""Reconstruct a RAR5 archive from an SRR RAR5 block.
+	
+	srr_block: SrrRar5FileBlock containing the RAR5 metadata
+	in_folder: root folder to look for source files
+	out_folder: location to place the reconstructed archive
+	extract_paths: if paths are stored in the SRR, they will be re-created
+	hints: a dictionary used for handling renamed files
+	skip_rar_crc: Disables checking the crc32 values
+	auto_locate_renamed: if set, look in sub folders for renamed files
+	empty: will write zero bytes when no file is found
+	tmp_dir: working directory
+	file_offsets: dict {volume_name: {file_name: data_start_offset}} for multi-volume support
+	
+	The SRR RAR5 block contains:
+	- Headers for all RAR5 blocks
+	- Data areas for service blocks (QO, RR, CMT, etc.) - stored in SRR
+	- NO data areas for file blocks - these come from source files
+	"""
+	rar_name = srr_block.file_name
+	
+	# Get file offsets for this volume (for multi-volume support)
+	volume_offsets = file_offsets.get(rar_name, {}) if file_offsets else {}
+	
+	# Determine output file path
+	if extract_paths:
+		ofile = os.path.join(out_folder, rar_name.replace("/", os.sep))
+	else:
+		ofile = os.path.join(out_folder, os.path.basename(rar_name))
+	
+	# Create output directory if needed
+	odir = os.path.dirname(ofile)
+	if odir and not os.path.isdir(odir):
+		os.makedirs(odir)
+	
+	# Check if we can overwrite
+	if not can_overwrite(ofile):
+		_fire(MsgCode.USER_ABORTED,
+			message="Operation aborted. Archive already exists: %s" % ofile)
+		return False
+	
+	_fire(MsgCode.MSG, message="Re-creating RAR5 file: %s" % 
+		os.path.basename(ofile))
+	
+	# Track which source file we have open
+	srcfs = None
+	source_name = None
+	
+	# Get the raw payload - this contains headers + service block data + padding
+	payload_data = srr_block.payload().read()
+	payload_stream = io.BytesIO(payload_data)
+	
+	# Track how much of the payload we've used
+	payload_used = 0
+	
+	try:
+		with open(ofile, "wb") as rarfs:
+			# Parse with is_srr=True - file data not present but service data IS
+			with parse_rar5(payload_stream, is_srr=True) as rar_reader:
+				for rblock in rar_reader:
+					header = rblock.header()
+					
+					# Write the header bytes
+					rarfs.write(header.header_data)
+					payload_used += len(header.header_data)
+					
+					# Check if this block has a data area
+					has_data = header.flags & RAR_DATA
+					
+					if has_data and rblock.is_service_block():
+						# Service block data is stored in the SRR
+						# Extract it from the payload_data using the offset
+						data_offset = header.data_offset()
+						data_size = header.size_data
+						service_data = payload_data[data_offset:data_offset + data_size]
+						if len(service_data) < data_size:
+							# Shouldn't happen with properly created SRR
+							_fire(MsgCode.MSG,
+								message="Warning: Service block data incomplete, padding with zeros")
+							service_data += b'\x00' * (data_size - len(service_data))
+						rarfs.write(service_data)
+						payload_used = data_offset + data_size
+						
+					elif has_data and rblock.is_file_block():
+						# File block data comes from source files
+						file_name = rblock.name.decode('utf-8', 'replace')
+						data_size = header.size_data
+						
+						# Get the starting offset in the source file for multi-volume support
+						file_data_start = volume_offsets.get(file_name, 0)
+						
+						# Open the source file (once per file name)
+						if source_name != file_name:
+							# Need to open a new source file
+							if srcfs:
+								srcfs.close()
+							source_name = file_name
+							
+							try:
+								src = _locate_file_rar5(file_name, in_folder,
+												hints, auto_locate_renamed)
+								srcfs = open(src, "rb")
+							except FileNotFound:
+								if empty:
+									_fire(MsgCode.MSG,
+										message="File not found, using fake file: %s" % file_name)
+									srcfs = FakeFile(data_size)
+								else:
+									raise
+						
+						# Seek to the correct position in the source file
+						# This is crucial for multi-volume archives where each volume
+						# continues from where the previous one left off
+						srcfs.seek(file_data_start)
+						
+						# Read and write the file data
+						data = srcfs.read(data_size)
+						if len(data) < data_size:
+							if empty:
+								# Pad with zeros if we don't have enough data
+								data += b'\x00' * (data_size - len(data))
+							else:
+								raise ValueError(
+									"Source file %s is too small. Expected %d bytes, got %d" %
+									(file_name, data_size, len(data)))
+						
+						rarfs.write(data)
+					
+					elif has_data:
+						# Other block type with data - shouldn't normally happen
+						data_size = header.size_data
+						_fire(MsgCode.MSG, 
+							message="Warning: Unknown block with data area, writing zeros")
+						rarfs.write(b'\x00' * data_size)
+					else:
+						# No data area - just update payload_used to end of header
+						header_end = header.data_offset()  # data_offset is end of header
+						if header_end > payload_used:
+							payload_used = header_end
+			
+			# Write any trailing padding stored in the SRR
+			# This is data after the EndArchiveBlock (used for alignment)
+			if payload_used < len(payload_data):
+				padding = payload_data[payload_used:]
+				rarfs.write(padding)
+		
+		if srcfs:
+			srcfs.close()
+		
+		return True
+		
+	except Exception as e:
+		if srcfs:
+			srcfs.close()
+		# Clean up partial file on error
+		if os.path.exists(ofile):
+			os.unlink(ofile)
+		raise
+
+
+def _locate_file_rar5(file_name, in_folder, hints, auto_locate_renamed):
+	"""Locate a source file for RAR5 reconstruction.
+	Similar to _locate_file but adapted for RAR5 file names."""
+	
+	# Check hints first
+	if file_name in hints:
+		hint_path = os.path.join(in_folder, hints[file_name])
+		if os.path.isfile(hint_path):
+			return hint_path
+	
+	# Try direct path
+	direct_path = os.path.join(in_folder, file_name)
+	if os.path.isfile(direct_path):
+		return direct_path
+	
+	# Try just the basename
+	basename = os.path.basename(file_name)
+	basename_path = os.path.join(in_folder, basename)
+	if os.path.isfile(basename_path):
+		return basename_path
+	
+	# Auto-locate if enabled
+	if auto_locate_renamed:
+		# Walk through in_folder looking for the file
+		for root, dirs, files in os.walk(in_folder):
+			for f in files:
+				if f == basename or f.lower() == basename.lower():
+					return os.path.join(root, f)
+	
+	raise FileNotFound("Could not locate file: %s" % file_name)
 
 
 def _write_recovery_record(block, rarfs):

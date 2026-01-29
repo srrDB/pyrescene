@@ -218,10 +218,19 @@ class Rar5HeaderBlock(Rar5HeaderBase):
 		"""
 		stream: open stream to read the basic block header from
 		file_position: location of the block in the stream
+		
+		Raises EOFError if there's not enough data to read the header.
 		"""
 		super(Rar5HeaderBlock, self).__init__(file_position)
-		(self.crc32,) = S_LONG.unpack_from(stream.read(4))
+		crc_data = stream.read(4)
+		if len(crc_data) < 4:
+			raise EOFError("Unexpected end of file while reading block header")
+		(self.crc32,) = S_LONG.unpack_from(crc_data)
 		self.header_size = read_vint(stream)
+		
+		# Validate header_size - must be at least 1 (for type field)
+		if self.header_size < 1:
+			raise EOFError("Invalid header size (likely padding or corrupt data)")
 		self._hdrvint_width = stream.tell() - 4 - self.block_position
 		self.type = read_vint(stream)
 		self.flags = read_vint(stream)
@@ -290,8 +299,6 @@ class BlockFactory(object):
 				raise ValueError("SFX files not supported")
 		else:
 			header = Rar5HeaderBlock(stream, block_position)
-			if not is_srr_block:
-				stream.seek(header.size_data, os.SEEK_CUR)
 
 		if header.is_marker_block():
 			block = MarkerBlock(header, is_srr_block)
@@ -307,6 +314,10 @@ class BlockFactory(object):
 			print("Unknown block detected!")
 			block = RarBlock(header, is_srr_block)
 
+		# Move stream to the start of the next block
+		# For SRR mode, file data is not present but service data IS
+		stream.seek(block.next_block_offset(), os.SEEK_SET)
+		
 		if not is_srr_block:
 			assert stream.tell() == block_position + header.full_block_size()
 			
@@ -324,7 +335,12 @@ class RarBlock(object):
 	def next_block_offset(self):
 		location = self.basic_header.data_offset()
 		if not self.is_srr:
+			# Normal RAR file - skip all data areas
 			location += self.basic_header.size_data
+		elif self.is_service_block():
+			# SRR file with service block - service data IS stored in SRR
+			location += self.basic_header.size_data
+		# else: SRR file with file block - file data is NOT in SRR
 		return location
 	
 	def full_header_size(self):
@@ -708,7 +724,7 @@ class EndArchiveBlock(RarBlock):
 		self.end_of_archive_flags = read_vint(stream)
 
 	def is_last_volume(self):
-		return bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
+		return not bool(self.end_of_archive_flags & END_NOT_LAST_VOLUME)
 
 	def explain(self):
 		out = self.basic_header.explain()
@@ -790,19 +806,26 @@ class Rar5Reader(object):
 	def _read(self):
 		block_start_position = self._rarstream.tell()
 		
-		if block_start_position == self._initial_offset + self._file_length:
+		if block_start_position >= self._initial_offset + self._file_length:
 			return None  # The end.
-		elif block_start_position >= self._initial_offset + self._file_length:
-			assert False, "Invalid state"
 	
 		try:
 			start_file = block_start_position == self._initial_offset
 			curblock = BlockFactory.create(
 				self._rarstream, start_file, self.is_srr)
+		except EOFError:
+			# End of file reached - normal for multi-part archives
+			# where the last file block's data extends to EOF
+			return None
 		except Exception as e:
 			print(e)
 			curblock = None
 			raise
+
+		# Stop parsing after EndArchiveBlock - anything after is padding/garbage
+		if curblock.is_endblock():
+			# Seek to the actual end so subsequent reads return None
+			self._rarstream.seek(self._initial_offset + self._file_length)
 
 		return curblock
 	
