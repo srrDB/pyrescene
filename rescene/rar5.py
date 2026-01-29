@@ -743,7 +743,7 @@ def encode_vint(amount):
 		new_bits = amount & 0x7F
 		amount = amount >> 7
 		more = amount != 0
-		vint.append(S_BYTE.pack(new_bits + (0x80 if more else 0)))
+		vint.append(int(S_BYTE.pack(int(new_bits + (0x80 if more else 0))).hex(), 16))
 	return vint
 
 ###############################################################################

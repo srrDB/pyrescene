@@ -1178,12 +1178,12 @@ def info(srr_file):
 			current_rar = None # end the file size counting
 			
 		# calculate size of RAR file
-		if current_rar:
+		if current_rar and count_size:
+			# don't include the header size when padding is used
+			# CREEPSHOW uses padding in their volumes
+			if block.rawtype != BlockType.SrrRarPadding:
+				current_rar.file_size += block.header_size
 			if block.add_size:
-				# don't include the header size when padding is used
-				# CREEPSHOW uses padding in their volumes
-				if block.rawtype != BlockType.SrrRarPadding:
-					current_rar.file_size += block.header_size
 				current_rar.file_size += block.add_size
 			current_rar.offset_end_rar = (block.block_position + 
 			                              block.header_size)
