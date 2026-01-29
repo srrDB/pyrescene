@@ -631,3 +631,328 @@ class TestRar5Vint(unittest.TestCase):
 		serialized = encode_vint(number)
 		tnumber = read_vint(io.BytesIO(serialized))
 		self.assertEqual(tnumber, number, "encoding to vint and back failed")
+
+
+class TestEndArchiveBlock(unittest.TestCase):
+	"""Tests for EndArchiveBlock is_last_volume logic"""
+	
+	def test_is_last_volume_true(self):
+		"""When END_NOT_LAST_VOLUME flag is NOT set, it IS the last volume"""
+		crc = 0x12345678
+		hcrc32_enc = struct.pack('<L', crc)
+		htype = BLOCK_END
+		htype_enc = encode_vint(htype)
+		hflags = RAR_SKIP
+		hflags_enc = encode_vint(hflags)
+		# No END_NOT_LAST_VOLUME flag = this IS the last volume
+		heoa_flags = 0
+		heoa_flags_enc = encode_vint(heoa_flags)
+
+		hsize = len(htype_enc) + len(hflags_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		
+		stream = io.BytesIO()
+		stream.write(hcrc32_enc)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(heoa_flags_enc)
+		stream.seek(0)
+		
+		block = BlockFactory.create(stream, is_start_file=False)
+		self.assertTrue(block.is_last_volume(), 
+			"Should be last volume when END_NOT_LAST_VOLUME is not set")
+	
+	def test_is_last_volume_false(self):
+		"""When END_NOT_LAST_VOLUME flag IS set, it is NOT the last volume"""
+		crc = 0x12345678
+		hcrc32_enc = struct.pack('<L', crc)
+		htype = BLOCK_END
+		htype_enc = encode_vint(htype)
+		hflags = RAR_SKIP
+		hflags_enc = encode_vint(hflags)
+		# END_NOT_LAST_VOLUME flag set = NOT the last volume
+		heoa_flags = END_NOT_LAST_VOLUME
+		heoa_flags_enc = encode_vint(heoa_flags)
+
+		hsize = len(htype_enc) + len(hflags_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		
+		stream = io.BytesIO()
+		stream.write(hcrc32_enc)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(heoa_flags_enc)
+		stream.seek(0)
+		
+		block = BlockFactory.create(stream, is_start_file=False)
+		self.assertFalse(block.is_last_volume(), 
+			"Should NOT be last volume when END_NOT_LAST_VOLUME is set")
+
+
+class TestEOFHandling(unittest.TestCase):
+	"""Tests for EOF handling during block parsing"""
+	
+	def test_eof_on_empty_stream(self):
+		"""Empty stream should raise EOFError"""
+		stream = io.BytesIO(b"")
+		self.assertRaises(EOFError, BlockFactory.create, stream, False)
+	
+	def test_eof_on_partial_crc(self):
+		"""Incomplete CRC (less than 4 bytes) should raise EOFError"""
+		stream = io.BytesIO(b"\x12\x34")  # Only 2 bytes, need 4
+		self.assertRaises(EOFError, BlockFactory.create, stream, False)
+	
+	def test_eof_on_zero_header_size(self):
+		"""Zero header size should raise EOFError as invalid"""
+		stream = io.BytesIO()
+		stream.write(struct.pack('<L', 0x12345678))  # CRC
+		stream.write(b"\x00")  # header_size = 0 (invalid)
+		stream.seek(0)
+		self.assertRaises(EOFError, BlockFactory.create, stream, False)
+	
+	def test_rar5_reader_handles_eof_gracefully(self):
+		"""Rar5Reader should handle truncated streams gracefully"""
+		# Create a stream with just a marker block (no other blocks)
+		stream = io.BytesIO(b"Rar!\x1A\x07\x01\x00")
+		reader = Rar5Reader(stream)
+		blocks = list(reader)
+		self.assertEqual(len(blocks), 1)
+		self.assertTrue(blocks[0].is_marker_block())
+
+
+class TestSrrModeBlockParsing(unittest.TestCase):
+	"""Tests for SRR mode where file data is stripped but service data is kept"""
+	
+	def _create_file_block(self, data_size, name=b"test.bin", is_service=False):
+		"""Helper to create a file or service block"""
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_SERVICE if is_service else BLOCK_FILE
+		htype_enc = encode_vint(htype)
+		hflags = RAR_DATA  # Has data area
+		hflags_enc = encode_vint(hflags)
+		hdata_size = encode_vint(data_size)
+
+		hfile_flags = FILE_CRC32
+		hfile_flags_enc = encode_vint(hfile_flags)
+		hunpacked_size = encode_vint(data_size)
+		hattributes_enc = encode_vint(0)
+		data_crc32 = struct.pack('<L', 0x12345678)
+		hcompression_info_enc = encode_vint(0)
+		hhost_os_enc = encode_vint(0)
+		hname_length_enc = encode_vint(len(name))
+
+		hsize = (len(htype_enc) + len(hflags_enc) + len(hdata_size) +
+			len(hfile_flags_enc) + len(hunpacked_size) +
+			len(hattributes_enc) + 4 + len(hcompression_info_enc) +
+			len(hhost_os_enc) + len(hname_length_enc) + len(name))
+		hsize_enc = encode_vint(hsize)
+
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(hdata_size)
+		stream.write(hfile_flags_enc)
+		stream.write(hunpacked_size)
+		stream.write(hattributes_enc)
+		stream.write(data_crc32)
+		stream.write(hcompression_info_enc)
+		stream.write(hhost_os_enc)
+		stream.write(hname_length_enc)
+		stream.write(name)
+		# Add fake data area
+		stream.write(b"X" * data_size)
+		stream.seek(0)
+		return stream
+	
+	def test_next_block_offset_normal_file_block(self):
+		"""Normal RAR file block should skip data area"""
+		stream = self._create_file_block(100, is_service=False)
+		block = BlockFactory.create(stream, is_start_file=False, is_srr_block=False)
+		header_end = block.header().data_offset()
+		# Normal mode: next block is after header + data
+		self.assertEqual(block.next_block_offset(), header_end + 100)
+	
+	def test_next_block_offset_srr_file_block(self):
+		"""SRR file block should NOT skip data area (data not present)"""
+		stream = self._create_file_block(100, is_service=False)
+		block = BlockFactory.create(stream, is_start_file=False, is_srr_block=True)
+		header_end = block.header().data_offset()
+		# SRR mode with file block: data is NOT present, so next block is at header end
+		self.assertEqual(block.next_block_offset(), header_end)
+	
+	def test_next_block_offset_srr_service_block(self):
+		"""SRR service block SHOULD include data area (service data IS stored)"""
+		stream = self._create_file_block(100, name=b"QO", is_service=True)
+		block = BlockFactory.create(stream, is_start_file=False, is_srr_block=True)
+		header_end = block.header().data_offset()
+		# SRR mode with service block: data IS present
+		self.assertEqual(block.next_block_offset(), header_end + 100)
+	
+	def test_is_file_block_vs_service_block(self):
+		"""Verify is_file_block and is_service_block work correctly"""
+		file_stream = self._create_file_block(50, is_service=False)
+		file_block = BlockFactory.create(file_stream, is_start_file=False)
+		self.assertTrue(file_block.is_file_block())
+		self.assertFalse(file_block.is_service_block())
+		
+		service_stream = self._create_file_block(50, name=b"RR", is_service=True)
+		service_block = BlockFactory.create(service_stream, is_start_file=False)
+		self.assertFalse(service_block.is_file_block())
+		self.assertTrue(service_block.is_service_block())
+
+
+class TestMultiVolumeFlags(unittest.TestCase):
+	"""Tests for multi-volume archive flags"""
+	
+	def _create_file_block_with_flags(self, hflags):
+		"""Helper to create a file block with specific flags"""
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_FILE
+		htype_enc = encode_vint(htype)
+		hflags_enc = encode_vint(hflags)
+		
+		has_data = hflags & RAR_DATA
+		data_size = 100 if has_data else 0
+		
+		parts = [htype_enc, hflags_enc]
+		if has_data:
+			parts.append(encode_vint(data_size))
+		
+		hfile_flags = FILE_CRC32
+		hfile_flags_enc = encode_vint(hfile_flags)
+		hunpacked_size = encode_vint(1000)
+		hattributes_enc = encode_vint(0)
+		data_crc32 = struct.pack('<L', 0x12345678)
+		hcompression_info_enc = encode_vint(0)
+		hhost_os_enc = encode_vint(0)
+		name = b"test.bin"
+		hname_length_enc = encode_vint(len(name))
+
+		hsize = sum(len(p) for p in parts) + (
+			len(hfile_flags_enc) + len(hunpacked_size) +
+			len(hattributes_enc) + 4 + len(hcompression_info_enc) +
+			len(hhost_os_enc) + len(hname_length_enc) + len(name))
+		hsize_enc = encode_vint(hsize)
+
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		for p in parts:
+			stream.write(p)
+		stream.write(hfile_flags_enc)
+		stream.write(hunpacked_size)
+		stream.write(hattributes_enc)
+		stream.write(data_crc32)
+		stream.write(hcompression_info_enc)
+		stream.write(hhost_os_enc)
+		stream.write(hname_length_enc)
+		stream.write(name)
+		if has_data:
+			stream.write(b"X" * data_size)
+		stream.seek(0)
+		return stream
+	
+	def test_split_before_flag(self):
+		"""RAR_SPLIT_BEFORE indicates data continues from previous volume"""
+		stream = self._create_file_block_with_flags(RAR_DATA | RAR_SPLIT_BEFORE)
+		block = BlockFactory.create(stream, is_start_file=False)
+		self.assertTrue(block.header().flags & RAR_SPLIT_BEFORE)
+	
+	def test_split_after_flag(self):
+		"""RAR_SPLIT_AFTER indicates data continues in next volume"""
+		stream = self._create_file_block_with_flags(RAR_DATA | RAR_SPLIT_AFTER)
+		block = BlockFactory.create(stream, is_start_file=False)
+		self.assertTrue(block.header().flags & RAR_SPLIT_AFTER)
+	
+	def test_split_both_flags(self):
+		"""Middle volume has both SPLIT_BEFORE and SPLIT_AFTER"""
+		flags = RAR_DATA | RAR_SPLIT_BEFORE | RAR_SPLIT_AFTER
+		stream = self._create_file_block_with_flags(flags)
+		block = BlockFactory.create(stream, is_start_file=False)
+		h = block.header()
+		self.assertTrue(h.flags & RAR_SPLIT_BEFORE)
+		self.assertTrue(h.flags & RAR_SPLIT_AFTER)
+	
+	def test_no_split_flags_single_volume(self):
+		"""Single volume file has neither SPLIT flag"""
+		stream = self._create_file_block_with_flags(RAR_DATA)
+		block = BlockFactory.create(stream, is_start_file=False)
+		h = block.header()
+		self.assertFalse(h.flags & RAR_SPLIT_BEFORE)
+		self.assertFalse(h.flags & RAR_SPLIT_AFTER)
+
+
+class TestBlockMetadata(unittest.TestCase):
+	"""Tests for block metadata retrieval"""
+	
+	def test_header_data_preserved(self):
+		"""Header data bytes should be preserved exactly"""
+		# Create a simple end block
+		crc = 0xDEADBEEF
+		hcrc32_enc = struct.pack('<L', crc)
+		htype_enc = encode_vint(BLOCK_END)
+		hflags_enc = encode_vint(RAR_SKIP)
+		heoa_flags_enc = encode_vint(0)
+		hsize = len(htype_enc) + len(hflags_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		
+		expected_header = hcrc32_enc + hsize_enc + htype_enc + hflags_enc + heoa_flags_enc
+		
+		stream = io.BytesIO(expected_header)
+		block = BlockFactory.create(stream, is_start_file=False)
+		
+		self.assertEqual(block.metadata(), expected_header)
+		self.assertEqual(block.header().header_data, expected_header)
+	
+	def test_full_header_size_calculation(self):
+		"""full_header_size should include CRC + vint size + header"""
+		crc = 0x12345678
+		hcrc32_enc = struct.pack('<L', crc)
+		htype_enc = encode_vint(BLOCK_END)
+		hflags_enc = encode_vint(0)
+		heoa_flags_enc = encode_vint(0)
+		hsize = len(htype_enc) + len(hflags_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		
+		stream = io.BytesIO()
+		stream.write(hcrc32_enc)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(heoa_flags_enc)
+		stream.seek(0)
+		
+		block = BlockFactory.create(stream, is_start_file=False)
+		expected_full_size = 4 + len(hsize_enc) + hsize
+		self.assertEqual(block.full_header_size(), expected_full_size)
+	
+	def test_data_offset_calculation(self):
+		"""data_offset should point to start of data area"""
+		crc = 0x12345678
+		hcrc32_enc = struct.pack('<L', crc)
+		htype_enc = encode_vint(BLOCK_END)
+		hflags_enc = encode_vint(RAR_DATA)
+		hdata_size_enc = encode_vint(500)
+		heoa_flags_enc = encode_vint(0)
+		hsize = len(htype_enc) + len(hflags_enc) + len(hdata_size_enc) + len(heoa_flags_enc)
+		hsize_enc = encode_vint(hsize)
+		
+		stream = io.BytesIO()
+		stream.write(hcrc32_enc)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(hdata_size_enc)
+		stream.write(heoa_flags_enc)
+		stream.seek(0)
+		
+		block = BlockFactory.create(stream, is_start_file=False)
+		expected_data_offset = 4 + len(hsize_enc) + hsize
+		self.assertEqual(block.header().data_offset(), expected_data_offset)
+
