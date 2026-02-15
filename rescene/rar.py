@@ -938,7 +938,7 @@ class SrrZipFileBlock(_SrrFileNameBlock):
 class SrrRar5FileBlock(_SrrFileNameBlock):
 	"""RAR5 meta data blocks are stored inside this SRR block.
 
-	|CRC |TY|FLAG| HL |ADD_SIZE| NL | File name |
+	|CRC |TY|FLAG| HL |ADD_SIZE|FILE_CRC| NL | File name |
 	CRC:    0x7070 (2 bytes)
 	TY:     Type 0x70 (1 byte)
 	FLAG:   Long block (2 bytes)
@@ -946,22 +946,25 @@ class SrrRar5FileBlock(_SrrFileNameBlock):
             0x8000: must always be set to indicate the metadata size
 	HL:     Header Length (2 bytes)
 	ADD_SIZE: RAR5 metadata size (4 bytes)
+	FILE_CRC: CRC32 of RAR5 file (4 bytes)
 	NL:     Name Length of RAR5 file name + path (2 bytes)
 	
 	payload()	byte array of RAR5 meta data only
 	"""
 	def __init__(self, bbytes=None, filepos=None, fname=None, 
-		         file_name=None, metadata=None):
-		if not file_name and not metadata:
+		         file_name=None, rar5_crc=None, metadata=None):
+		if not file_name and not rar5_crc and not metadata:
 			# parse bytes from existing block data
 			super(SrrRar5FileBlock, self).__init__(bbytes, filepos, fname)
 			
 			# 4 bytes for RAR5 metadata length (unsigned int) (add_size field)
-			(self.add_size,) = struct.unpack_from("<I", self._rawdata, self._p)
-			self._p += 4
+			# 4 bytes for RAR5 file CRC32 (unsigned int) (rar5_crc field)
+			(self.add_size, self.rar5crc) = struct.unpack_from(
+				"<II", self._rawdata, self._p)
+			self._p += 8
 			# 2 bytes for name length, then the name (unsigned short)
 			self._unpack_file_name()
-		elif file_name and metadata:
+		elif file_name and rar5_crc is not None and metadata:
 			# writing a block
 			self.crc = 0x7070
 			self.rawtype = 0x70
@@ -973,11 +976,13 @@ class SrrRar5FileBlock(_SrrFileNameBlock):
 			if os.sep != "/" and os.sep in file_name:
 				file_name = file_name.replace(os.sep, "/")
 			self.file_name = file_name
+			self.rar5crc = rar5_crc
 	
 			# parameter: full length header
 			file_name_data = self._pack_file_name(file_name)
-			self._write_header(HEADER_LENGTH + 4 + len(file_name_data))
+			self._write_header(HEADER_LENGTH + 8 + len(file_name_data))
 			self._rawdata += struct.pack("<I", self.add_size)
+			self._rawdata += struct.pack("<I", rar5_crc)
 			self._rawdata += file_name_data
 			self._rawdata += metadata
 		else:
@@ -987,6 +992,7 @@ class SrrRar5FileBlock(_SrrFileNameBlock):
 		out = super(SrrRar5FileBlock, self).explain()
 		out += "+RAR5 metadata size (4 bytes): {0}\n".format(
 				self.explain_size(self.add_size))
+		out += "+RAR5 CRC (4 bytes): %X\n" % self.rar5crc
 		out += "+RAR5 name length (2 bytes): {0}\n".format(
 				self.explain_size(len(self.file_name)))
 		out += "+RAR5 name: {0}\n".format(self.file_name)
@@ -1234,8 +1240,12 @@ class RarPackedFileBlock(RarBlock): # 0x74
 	def ftime(self, timetuple):
 		"""Formats the time tuple to a string."""
 		if not timetuple:
-			return "UNKNOWN"		seconds = timetuple[5]		if int(seconds) != seconds:
-			# sub second precision			return "%04d-%02d-%02d %02d:%02d:%02.7f" % timetuple		else:
+			return "UNKNOWN"
+		seconds = timetuple[5]
+		if int(seconds) != seconds:
+			# sub second precision
+			return "%04d-%02d-%02d %02d:%02d:%02.7f" % timetuple
+		else:
 			return "%04d-%02d-%02d %02d:%02d:%02d" % timetuple
 
 	def get_compression_name(self):

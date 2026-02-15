@@ -319,9 +319,9 @@ class TestRarBlocks(unittest.TestCase):
 						 b"\x6D\x70\x74\x79\x2E\x72\x61\x72")
 
 	def test_srr_rar5_file_read(self):
-		# from store_empty_rar5.srr
+		# from store_empty_rar5.srr (updated format with CRC32 field)
 		srrrar5fileheader = bytes(bytearray.fromhex("70 70 70 01 80 21 00"
-		"4E 00 00 00 14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72"
+		"4E 00 00 00 00 00 00 00 14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72"
 		"35 2E 72 61 72"))
 		rar5metadata = bytes(bytearray.fromhex(
 		"52 61 72 21 1A 07 01 00 33 92 B5 E5 0A 01 05 06"
@@ -334,19 +334,23 @@ class TestRarBlocks(unittest.TestCase):
 		self.assertEqual(srrrfb.flags, struct.unpack(str("<H"), b"\x01\x80")[0])
 		self.assertEqual(srrrfb.file_name, "store_empty_rar5.rar")
 		self.assertEqual(srrrfb.add_size, len(rar5metadata))
+		self.assertEqual(srrrfb.rar5crc, 0)
 
 	def test_srr_rar5_file_write(self):
 		fn = "store_empty_rar5.rar"
 		metadata = b"\x00" * 42
-		srrrfb = SrrRar5FileBlock(file_name=fn, metadata=metadata)
+		test_crc = 0x12345678
+		srrrfb = SrrRar5FileBlock(file_name=fn, rar5_crc=test_crc, metadata=metadata)
 		self.assertEqual(srrrfb.crc, 0x7070)
 		self.assertEqual(srrrfb.rawtype, int("0x70", 16))
 		self.assertEqual(srrrfb.flags, 
 			SrrFlags.LONG_BLOCK ^ SrrFlags.RECOVERY_DATA_REMOVED)
 		self.assertEqual(srrrfb.file_name, fn)
-		srrrar5fileheader = bytes(bytearray.fromhex("70 70 70 01 80 21 00" +
+		self.assertEqual(srrrfb.rar5crc, test_crc)
+		srrrar5fileheader = bytes(bytearray.fromhex("70 70 70 01 80 25 00" +
 		("%X 00 00 00" % len(metadata)) +
-		"14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72 35 2E 72 61 72"))
+		("78 56 34 12" +
+		"14 00 73 74 6F 72 65 5F 65 6D 70 74 79 5F 72 61 72 35 2E 72 61 72")))
 		self.assertEqual(srrrfb.block_bytes(), srrrar5fileheader + metadata)
 
 	def test_rar_volume_header(self):  # 0x73

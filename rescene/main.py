@@ -575,8 +575,10 @@ def create_srr(srr_name, infiles, in_folder="",
 					srr.write(block.block_bytes())
 			else:  # rar5
 				rar5meta = _parse_rar5_data(rfexact)
+				rar5crc = calculate_crc32(rarfile)
 				rar5block = SrrRar5FileBlock(
 					file_name=fname,
+					rar5_crc=rar5crc,
 					metadata=rar5meta)
 				srr.write(rar5block.block_bytes())
 				
