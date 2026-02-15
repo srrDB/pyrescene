@@ -27,6 +27,7 @@
 from __future__ import unicode_literals
 from abc import ABCMeta, abstractmethod
 from binascii import hexlify
+from functools import reduce
 from rescene.rar import ArchiveNotFoundError
 from rescene.utility import _DEBUG, _OFFSETS
 
