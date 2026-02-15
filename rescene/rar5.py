@@ -293,8 +293,10 @@ class BlockFactory(object):
 			data = stream.read(8)
 			if data == b"Rar!\x1A\x07\x01\x00":
 				header = Rar5HeaderMarker(stream, block_position)
-			elif data[0:7] == b"Rar!\x1A\x07\x00":
+			elif data[0:7] == b"Rar!\x1A\x07\x00" and data != b"Rar!\x1A\x07\x01\x00":
 				raise ValueError("Input stream is RAR4 format")
+			elif data[0:7] == b"Rar!\x1A\x07":
+				raise ValueError("Unknown RAR marker, not RAR5")
 			else:
 				raise ValueError("SFX files not supported")
 		else:
@@ -493,10 +495,11 @@ class FileServiceBlock(RarBlock):
 		if self.file_flags & FILE_CRC32:
 			(self.datacrc32,) = S_LONG.unpack_from(stream.read(4))
 		compression_info = read_vint(stream)
-		self.algorithm = compression_info & 0x003f  # lower 6 bits
-		self.solid = bool(compression_info & 0x0040)  # bit 7
-		self.method = compression_info & 0x0380  # bit 8-10
-		self.dict_size = compression_info & 0x3c00  # bit 11-14
+		self.compression_info = compression_info
+		self.algorithm = compression_info & 0x003f  # bits 0-5
+		self.solid = bool(compression_info & 0x0040)  # bit 6
+		self.method = (compression_info >> 7) & 0x07  # bits 7-9
+		self.dict_size = (compression_info >> 10) & 0x0F  # bits 10-13
 		self.host_os = read_vint(stream)
 		name_length = read_vint(stream)
 		self.name = stream.read(name_length)
@@ -516,6 +519,41 @@ class FileServiceBlock(RarBlock):
 		# data area
 		if self.file_flags & RAR_DATA:
 			pass
+
+	def compression_method_value(self):
+		return self.method
+
+	def dictionary_size_value(self):
+		return self.dict_size
+
+	def dictionary_size_bytes(self):
+		return (128 * 1024) * (2 ** self.dictionary_size_value())
+
+	def compression_level(self):
+		method = self.compression_method_value()
+		# If file is marked compressed but method is 0, use level 1 as fallback
+		if self.is_compressed() and method == 0:
+			method = 1
+		return method if method <= 5 else 5
+
+	def is_compressed(self):
+		if not (self.file_flags & FILE_NOSIZE):
+			if (self.basic_header.size_data != self.unpacked_size and
+				self.unpacked_size != 0 and
+				not (self.file_flags & FILE_DIRECTORY)):
+				return True
+		return self.algorithm != 0 or self.compression_method_value() != 0
+
+	def compression_settings(self):
+		return {
+			"algorithm": self.algorithm,
+			"solid": self.solid,
+			"method": self.compression_method_value(),
+			"dict_size": self.dictionary_size_value(),
+			"dict_bytes": self.dictionary_size_bytes(),
+			"level": self.compression_level(),
+			"is_compressed": self.is_compressed(),
+		}
 
 	def explain(self):
 		out = self.basic_header.explain()
@@ -818,7 +856,8 @@ class Rar5Reader(object):
 			# where the last file block's data extends to EOF
 			return None
 		except Exception as e:
-			print(e)
+			if _DEBUG:
+				print(e)
 			curblock = None
 			raise
 

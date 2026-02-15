@@ -93,6 +93,72 @@ class TestRar5Reader(unittest.TestCase):
 			self.assertTrue(block_info, "Must not be None or empty")
 			print(r.explain())
 
+class TestRar5Compression(unittest.TestCase):
+	path = os.path.join(os.pardir, os.pardir, "test_files")
+	folder = "rar5"
+
+	def test_compressed_block_detection(self):
+		rfile = os.path.join(self.path, self.folder, "rar5_compressed.rar")
+		has_compressed = False
+		for rblock in Rar5Reader(rfile):
+			header = rblock.header()
+			if header.flags & RAR_DATA and rblock.is_file_block():
+				if rblock.is_compressed():
+					has_compressed = True
+					break
+		self.assertTrue(has_compressed, "Expected compressed file blocks")
+
+
+class TestRar5MultiVolumeArchives(unittest.TestCase):
+	path = os.path.join(os.pardir, os.pardir, "test_files")
+
+	def _find_block(self, rfile, predicate):
+		for block in Rar5Reader(rfile):
+			if predicate(block):
+				return block
+		return None
+
+	def _first_file_block(self, rfile):
+		return self._find_block(rfile, lambda block: block.is_file_block())
+
+	def _end_block(self, rfile):
+		return self._find_block(rfile, lambda block: isinstance(block, EndArchiveBlock))
+
+	def test_multi_volume_compressed(self):
+		part1 = os.path.join(self.path, "rar5-compress-multi", "rar5-compress-multi.part1.rar")
+		part2 = os.path.join(self.path, "rar5-compress-multi", "rar5-compress-multi.part2.rar")
+
+		file_block_part1 = self._first_file_block(part1)
+		self.assertTrue(file_block_part1, "Expected file block in part1")
+		self.assertTrue(file_block_part1.header().flags & RAR_SPLIT_AFTER)
+		self.assertTrue(file_block_part1.is_compressed())
+
+		file_block_part2 = self._first_file_block(part2)
+		self.assertTrue(file_block_part2, "Expected file block in part2")
+		self.assertTrue(file_block_part2.header().flags & RAR_SPLIT_BEFORE)
+
+		end_block = self._end_block(part2)
+		self.assertTrue(end_block, "Expected end block in part2")
+		self.assertTrue(end_block.is_last_volume())
+
+	def test_multi_volume_no_compression(self):
+		part1 = os.path.join(self.path, "rar5-nocompression-multi", "rar5-nocompression-multi.part1.rar")
+		part2 = os.path.join(self.path, "rar5-nocompression-multi", "rar5-nocompression-multi.part2.rar")
+
+		file_block_part1 = self._first_file_block(part1)
+		self.assertTrue(file_block_part1, "Expected file block in part1")
+		self.assertTrue(file_block_part1.header().flags & RAR_SPLIT_AFTER)
+		self.assertEqual(file_block_part1.algorithm, 0)
+		self.assertEqual(file_block_part1.compression_method_value(), 0)
+
+		file_block_part2 = self._first_file_block(part2)
+		self.assertTrue(file_block_part2, "Expected file block in part2")
+		self.assertTrue(file_block_part2.header().flags & RAR_SPLIT_BEFORE)
+
+		end_block = self._end_block(part2)
+		self.assertTrue(end_block, "Expected end block in part2")
+		self.assertTrue(end_block.is_last_volume())
+
 class TestParseRarBlocks(unittest.TestCase):
 	""" For use with Rar5Reader.
 		Rar5Reader parses the incoming file or stream. """
@@ -372,6 +438,72 @@ class TestParseRarBlocks(unittest.TestCase):
 		self.assertEqual(block.name, name)
 		self.assertEqual(block.extra_area_size, extra_size)
 		self.assertEqual(h.size_data, data_size)
+
+	def test_file_header_compression_settings(self):
+		crc = 0x12345678
+		hcrc32 = struct.pack('<L', crc)
+		htype = BLOCK_FILE
+		htype_enc = encode_vint(htype)
+		hflags = RAR_DATA ^ RAR_EXTRA
+		hflags_enc = encode_vint(hflags)
+		extra_size = 0
+		data_size = 22
+		hextra_size = encode_vint(extra_size)
+		hdata_size = encode_vint(data_size)
+
+		hfile_flags = FILE_UNIX_TIME ^ FILE_CRC32
+		hfile_flags_enc = encode_vint(hfile_flags)
+		hunpacked_size = data_size
+		hunpacked_size_enc = encode_vint(hunpacked_size)
+		attributes = 0
+		hattributes_enc = encode_vint(attributes)
+		mtime = 0
+		hmtime = struct.pack('<L', mtime)
+		data_crc32 = 0x12345678
+		hdata_crc32 = struct.pack('<L', data_crc32)
+
+		method_value = 3
+		dict_value = 4
+		compression_info = (method_value << 7) | (dict_value << 10)
+		hcompression_info_enc = encode_vint(compression_info)
+		host_os = 1  # Unix
+		hhost_os_enc = encode_vint(host_os)
+		name = b"test_file_name.ext"
+		name_length = len(name)
+		hname_length_enc = encode_vint(name_length)
+
+		hsize = (len(htype_enc) + len(hflags_enc) +
+			len(hextra_size) + len(hdata_size) +
+			len(hfile_flags_enc) + len(hunpacked_size_enc) +
+			len(hattributes_enc) + 8 + len(hcompression_info_enc) +
+			len(hhost_os_enc) +
+			len(hname_length_enc) + len(name) +
+			extra_size)
+		hsize_enc = encode_vint(hsize)
+
+		stream = io.BytesIO()
+		stream.write(hcrc32)
+		stream.write(hsize_enc)
+		stream.write(htype_enc)
+		stream.write(hflags_enc)
+		stream.write(hextra_size)
+		stream.write(hdata_size)
+		stream.write(hfile_flags_enc)
+		stream.write(hunpacked_size_enc)
+		stream.write(hattributes_enc)
+		stream.write(hmtime)
+		stream.write(hdata_crc32)
+		stream.write(hcompression_info_enc)
+		stream.write(hhost_os_enc)
+		stream.write(hname_length_enc)
+		stream.write(name)
+		stream.seek(0, os.SEEK_SET)
+
+		block = BlockFactory.create(stream, is_start_file=False)
+		self.assertTrue(block.is_file_block())
+		self.assertTrue(block.is_compressed())
+		self.assertEqual(block.compression_method_value(), method_value)
+		self.assertEqual(block.dictionary_size_value(), dict_value)
 
 class TestParseRarFileRecords(unittest.TestCase):
 	def test_file_encryption_record(self):

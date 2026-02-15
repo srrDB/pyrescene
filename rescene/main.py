@@ -64,7 +64,7 @@ from rescene.utility import calculate_crc32
 from rescene.osohash import osohash_from
 from rescene.utility import FileType
 from rescene.zip import ZipReader, ZIP_EXT, ZipFileBlock
-from rescene.rar5 import parse_rar5, RAR_DATA, RAR_SPLIT_BEFORE, RAR_SPLIT_AFTER, BLOCK_FILE, BLOCK_SERVICE
+from rescene.rar5 import (parse_rar5, RAR_DATA, ARCHIVE_SOLID)
 
 # compatibility with 2.x
 if sys.hexversion < 0x3000000:
@@ -1360,6 +1360,274 @@ def _compute_rar5_file_offsets(blocks):
 	return result
 
 
+def _rar5_get_set_name(file_name):
+	base = os.path.basename(file_name)
+	name, _ext = os.path.splitext(base)
+	match = re.match(r"(.*)\.part\d+$", name, re.I)
+	return match.group(1) if match else name
+
+
+def _rar5_compute_volume_size(payload_data):
+	payload_used = 0
+	size = 0
+	payload_stream = io.BytesIO(payload_data)
+	with parse_rar5(payload_stream, is_srr=True) as rar_reader:
+		for rblock in rar_reader:
+			header = rblock.header()
+			size += header.full_header_size()
+			if header.flags & RAR_DATA:
+				size += header.size_data
+				if rblock.is_service_block():
+					payload_used = max(payload_used,
+						header.data_offset() + header.size_data)
+			else:
+				payload_used = max(payload_used, header.data_offset())
+
+	if payload_used < len(payload_data):
+		size += len(payload_data) - payload_used
+	return size
+
+
+def _rar5_select_compression_settings(settings_list):
+	if not settings_list:
+		return {
+			"algorithm": 0,
+			"solid": False,
+			"method": 0,
+			"dict_size": 0,
+			"dict_bytes": 0,
+			"level": 0,
+			"is_compressed": False,
+		}, []
+
+	first = settings_list[0][1]
+	mismatches = []
+	for name, setting in settings_list[1:]:
+		if (setting["method"] != first["method"] or
+			setting["dict_size"] != first["dict_size"] or
+			setting["algorithm"] != first["algorithm"]):
+			mismatches.append(name)
+	return first, mismatches
+
+
+def _rar5_collect_set_info(blocks):
+	result = {}
+	for block in blocks:
+		if block.rawtype != BlockType.SrrRar5File:
+			continue
+		volume_name = block.file_name
+		set_name = _rar5_get_set_name(volume_name)
+		info = result.setdefault(set_name, {
+			"volumes": [],
+			"volume_sizes": {},
+			"file_order": [],
+			"file_order_seen": set(),
+			"file_sizes": {},
+			"compression_settings": [],
+			"solid": False,
+			"solid_set": False,
+			"has_compressed": False,
+			"split_size": 0,
+		})
+		info["volumes"].append(volume_name)
+		payload_data = block.payload().read()
+		info["volume_sizes"][volume_name] = _rar5_compute_volume_size(
+			payload_data)
+
+		payload_stream = io.BytesIO(payload_data)
+		with parse_rar5(payload_stream, is_srr=True) as rar_reader:
+			for rblock in rar_reader:
+				if rblock.is_main_block():
+					info["solid"] = bool(
+						rblock.archive_flags & ARCHIVE_SOLID)
+					info["solid_set"] = True
+				header = rblock.header()
+				has_data = header.flags & RAR_DATA
+				if has_data and rblock.is_file_block():
+					file_name = rblock.name.decode("utf-8", "replace")
+					if file_name not in info["file_sizes"]:
+						info["file_sizes"][file_name] = rblock.unpacked_size
+					if file_name not in info["file_order_seen"]:
+						info["file_order"].append(file_name)
+						info["file_order_seen"].add(file_name)
+					settings = rblock.compression_settings()
+					info["compression_settings"].append(
+						(file_name, settings))
+					if settings["is_compressed"]:
+						info["has_compressed"] = True
+
+		if len(info["volumes"]) == 1:
+			info["split_size"] = 0
+		elif info["split_size"] == 0:
+			first_volume = info["volumes"][0]
+			info["split_size"] = info["volume_sizes"].get(first_volume, 0)
+
+	for set_info in result.values():
+		set_info.pop("file_order_seen", None)
+	return result
+
+
+def _rar5_volume_sort_key(path):
+	base = os.path.basename(path)
+	match = re.search(r"\.part(\d+)\.rar$", base, re.I)
+	if match:
+		return (0, int(match.group(1)))
+	match = re.search(r"\.r(\d+)$", base, re.I)
+	if match:
+		return (2, int(match.group(1)))
+	if base.lower().endswith(".rar"):
+		return (1, 0)
+	return (3, 0)
+
+
+def _rar5_find_generated_volumes(temp_dir, base_name):
+	base = os.path.splitext(base_name)[0]
+	pattern = os.path.join(temp_dir, "%s.part*.rar" % base)
+	volumes = sorted(glob(pattern), key=_rar5_volume_sort_key)
+	if volumes:
+		return volumes
+
+	rar_path = os.path.join(temp_dir, "%s.rar" % base)
+	r_pattern = os.path.join(temp_dir, "%s.r*" % base)
+	r_volumes = [
+		path for path in glob(r_pattern)
+		if re.search(r"\.r\d+$", os.path.basename(path), re.I)
+	]
+	r_volumes = sorted(r_volumes, key=_rar5_volume_sort_key)
+	if r_volumes:
+		if os.path.isfile(rar_path):
+			return [rar_path] + r_volumes
+		return r_volumes
+	if os.path.isfile(rar_path):
+		return [rar_path]
+	return []
+
+
+def _rar5_prepare_recompressed_set(set_name, set_info, in_folder, hints,
+		auto_locate_renamed, tmp_dir=None, rar_bin=None):
+	if repository and repository.count():
+		rar_bin = repository.get_most_recent_version().path()
+	# Try to find rar binary if not explicitly provided
+	if not rar_bin:
+		rar_bin = shutil.which("rar")
+	if not rar_bin or not os.path.isfile(rar_bin):
+		raise RarNotFound("RAR binary not found. Install RAR or set repository.")
+
+	temp_dir = mkdtemp(prefix="SRR-RAR5-", dir=tmp_dir)
+	base_name = "%s.rar" % os.path.basename(set_name)
+	archive_path = os.path.join(temp_dir, base_name)
+
+	settings, mismatches = _rar5_select_compression_settings(
+		set_info["compression_settings"])
+	if mismatches:
+		_fire(MsgCode.MSG,
+			message="Warning: mixed RAR5 compression settings; using first file")
+
+	args = [
+		rar_bin,
+		"a",
+		"-ma5",
+		"-m%d" % settings["level"],
+		"-o+",
+		"-ep",
+		"-idcd",
+	]
+	if set_info.get("solid_set"):
+		args.append("-s" if set_info["solid"] else "-s-")
+
+	# dict_bytes is in bytes; convert to proper format for RAR's -md flag
+	dict_bytes = settings["dict_bytes"]
+	if dict_bytes >= 64 * 1024:  # 64 KiB minimum
+		dict_mb = dict_bytes // (1024 * 1024)
+		if dict_mb * 1024 * 1024 == dict_bytes:
+			# Use MiB format if it divides evenly
+			args.append("-md%dm" % dict_mb)
+		else:
+			# Use KiB format
+			args.append("-md%d" % (dict_bytes // 1024))
+
+	if set_info.get("split_size") and len(set_info["volumes"]) > 1:
+		args.append("-v%db" % set_info["split_size"])
+
+	args.append(archive_path)
+
+	file_paths = []
+	for file_name in set_info["file_order"]:
+		src = _locate_file_rar5(file_name, in_folder,
+			hints, auto_locate_renamed)
+		expected_size = set_info.get("file_sizes", {}).get(file_name)
+		if expected_size is not None:
+			actual_size = os.path.getsize(src)
+			if actual_size != expected_size:
+				_fire(MsgCode.MSG, message=(
+					"RAR5 recompress input size mismatch for %s: "
+					"expected %d bytes, found %d bytes" %
+					(file_name, expected_size, actual_size)))
+				raise RarNotFound(
+					"RAR5 recompress source file size mismatch")
+		file_paths.append(src)
+	args.extend(file_paths)
+
+	if _DEBUG:
+		_fire(MsgCode.MSG, message="RAR5 recompress: %s" % " ".join(args))
+
+	proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+		stderr=subprocess.STDOUT)
+	(stdout, _) = proc.communicate()
+	if proc.returncode != 0:
+		stdout_text = decodetext(stdout, errors="replace")
+		_fire(MsgCode.MSG, message=stdout_text)
+		raise RarNotFound("RAR5 recompress failed with code %d" %
+			proc.returncode)
+
+	volume_paths = _rar5_find_generated_volumes(temp_dir, base_name)
+	if len(volume_paths) != len(set_info["volumes"]):
+		if _DEBUG:
+			_fire(MsgCode.MSG, message="RAR5 recompress expected volumes: %s" %
+				", ".join(set_info["volumes"]))
+			_fire(MsgCode.MSG, message="RAR5 recompress found volumes: %s" %
+				", ".join([os.path.basename(p) for p in volume_paths]))
+		raise RarNotFound("RAR5 recompress volume count mismatch")
+
+	volume_map = {}
+	for idx, volume_name in enumerate(set_info["volumes"]):
+		volume_map[volume_name] = volume_paths[idx]
+
+	return {"temp_dir": temp_dir, "volume_map": volume_map}
+
+
+def _rar5_debug_compare_files(label_a, path_a, label_b, path_b):
+	if not _DEBUG:
+		return
+	if not (os.path.isfile(path_a) and os.path.isfile(path_b)):
+		print("RAR5 diff skipped: missing file(s): %s=%s %s=%s" %
+			(label_a, path_a, label_b, path_b))
+		return
+	if os.path.abspath(path_a) == os.path.abspath(path_b):
+		return
+
+	chunk = 1024 * 256
+	offset = 0
+	with open(path_a, "rb") as fa, open(path_b, "rb") as fb:
+		while True:
+			ba = fa.read(chunk)
+			bb = fb.read(chunk)
+			if not ba and not bb:
+				break
+			if ba != bb:
+				min_len = min(len(ba), len(bb))
+				for i in range(min_len):
+					if ba[i] != bb[i]:
+						print("RAR5 diff %s vs %s at offset 0x%X" %
+							(label_a, label_b, offset + i))
+						return
+				if len(ba) != len(bb):
+					print("RAR5 diff %s vs %s at offset 0x%X (size mismatch)" %
+						(label_a, label_b, offset + min_len))
+					return
+			offset += len(ba)
+
+
 def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 				skip_rar_crc=False, auto_locate_renamed=False, empty=False,
 				rar_executable_dir=None, tmp_dir=None, extract_files=True,
@@ -1419,6 +1687,9 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 	# This builds a map of {volume_name: {file_name: data_start_offset}}
 	# so that reconstruct_rar5 can seek to the correct position in source files
 	rar5_file_offsets = _compute_rar5_file_offsets(blocks)
+	rar5_set_info = _rar5_collect_set_info(blocks)
+	rar5_recompress_cache = {}
+	rar5_temp_dirs = []
 	
 	for block in blocks:
 		_fire(MsgCode.BLOCK, message="RAR Block",
@@ -1573,7 +1844,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			# Pass file_offsets dict for multi-volume support
 			reconstruct_rar5(block, in_folder, out_folder, 
 				extract_paths, hints, skip_rar_crc, auto_locate_renamed,
-				empty, tmp_dir, rar5_file_offsets)
+				empty, tmp_dir, rar5_file_offsets,
+				rar5_set_info, rar5_recompress_cache, rar5_temp_dirs)
 		else:
 			_fire(MsgCode.UNKNOWN, message="Warning: Unknown block type "
 				  "%#x encountered in SRR file, consisting of %d bytes. "
@@ -1583,6 +1855,11 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		rarfs.close()
 	if srcfs:
 		srcfs.close()
+	for temp_dir_path in rar5_temp_dirs:
+		try:
+			shutil.rmtree(temp_dir_path)
+		except Exception:
+			pass
 		
 	temp_folder_cleanup()
 	
@@ -1598,7 +1875,8 @@ def reconstruct_zip(zip_metadata, in_folder, out_folder,
 def reconstruct_rar5(srr_block, in_folder, out_folder, 
 		extract_paths=True, hints={},
 		skip_rar_crc=False, auto_locate_renamed=False, empty=False,
-		tmp_dir=None, file_offsets=None):
+		tmp_dir=None, file_offsets=None, rar5_set_info=None,
+		rar5_recompress_cache=None, rar5_temp_dirs=None):
 	"""Reconstruct a RAR5 archive from an SRR RAR5 block.
 	
 	srr_block: SrrRar5FileBlock containing the RAR5 metadata
@@ -1611,6 +1889,9 @@ def reconstruct_rar5(srr_block, in_folder, out_folder,
 	empty: will write zero bytes when no file is found
 	tmp_dir: working directory
 	file_offsets: dict {volume_name: {file_name: data_start_offset}} for multi-volume support
+	rar5_set_info: dict with RAR5 set metadata for recompression
+	rar5_recompress_cache: dict for cached recompression output
+	rar5_temp_dirs: list for temp dir cleanup
 	
 	The SRR RAR5 block contains:
 	- Headers for all RAR5 blocks
@@ -1621,6 +1902,24 @@ def reconstruct_rar5(srr_block, in_folder, out_folder,
 	
 	# Get file offsets for this volume (for multi-volume support)
 	volume_offsets = file_offsets.get(rar_name, {}) if file_offsets else {}
+
+	set_name = _rar5_get_set_name(rar_name)
+	set_info = rar5_set_info.get(set_name) if rar5_set_info else None
+	
+	# For compressed files, we need to recompress if we don't have the original compressed data
+	use_recompress = bool(set_info and set_info.get("has_compressed"))
+	if rar5_recompress_cache is None:
+		rar5_recompress_cache = {}
+	cache_entry = rar5_recompress_cache.get(set_name)
+	if not cache_entry:
+		cache_entry = _rar5_prepare_recompressed_set(
+			set_name, set_info, in_folder, hints,
+			auto_locate_renamed, tmp_dir)
+		rar5_recompress_cache[set_name] = cache_entry
+		if rar5_temp_dirs is not None:
+			rar5_temp_dirs.append(cache_entry["temp_dir"])
+	if rar_name not in cache_entry["volume_map"]:
+		raise RarNotFound("Recompressed volume not found: %s" % rar_name)
 	
 	# Determine output file path
 	if extract_paths:
@@ -1655,101 +1954,131 @@ def reconstruct_rar5(srr_block, in_folder, out_folder,
 	
 	try:
 		with open(ofile, "wb") as rarfs:
-			# Parse with is_srr=True - file data not present but service data IS
-			with parse_rar5(payload_stream, is_srr=True) as rar_reader:
-				for rblock in rar_reader:
-					header = rblock.header()
+			try:
+				if use_recompress:
+					# Use recompressed RAR file - copy headers AND data from recompressed archive
+					temp_volume_path = cache_entry["volume_map"][rar_name]
 					
-					# Write the header bytes
-					rarfs.write(header.header_data)
-					payload_used += len(header.header_data)
-					
-					# Check if this block has a data area
-					has_data = header.flags & RAR_DATA
-					
-					if has_data and rblock.is_service_block():
-						# Service block data is stored in the SRR
-						# Extract it from the payload_data using the offset
-						data_offset = header.data_offset()
-						data_size = header.size_data
-						service_data = payload_data[data_offset:data_offset + data_size]
-						if len(service_data) < data_size:
-							# Shouldn't happen with properly created SRR
-							_fire(MsgCode.MSG,
-								message="Warning: Service block data incomplete, padding with zeros")
-							service_data += b'\x00' * (data_size - len(service_data))
-						rarfs.write(service_data)
-						payload_used = data_offset + data_size
-						
-					elif has_data and rblock.is_file_block():
-						# File block data comes from source files
-						file_name = rblock.name.decode('utf-8', 'replace')
-						data_size = header.size_data
-						
-						# Get the starting offset in the source file for multi-volume support
-						file_data_start = volume_offsets.get(file_name, 0)
-						
-						# Open the source file (once per file name)
-						if source_name != file_name:
-							# Need to open a new source file
-							if srcfs:
-								srcfs.close()
-							source_name = file_name
+					# For recompressed archives, just copy the entire file as-is from the temp volume
+					# The recompressed archive has both correct headers and correct data
+					with open(temp_volume_path, "rb") as temp_f:
+						rarfs.write(temp_f.read())
+					return True
+				else:
+					# Parse with is_srr=True - file data not present but service data IS
+					with parse_rar5(payload_stream, is_srr=True) as rar_reader:
+						for rblock in rar_reader:
+							header = rblock.header()
 							
-							try:
-								src = _locate_file_rar5(file_name, in_folder,
-												hints, auto_locate_renamed)
-								srcfs = open(src, "rb")
-							except FileNotFound:
-								if empty:
+							# Write the header bytes
+							rarfs.write(header.header_data)
+							payload_used += len(header.header_data)
+							
+							# Check if this block has a data area
+							has_data = header.flags & RAR_DATA
+							
+							if has_data and rblock.is_service_block():
+								# Service block data is stored in the SRR
+								# Extract it from the payload_data using the offset
+								data_offset = header.data_offset()
+								data_size = header.size_data
+								service_data = payload_data[
+									data_offset:data_offset + data_size]
+								if len(service_data) < data_size:
+									# Shouldn't happen with properly created SRR
 									_fire(MsgCode.MSG,
-										message="File not found, using fake file: %s" % file_name)
-									srcfs = FakeFile(data_size)
+										message="Warning: Service block data incomplete, padding with zeros")
+									service_data += b'\x00' * (data_size - len(service_data))
+								rarfs.write(service_data)
+								payload_used = data_offset + data_size
+								
+							elif has_data and rblock.is_file_block():
+								file_name = rblock.name.decode('utf-8', 'replace')
+								data_size = header.size_data
+								
+								# For compressed files, data comes from SRR payload (original compressed data)
+								# For stored files, data comes from source files
+								if rblock.is_compressed():
+									# This is a compressed file block - read compressed data from SRR payload
+									data_offset = header.data_offset()
+									compressed_data = payload_data[
+										data_offset:data_offset + data_size]
+									if len(compressed_data) < data_size:
+										_fire(MsgCode.MSG,
+											message="Warning: Compressed file data incomplete in SRR payload: %s" % file_name)
+										compressed_data += b'\x00' * (data_size - len(compressed_data))
+									rarfs.write(compressed_data)
+									payload_used = data_offset + data_size
 								else:
-									raise
+									# This is a stored (uncompressed) file block - read from source file
+									# Get the starting offset in the source file for multi-volume support
+									file_data_start = volume_offsets.get(file_name, 0)
+									
+									# Open the source file (once per file name)
+									if source_name != file_name:
+										# Need to open a new source file
+										if srcfs:
+											srcfs.close()
+										source_name = file_name
+										
+										try:
+											src = _locate_file_rar5(file_name, in_folder,
+												hints, auto_locate_renamed)
+											srcfs = open(src, "rb")
+										except FileNotFound:
+											if empty:
+												_fire(MsgCode.MSG,
+													message="File not found, using fake file: %s" % file_name)
+												srcfs = FakeFile(data_size)
+											else:
+												raise
+									
+									# Seek to the correct position in the source file
+									# This is crucial for multi-volume archives where each volume
+									# continues from where the previous one left off
+									srcfs.seek(file_data_start)
+									
+									# Read and write the file data
+									data = srcfs.read(data_size)
+									if len(data) < data_size:
+										if empty:
+											# Pad with zeros if we don't have enough data
+											data += b'\x00' * (data_size - len(data))
+										else:
+											raise ValueError(
+												"Source file %s is too small. Expected %d bytes, got %d" %
+												(file_name, data_size, len(data)))
+									
+									rarfs.write(data)
 						
-						# Seek to the correct position in the source file
-						# This is crucial for multi-volume archives where each volume
-						# continues from where the previous one left off
-						srcfs.seek(file_data_start)
-						
-						# Read and write the file data
-						data = srcfs.read(data_size)
-						if len(data) < data_size:
-							if empty:
-								# Pad with zeros if we don't have enough data
-								data += b'\x00' * (data_size - len(data))
+							elif has_data:
+								# Other block type with data - shouldn't normally happen
+								data_size = header.size_data
+								_fire(MsgCode.MSG, 
+									message="Warning: Unknown block with data area, writing zeros")
+								rarfs.write(b'\x00' * data_size)
 							else:
-								raise ValueError(
-									"Source file %s is too small. Expected %d bytes, got %d" %
-									(file_name, data_size, len(data)))
-						
-						rarfs.write(data)
-					
-					elif has_data:
-						# Other block type with data - shouldn't normally happen
-						data_size = header.size_data
-						_fire(MsgCode.MSG, 
-							message="Warning: Unknown block with data area, writing zeros")
-						rarfs.write(b'\x00' * data_size)
-					else:
-						# No data area - just update payload_used to end of header
-						header_end = header.data_offset()  # data_offset is end of header
-						if header_end > payload_used:
-							payload_used = header_end
+								# No data area - just update payload_used to end of header
+								header_end = header.data_offset()  # data_offset is end of header
+								if header_end > payload_used:
+									payload_used = header_end
 			
-			# Write any trailing padding stored in the SRR
-			# This is data after the EndArchiveBlock (used for alignment)
-			if payload_used < len(payload_data):
-				padding = payload_data[payload_used:]
-				rarfs.write(padding)
+				# Write any trailing padding stored in the SRR
+				# This is data after the EndArchiveBlock (used for alignment)
+				if payload_used < len(payload_data):
+					padding = payload_data[payload_used:]
+					rarfs.write(padding)
+			finally:
+				pass
 		
 		if srcfs:
 			srcfs.close()
 		
-		return True
+		if _DEBUG:
+			print("RAR5 debug: use_recompress=%s" % use_recompress)
+
 		
-	except Exception as e:
+	except Exception:
 		if srcfs:
 			srcfs.close()
 		# Clean up partial file on error
