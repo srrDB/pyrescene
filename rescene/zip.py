@@ -37,7 +37,7 @@ ZIP_EXT = (".zip", ".jar", ".odt", ".ods", ".odp",
 
 # class ArchiveNotFoundError(IOError):
 # 	pass
-	
+
 structFileHeader = "<4s2B4HL2L2H"
 stringFileHeader = b"PK\003\004"
 sizeFileHeader = struct.calcsize(structFileHeader)
@@ -83,6 +83,17 @@ class ZipFileBlock():
 			
 	def compressed_size(self):
 		return self.header[_FH_COMPRESSED_SIZE]
+	
+	def uncompressed_size(self):
+		return self.header[_FH_UNCOMPRESSED_SIZE]
+	
+	def file_crc(self):
+		"""Returns the CRC-32 of the uncompressed file data."""
+		return self.header[_FH_CRC]
+	
+	def compression_method(self):
+		"""Returns the compression method (0=stored, 8=deflated, etc.)"""
+		return self.header[_FH_COMPRESSION_METHOD]
 	
 	def has_compression(self):
 		return self.header[_FH_COMPRESSION_METHOD] != 0
@@ -372,6 +383,8 @@ class ZipReader(object):
 		# 4.3.7  Local file header
 		if marker == b"PK\x03\x04":
 			block = ZipFileBlock(self._zipstream)
+			# In is_srr mode, the stream contains only headers (no file data)
+			# so we must NOT seek past compressed data
 			if not self.is_srr:
 				self._zipstream.seek(block.compressed_size(), os.SEEK_CUR)
 			if block.has_descriptor_block():

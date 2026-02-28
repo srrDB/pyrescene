@@ -48,6 +48,7 @@ from rescene.utility import calculate_crc32 as calc_crc32
 from rescene.utility import is_rar
 from rescene.utility import _DEBUG
 from rescene.utility import FileType
+from rescene.rar5 import parse_rar5, RAR_DATA
 
 from resample.ebml import EbmlReader, EbmlReadMode, EbmlElementType
 from resample.ebml import GetEbmlUInt, MakeEbmlUInt, EbmlID
@@ -143,34 +144,66 @@ def file_type_info(ifile):
 	if len(marker) < 14:
 		return FileType(FileType.Unknown, archived_file_name)
 
-	if marker.startswith(MARKER_RAR) and utility.is_rar(ifile):
+	if (marker.startswith(MARKER_RAR) or marker.startswith(MARKER_RAR5)) and utility.is_rar(ifile):
 		try:
-			# Read first file from the RAR archives
-			rr = RarReader(ifile)
+			extension = FileType.VideoExtensions + FileType.AudioExtensions
 			first_file = True
-			for archf in rr.list_files():
-				# use the first file with a supported file extension
-				# (skipping .srt and other encountered files)
-				extension = FileType.VideoExtensions + FileType.AudioExtensions
-				if archf.endswith(extension):
-					archived_file_name = archf  # first useful file
-					break
-				first_file = False
-			rr.close()
+
+			if marker.startswith(MARKER_RAR5):
+				default_name = ""
+				default_offset = None
+				read_offset = None
+				with parse_rar5(ifile, is_srr=False) as rr:
+					for rblock in rr:
+						if not rblock.is_file_block():
+							continue
+						header = rblock.header()
+						if not (header.flags & RAR_DATA) or header.size_data <= 0:
+							continue
+						archf = rblock.name.decode("utf-8", "replace")
+						if not default_name:
+							default_name = archf
+							default_offset = header.data_offset()
+						if archf.endswith(extension):
+							archived_file_name = archf
+							read_offset = header.data_offset()
+							if default_name and default_name != archived_file_name:
+								first_file = False
+							break
+
+				if not archived_file_name and default_name:
+					archived_file_name = default_name
+					read_offset = default_offset
+
+				if read_offset is None:
+					return FileType(FileType.Unknown, archived_file_name)
+
+				with open(ifile, 'rb') as rfile:
+					rfile.seek(read_offset)
+					marker = rfile.read(8)
+			else:
+				# Read first file from the RAR archives
+				rr = RarReader(ifile)
+				for archf in rr.list_files():
+					# use the first file with a supported file extension
+					# (skipping .srt and other encountered files)
+					if archf.endswith(extension):
+						archived_file_name = archf  # first useful file
+						break
+					first_file = False
+				rr.close()
+
+				rs = rarstream.RarStream(ifile, archived_file_name)
+				marker = rs.read(8)
+				rs.close()
 
 			# first file from RAR is the default behavior: no message
 			if not first_file and archived_file_name:
 				print("Using %s from first RAR." % archived_file_name)
-			rs = rarstream.RarStream(ifile, archived_file_name)
-			marker = rs.read(8)
-			rs.close()
 		except Exception as ex:
 			print(ex)
 			print("File: %s" % os.path.basename(ifile))
 			return FileType(FileType.Unknown, archived_file_name)
-	elif marker.startswith(MARKER_RAR5):
-		print("RAR5 not yet supported.")
-		return FileType(FileType.Unknown, archived_file_name)
 
 	if marker.startswith(MARKER_MKV):
 		return FileType(FileType.MKV, archived_file_name)

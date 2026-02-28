@@ -1352,7 +1352,7 @@ class RarPackedFileBlock(RarBlock): # 0x74
 				"(Extended time field present)\n"
 		if self.flags & self.EXTFLAGS:
 			out += self.flag_format(self.EXTFLAGS) + "LHD_EXTFLAGS "  \
-				"(never used)\;"
+				"(never used);"
 		out += self.flag_format(self.flags & self.DIRECTORY) +  \
 				"LHD_WINDOW (" + self.get_dictionary() + ")\n"
 		return out
@@ -1752,7 +1752,12 @@ class RarReader(object):
 		# but only for RAR or SFX mode. 
 		# The data isn't there in the SRR, so need need to skip.
 		elif self._readmode in (self.RAR, self.SFX) and add_size > 0:
-			self._rarstream.seek(add_size, os.SEEK_CUR)
+			stream_end = self._initial_offset + self._file_length
+			remaining_data = max(0, stream_end - self._rarstream.tell())
+			if add_size >= remaining_data:
+				self._rarstream.seek(stream_end, os.SEEK_SET)
+			else:
+				self._rarstream.seek(add_size, os.SEEK_CUR)
 
 		# for releases such as Haven.S02E05.HDTV.XviD-P0W4:
 		# except for the header size field, everything in the rar
@@ -1765,8 +1770,12 @@ class RarReader(object):
 			rar_block.flags & RarPackedFileBlock.LARGE_FILE ==
 			RarPackedFileBlock.LARGE_FILE and
 			self._readmode in (self.RAR, self.SFX)):
-			self._rarstream.seek(block_start_position + hsize)
-			self._rarstream.seek(rar_block.packed_size, os.SEEK_CUR)
+			data_start = block_start_position + hsize
+			stream_end = self._initial_offset + self._file_length
+			max_data_size = max(0, stream_end - data_start)
+			skip_size = min(rar_block.packed_size, max_data_size)
+			self._rarstream.seek(data_start, os.SEEK_SET)
+			self._rarstream.seek(skip_size, os.SEEK_CUR)
 		
 		return rar_block
 	

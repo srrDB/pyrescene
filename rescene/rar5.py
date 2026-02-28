@@ -507,18 +507,21 @@ class FileServiceBlock(RarBlock):
 
 		# extra area
 		self.records = []
-		extra_records = self.file_flags & RAR_EXTRA
+		extra_records = self.basic_header.flags & RAR_EXTRA
 		self.extra_area_size = self.basic_header.data_offset() - stream.tell()
 		def another_record():
 			return stream.tell() < self.basic_header.data_offset()
 
 		while extra_records and another_record():
-			record = file_service_record_factory(stream)
+			try:
+				record = file_service_record_factory(stream)
+			except (EOFError, struct.error):
+				stream.seek(self.basic_header.data_offset(), os.SEEK_SET)
+				break
 			self.records.append(record)
-			print(record)
 
 		# data area
-		if self.file_flags & RAR_DATA:
+		if self.basic_header.flags & RAR_DATA:
 			pass
 
 	def compression_method_value(self):
@@ -593,7 +596,7 @@ class FileServiceBlock(RarBlock):
 		elif self.name == b"RR": 
 			out += " -> Recovery record"
 		if self.records:
-			out += "\n" + reduce(lambda x, y: x + y.explain(), self.records)
+			out += "\n" + "".join(record.explain() for record in self.records)
 		else:
 			out += "\n+no extra file/service records\n"
 
@@ -784,7 +787,10 @@ def read_vint(stream):
 	shift = 0
 	continuation_flag = True
 	while continuation_flag:
-		(byte,) = S_BYTE.unpack(stream.read(1))
+		byte_data = stream.read(1)
+		if len(byte_data) < 1:
+			raise EOFError("Unexpected end of stream while reading vint")
+		(byte,) = S_BYTE.unpack(byte_data)
 		size += (byte & 0x7F) << (shift * 7)  # little endian
 		shift += 1
 		continuation_flag = byte & 0x80  # first bit 1: continue

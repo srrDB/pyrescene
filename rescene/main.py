@@ -39,6 +39,7 @@ import os
 import sys
 import zlib
 import re
+import struct
 
 import hashlib
 import collections
@@ -53,6 +54,8 @@ from rescene.rar import (BlockType, RarReader, Rar5NotSupportedError,
 	RarPackedFileBlock, SrrOsoHashBlock,
 	SrrZipFileBlock, SrrRar5FileBlock)
 from rescene.rarstream import RarStream, FakeFile
+from rescene.zip import (ZipReader, ZipFileBlock, ZipCentralDirBlock, 
+	ZipEndArchiveBlock)
 from rescene.utility import (SfvEntry, is_rar, _DEBUG,
                              first_rars, next_archive, empty_folder)
 from rescene.utility import parse_sfv_file, parse_sfv_data
@@ -583,36 +586,268 @@ def create_srr(srr_name, infiles, in_folder="",
 				srr.write(rar5block.block_bytes())
 				
 		# STORE ZIP META DATA
+		# First pass: scan all ZIPs to detect files with different CRCs
+		zip_file_map = {}  # {zip_basename: {internal_filename: (crc, size)}}
 		for zipfile in zipfiles:
 			if not os.path.isfile(zipfile):
 				_fire(code=MsgCode.FILE_NOT_FOUND,
-					  message="Referenced file not found: %s" % rarfile)
+					message="Referenced file not found: %s" % zipfile)
 				srr.close()	  
-				os.unlink(srr_name)
-				raise FileNotFound("Referenced file not found: %s" % rarfile)
+				os.unlink(tmp_srr_name)
+				raise FileNotFound("Referenced file not found: %s" % zipfile)
 			
+			zip_basename = os.path.basename(zipfile)
+			zip_file_map[zip_basename] = {}
+			
+			for zipblock in ZipReader(zipfile):
+				if isinstance(zipblock, ZipFileBlock):
+					internal_fname = zipblock.file_name
+					if isinstance(internal_fname, bytes):
+						internal_fname = internal_fname.decode('utf-8', errors='replace')
+					file_crc = zipblock.file_crc()
+					file_size = zipblock.uncompressed_size()
+					zip_file_map[zip_basename][internal_fname] = (file_crc, file_size)
+		
+		# Detect files that differ across ZIPs
+		all_internal_files = set()
+		for zip_files in zip_file_map.values():
+			all_internal_files.update(zip_files.keys())
+		
+		# Find files with differing CRCs
+		files_with_variants = {}  # {filename: {zip_basename: (crc, size)}}
+		for internal_fname in all_internal_files:
+			crcs_seen = {}
+			for zip_basename, zip_files in zip_file_map.items():
+				if internal_fname in zip_files:
+					crc, size = zip_files[internal_fname]
+					crcs_seen[zip_basename] = (crc, size)
+			
+			# If file appears in multiple ZIPs with different CRCs, store variants
+			if len(crcs_seen) > 1:
+				unique_crcs = set(crc for crc, size in crcs_seen.values())
+				if len(unique_crcs) > 1:
+					files_with_variants[internal_fname] = crcs_seen
+					_fire(MsgCode.MSG, 
+						message="Multi-variant file detected: %s (will store %d versions)" % 
+						(internal_fname, len(set(crcs_seen.values()))))
+		
+		# Extract and store all files from ZIPs
+		import zipfile as zipfile_lib
+		variant_storage_map = {}  # {(zip_basename, internal_fname): stored_name}
+		stored_files = set()  # Track which files we've already stored
+		
+		# First: extract and store multi-variant files
+		if files_with_variants:
+			for internal_fname, zip_variants in files_with_variants.items():
+				variant_num = 1
+				crc_to_stored_name = {}  # {crc: stored_name}
+				
+				for zip_basename in sorted(zip_variants.keys()):
+					crc, size = zip_variants[zip_basename]
+					
+					# If we haven't stored this CRC variant yet, extract and store it
+					if crc not in crc_to_stored_name:
+						# Create unique stored name
+						base, ext = os.path.splitext(internal_fname)
+						stored_name = "%s.variant%03d%s" % (base, variant_num, ext)
+						crc_to_stored_name[crc] = stored_name
+						
+						# Extract file from this ZIP
+						zip_path = None
+						for zf in zipfiles:
+							if os.path.basename(zf) == zip_basename:
+								zip_path = zf
+								break
+						
+						if zip_path:
+							try:
+								with zipfile_lib.ZipFile(zip_path, 'r') as zf:
+									file_data = zf.read(internal_fname)
+									# Store in SRR
+									sblock = SrrStoredFileBlock(
+										file_name=stored_name,
+										file_size=len(file_data))
+									srr.write(sblock.block_bytes())
+									srr.write(file_data)
+									stored_files.add(stored_name)
+									_fire(MsgCode.MSG, 
+										message="  Stored variant: %s (from %s)" % 
+										(stored_name, zip_basename))
+							except Exception as e:
+								_fire(MsgCode.MSG, 
+									message="  Warning: Could not extract %s from %s: %s" % 
+									(internal_fname, zip_basename, e))
+						variant_num += 1
+					
+					# Map which stored name to use for this ZIP + filename
+					variant_storage_map[(zip_basename, internal_fname)] = crc_to_stored_name[crc]
+		
+		# Second: extract and store metadata files (only .nfo, .diz, .sfv - not archive content)
+		metadata_extensions = {'.nfo', '.diz', '.sfv'}
+		for zipfile in zipfiles:
+			zip_basename = os.path.basename(zipfile)
+			try:
+				with zipfile_lib.ZipFile(zipfile, 'r') as zf:
+					for info in zf.infolist():
+						internal_fname = info.filename
+						# Skip if it's a directory
+						if internal_fname.endswith('/'):
+							continue
+						# Check if it's a metadata file
+						_, ext = os.path.splitext(internal_fname)
+						if ext.lower() in metadata_extensions and internal_fname not in stored_files:
+							# Extract and store it
+							try:
+								file_data = zf.read(internal_fname)
+								basename = os.path.basename(internal_fname)
+								sblock = SrrStoredFileBlock(
+									file_name=basename,
+									file_size=len(file_data))
+								srr.write(sblock.block_bytes())
+								srr.write(file_data)
+								stored_files.add(basename)
+								_fire(MsgCode.MSG, 
+									message="  Stored metadata: %s" % basename)
+							except Exception as e:
+								_fire(MsgCode.MSG, 
+									message="  Warning: Could not extract metadata %s: %s" % 
+									(internal_fname, e))
+			except Exception as e:
+				_fire(MsgCode.MSG, 
+					message="  Warning: Could not process %s for metadata: %s" % 
+					(zip_basename, e))
+		
+		# DETECT AND PROCESS RAR FILES INSIDE ZIPs
+		# Extract RAR files from ZIPs to temp dir and process through
+		# normal RAR SRR pipeline so reconstruction can go:
+		#   unpacked files -> RAR -> RAR's inside ZIP
+		zip_rar_temp_dir = None
+		try:
+			# Check if any ZIP contains RAR files
+			zip_has_rars = False
+			for zip_basename, zip_files in zip_file_map.items():
+				for internal_fname in zip_files:
+					if is_rar(internal_fname):
+						zip_has_rars = True
+						break
+				if zip_has_rars:
+					break
+			
+			if zip_has_rars:
+				_fire(MsgCode.MSG,
+					message="RAR files detected inside ZIPs, "
+					"extracting for nested SRR creation...")
+				zip_rar_temp_dir = mkdtemp(prefix="pyrescene_ziprars_")
+				
+				# Extract all RAR files from all ZIPs
+				extracted_rars = []
+				for zipfile in zipfiles:
+					try:
+						with zipfile_lib.ZipFile(zipfile, 'r') as zf:
+							for zinfo in zf.infolist():
+								if is_rar(zinfo.filename):
+									# Extract RAR to temp dir
+									out_path = os.path.join(
+										zip_rar_temp_dir,
+										os.path.basename(zinfo.filename))
+									# Don't extract duplicates
+									if not os.path.exists(out_path):
+										with open(out_path, 'wb') as outf:
+											outf.write(zf.read(zinfo.filename))
+										extracted_rars.append(out_path)
+										_fire(MsgCode.MSG,
+											message="  Extracted RAR: %s" %
+											os.path.basename(zinfo.filename))
+					except Exception as e:
+						_fire(MsgCode.MSG,
+							message="  Warning: Could not extract RARs "
+							"from %s: %s" % (os.path.basename(zipfile), e))
+				
+				# Filter to first volumes only and process
+				if extracted_rars:
+					first_rar_files = list(
+						first_rars(extracted_rars))
+					_fire(MsgCode.MSG,
+						message="Processing %d RAR set(s) from inside "
+						"ZIPs..." % len(first_rar_files))
+					
+					for first_rar in first_rar_files:
+						try:
+							rar_volumes = _handle_rar(first_rar)
+							for rvol in rar_volumes:
+								(rfexact, rfcapitals) = \
+									capitalized_fn(rvol)
+								if not os.path.isfile(rfexact):
+									continue
+								vname = os.path.basename(
+									rfcapitals)
+								_fire(MsgCode.MSG,
+									message="Processing nested RAR: "
+									"%s" % vname)
+								
+								if is_rar4(rfexact):
+									rarblock = SrrRarFileBlock(
+										file_name=vname)
+									srr.write(
+										rarblock.block_bytes())
+									rr = RarReader(rfexact)
+									for block in rr.read_all():
+										if block.rawtype == \
+											BlockType.RarPackedFile:
+											if block.compression_method \
+													== COMPR_STORING:
+												oso_dict.setdefault(
+													block.os_file_name(),
+													rvol)
+										srr.write(
+											block.block_bytes())
+								else:  # rar5
+									rar5meta = _parse_rar5_data(
+										rfexact)
+									rar5crc = calculate_crc32(
+										rvol)
+									rar5block = SrrRar5FileBlock(
+										file_name=vname,
+										rar5_crc=rar5crc,
+										metadata=rar5meta)
+									srr.write(
+										rar5block.block_bytes())
+						except Exception as e:
+							_fire(MsgCode.MSG,
+								message="  Warning: Could not process "
+								"nested RAR %s: %s" % (
+									os.path.basename(first_rar), e))
+		except Exception:
+			# Don't let nested RAR processing break ZIP SRR creation
+			if zip_rar_temp_dir and os.path.exists(zip_rar_temp_dir):
+				shutil.rmtree(zip_rar_temp_dir, ignore_errors=True)
+			raise
+		
+		# Write ZIP metadata blocks (headers only - no file data)
+		for zipfile in zipfiles:
 			fname = os.path.relpath(zipfile, in_folder) if save_paths  \
 				else os.path.basename(zipfile)
 			_fire(MsgCode.MSG, message="Processing file: %s." % fname)
 		
 			meta_data_bytes = b""
 			for zipblock in ZipReader(zipfile):
-				print(zipblock)
-				if (isinstance(zipblock, ZipFileBlock)
-					and zipblock.has_compression()):
-					_fire(MsgCode.COMPRESSION, message="Don't delete 'em yet!")
-					if not compressed:
-						srr.close()
-						os.unlink(srr_name)
-						raise ValueError("Archive uses unsupported "
-						           "compression method: %s" % zipfile)
+				if _DEBUG:
+					print(zipblock)
 				meta_data_bytes += zipblock.hbytes
-				# TODO: no other blocks with non header data???
-				
-			zip_crc = calculate_crc32(zipfile)
-			srrzblock = SrrZipFileBlock(
-			    file_name=fname, zip_crc=zip_crc, metadata=meta_data_bytes)
-			srr.write(srrzblock.block_bytes())
+		
+			# Write the SrrZipFileBlock with the collected metadata
+			if meta_data_bytes:
+				zip_crc = zlib.crc32(meta_data_bytes) & 0xFFFFFFFF
+				srr_zip_block = SrrZipFileBlock(
+					file_name=fname,
+					zip_crc=zip_crc,
+					metadata=meta_data_bytes)
+				srr.write(srr_zip_block.block_bytes())
+				_fire(MsgCode.MSG, message="Stored ZIP metadata: %s" % fname)
+
+		# Clean up temp RAR extraction directory
+		if zip_rar_temp_dir and os.path.exists(zip_rar_temp_dir):
+			shutil.rmtree(zip_rar_temp_dir, ignore_errors=True)
 
 		# STORE OSO/ISDb HASHES
 		if oso_hash:
@@ -632,7 +867,7 @@ def create_srr(srr_name, infiles, in_folder="",
 	finally:
 		# when an IOError is raised, we close the file for further cleanup
 		srr.close()
-		
+
 def is_rar4(volume):
 	rv = True
 	try:
@@ -1090,6 +1325,8 @@ def info(srr_file):
 	"""
 	stored_files = odict()   # files stored in the srr
 	rar_files = odict()      # rar, r00, ...
+	zip_files = odict()      # zip archives
+	zip_archived_files = odict() # files inside zip archive(s)
 	sfv_entries = []         # non repairable files from the SFV
 	sfv_comments = []
 	archived_files = odict() # files inside rar archive(s)
@@ -1140,6 +1377,50 @@ def info(srr_file):
 			current_rar = None # end the file size counting
 				
 			_parse_rar5_fileinfo(rar_files, archived_files, block)
+		elif block.rawtype == BlockType.SrrZipFile:
+			count_size = False
+			current_rar = None # end the file size counting
+			
+			# Parse ZIP metadata to extract file information
+			try:
+				zip_name = block.file_name
+				zip_key = os.path.basename(zip_name.lower())
+				
+				# Create entry for this ZIP file
+				zip_info = FileInfo()
+				zip_info.file_name = zip_name
+				zip_info.file_size = 0
+				zip_info.key = zip_key
+				zip_files[zip_key] = zip_info
+				
+				# Parse ZIP metadata bytes
+				metadata_bytes = block.zip_data()
+				stream = io.BytesIO(metadata_bytes)
+				zm = ZipReader(stream, is_srr=True)
+				
+				# Extract files inside the ZIP
+				for zblock in zm:
+					if isinstance(zblock, ZipFileBlock):
+						fname = zblock.file_name
+						if isinstance(fname, bytes):
+							fname = fname.decode('utf-8', errors='replace')
+						
+						# Skip directory entries
+						if fname.endswith('/'):
+							continue
+						
+						f = FileInfo()
+						f.file_name = fname
+						f.file_size = zblock.uncompressed_size()
+						f.crc32 = "%08X" % zblock.file_crc()
+						f.compression = zblock.has_compression()
+						if f.compression:
+							compression = True
+						
+						zip_archived_files["%s/%s" % (zip_key, fname)] = f
+			except Exception as e:
+				if _DEBUG:
+					print("Error parsing ZIP metadata: %s" % e)
 		elif block.rawtype == BlockType.RarPackedFile:
 			f = archived_files.get(block.unicode_filename)
 			if f is None:
@@ -1250,7 +1531,9 @@ def info(srr_file):
 	return {"appname": appname, 
 	        "stored_files": stored_files,
 	        "rar_files": rar_files,
+	        "zip_files": zip_files,
 	        "archived_files": archived_files,
+	        "zip_archived_files": zip_archived_files,
 	        "recovery": recovery,
 	        "sfv_entries": sfv_entries,
 	        "sfv_comments": sfv_comments,
@@ -1839,7 +2122,8 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 			else:
 				continue
 		elif block.rawtype == BlockType.SrrZipFile:
-			reconstruct_zip(block.zip_data(), in_folder, out_folder, 
+			reconstruct_zip(block.file_name, block.zip_data(),
+				in_folder, out_folder, 
 				extract_paths, hints, skip_rar_crc, auto_locate_renamed,
 				empty, tmp_dir)
 		elif block.rawtype == BlockType.SrrRar5File:
@@ -1865,13 +2149,353 @@ def reconstruct(srr_file, in_folder, out_folder, extract_paths=True, hints={},
 		
 	temp_folder_cleanup()
 	
-def reconstruct_zip(zip_metadata, in_folder, out_folder, 
+def reconstruct_zip(zip_file_name, zip_metadata, in_folder, out_folder, 
 		extract_paths=True, hints={},
 		skip_rar_crc=False, auto_locate_renamed=False, empty=False,
 		tmp_dir=None):
+	"""Reconstruct a ZIP archive from stored metadata and source files.
+	
+	The SRR stores only ZIP headers (local file headers, central directory,
+	end of central directory). File data is NOT stored in the SRR.
+	
+	For stored (uncompressed) files: source data is written directly.
+	For deflated files: source data is re-compressed with raw deflate,
+	trying multiple compression levels to find the one matching the
+	original compressed size for byte-identical reconstruction.
+	
+	zip_file_name: Name of the ZIP file to reconstruct (from SRR)
+	zip_metadata: Raw bytes containing ZIP headers only (no file data)
+	in_folder: Root folder to look for source files
+	out_folder: Location to place the reconstructed ZIP
+	extract_paths: If paths are stored, they will be re-created
+	hints: Dictionary for handling renamed files
+	skip_rar_crc: Disables CRC checking
+	auto_locate_renamed: If set, look in sub folders for renamed files
+	empty: Will write zero bytes when no file is found
+	tmp_dir: Working directory (unused for ZIP but kept for API consistency)
+	"""
 	stream = io.BytesIO(zip_metadata)
-	for zipblock in ZipReader(stream, is_srr=True):
-		print(zipblock)
+	zip_reader = ZipReader(stream, is_srr=True)
+	
+	# Parse all blocks from the headers-only metadata
+	file_blocks = []  # [(ZipFileBlock, filename_str)]
+	central_dir_blocks = []
+	other_blocks = []
+	
+	for zipblock in zip_reader:
+		if isinstance(zipblock, ZipFileBlock):
+			fname = zipblock.file_name
+			if isinstance(fname, bytes):
+				fname = fname.decode('utf-8', errors='replace')
+			file_blocks.append((zipblock, fname))
+		elif isinstance(zipblock, ZipCentralDirBlock):
+			central_dir_blocks.append(zipblock)
+		else:
+			other_blocks.append(zipblock)
+	
+	if not file_blocks:
+		_fire(MsgCode.MSG, message="No files found in ZIP metadata")
+		return
+	
+	# Determine output path
+	if extract_paths:
+		zip_path = os.path.join(out_folder, zip_file_name)
+	else:
+		zip_path = os.path.join(out_folder, os.path.basename(zip_file_name))
+	
+	# Ensure the output directory exists
+	zip_dir = os.path.dirname(zip_path)
+	if zip_dir and not os.path.exists(zip_dir):
+		os.makedirs(zip_dir)
+	
+	_fire(MsgCode.MSG, message="Reconstructing ZIP: %s" % zip_path)
+	
+	# Track file offsets and actual compressed sizes for central directory update
+	file_offsets = []
+	actual_compressed_sizes = []
+	current_offset = 0
+	
+	try:
+		with open(zip_path, 'wb') as zipfs:
+			# Write each file's local header and data
+			for zipblock, fname in file_blocks:
+				file_offsets.append(current_offset)
+				
+				expected_crc = zipblock.file_crc()
+				expected_compressed = zipblock.compressed_size()
+				compression_method = zipblock.compression_method()
+				
+				try:
+					src_file = _locate_file_zip(fname, in_folder, hints, 
+					                           auto_locate_renamed, expected_crc,
+					                           extra_folders=[out_folder])
+					_fire(MsgCode.MSG, message="  Adding: %s" % fname)
+					
+					# Read source file
+					with open(src_file, 'rb') as srcfs:
+						file_content = srcfs.read()
+					
+					# Verify CRC of source data
+					calculated_crc = zlib.crc32(file_content) & 0xFFFFFFFF
+					if not skip_rar_crc and expected_crc != 0:
+						if calculated_crc != expected_crc:
+							_fire(MsgCode.CRC, 
+							     message="CRC mismatch for %s: "
+							     "expected %08X, got %08X" % 
+							     (fname, expected_crc, calculated_crc))
+					
+					# Compress if needed
+					if compression_method == 0:
+						# Stored - no compression
+						compressed_content = file_content
+					elif compression_method == 8:
+						# Deflated - try to find matching compression level
+						compressed_content = _deflate_match(
+							file_content, expected_compressed)
+					else:
+						_fire(MsgCode.MSG, 
+						     message="  Warning: Unknown compression "
+						     "method %d for %s, storing raw" % 
+						     (compression_method, fname))
+						compressed_content = file_content
+					
+					actual_size = len(compressed_content)
+					actual_compressed_sizes.append(actual_size)
+					
+					# Update local file header with actual sizes
+					header_bytes = bytearray(zipblock.hbytes)
+					# Offset 18: compressed size (4 bytes)
+					struct.pack_into('<I', header_bytes, 18, actual_size)
+					
+					# Write updated header + data
+					zipfs.write(header_bytes)
+					current_offset += len(header_bytes)
+					zipfs.write(compressed_content)
+					current_offset += actual_size
+					
+				except (FileNotFound, IOError, OSError) as e:
+					if empty:
+						_fire(MsgCode.FILE_NOT_FOUND, 
+						     message="File not found, using empty "
+						     "data: %s" % fname)
+						actual_compressed_sizes.append(expected_compressed)
+						zipfs.write(zipblock.hbytes)
+						current_offset += len(zipblock.hbytes)
+						zipfs.write(bytes(expected_compressed))
+						current_offset += expected_compressed
+					else:
+						raise
+			
+			# Write the central directory
+			central_dir_start = current_offset
+			central_dir_size = 0
+			
+			for i, cd_block in enumerate(central_dir_blocks):
+				cd_bytes = bytearray(cd_block.hbytes)
+				
+				if i < len(file_offsets):
+					# Update local header offset at byte 42
+					struct.pack_into('<I', cd_bytes, 42, file_offsets[i])
+				if i < len(actual_compressed_sizes):
+					# Update compressed size at byte 20
+					struct.pack_into('<I', cd_bytes, 20, 
+					                actual_compressed_sizes[i])
+				
+				zipfs.write(cd_bytes)
+				central_dir_size += len(cd_bytes)
+				current_offset += len(cd_bytes)
+			
+			# Write end of central directory (and other trailing blocks)
+			for block in other_blocks:
+				if isinstance(block, ZipEndArchiveBlock):
+					end_bytes = bytearray(block.hbytes)
+					# Byte 12: size of central directory (4 bytes)
+					struct.pack_into('<I', end_bytes, 12, central_dir_size)
+					# Byte 16: offset of central directory (4 bytes)
+					struct.pack_into('<I', end_bytes, 16, central_dir_start)
+					zipfs.write(end_bytes)
+				else:
+					zipfs.write(block.hbytes)
+				current_offset += len(block.hbytes)
+		
+		_fire(MsgCode.MSG, 
+		     message="ZIP reconstruction complete: %s" % zip_path)
+		
+	except Exception as e:
+		_fire(MsgCode.UNKNOWN, 
+		     message="ZIP reconstruction failed: %s" % str(e))
+		try:
+			if os.path.exists(zip_path):
+				os.unlink(zip_path)
+		except:
+			pass
+		raise
+
+
+def _deflate_match(data, expected_size):
+	"""Try to produce deflated output matching the expected compressed size.
+	
+	Tries raw deflate (wbits=-15) at various compression levels and
+	strategies to find settings that produce output matching the original.
+	Returns the best match (exact if found, closest otherwise).
+	"""
+	best = None
+	best_diff = float('inf')
+	
+	# Try common levels first (6=default is most common)
+	levels = [6, 9, 5, 7, 8, 4, 3, 2, 1]
+	strategies = [zlib.Z_DEFAULT_STRATEGY]
+	
+	for level in levels:
+		for strategy in strategies:
+			try:
+				co = zlib.compressobj(level, zlib.DEFLATED, -15,
+				                     zlib.DEF_MEM_LEVEL, strategy)
+				compressed = co.compress(data) + co.flush()
+				diff = abs(len(compressed) - expected_size)
+				if diff < best_diff:
+					best = compressed
+					best_diff = diff
+				if diff == 0:
+					return compressed  # exact match
+			except:
+				continue
+	
+	# Try additional strategies if no exact match yet
+	if best_diff > 0:
+		extra_strategies = [zlib.Z_FILTERED, zlib.Z_HUFFMAN_ONLY]
+		try:
+			extra_strategies.append(zlib.Z_RLE)
+			extra_strategies.append(zlib.Z_FIXED)
+		except AttributeError:
+			pass  # older Python versions
+		
+		for level in levels:
+			for strategy in extra_strategies:
+				try:
+					co = zlib.compressobj(level, zlib.DEFLATED, -15,
+					                     zlib.DEF_MEM_LEVEL, strategy)
+					compressed = co.compress(data) + co.flush()
+					diff = abs(len(compressed) - expected_size)
+					if diff < best_diff:
+						best = compressed
+						best_diff = diff
+					if diff == 0:
+						return compressed
+				except:
+					continue
+	
+	# Try different memory levels if still no match
+	if best_diff > 0:
+		for level in [6, 9, 1]:
+			for memlevel in [1, 2, 3, 4, 5, 6, 7, 8]:
+				if memlevel == zlib.DEF_MEM_LEVEL:
+					continue  # already tried
+				try:
+					co = zlib.compressobj(level, zlib.DEFLATED, -15,
+					                     memlevel, zlib.Z_DEFAULT_STRATEGY)
+					compressed = co.compress(data) + co.flush()
+					diff = abs(len(compressed) - expected_size)
+					if diff < best_diff:
+						best = compressed
+						best_diff = diff
+					if diff == 0:
+						return compressed
+				except:
+					continue
+	
+	if best_diff > 0:
+		_fire(MsgCode.MSG,
+		     message="  Warning: Could not find exact deflate match "
+		     "(expected %d, best %d, diff %d bytes)" % 
+		     (expected_size, len(best), best_diff))
+	
+	return best
+
+
+def _locate_file_zip(file_name, in_folder, hints, auto_locate_renamed,
+		expected_crc=None, extra_folders=None):
+	"""Locate a source file for ZIP reconstruction.
+	Similar to _locate_file_rar5 but adapted for ZIP file names.
+	
+	file_name: Name of file inside the ZIP (may include internal paths)
+	in_folder: Root folder to search in
+	hints: Dictionary mapping original names to renamed names
+	auto_locate_renamed: If True, search subdirectories
+	expected_crc: If provided, will prefer stored variants with matching CRC
+	extra_folders: Additional folders to search (e.g. out_folder for
+	               reconstructed RARs)
+	"""
+	if extra_folders is None:
+		extra_folders = []
+	# ZIP uses forward slashes; convert to OS separator
+	os_file_name = file_name.replace('/', os.sep)
+	basename = os.path.basename(os_file_name)
+	
+	# First, check for stored variants if we have an expected CRC
+	if expected_crc is not None:
+		base, ext = os.path.splitext(basename)
+		variant_pattern = "%s.variant*%s" % (base, ext)
+		
+		# Look for variant files in the in_folder
+		import glob
+		variant_paths = glob.glob(os.path.join(in_folder, variant_pattern))
+		
+		for variant_path in sorted(variant_paths):
+			if os.path.isfile(variant_path):
+				# Calculate CRC of this variant
+				try:
+					with open(variant_path, 'rb') as vf:
+						variant_data = vf.read()
+						variant_crc = zlib.crc32(variant_data) & 0xFFFFFFFF
+						if variant_crc == expected_crc:
+							_fire(MsgCode.MSG, 
+								message="  Using stored variant: %s" % os.path.basename(variant_path))
+							return variant_path
+				except:
+					pass
+	
+	# Check hints
+	if file_name in hints:
+		hint_path = os.path.join(in_folder, hints[file_name])
+		if os.path.isfile(hint_path):
+			return hint_path
+	
+	# Try direct path (with ZIP internal path structure)
+	direct_path = os.path.join(in_folder, os_file_name)
+	if os.path.isfile(direct_path):
+		return direct_path
+	
+	# Try just the basename (ignore internal ZIP paths)
+	basename_path = os.path.join(in_folder, basename)
+	if os.path.isfile(basename_path):
+		return basename_path
+	
+	# Check extra folders (e.g. out_folder for reconstructed RARs)
+	for extra_folder in extra_folders:
+		if not extra_folder or not os.path.isdir(extra_folder):
+			continue
+		extra_direct = os.path.join(extra_folder, os_file_name)
+		if os.path.isfile(extra_direct):
+			return extra_direct
+		extra_basename = os.path.join(extra_folder, basename)
+		if os.path.isfile(extra_basename):
+			return extra_basename
+	
+	# Auto-locate if enabled
+	if auto_locate_renamed:
+		_fire(MsgCode.AUTO_LOCATE, message="Auto locate '%s'" % file_name)
+		search_dirs = [in_folder] + [d for d in extra_folders
+			if d and os.path.isdir(d)]
+		for search_dir in search_dirs:
+			for root, dirs, files in os.walk(search_dir):
+				for f in files:
+					if f == basename or f.lower() == basename.lower():
+						full_path = os.path.join(root, f)
+						_fire(MsgCode.MSG, message="Found renamed file: %s" % full_path)
+						return full_path
+	
+	raise FileNotFound("Could not locate file for ZIP: %s" % file_name)
 
 
 def reconstruct_rar5(srr_block, in_folder, out_folder, 

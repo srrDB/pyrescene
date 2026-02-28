@@ -139,6 +139,20 @@ def display_info(srr_file):
 			                      sfile.crc32, sfile.file_size))
 		print()
 
+	if len(info["zip_files"]):
+		print("ZIP files:")
+		for zfile in info["zip_files"].values():
+			print("\t%s %d" % (encodeerrors(zfile.file_name, sys.stdout),
+			                   zfile.file_size if zfile.file_size else 0))
+		print()
+
+	if len(info["zip_archived_files"]):
+		print("Files inside ZIP archives:")
+		for zfile in info["zip_archived_files"].values():
+			print("\t%s %s %d" % (encodeerrors(zfile.file_name, sys.stdout),
+			                      zfile.crc32, zfile.file_size))
+		print()
+
 	if len(info["oso_hashes"]):
 		print("ISDb hashes:")
 		for (name, ohash, size) in info["oso_hashes"]:
@@ -259,7 +273,7 @@ def manage_srr(options, in_folder, infiles, working_dir):
 		except Exception as e:
 			print("Unrecognized regular expression: %s" % e)
 			print("Some examples:")
-			print("\t.*\.nfo$")
+			print(r"\t.*\.nfo$")
 			print("\t.*(nfo|sfv)$")
 			print("\t^sample/.*")
 			return 1
