@@ -3770,7 +3770,7 @@ def flac_rebuild_sample(self, srs_data, tracks, attachments, srs, out_file):
 				flac.write(b"fLaC")
 				crc = crc32(b"fLaC", crc)
 				fr.skip_contents()
-			elif (fr.block_type in bytearray(b"stu") and
+			elif (fr.block_type in (ord('s'), ord('t'), ord('u')) and
 					srs_flac_blocks <= 3):
 				srs_flac_blocks += 1
 				fr.skip_contents()
