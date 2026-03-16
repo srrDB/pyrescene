@@ -63,7 +63,6 @@ from rescene.utility import filter_sfv_duplicates
 from rescene.utility import basestring, fsunicode
 from rescene.utility import decodetext, encodeerrors
 from rescene.utility import capitalized_fn
-from rescene.utility import calculate_crc32
 from rescene.osohash import osohash_from
 from rescene.utility import FileType
 from rescene.zip import ZipReader, ZIP_EXT, ZipFileBlock
@@ -578,10 +577,8 @@ def create_srr(srr_name, infiles, in_folder="",
 					srr.write(block.block_bytes())
 			else:  # rar5
 				rar5meta = _parse_rar5_data(rfexact)
-				rar5crc = calculate_crc32(rarfile)
 				rar5block = SrrRar5FileBlock(
 					file_name=fname,
-					rar5_crc=rar5crc,
 					metadata=rar5meta)
 				srr.write(rar5block.block_bytes())
 				
@@ -804,11 +801,8 @@ def create_srr(srr_name, infiles, in_folder="",
 								else:  # rar5
 									rar5meta = _parse_rar5_data(
 										rfexact)
-									rar5crc = calculate_crc32(
-										rvol)
 									rar5block = SrrRar5FileBlock(
 										file_name=vname,
-										rar5_crc=rar5crc,
 										metadata=rar5meta)
 									srr.write(
 										rar5block.block_bytes())
